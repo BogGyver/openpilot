@@ -90,9 +90,14 @@ class CarInterface(CarInterfaceBase):
 
     ret.events = events.to_msg()
     self.CS.out = ret.as_reader()
+    self.CS.DAS_canErrors = 0 if ret.canValid else 1
     return self.CS.out
 
   def apply(self, c):
-    can_sends = self.CC.update(c.enabled, self.CS, self.frame, c.actuators, c.cruiseControl.cancel)
+    can_sends = self.CC.update(c.enabled, self.CS, self.frame, 
+                          c.actuators, c.cruiseControl.cancel,
+                          c.hudControl.visualAlert, c.hudControl.leftLaneVisible,
+                          c.hudControl.rightLaneVisible, c.hudControl.leadVisible,
+                          c.hudControl.leftLaneDepart, c.hudControl.rightLaneDepart)
     self.frame += 1
     return can_sends

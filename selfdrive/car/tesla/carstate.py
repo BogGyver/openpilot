@@ -17,6 +17,7 @@ class CarState(CarStateBase):
     # Needed by carcontroller
     self.msg_stw_actn_req = None
     self.msg_autopilot_status = None
+    self.msg_autopilot_status2 = None
     self.msg_das_warningMsg0 = None
     self.msg_das_warningMsg1 = None
     self.msg_das_warningMsg3 = None
@@ -37,6 +38,25 @@ class CarState(CarStateBase):
     self.alca_direction = 0
     self.alca_need_engagement = False
 
+    #IC integration
+    self.DAS_gas_to_resume = 0
+    self.DAS_025_steeringOverride = 0 #use for manual steer?
+    self.DAS_202_noisyEnvironment = 0 #use for planner error?
+    self.DAS_206_apUnavailable = 0 #Ap disabled from CID
+    self.DAS_207_lkasUnavailable = 0 #use for manual not in drive?
+    self.DAS_208_rackDetected = 0 #use for low battery?
+    self.DAS_211_accNoSeatBelt = 0
+    self.DAS_219_lcTempUnavailableSpeed = 0
+    self.DAS_220_lcTempUnavailableRoad = 0
+    self.DAS_221_lcAborting = 0
+    self.DAS_222_accCameraBlind = 0 #we will see what we can use this for
+    self.stopSignWarning = 0
+    self.stopLightWarning = 0
+    self.DAS_canErrors = 0
+    self.DAS_notInDrive = 0
+    self.DAS_fusedSpeedLimit = 0
+    self.baseMapSpeedLimitMPS = 0
+
     #start config section
     self.forcePedalOverCC = False
     self.enableHSO = True
@@ -53,6 +73,16 @@ class CarState(CarStateBase):
     self.usesApillarHarness = False
     read_config_file(self)
     #end config section
+
+  def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
+    if speed_limit_uom > 0:
+      if speed_limit_type == 0x1E: # Autobahn with no speed limit
+        return 0x1F # no speed limit sign
+      return int(speed_limit_uom / 5 + 0.5) # sign ID in 5 kph/mph increments (7 shows as 5)
+    else:
+      if speed_limit_type == 0x1F: # SNA (parking lot, no public road, etc.)
+        return 0 # no sign
+      return 1 # show 5 kph/mph for unknown limit where we should have one
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -105,7 +135,7 @@ class CarState(CarStateBase):
 
     # Cruise state
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
-      autopilot_status = self.can_define.dv["AutopilotStatus"]["autopilotStatus"].get(int(cp_cam.vl["AutopilotStatus"]["autopilotStatus"]), None)
+      autopilot_status = self.can_define.dv["DAS_status"]["DAS_autopilotState"].get(int(cp_cam.vl["DAS_status"]["DAS_autopilotState"]), None)
     cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
     speed_units = self.can_define.dv["DI_state"]["DI_speedUnits"].get(int(cp.vl["DI_state"]["DI_speedUnits"]), None)
 
@@ -120,8 +150,25 @@ class CarState(CarStateBase):
     ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
     ret.cruiseState.standstill = (cruise_state == "STANDSTILL")
 
+    #speed limit
+    msu = cp.vl['UI_gpsVehicleSpeed']["UI_mapSpeedLimitUnits"]
+    map_speed_uom_to_ms = CV.KPH_TO_MS if msu == 1 else CV.MPH_TO_MS
+    map_speed_ms_to_uom = CV.MS_TO_KPH if msu == 1 else CV.MS_TO_MPH
+    speed_limit_type = int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])
+    rdSignMsg = cp.vl["UI_driverAssistRoadSign"]["UI_roadSign"]
+    if rdSignMsg == 3: # ROAD_SIGN_SPEED_LIMIT
+      self.baseMapSpeedLimitMPS = cp.vl["UI_driverAssistRoadSign"]["UI_baseMapSpeedLimitMPS"]
+      # we round the speed limit in the map's units of measurement to fix noisy data (there are no signs with a limit of 79.2 kph)
+      self.baseMapSpeedLimitMPS = int(self.baseMapSpeedLimitMPS * map_speed_ms_to_uom + 0.99) / map_speed_ms_to_uom
+    if self.baseMapSpeedLimitMPS > 0 and (speed_limit_type != 0x1F or self.baseMapSpeedLimitMPS <= 5.56):
+      self.speed_limit_ms = self.baseMapSpeedLimitMPS # this one is earlier than the actual sign but can also be unreliable, so we ignore it on SNA at higher speeds
+    else:
+      self.speed_limit_ms = cp.vl['UI_gpsVehicleSpeed']["UI_mppSpeedLimit"] * map_speed_uom_to_ms
+    self.DAS_fusedSpeedLimit = self._convert_to_DAS_fusedSpeedLimit(self.speed_limit_ms * map_speed_ms_to_uom, speed_limit_type)
+
     # Gear
     ret.gearShifter = GEAR_MAP[self.can_define.dv["DI_torque2"]["DI_gear"].get(int(cp.vl["DI_torque2"]["DI_gear"]), "DI_GEAR_INVALID")]
+    self.DAS_notInDrive = 0 if ret.gearShifter == car.CarState.GearShifter.drive else 1
 
     # Buttons
     buttonEvents = []
@@ -155,8 +202,9 @@ class CarState(CarStateBase):
     # Messages needed by carcontroller
     self.msg_stw_actn_req = copy.copy(cp.vl["STW_ACTN_RQ"])
     if (self.CP.carFingerprint != CAR.PREAP_MODELS):
-      self.msg_autopilot_status = copy.copy(cp_cam.vl["AutopilotStatus"])
+      self.msg_autopilot_status = copy.copy(cp_cam.vl["DAS_status"])
       self.msg_das_body_controls = copy.copy(cp_cam.vl["DAS_bodyControls"])
+      self.msg_autopilot_status2 = copy.copy(cp_cam.vl["DAS_status2"])
     #BB will need telemetry (ID) and bodyControl (full) also for IC integration
     #BB for long control we will need also to modify status2 to integrate with IC
 
@@ -190,7 +238,10 @@ class CarState(CarStateBase):
       ("BC_indicatorRStatus", "GTW_carState", 1),
       ("SDM_bcklDrivStatus", "SDM1", 0),
       ("driverBrakeStatus", "BrakeMessage", 0),
-
+      # info for speed limit
+      ("UI_mapSpeedLimitUnits","UI_gpsVehicleSpeed",0),
+      ("UI_mppSpeedLimit","UI_gpsVehicleSpeed",0),
+      ("UI_mapSpeedLimit","UI_driverAssistMapData",0),
       # We copy this whole message when spamming cancel
       ("SpdCtrlLvr_Stat", "STW_ACTN_RQ", 0),
       ("VSL_Enbl_Rq", "STW_ACTN_RQ", 0),
@@ -248,32 +299,32 @@ class CarState(CarStateBase):
       #we need the steering control counter
       ("DAS_steeringControlCounter", "DAS_steeringControl", 0),
       # We copy this whole message when we change the status for IC
-      ("autopilotStatus", "AutopilotStatus", 0),
-      ("DAS_blindSpotRearLeft", "AutopilotStatus", 0),
-      ("DAS_blindSpotRearRight", "AutopilotStatus", 0),
-      ("DAS_fusedSpeedLimit", "AutopilotStatus", 0),
-      ("DAS_suppressSpeedWarning", "AutopilotStatus", 0),
-      ("DAS_summonObstacle", "AutopilotStatus", 0),
-      ("DAS_summonClearedGate", "AutopilotStatus", 0),
-      ("DAS_visionOnlySpeedLimit", "AutopilotStatus", 0),
-      ("DAS_heaterState", "AutopilotStatus", 0),
-      ("DAS_forwardCollisionWarning", "AutopilotStatus", 0),
-      ("DAS_autoparkReady", "AutopilotStatus", 0),
-      ("DAS_autoParked", "AutopilotStatus", 0),
-      ("DAS_autoparkWaitingForBrake", "AutopilotStatus", 0),
-      ("DAS_summonFwdLeashReached", "AutopilotStatus", 0),
-      ("DAS_summonRvsLeashReached", "AutopilotStatus", 0),
-      ("DAS_sideCollisionAvoid", "AutopilotStatus", 0),
-      ("DAS_sideCollisionWarning", "AutopilotStatus", 0),
-      ("DAS_sideCollisionInhibit", "AutopilotStatus", 0),
-      ("DAS_csaState", "AutopilotStatus", 0),
-      ("DAS_laneDepartureWarning", "AutopilotStatus", 0),
-      ("DAS_fleetSpeedState", "AutopilotStatus", 0),
-      ("DAS_autopilotHandsOnState", "AutopilotStatus", 0),
-      ("DAS_autoLaneChangeState", "AutopilotStatus", 0),
-      ("DAS_summonAvailable", "AutopilotStatus", 0),
-      ("DAS_statusCounter", "AutopilotStatus", 0),
-      ("DAS_statusChecksum", "AutopilotStatus", 0),
+      ("DAS_autopilotState", "DAS_status", 0),
+      ("DAS_blindSpotRearLeft", "DAS_status", 0),
+      ("DAS_blindSpotRearRight", "DAS_status", 0),
+      ("DAS_fusedSpeedLimit", "DAS_status", 0),
+      ("DAS_suppressSpeedWarning", "DAS_status", 0),
+      ("DAS_summonObstacle", "DAS_status", 0),
+      ("DAS_summonClearedGate", "DAS_status", 0),
+      ("DAS_visionOnlySpeedLimit", "DAS_status", 0),
+      ("DAS_heaterState", "DAS_status", 0),
+      ("DAS_forwardCollisionWarning", "DAS_status", 0),
+      ("DAS_autoparkReady", "DAS_status", 0),
+      ("DAS_autoParked", "DAS_status", 0),
+      ("DAS_autoparkWaitingForBrake", "DAS_status", 0),
+      ("DAS_summonFwdLeashReached", "DAS_status", 0),
+      ("DAS_summonRvsLeashReached", "DAS_status", 0),
+      ("DAS_sideCollisionAvoid", "DAS_status", 0),
+      ("DAS_sideCollisionWarning", "DAS_status", 0),
+      ("DAS_sideCollisionInhibit", "DAS_status", 0),
+      ("DAS_csaState", "DAS_status2", 0),
+      ("DAS_laneDepartureWarning", "DAS_status", 0),
+      ("DAS_fleetSpeedState", "DAS_status", 0),
+      ("DAS_autopilotHandsOnState", "DAS_status", 0),
+      ("DAS_autoLaneChangeState", "DAS_status", 0),
+      ("DAS_summonAvailable", "DAS_status", 0),
+      ("DAS_statusCounter", "DAS_status", 0),
+      ("DAS_statusChecksum", "DAS_status", 0),
       ("DAS_headlightRequest", "DAS_bodyControls", 0),
       ("DAS_hazardLightRequest", "DAS_bodyControls", 0),
       ("DAS_wiperSpeed", "DAS_bodyControls", 0),
@@ -283,9 +334,26 @@ class CarState(CarStateBase):
       ("DAS_turnIndicatorRequestReason", "DAS_bodyControls", 0),
       ("DAS_bodyControlsCounter", "DAS_bodyControls", 0),
       ("DAS_bodyControlsChecksum", "DAS_bodyControls", 0),
+      ("DAS_accSpeedLimit", "DAS_status2", 0),
+      ("DAS_pmmObstacleSeverity", "DAS_status2", 0),
+      ("DAS_pmmLoggingRequest", "DAS_status2", 0),
+      ("DAS_activationFailureStatus", "DAS_status2", 0),
+      ("DAS_pmmUltrasonicsFaultReason", "DAS_status2", 0),
+      ("DAS_pmmRadarFaultReason", "DAS_status2", 0),
+      ("DAS_pmmSysFaultReason", "DAS_status2", 0),
+      ("DAS_pmmCameraFaultReason", "DAS_status2", 0),
+      ("DAS_ACC_report", "DAS_status2", 0),
+      ("DAS_lssState", "DAS_status", 0),
+      ("DAS_radarTelemetry", "DAS_status2", 0),
+      ("DAS_robState", "DAS_status2", 0),
+      ("DAS_driverInteractionLevel", "DAS_status2", 0),
+      ("DAS_ppOffsetDesiredRamp", "DAS_status2", 0),
+      ("DAS_longCollisionWarning", "DAS_status2", 0),
+      ("DAS_status2Counter", "DAS_status2", 0),
+      ("DAS_status2Checksum", "DAS_status2", 0),
     ]
     checks = [
       # sig_address, frequency
-      ("AutopilotStatus", 2),
+      ("DAS_status", 2),
     ]
     return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 2)

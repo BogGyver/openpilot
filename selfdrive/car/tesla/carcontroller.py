@@ -5,10 +5,11 @@ from selfdrive.car.tesla.BLNK_module import Blinker
 from opendbc.can.packer import CANPacker
 from selfdrive.car.tesla.values import CarControllerParams, CAR, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CAN_POWERTRAIN
 import cereal.messaging as messaging
-from cereal import log
+from cereal import log, car
 
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
+VisualAlert = car.CarControl.HUDControl.VisualAlert
 
 def _is_present(lead):
   return bool((not (lead is None)) and (lead.dRel > 0))
@@ -25,6 +26,11 @@ class CarController():
     self.blinker = Blinker()
     self.laP = messaging.sub_sock('lateralPlan')
     self.alca_engaged_frame = 0
+    self.IC_integration_counter = 0
+    self.IC_integration_warning_counter = 0
+    self.IC_DAS_status_counter = 0
+    self.IC_DAS_status2_counter = 0
+
     if CP.openpilotLongitudinalControl:
       self.lP = messaging.sub_sock('longitudinalPlan')
       self.rS = messaging.sub_sock('radarState')
@@ -33,9 +39,13 @@ class CarController():
       self.long_control_counter = 1
 
 
-  def update(self, enabled, CS, frame, actuators, cruise_cancel):
+  def update(self, enabled, CS, frame, actuators, cruise_cancel, hud_alert,
+             left_line, right_line, lead, left_lane_depart, right_lane_depart):
     can_sends = []
-
+    self.IC_integration_counter = ((self.IC_integration_counter + 1) % 100)
+    if self.IC_integration_warning_counter > 0:
+      self.IC_integration_warning_counter = self.IC_integration_warning_counter - 1
+    
     # Update modules
     human_control = self.HSO.update_stat(self, CS, enabled, actuators, frame)
     self.blinker.update_state(CS, frame)
@@ -119,7 +129,75 @@ class CarController():
       if self.CP.carFingerprint == CAR.AP1_MODELS:
         can_sends.append(self.tesla_can.create_ap1_long_control(350.0/3.6, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
 
-    
+    #send messages for IC intergration
+    CS.DAS_025_steeringOverride = 1 if human_control else 0
+    warnings = CS.DAS_gas_to_resume + \
+              CS.DAS_025_steeringOverride + \
+              CS.DAS_202_noisyEnvironment + \
+              CS.DAS_206_apUnavailable + \
+              CS.DAS_207_lkasUnavailable + \
+              CS.DAS_208_rackDetected + \
+              CS.DAS_211_accNoSeatBelt + \
+              CS.DAS_219_lcTempUnavailableSpeed + \
+              CS.DAS_220_lcTempUnavailableRoad + \
+              CS.DAS_221_lcAborting + \
+              CS.DAS_222_accCameraBlind + \
+              CS.stopSignWarning + \
+              CS.stopLightWarning + \
+              CS.DAS_canErrors + \
+              CS.DAS_notInDrive
+    if (warnings > 0) and (self.IC_integration_warning_counter == 0):
+      self.IC_integration_warning_counter == 200 # alert for 2 sconds
+    if self.IC_integration_warning_counter == 0 or not enabled:
+      # when zero reset all warnings
+      CS.DAS_gas_to_resume = 0
+      CS.DAS_025_steeringOverride = 0 #use for manual steer?
+      CS.DAS_202_noisyEnvironment = 0 #use for planner error?
+      CS.DAS_206_apUnavailable = 0 #Ap disabled from CID
+      CS.DAS_207_lkasUnavailable = 0 #use for manual not in drive?
+      CS.DAS_208_rackDetected = 0 #use for low battery?
+      CS.DAS_211_accNoSeatBelt = 0
+      CS.DAS_219_lcTempUnavailableSpeed = 0
+      CS.DAS_220_lcTempUnavailableRoad = 0
+      CS.DAS_221_lcAborting = 0
+      CS.DAS_222_accCameraBlind = 0 #we will see what we can use this for
+      CS.stopSignWarning = 0
+      CS.stopLightWarning = 0
+      CS.DAS_canErrors = 0
+      CS.DAS_notInDrive = 0
+
+    if enabled and (self.IC_integration_counter % 10 == 0):
+      # send DAS_warningMatrix0 at 1Hz
+      if IC_integration_counter == 10:
+        can_sends.append(self.tesla_can.create_das_warningMatrix0(CS.DAS_canErrors, CS.DAS_025_steeringOverride, CS.DAS_notInDrive, CAN_CHASSIS[self.CP.carFingerprint]))
+      
+      # send DAS_warningMatrix1 at 1Hz
+      if IC_integration_counter == 20:
+        can_sends.append(self.tesla_can.create_das_warningMatrix1(CAN_CHASSIS[self.CP.carFingerprint]))
+
+      # send DAS_warningMatrix3 at 1Hz
+      if IC_integration_counter == 30:
+        can_sends.append(self.tesla_can.create_das_warningMatrix3 (CS.DAS_gas_to_resume, CS.DAS_211_accNoSeatBelt, CS.DAS_202_noisyEnvironment, CS.DAS_207_lkasUnavailable,
+          CS.DAS_219_lcTempUnavailableSpeed, CS.DAS_220_lcTempUnavailableRoad, CS.DAS_221_lcAborting, CS.DAS_222_accCameraBlind,
+          CS.DAS_208_rackDetected, CS.stopSignWarning, CS.stopLightWarning, CAN_CHASSIS[self.CP.carFingerprint]))
+      
+      # send DAS_status and DAS_status2 at 2Hz
+      if IC_integration_counter == 40 or IC_integration_counter == 90:
+        if self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]:
+          self.IC_DAS_status_counter = -1
+        else:
+          self.IC_DAS_status_counter = (self.IC_DAS_status_counter + 1 ) % 16
+        DAS_ldwStatus = 1 if left_lane_depart or right_lane_depart else 0
+        DAS_hands_on_state = 1 if hud_alert == VisualAlert.steerRequired else 0
+        DAS_collision_warning =  1 if hud_alert == VisualAlert.fcw else 0
+        #alcaState 1 if nothing, 8+direction if enabled
+        DAS_alca_state = 8 + CS.LaneChangeDirection if CS.LaneChangeDirection > 0 else 1
+        #ap status 0-disabled, 1-enabled, 2-disabling, 3-unavailable, 5-warning
+        DAS_op_status = 1 if enabled else 0
+        can_sends.append(self.tesla_can.create_das_status(self, DAS_op_status, DAS_collision_warning,
+          DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
+          CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
+        can_sends.append(self.tesla_can.create_das_status2(self, CS.out.cruiseState.speed * CV.MS_TO_MPH, DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
     if not enabled:
       self.v_target = CS.out.vEgo
       self.a_target = 1
