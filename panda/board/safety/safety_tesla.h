@@ -22,6 +22,9 @@ const struct lookup_t TESLA_LOOKUP_MAX_ANGLE = {
   {2., 29., 38.},
   {410.,92.,36.}};
 
+// real time torque limit to prevent controls spamming
+// the real time limit is 1500/sec
+const int RT_INTERVAL = 250000;    // 250ms between real time checks
 
 struct sample_t tesla_angle_meas;            // last 3 steer angles
 
