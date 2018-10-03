@@ -5,6 +5,7 @@ from selfdrive.car.hyundai.hyundaican import create_lkas11, create_lkas12, \
                                              create_clu11
 from selfdrive.car.hyundai.values import Buttons
 from selfdrive.can.packer import CANPacker
+from selfdrive.car.modules.ALCA_module import ALCAController
 
 
 # Steer torque limits
@@ -30,6 +31,8 @@ class CarController(object):
     self.camera_disconnected = False
 
     self.packer = CANPacker(dbc_name)
+    self.ALCA = ALCAController(self,True,False)  # Enabled  True and SteerByAngle only False
+
 
   def update(self, sendcan, enabled, CS, actuators, pcm_cancel_cmd, hud_alert):
 
@@ -45,8 +48,28 @@ class CarController(object):
       apply_steer = 0
 
     steer_req = 1 if enabled else 0
+    
+     #update custom UI buttons and alerts
+    CS.UE.update_custom_ui()
+    if (frame % 1000 == 0):
+      CS.cstm_btns.send_button_info()
+      CS.UE.uiSetCarEvent(CS.cstm_btns.car_folder,CS.cstm_btns.car_name)
 
-    self.apply_steer_last = apply_steer
+    # Get the angle from ALCA.
+    alca_enabled = False
+    alca_steer = 0.
+    alca_angle = 0.
+    turn_signal_needed = 0
+    # Update ALCA status and custom button every 0.1 sec.
+    if self.ALCA.pid == None:
+      self.ALCA.set_pid(CS)
+    if (frame % 10 == 0):
+      self.ALCA.update_status(CS.cstm_btns.get_button_status("alca") > 0)
+    # steer torque
+    alca_angle, alca_steer, alca_enabled, turn_signal_needed = self.ALCA.update(enabled, CS, frame, actuators)
+
+
+    self.apply_steer_last = apply_steer * -alca_steer
 
     can_sends = []
 
