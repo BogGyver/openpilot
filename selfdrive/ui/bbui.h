@@ -849,9 +849,9 @@ void bb_ui_init(UIState *s) {
     s->b.gps_sock_raw = zsock_resolve(s->b.gps_sock);
 
     //BB Load Images
-    s->b.img_logo = nvgCreateImage(s->vg, "../assets/img_spinner_comma.png", 1);
-    s->b.img_logo2 = nvgCreateImage(s->vg, "../assets/img_spinner_comma2.png", 1);
-    s->b.img_car = nvgCreateImage(s->vg, "../assets/img_car_tesla.png", 1);
+    s->b.img_logo = nvgCreateImage(s->vg, "../assets/img_spinner_comma.png", 1); // Giant spinning logo 1 thats spinning in the middle of the screen.
+    s->b.img_logo2 = nvgCreateImage(s->vg, "../assets/img_spinner_comma2.png", 1); // Giant spinning logo 2 that alternate in the middle of the screen.
+    s->b.img_car = nvgCreateImage(s->vg, "../assets/img_car_.png", 1);	// Change the car picture on the tesla ui which is tri state 2.
 }
 
 void bb_ui_play_sound( UIState *s, int sound) {
