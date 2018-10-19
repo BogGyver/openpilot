@@ -260,11 +260,9 @@ class PCCController(object):
       # max ACC speed. If actual speed is already 50, the code also increases
       # the max cruise speed.
       if CS.cruise_buttons == CruiseButtons.RES_ACCEL:
-        requested_speed_kph = CS.v_ego * CV.MS_TO_KPH + speed_uom_kph
-        self.pedal_speed_kph = max(self.pedal_speed_kph, requested_speed_kph)
+        self.pedal_speed_kph += speed_uom_kph
       elif CS.cruise_buttons == CruiseButtons.RES_ACCEL_2ND:
-        requested_speed_kph = CS.v_ego * CV.MS_TO_KPH + 5 * speed_uom_kph
-        self.pedal_speed_kph = max(self.pedal_speed_kph, requested_speed_kph)
+        self.pedal_speed_kph += 5 * speed_uom_kph
       elif CS.cruise_buttons == CruiseButtons.DECEL_SET:
         self.pedal_speed_kph -= speed_uom_kph
       elif CS.cruise_buttons == CruiseButtons.DECEL_2ND:
@@ -343,7 +341,7 @@ class PCCController(object):
         accel_limits = map(float, calc_cruise_accel_limits(CS.v_ego, following))
         # TODO: make a separate lookup for jerk tuning
         jerk_limits = [min(-0.1, accel_limits[0]), max(0.1, accel_limits[1])]
-        accel_limits = limit_accel_in_turns(CS.vEgo, CS.steeringAngle, accel_limits, self.CP)
+        accel_limits = limit_accel_in_turns(CS.v_ego, CS.steeringAngle, accel_limits, CS.CP)
         v_cruise_setpoint = self.v_pid
         self.v_cruise, self.a_cruise = speed_smoother(self.v_acc_start, self.a_acc_start,
                                                       v_cruise_setpoint,
@@ -354,7 +352,7 @@ class PCCController(object):
         # cruise speed can't be negative even is user is distracted
         self.v_cruise = max(self.v_cruise, 0.)
       else:
-        a_ego = min(CS.aEgo, 0.0)
+        a_ego = min(CS.a_ego, 0.0)
         reset_speed = CS.v_ego
         reset_accel = a_ego
         self.v_acc = reset_speed
@@ -387,8 +385,10 @@ class PCCController(object):
       vTarget = self.v_acc_sol
       vTargetFuture = self.v_acc_future
       prevent_overshoot = not CS.CP.stoppingControl and CS.v_ego < 1.5 and vTargetFuture < 0.7
-      output_gb = self.pid.update(self.v_pid, v_ego_pid, speed=v_ego_pid, override=override, deadzone=deadzone, feedforward= a_target, freeze_integrator=prevent_overshoot)
-      self.v_pid = CS.v_ego
+
+      output_gb = self.pid.update(self.v_pid, v_ego_pid, speed=v_ego_pid, override=override, deadzone=deadzone, feedforward= aTarget, freeze_integrator=prevent_overshoot)
+      # Is this the goal?
+      self.v_pid = v_ego_pid
       if prevent_overshoot:
         output_gb = min(output_gb, 0.0)
     ##############################################################
