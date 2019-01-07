@@ -2029,7 +2029,6 @@ int main() {
 
     if (EON) {
       // light sensor is only exposed on EONs
-
       float clipped_brightness = (s->light_sensor*BRIGHTNESS_M) + BRIGHTNESS_B;
       if (clipped_brightness > 255) clipped_brightness = 255;
       smooth_brightness = clipped_brightness * 0.01 + smooth_brightness * 0.99;
@@ -2044,7 +2043,7 @@ int main() {
     bb_ui_poll_update(s);
     // awake on any touch
     int touch_x = -1, touch_y = -1;
-    int touched = touch_poll(&touch, &touch_x, &touch_y, s->awake ? 0 : 100);
+    int touched = touch_poll(&touch, &touch_x, &touch_y, s->awake ? 0 : 500);
     if (touched == 1) {
       // touch event will still happen :(
       set_awake(s, true);
