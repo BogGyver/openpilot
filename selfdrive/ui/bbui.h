@@ -778,7 +778,7 @@ void bb_ui_draw_gyro(UIState *s) {
   const int l_w = (int)(sc_w * prc / 2);
 
   const int p_w = (int)((sc_cx - l_w - sc_x)*prc);
-  const int p_x = (int)((sc_cx - l_w - p_w)/2);
+  const int p_x = (int)(bdr_s +(sc_cx - l_w - p_w)/2);
   const int p_max_h = (int)(sc_h * prc /2);
 
   nvgBeginPath(s->vg);
@@ -790,9 +790,8 @@ void bb_ui_draw_gyro(UIState *s) {
   nvgStroke(s->vg);
 
   //compute angle vs horizontal axis based on roll
-  //multiply by 0.160122018 = 90 (deg) * 0.0174533 (rad/deg) / 9.81 (max roll/pitch @ 90 deg)
-  const float r_ang_rad = -s->b.gyroRoll; //-(s->b.gyroRoll * 0.160122018);
-  const float p_ang_rad = -s->b.gyroPitch; //-(s->b.gyroPitch * 0.160122018);
+  const float r_ang_rad = -s->b.gyroRoll; 
+  const float p_ang_rad = -s->b.gyroPitch; 
 
   //roll
   nvgSave(s->vg);

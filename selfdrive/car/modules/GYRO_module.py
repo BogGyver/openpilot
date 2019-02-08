@@ -37,12 +37,9 @@ class GYROController:
     return avg
 
   def vector_to_rad(self,p,r,y):
-    aP = p #* 3.9
-    aR = r #* 3.9
-    aY = y #* 3.9
-    pitch = math.atan (aP/math.sqrt(aR*aR + aY*aY)) #/math.pi
-    roll = math.atan (aR/math.sqrt(aP*aP + aY*aY)) #/math.pi
-    yaw =  math.atan (aY/math.sqrt(aP*aP + aR*aR)) #/math.pi
+    pitch = math.atan (p/math.sqrt(r*r + y*y)) 
+    roll = math.atan (r/math.sqrt(p*p + y*y)) 
+    yaw =  math.atan (y/math.sqrt(p*p + r*r)) 
     return pitch,roll,yaw
       
 
@@ -57,5 +54,4 @@ class GYROController:
                 self.yaw = self.list_add(self.yaw_list,se.acceleration.v[0])
                 self.roll = self.list_add(self.roll_list,se.acceleration.v[1])
                 self.pitch = self.list_add(self.pitch_list,se.acceleration.v[2])
-    #return self.pitch, self.roll, self.yaw
     return self.vector_to_rad(self.pitch, self.roll, self.yaw)
