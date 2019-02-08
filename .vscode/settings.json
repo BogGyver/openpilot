@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "algorithm": "cpp",
-        "chrono": "cpp",
-        "limits": "cpp"
-    },
-    "python.pythonPath": "C:\\Python27\\python.exe",
-    "C_Cpp.errorSquiggles": "Disabled"
-}
