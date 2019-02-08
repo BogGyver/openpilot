@@ -16,6 +16,7 @@ from selfdrive.car.tesla.values import AH, CruiseButtons, CAR, CM
 from selfdrive.can.packer import CANPacker
 from selfdrive.config import Conversions as CV
 from selfdrive.car.modules.ALCA_module import ALCAController
+from selfdrive.car.modules.GYRO_module import GYROController
 from selfdrive.car.tesla.ACC_module import ACCController
 from selfdrive.car.tesla.PCC_module import PCCController
 from selfdrive.car.tesla.HSO_module import HSOController
@@ -70,6 +71,7 @@ class CarController(object):
     self.ACC = ACCController()
     self.PCC = PCCController(self)
     self.HSO = HSOController(self)
+    self.GYRO = GYROController()
     self.sent_DAS_bootID = False
     context = zmq.Context()
     self.poller = zmq.Poller()
@@ -78,6 +80,9 @@ class CarController(object):
     self.speedlimit_valid = False
     self.speedlimit_units = 0
     self.opState = 0 # 0-disabled, 1-enabled, 2-disabling, 3-unavailable, 5-warning
+    self.gyroPitch = 0.
+    self.gyroRoll = 0.
+    self.gyroYaw = 0.
 
   def update(self, sendcan, enabled, CS, frame, actuators, \
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
@@ -140,6 +145,11 @@ class CarController(object):
       
     if (frame % 1000 == 0):
       CS.cstm_btns.send_button_info()
+
+    #get pitch/roll/yaw every 0.1 sec
+    if (frame %10 == 0):
+      self.gyroPitch, self.gyroRoll, self.gyroYaw = self.GYRO.update()
+      CS.UE.uiGyroInfoEvent(self.gyroPitch, self.gyroRoll, self.gyroYaw)
 
     # Update statuses for custom buttons every 0.1 sec.
     if self.ALCA.pid == None:

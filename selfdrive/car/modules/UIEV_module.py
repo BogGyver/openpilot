@@ -13,6 +13,7 @@ class UIEvents(object):
         self.uiButtonInfo = messaging.pub_sock(context, service_list['uiButtonInfo'].port)
         self.uiSetCar = messaging.pub_sock(context, service_list['uiSetCar'].port)
         self.uiPlaySound = messaging.pub_sock(context, service_list['uiPlaySound'].port)
+        self.uiGyroInfo = messaging.pub_sock(context, service_list['uiGyroInfo'].port)
         self.uiButtonStatus = messaging.sub_sock(context, service_list['uiButtonStatus'].port, conflate=True, poller=self.buttons_poller)
         self.prev_cstm_message = ""
         self.prev_cstm_status = -1
@@ -31,11 +32,20 @@ class UIEvents(object):
         dat.btnStatus = status
         dat.btnLabel2 = label2 #+ '\0'
         self.uiButtonInfo.send(dat.to_bytes())
+
+    def uiGyroInfoEvent(self,pitch,roll,yaw):
+        dat = ui.UIGyroInfo.new_message()
+        dat.gyroPitch = pitch
+        dat.gyroRoll = roll 
+        dat.gyroYaw = yaw 
+        self.uiGyroInfo.send(dat.to_bytes())
     
-    def uiSetCarEvent(self,car_folder,car_name):
+    def uiSetCarEvent(self,car_folder,car_name, showLogo, showCar):
         dat = ui.UISetCar.new_message()
         dat.icCarFolder = car_folder
         dat.icCarName = car_name
+        dat.icShowCar = int(showCar)
+        dat.icShowLogo = int(showLogo)
         self.uiSetCar.send(dat.to_bytes())
 
     def uiPlaySoundEvent(self,sound):

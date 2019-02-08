@@ -67,7 +67,6 @@ def read_config_file(CS):
       CS.enableFeedForwardAngleCorrection = configr.getboolean('OP_CONFIG','enable_feed_forward_angle_correction')
     except:
       CS.enableFeedForwardAngleCorrection = True
-
     config.set('OP_CONFIG', 'enable_feed_forward_angle_correction', CS.enableFeedForwardAngleCorrection)
 
     #enable_driver_monitor -> CS.enableDriverMonitor
@@ -75,8 +74,21 @@ def read_config_file(CS):
       CS.enableDriverMonitor = configr.getboolean('OP_CONFIG','enable_driver_monitor')
     except:
       CS.enableDriverMonitor = True
-
     config.set('OP_CONFIG', 'enable_driver_monitor', CS.enableDriverMonitor)
+
+    #enable_show_car -> CS.enableShowCar
+    try:
+      CS.enableShowCar = configr.getboolean('OP_CONFIG','enable_show_car')
+    except:
+      CS.enableShowCar = True
+    config.set('OP_CONFIG', 'enable_show_car', CS.enableShowCar)
+
+    #enable_show_logo -> CS.enableShowLogo
+    try:
+      CS.enableShowLogo = configr.getboolean('OP_CONFIG','enable_show_logo')
+    except:
+      CS.enableShowLogo = True
+    config.set('OP_CONFIG', 'enable_show_logo', CS.enableShowLogo)
 
 
     with open(config_path, config_file_w) as configfile:

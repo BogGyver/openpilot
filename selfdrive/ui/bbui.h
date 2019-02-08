@@ -85,6 +85,9 @@ void bb_ui_draw_car(  UIState *s) {
     //no lead car to draw
     return;
   }
+  if (!s->b.icShowCar) {
+    return;
+  }
   const UIScene *scene = &s->scene;
   float x_in = scene->lead_d_rel+2.7;
   float y_in = scene->lead_y_rel;
@@ -730,6 +733,9 @@ void bb_ui_draw_logo( UIState *s) {
   if ((s->status != STATUS_DISENGAGED) && (s->status != STATUS_STOPPED)) { //(s->status != STATUS_DISENGAGED) {//
     return;
   }
+  if (!s->b.icShowLogo) {
+    return;
+  }
   int rduration = 8000;
   int logot = (bb_currentTimeInMilis() % rduration);
   int logoi = s->b.img_logo;
@@ -759,6 +765,74 @@ void bb_ui_draw_logo( UIState *s) {
   nvgFill(s->vg);
 }
 
+void bb_ui_draw_gyro(UIState *s) {
+  //draw the gyro data
+  const UIScene *scene = &s->scene;
+  const float prc = 0.6;
+  const int sc_h = 820;
+  const int sc_w = scene->ui_viz_rw;
+  const int sc_x = bdr_s + scene->ui_viz_rx;
+  const int sc_y = 100;
+  const int sc_cx = (int)(sc_x + sc_w /2);
+  const int sc_cy =  (int)(sc_y + sc_h/2);
+  const int l_w = (int)(sc_w * prc / 2);
+
+  const int p_w = (int)((sc_cx - l_w - sc_x)*prc);
+  const int p_x = (int)((sc_cx - l_w - p_w)/2);
+  const int p_max_h = (int)(sc_h * prc /2);
+
+  nvgBeginPath(s->vg);
+  //white for the base line
+  nvgStrokeColor(s->vg, nvgRGBA(255,255,255,200));
+  nvgStrokeWidth(s->vg, 4);
+  nvgMoveTo(s->vg, sc_cx - l_w, sc_cy);
+  nvgLineTo(s->vg, sc_cx +l_w, sc_cy);
+  nvgStroke(s->vg);
+
+  //compute angle vs horizontal axis based on roll
+  //multiply by 0.160122018 = 90 (deg) * 0.0174533 (rad/deg) / 9.81 (max roll/pitch @ 90 deg)
+  const float r_ang_rad = -s->b.gyroRoll; //-(s->b.gyroRoll * 0.160122018);
+  const float p_ang_rad = -s->b.gyroPitch; //-(s->b.gyroPitch * 0.160122018);
+
+  //roll
+  nvgSave(s->vg);
+  nvgTranslate(s->vg, sc_cx, sc_cy);
+  nvgRotate(s->vg, r_ang_rad);
+  nvgBeginPath(s->vg);
+  //green for the real horizontal line
+  nvgStrokeColor(s->vg, nvgRGBA(28, 204,98,200));
+  nvgStrokeWidth(s->vg, 4);
+  nvgMoveTo(s->vg,  -l_w, 0);
+  nvgLineTo(s->vg,  +l_w, 0);
+  nvgStroke(s->vg);
+  nvgRestore(s->vg);
+
+  //pitch
+  const int p_y = sc_cy;
+  //double height to accentuate change
+  const int p_h = (int)(p_max_h * sin(p_ang_rad) );
+  nvgBeginPath(s->vg);
+  //fill with red
+  nvgFillColor(s->vg, nvgRGBA(255, 0, 0, 200));
+  nvgStrokeColor(s->vg, nvgRGBA(255, 0, 0, 200)); 
+  nvgRect(s->vg, p_x, p_y, p_w, p_h);
+  nvgFill(s->vg);
+  nvgStroke(s->vg);
+  //draw middle line white
+  nvgBeginPath(s->vg);
+  nvgStrokeColor(s->vg, nvgRGBA(255,255,255,200));
+  nvgStrokeWidth(s->vg, 4);
+  nvgMoveTo(s->vg,  p_x,p_y);
+  nvgLineTo(s->vg,  p_x + p_w, p_y);
+  nvgStroke(s->vg);
+  //draw horizon with green
+  nvgBeginPath(s->vg);
+  nvgStrokeColor(s->vg, nvgRGBA(28, 204,98,200));
+  nvgMoveTo(s->vg,  p_x,p_y+p_h);
+  nvgLineTo(s->vg,  p_x + p_w, p_y+p_h);
+  nvgStroke(s->vg);
+}
+
 void bb_ui_read_triState_switch( UIState *s) {
   //get 3-state switch position
   int tri_state_fd;
@@ -776,14 +850,17 @@ void bb_ui_read_triState_switch( UIState *s) {
     }*/
     s->b.tri_state_switch_last_read = bb_currentTimeInMilis(); 
     s->b.tri_state_switch = 1;
-    if (strcmp(s->b.btns[2].btn_label2,"Left")==0) {
+    if (strcmp(s->b.btns[2].btn_label2,"OP")==0) {
       s->b.tri_state_switch = 1;
     }
-    if (strcmp(s->b.btns[2].btn_label2,"Middle")==0) {
+    if (strcmp(s->b.btns[2].btn_label2,"MIN")==0) {
       s->b.tri_state_switch = 2;
     }
-    if (strcmp(s->b.btns[2].btn_label2,"Right")==0) {
+    if (strcmp(s->b.btns[2].btn_label2,"OFF")==0) {
       s->b.tri_state_switch = 3;
+    }
+    if (strcmp(s->b.btns[2].btn_label2,"GYRO")==0) {
+      s->b.tri_state_switch = 4;
     }
     
   }
@@ -805,7 +882,7 @@ void bb_ui_draw_UI( UIState *s) {
     bb_ui_draw_measures_right(s,bb_dmr_x, bb_dmr_y, bb_dmr_w );
     bb_draw_buttons(s);
     bb_ui_draw_custom_alert(s);
-    //bb_ui_draw_logo(s);
+    bb_ui_draw_logo(s);
 	 }
    if (s->b.tri_state_switch ==2) {
 	 	const UIScene *scene = &s->scene;
@@ -818,8 +895,7 @@ void bb_ui_draw_UI( UIState *s) {
 	  const int bb_dmr_y = (box_y + (bdr_s*1.5))+220;
     bb_draw_buttons(s);
     bb_ui_draw_custom_alert(s);
-    //bb_ui_draw_logo(s);
-    //bb_ui_draw_car(s);
+    bb_ui_draw_logo(s);
 	 }
 	 if (s->b.tri_state_switch ==3) {
     //we now use the state 3 for minimalistic data alerts
@@ -831,12 +907,23 @@ void bb_ui_draw_UI( UIState *s) {
 	  const int bb_dmr_w = 180;
 	  const int bb_dmr_x = scene->ui_viz_rx + scene->ui_viz_rw - bb_dmr_w - (bdr_s*2) ; 
 	  const int bb_dmr_y = (box_y + (bdr_s*1.5))+220;
-    //bb_ui_draw_measures_left(s,bb_dml_x, bb_dml_y, bb_dml_w );
-    //bb_ui_draw_measures_right(s,bb_dmr_x, bb_dmr_y, bb_dmr_w );
     bb_draw_buttons(s);
     bb_ui_draw_custom_alert(s);
-    //bb_ui_draw_logo(s);
 	 }
+   if (s->b.tri_state_switch ==4) {
+    //we use the state 4 for gyro info
+    const UIScene *scene = &s->scene;
+    const int bb_dml_w = 180;
+    const int bb_dml_x =  (scene->ui_viz_rx + (bdr_s*2));
+    const int bb_dml_y = (box_y + (bdr_s*1.5))+220;
+    
+    const int bb_dmr_w = 180;
+    const int bb_dmr_x = scene->ui_viz_rx + scene->ui_viz_rw - bb_dmr_w - (bdr_s*2) ; 
+    const int bb_dmr_y = (box_y + (bdr_s*1.5))+220;
+    bb_draw_buttons(s);
+    bb_ui_draw_custom_alert(s);
+    bb_ui_draw_gyro(s);
+   }
 }
 
 
@@ -880,10 +967,17 @@ void bb_ui_init(UIState *s) {
     assert(s->b.gps_sock);
     s->b.gps_sock_raw = zsock_resolve(s->b.gps_sock);
 
+    s->b.uiGyroInfo_sock = zsock_new_sub(">tcp://127.0.0.1:8207", "");
+    assert(s->b.uiGyroInfo_sock);
+    s->b.uiGyroInfo_sock_raw = zsock_resolve(s->b.uiGyroInfo_sock);
+
     //BB Load Images
     s->b.img_logo = nvgCreateImage(s->vg, "../assets/img_spinner_comma.png", 1);
     s->b.img_logo2 = nvgCreateImage(s->vg, "../assets/img_spinner_comma2.png", 1);
     s->b.img_car = nvgCreateImage(s->vg, "../assets/img_car_tesla.png", 1);
+
+    s->b.icShowCar = true;
+    s->b.icShowLogo = true;
 }
 
 void bb_ui_play_sound( UIState *s, int sound) {
@@ -913,6 +1007,8 @@ void  bb_ui_poll_update( UIState *s) {
     bb_polls[3].events = ZMQ_POLLIN;
     bb_polls[4].socket = s->b.gps_sock_raw;
     bb_polls[4].events = ZMQ_POLLIN;
+    bb_polls[5].socket = s->b.uiGyroInfo_sock_raw;
+    bb_polls[5].events = ZMQ_POLLIN;
     
     //check tri-state switch
     bb_ui_read_triState_switch(s);
@@ -920,7 +1016,7 @@ void  bb_ui_poll_update( UIState *s) {
     while (true) {
         
 
-        int ret = zmq_poll(bb_polls, 5, 0);
+        int ret = zmq_poll(bb_polls, 6, 0);
         if (ret < 0) {
           LOGW("bb poll failed (%d)", ret);
           break;
@@ -1025,6 +1121,16 @@ void  bb_ui_poll_update( UIState *s) {
               LOGW("Spinning logo set for Toyota");
             };
           }
+          if (datad.icShowCar == 1) {
+            s->b.icShowCar = true;
+          } else {
+            s->b.icShowCar = false;
+          }
+          if (datad.icShowLogo == 1) {
+            s->b.icShowLogo = true;
+          } else {
+            s->b.icShowLogo = false;
+          }
           capn_free(&ctx);
           zmq_msg_close(&msg);
         }  
@@ -1080,6 +1186,29 @@ void  bb_ui_poll_update( UIState *s) {
             }
             capn_free(&ctx);
             zmq_msg_close(&msg);
+        }
+        if (bb_polls[5].revents) {
+          //gyro info socket
+          zmq_msg_t msg;
+          err = zmq_msg_init(&msg);
+          assert(err == 0);
+          err = zmq_msg_recv(&msg, s->b.uiGyroInfo_sock_raw, 0);
+          assert(err >= 0);
+
+          struct capn ctx;
+          capn_init_mem(&ctx, zmq_msg_data(&msg), zmq_msg_size(&msg), 0);
+
+          cereal_UIGyroInfo_ptr stp;
+          stp.p = capn_getp(capn_root(&ctx), 0, 1);
+          struct cereal_UIGyroInfo datad;
+          cereal_read_UIGyroInfo(&datad, stp);
+
+          s->b.gyroPitch = datad.gyroPitch;
+          s->b.gyroRoll = datad.gyroRoll;
+          s->b.gyroYaw = datad.gyroYaw;
+          
+          capn_free(&ctx);
+          zmq_msg_close(&msg);
         }
             
     }

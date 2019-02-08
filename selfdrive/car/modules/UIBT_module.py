@@ -75,7 +75,7 @@ class UIButtons:
                 self.CS.UE.uiButtonInfoEvent(i,self.btns[i].btn_name, \
                     self.btns[i].btn_label,self.btns[i].btn_status,self.btns[i].btn_label2)
 
-    def __init__(self, carstate,car,folder):
+    def __init__(self, carstate,car,folder,showLogo,showCar):
         self.isLive = False
         self.CS = carstate
         self.car_folder = folder
@@ -104,7 +104,7 @@ class UIButtons:
         #send events to initiate UI
         self.isLive = True
         self.send_button_info()
-        self.CS.UE.uiSetCarEvent(self.car_folder,self.car_name)
+        self.CS.UE.uiSetCarEvent(self.car_folder,self.car_name,showLogo,showCar)
 
     def init_ui_buttons(self):
         self.btns = []

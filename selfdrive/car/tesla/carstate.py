@@ -160,7 +160,7 @@ class CarState(object):
     # labels for buttons
     self.btns_init = [["alca",                "ALC",                      ["MadMax", "Normal", "Calm"]],
                       [ACCMode.BUTTON_NAME,   ACCMode.BUTTON_ABREVIATION, ACCMode.labels()],
-                      ["tsk",               "TSK",                      ["Left","Middle","Right"]],
+                      ["dsp",               "DSP",                      ["OP","MIN","OFF","GYRO"]],
                       ["vision",               "VIS",                      ["wiggly","normal"]],
                       ["msg",                 "MSG",                      [""]],
                       ["sound",               "SND",                      [""]]]
@@ -176,6 +176,8 @@ class CarState(object):
     self.enableRollAngleCorrection = False
     self.enableFeedForwardAngleCorrection = True
     self.enableDriverMonitor = True
+    self.enableShowCar = True
+    self.enableShowLogo = True
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
@@ -300,7 +302,7 @@ class CarState(object):
     self.torqueLevel = 0.
 
     #BB variable for custom buttons
-    self.cstm_btns = UIButtons(self,"Tesla Model S","tesla")
+    self.cstm_btns = UIButtons(self,"Tesla Model S","tesla", self.enableShowLogo, self.enableShowCar)
 
     #BB custom message counter
     self.custom_alert_counter = -1 #set to 100 for 1 second display; carcontroller will take down to zero
