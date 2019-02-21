@@ -57,6 +57,7 @@ int controls_allowed = 0;
 #ifdef PANDA
 //#include "safety/safety_toyota_ipas.h"
 #include "safety/safety_tesla.h"
+#include "safety/safety_gm_ascm.h"
 #endif
 //#include "safety/safety_gm.h"
 //#include "safety/safety_ford.h"
