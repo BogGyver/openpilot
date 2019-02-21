@@ -59,6 +59,7 @@ HUDData = namedtuple("HUDData",
 
 class CarController(object):
   def __init__(self, dbc_name, enable_camera=True):
+    self.params = Params()
     self.braking = False
     self.brake_steady = 0.
     self.brake_last = 0.
@@ -80,9 +81,17 @@ class CarController(object):
     self.speedlimit_valid = False
     self.speedlimit_units = 0
     self.opState = 0 # 0-disabled, 1-enabled, 2-disabling, 3-unavailable, 5-warning
+    self.accPitch = 0.
+    self.accRoll = 0.
+    self.accYaw = 0.
+    self.magPitch = 0.
+    self.magRoll = 0.
+    self.magYaw = 0.
     self.gyroPitch = 0.
     self.gyroRoll = 0.
     self.gyroYaw = 0.
+    self.set_speed_limit_active = False
+    self.speed_limit_offset = 0.
 
   def update(self, sendcan, enabled, CS, frame, actuators, \
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
@@ -145,11 +154,17 @@ class CarController(object):
       
     if (frame % 1000 == 0):
       CS.cstm_btns.send_button_info()
+      #read speed limit params
+      self.set_speed_limit_active = self.params.get("SpeedLimitOffset") is not None #self.params.get("LimitSetSpeed") == "1" and 
+      if self.set_speed_limit_active:
+        self.speed_limit_offset = float(self.params.get("SpeedLimitOffset"))
+      else:
+        self.speed_limit_offset = 0.
 
     #get pitch/roll/yaw every 0.1 sec
     if (frame %10 == 0):
-      self.gyroPitch, self.gyroRoll, self.gyroYaw = self.GYRO.update()
-      CS.UE.uiGyroInfoEvent(self.gyroPitch, self.gyroRoll, self.gyroYaw)
+      (self.accPitch, self.accRoll, self.accYaw),(self.magPitch, self.magRoll, self.magYaw),(self.gyroPitch, self.gyroRoll, self.gyroYaw) = self.GYRO.update(CS.v_ego,CS.a_ego,CS.angle_steers)
+      CS.UE.uiGyroInfoEvent(self.accPitch, self.accRoll, self.accYaw,self.magPitch, self.magRoll, self.magYaw,self.gyroPitch, self.gyroRoll, self.gyroYaw)
 
     # Update statuses for custom buttons every 0.1 sec.
     if self.ALCA.pid == None:
@@ -227,8 +242,7 @@ class CarController(object):
           lmd = messaging.recv_one(socket).liveMapData
           self.speedlimit_ms = lmd.speedLimit
           self.speedlimit_valid = lmd.speedLimitValid
-          params = Params()
-          if (params.get("IsMetric") == "1"):
+          if (self.params.get("IsMetric") == "1"):
             self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
           else:
             self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5 
@@ -328,7 +342,9 @@ class CarController(object):
     idx = frame % 16
     cruise_btn = None
     if self.ACC.enable_adaptive_cruise and not CS.pedal_interceptor_available:
-      cruise_btn = self.ACC.update_acc(enabled, CS, frame, actuators, pcm_speed)
+      cruise_btn = self.ACC.update_acc(enabled, CS, frame, actuators, pcm_speed, \
+                    self.speedlimit_ms * CV.MS_TO_KPH,self.speedlimit_valid, \
+                    self.set_speed_limit_active, self.speed_limit_offset)
       if cruise_btn:
           cruise_msg = teslacan.create_cruise_adjust_msg(
             spdCtrlLvr_stat=cruise_btn,
@@ -338,8 +354,11 @@ class CarController(object):
           can_sends.insert(0, cruise_msg)
     apply_accel = 0.
     if CS.pedal_interceptor_available and frame % 5 == 0: # pedal processed at 20Hz
-      apply_accel, accel_needed, accel_idx = self.PCC.update_pdl(enabled, CS, frame, actuators, pcm_speed)
+      apply_accel, accel_needed, accel_idx = self.PCC.update_pdl(enabled, CS, frame, actuators, pcm_speed, \
+                    self.speedlimit_ms * CV.MS_TO_KPH, self.speedlimit_valid, \
+                    self.set_speed_limit_active, self.speed_limit_offset)
       can_sends.append(teslacan.create_pedal_command_msg(apply_accel, int(accel_needed), accel_idx))
     self.last_angle = apply_angle
     self.last_accel = apply_accel
     sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan').to_bytes())
+

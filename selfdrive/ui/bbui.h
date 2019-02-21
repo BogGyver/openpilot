@@ -790,16 +790,41 @@ void bb_ui_draw_gyro(UIState *s) {
   nvgStroke(s->vg);
 
   //compute angle vs horizontal axis based on roll
-  const float r_ang_rad = -s->b.gyroRoll; 
-  const float p_ang_rad = -s->b.gyroPitch; 
+  const float r_ang_rad = -s->b.accRoll; 
+  const float p_ang_rad = -s->b.accPitch; 
 
   //roll
+  //acc roll - green
   nvgSave(s->vg);
   nvgTranslate(s->vg, sc_cx, sc_cy);
   nvgRotate(s->vg, r_ang_rad);
   nvgBeginPath(s->vg);
-  //green for the real horizontal line
+  //green for the real horizontal line based on ACC
   nvgStrokeColor(s->vg, nvgRGBA(28, 204,98,200));
+  nvgStrokeWidth(s->vg, 4);
+  nvgMoveTo(s->vg,  -l_w, 0);
+  nvgLineTo(s->vg,  +l_w, 0);
+  nvgStroke(s->vg);
+  nvgRestore(s->vg);
+  //mag roll - yellow
+  nvgSave(s->vg);
+  nvgTranslate(s->vg, sc_cx, sc_cy);
+  nvgRotate(s->vg, -s->b.magRoll);
+  nvgBeginPath(s->vg);
+  //yellow for the real horizontal line based on MAG
+  nvgStrokeColor(s->vg, nvgRGBA(255, 255,0,200));
+  nvgStrokeWidth(s->vg, 4);
+  nvgMoveTo(s->vg,  -l_w, 0);
+  nvgLineTo(s->vg,  +l_w, 0);
+  nvgStroke(s->vg);
+  nvgRestore(s->vg);
+  //gyro roll - red
+  nvgSave(s->vg);
+  nvgTranslate(s->vg, sc_cx, sc_cy);
+  nvgRotate(s->vg, -s->b.gyroRoll);
+  nvgBeginPath(s->vg);
+  //red for the real horizontal line based on GYRO
+  nvgStrokeColor(s->vg, nvgRGBA(255, 0,0,200));
   nvgStrokeWidth(s->vg, 4);
   nvgMoveTo(s->vg,  -l_w, 0);
   nvgLineTo(s->vg,  +l_w, 0);
@@ -1201,7 +1226,12 @@ void  bb_ui_poll_update( UIState *s) {
           stp.p = capn_getp(capn_root(&ctx), 0, 1);
           struct cereal_UIGyroInfo datad;
           cereal_read_UIGyroInfo(&datad, stp);
-
+          s->b.accPitch = datad.accPitch;
+          s->b.accRoll = datad.accRoll;
+          s->b.accYaw = datad.accYaw;
+          s->b.magPitch = datad.magPitch;
+          s->b.magRoll = datad.magRoll;
+          s->b.magYaw = datad.magYaw;
           s->b.gyroPitch = datad.gyroPitch;
           s->b.gyroRoll = datad.gyroRoll;
           s->b.gyroYaw = datad.gyroYaw;

@@ -47,6 +47,12 @@ typedef struct BBUIState {
     float freeSpace;
     float angleSteers;
     float angleSteersDes;
+    float accPitch;
+    float accRoll;
+    float accYaw;
+    float magPitch;
+    float magRoll;
+    float magYaw;
     float gyroPitch;
     float gyroRoll;
     float gyroYaw;

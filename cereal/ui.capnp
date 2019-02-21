@@ -52,9 +52,15 @@ struct UIUpdate {
 }
 
 struct UIGyroInfo {
-    gyroPitch @0 :Float32;
-    gyroRoll @1 :Float32;
-    gyroYaw @2 :Float32;
+    accPitch @0 :Float32;
+    accRoll @1 :Float32;
+    accYaw @2 :Float32;
+    magPitch @3 :Float32;
+    magRoll @4 :Float32;
+    magYaw @5 :Float32;
+    gyroPitch @6 :Float32;
+    gyroRoll @7 :Float32;
+    gyroYaw @8 :Float32;
 }
 
 

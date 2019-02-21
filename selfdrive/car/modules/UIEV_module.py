@@ -33,11 +33,17 @@ class UIEvents(object):
         dat.btnLabel2 = label2 #+ '\0'
         self.uiButtonInfo.send(dat.to_bytes())
 
-    def uiGyroInfoEvent(self,pitch,roll,yaw):
+    def uiGyroInfoEvent(self,accpitch,accroll,accyaw,magpitch,magroll,magyaw,gyropitch,gyroroll,gyroyaw):
         dat = ui.UIGyroInfo.new_message()
-        dat.gyroPitch = pitch
-        dat.gyroRoll = roll 
-        dat.gyroYaw = yaw 
+        dat.accPitch = accpitch
+        dat.accRoll = accroll 
+        dat.accYaw = accyaw 
+        dat.magPitch = magpitch
+        dat.magRoll = magroll 
+        dat.magYaw = magyaw 
+        dat.gyroPitch = gyropitch
+        dat.gyroRoll = gyroroll
+        dat.gyroYaw = gyroyaw 
         self.uiGyroInfo.send(dat.to_bytes())
     
     def uiSetCarEvent(self,car_folder,car_name, showLogo, showCar):
