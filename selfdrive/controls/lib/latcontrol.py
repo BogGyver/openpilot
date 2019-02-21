@@ -1,10 +1,15 @@
 from selfdrive.controls.lib.pid import PIController
 from common.numpy_fast import interp
 from cereal import car
+import math
 
 _DT = 0.01    # 100Hz
 _DT_MPC = 0.05  # 20Hz
 
+def calc_states_after_delay(states, v_ego, steer_angle, curvature_factor, steer_ratio, delay):
+  states[0].x = v_ego * delay 
+  states[0].psi = v_ego * curvature_factor * math.radians(steer_angle) / steer_ratio * delay
+  return states
 
 def get_steer_max(CP, v_ego):
   return interp(v_ego, CP.steerMaxBP, CP.steerMaxV)
@@ -30,13 +35,14 @@ class LatControl(object):
     self.pid.reset()
 
   def update(self, active, v_ego, angle_steers, steer_override, CP, VM, path_plan):
+    angle_offset = 0.
     if v_ego < 0.3 or not active:
       output_steer = 0.0
       self.feed_forward = 0.0
       self.pid.reset()
       self.angle_steers_des = angle_steers
       self.avg_angle_steers = angle_steers
-      self.cur_state[0].delta = math.radians(angle_steers - angle_offset) / CP.steerRatio
+      #self.cur_state[0].delta = math.radians(angle_steers - angle_offset) / CP.steerRatio
     else:
       # TODO: ideally we should interp, but for tuning reasons we keep the mpc solution
       # constant for 0.05s.
@@ -48,7 +54,7 @@ class LatControl(object):
       self.pid.pos_limit = steers_max
       self.pid.neg_limit = -steers_max
 
-      if CP.steerControlType == car.CarParams.SteerControlType.torque:
+      """if CP.steerControlType == car.CarParams.SteerControlType.torque:
         # Decide which feed forward mode should be used (angle or rate).  Use more dominant mode, and only if conditions are met
         # Spread feed forward out over a period of time to make it more inductive (for resonance)
         if abs(self.ff_rate_factor * float(restricted_steer_rate)) > abs(self.ff_angle_factor * float(self.angle_steers_des) - float(angle_offset)) - 0.5 \
@@ -76,9 +82,9 @@ class LatControl(object):
         self.avg_angle_steers = self.mpc_angles[1]
 
     self.sat_flag = self.pid.saturated
-    self.prev_angle_rate = angle_rate
+    self.prev_angle_rate = angle_rate"""
 
     if CP.steerControlType == car.CarParams.SteerControlType.torque:
       return output_steer, float(self.angle_steers_des_mpc)
     else:
-      return float(self.angle_steers_des), float(self.angle_steers_des_mpc)
+      return float(self.angle_steers_des), float(self.angle_steers_des) #_mpc)

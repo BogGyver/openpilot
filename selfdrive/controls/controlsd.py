@@ -257,17 +257,12 @@ def state_control(plan, path_plan, CS, CP, state, events, v_cruise_kph, v_cruise
   actuators.gas, actuators.brake = LoC.update(active, CS.vEgo, CS.brakePressed, CS.standstill, CS.cruiseState.standstill,
                                               v_cruise_kph, v_acc_sol, plan.vTargetFuture, a_acc_sol, CP)
   # Steering PID loop and lateral MPC
-<<<<<<< HEAD
-  actuators.steer, actuators.steerAngle = LaC.update(active, CS.vEgo, CS.steeringAngle, CS.steeringRate, 
-                                                     CS.steeringPressed, plan.dPoly, angle_offset, CP, VM, PL)
-=======
   actuators.steer, actuators.steerAngle = LaC.update(active, CS.vEgo, CS.steeringAngle,
                                                      CS.steeringPressed, CP, VM, path_plan)
->>>>>>> 0207a970400ee28d3e366f2e8f5c551281accf02
 
   # Send a "steering required alert" if saturation count has reached the limit
-  if LaC.sat_flag and CP.steerLimitAlert:
-    AM.add("steerSaturated", enabled)
+  #if LaC.sat_flag and CP.steerLimitAlert:
+  #  AM.add("steerSaturated", enabled)
 
   # Parse permanent warnings to display constantly
   for e in get_events(events, [ET.PERMANENT]):
@@ -459,14 +454,10 @@ def controlsd_thread(gctx=None, rate=100):
   mismatch_counter = 0
   low_battery = False
 
-<<<<<<< HEAD
-  rk = Ratekeeper(rate, print_delay_threshold=2./1000)
-=======
   plan = messaging.new_message()
   plan.init('plan')
   path_plan = messaging.new_message()
   path_plan.init('pathPlan')
->>>>>>> 0207a970400ee28d3e366f2e8f5c551281accf02
 
   rk = Ratekeeper(rate, print_delay_threshold=2. / 1000)
   controls_params = params.get("ControlsParams")

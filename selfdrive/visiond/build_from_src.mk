@@ -109,7 +109,7 @@ else
 endif
 
 OBJS = visiond.o
-OUTPUT = visiond-normal
+OUTPUT = visiond
 
 .PHONY: all
 all: $(OUTPUT)
