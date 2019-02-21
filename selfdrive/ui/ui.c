@@ -279,7 +279,7 @@ static void set_brightness(UIState *s, int brightness) {
 static void set_awake(UIState *s, bool awake) {
   if (awake) {
     // 30 second timeout at 30 fps
-    if (s->b.tri_state_switch < 3) {
+    if (s->b.tri_state_switch != 3) {
       s->awake_timeout = 30*30;
     } else {
       s->awake_timeout = 3*30;
@@ -698,7 +698,7 @@ static void draw_chevron(UIState *s, float x_in, float y_in, float sz,
   if (s->b.tri_state_switch == 3) {
     return;
   }
-  if (s->b.tri_state_switch == 2) {
+  if ((s->b.tri_state_switch == 2) && (s->b.icShowCar)) {
     nvgRestore(s->vg);
     bb_ui_draw_car(s);
   } else {
@@ -922,7 +922,7 @@ static void draw_frame(UIState *s) {
 
   glActiveTexture(GL_TEXTURE0);
   //BB added to suppress video printing
-  if (s->b.tri_state_switch == 1) {
+  if ((s->b.tri_state_switch == 1) || (s->b.tri_state_switch == 4)) {
     if (s->scene.frontview && s->cur_vision_front_idx >= 0) {
       glBindTexture(GL_TEXTURE_2D, s->frame_front_texs[s->cur_vision_front_idx]);
     } else if (!scene->frontview && s->cur_vision_idx >= 0) {
@@ -1674,7 +1674,7 @@ static void ui_update(UIState *s) {
         polls[3].revents || polls[4].revents || polls[6].revents ||
         polls[7].revents || polls[8].revents) {
       // awake on any (old) activity if tri-state in 1 or 2 position
-      if(s->b.tri_state_switch < 3) {
+      if(s->b.tri_state_switch != 3) {
         set_awake(s, true);
       } 
     }

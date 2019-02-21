@@ -16,6 +16,7 @@ import zmq
 import math
 import numpy as np
 from collections import OrderedDict
+from common.params import Params
 
 
 _DT = 0.05    # 20Hz in our case, since we don't want to process more than once the same live20 message
@@ -148,6 +149,15 @@ def max_v_in_mapped_curve_ms(map_data, pedal_set_speed_kph):
   else:
     return None
 
+def max_v_by_speed_limit(pedal_set_speed_kph ,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset):
+  if speed_limit_valid:
+    if set_speed_limit_active:
+      v_speedlimit = speed_limit_kph + speed_limit_offset
+      return min(pedal_set_speed_kph,v_speedlimit)
+    else:
+      return pedal_set_speed_kph
+  else:
+    return pedal_set_speed_kph
 
 class PCCState(object):
   # Possible state of the ACC system, following the DI_cruiseState naming
@@ -214,6 +224,7 @@ class PCCController(object):
     self.l100_ts = None
     self.lead_last_seen_time_ms = 0
     self.continuous_lead_sightings = 0
+    self.params = Params()
 
   def reset(self, v_pid):
     if self.LoC:
@@ -328,7 +339,7 @@ class PCCController(object):
     self.prev_cruise_buttons = CS.cruise_buttons
     self.prev_pcm_acc_status = CS.pcm_acc_status
     
-  def update_pdl(self, enabled, CS, frame, actuators, pcm_speed):
+  def update_pdl(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset):
     cur_time = sec_since_boot()
     idx = self.pedal_idx
     self.pedal_idx = (self.pedal_idx + 1) % 16
@@ -369,6 +380,8 @@ class PCCController(object):
         v_curve = max_v_in_mapped_curve_ms(mapd.liveMapData, self.pedal_speed_kph)
         if v_curve:
           self.v_pid = min(self.v_pid, v_curve)
+      # now check and do the limit vs speed limit + offset
+      self.v_pid = max_v_by_speed_limit(self.v_pid ,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset)
       # cruise speed can't be negative even is user is distracted
       self.v_pid = max(self.v_pid, 0.)
 

@@ -37,6 +37,8 @@ struct UICustomAlert {
 struct UISetCar {
     icCarFolder @0 :Text;
     icCarName @1 :Text;
+    icShowLogo @2 :Int8;
+    icShowCar @3 :Int8;
 }
 
 struct UIPlaySound {
@@ -49,16 +51,16 @@ struct UIUpdate {
     uiCanDisplayMessage @2 :Int8;
 }
 
-#struct UIEvent {
-#    # in nanoseconds?
-#    logMonoTime @0 :UInt64;
-#
-#    union {
-#        uiButtonInfo @1 :UIButtonInfo;
-#        uiCustomAlert @2 :UICustomAlert;
-#        uiSetCar @3 :UISetCar;
-#        uiButtonStatus @4 :UIButtonStatus;
-#        uiUpdate @5 :UIUpdate;
-#        uiPlaySound @6 :UIPlaySound;
-#    }
-#}
+struct UIGyroInfo {
+    accPitch @0 :Float32;
+    accRoll @1 :Float32;
+    accYaw @2 :Float32;
+    magPitch @3 :Float32;
+    magRoll @4 :Float32;
+    magYaw @5 :Float32;
+    gyroPitch @6 :Float32;
+    gyroRoll @7 :Float32;
+    gyroYaw @8 :Float32;
+}
+
+

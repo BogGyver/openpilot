@@ -29,6 +29,8 @@ typedef struct BBUIState {
     void *uiButtonStatus_sock_raw; 
     zsock_t *gps_sock;
     void *gps_sock_raw;
+    zsock_t *uiGyroInfo_sock;
+    void *uiGyroInfo_sock_raw;
     int btns_x[6];
     int btns_y[6];
     int btns_r[6];
@@ -45,4 +47,15 @@ typedef struct BBUIState {
     float freeSpace;
     float angleSteers;
     float angleSteersDes;
+    float accPitch;
+    float accRoll;
+    float accYaw;
+    float magPitch;
+    float magRoll;
+    float magYaw;
+    float gyroPitch;
+    float gyroRoll;
+    float gyroYaw;
+    bool icShowLogo;
+    bool icShowCar;
 } BBUIState;

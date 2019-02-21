@@ -101,6 +101,7 @@ int DAS_gas_to_resume = 0;
 int DAS_apUnavailable = 0;
 //fake DAS for DAS_status and DAS_status2
 int DAS_op_status = 1;
+int DAS_op_status_last_received = 1;
 int DAS_alca_state = 0x05;
 int DAS_hands_on_state = 0;
 int DAS_forward_collision_warning = 0;
