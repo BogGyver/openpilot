@@ -161,7 +161,7 @@ class CarState(object):
     self.btns_init = [["alca",                "ALC",                      ["MadMax", "Normal", "Calm"]],
                       [ACCMode.BUTTON_NAME,   ACCMode.BUTTON_ABREVIATION, ACCMode.labels()],
                       ["dsp",               "DSP",                      ["OP","MIN","OFF","GYRO"]],
-                      ["vision",               "VIS",                      ["wiggly","normal"]],
+                      ["",               "",                      [""]],
                       ["msg",                 "MSG",                      [""]],
                       ["sound",               "SND",                      [""]]]
     
