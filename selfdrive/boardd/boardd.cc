@@ -446,12 +446,16 @@ void *can_recv_thread(void *crap) {
   void *context = zmq_ctx_new();
   void *publisher = zmq_socket(context, ZMQ_PUB);
   zmq_bind(publisher, "tcp://*:8006");
+  int sleepTime;
 
   // run at ~200hz
   while (!do_exit) {
     can_recv(publisher);
     // 5ms
-    usleep(5*1000);
+    sleepTime = 5000 - ((nanos_since_boot() / 1000) % 5000);
+    usleep(sleepTime);
+    //usleep(5000);
+    //LOGW("   sleeptime = %d  ", sleepTime);
   }
   return NULL;
 }
