@@ -454,7 +454,8 @@ void *can_recv_thread(void *crap) {
     // 5ms
     sleepTime = 5000 - ((nanos_since_boot() / 1000) % 5000);
     usleep(sleepTime);
-    LOGW("   sleeptime = %d  ", sleepTime);
+    //usleep(5000);
+    //LOGW("   sleeptime = %d  ", sleepTime);
   }
   return NULL;
 }
