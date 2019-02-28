@@ -80,7 +80,7 @@ class LatControl(object):
       # If non-zero angle_rate is provided, use it instead
       self.calculate_rate = False
       # Use steering rate from the last 2 samples to estimate acceleration for a likely future steering rate
-      accelerated_angle_rate = 2.0 * angle_rate - path_plan.prev_angle_rate
+      accelerated_angle_rate = 2.0 * angle_rate - self.prev_angle_rate
 
 
     cur_time = sec_since_boot()
