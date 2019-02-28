@@ -68,8 +68,18 @@ int EPB_epasControl_idx = 0;
 
 //settings from bb_openpilot.cfg
 
+
 int enable_das_emulation = 1;
 int enable_radar_emulation = 1;
+
+//for street signs
+int stopSignWarning = 0;
+int stopLightWarning = 0;
+int streetSignObject_b0 = 0;
+int streetSignObject_b1 = 0;
+int streetSignObject_b2 = 0;
+int streetSignObject_b3 = 0;
+int streetSignObject_active = 0;
 
 //fake DAS counters
 int DAS_bootID_sent = 0;
@@ -381,15 +391,23 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
       MLB = 0xFFFFFF03;
       MHB = 0x02040003;
     }
-    //when idx == 4 we actually use 5 ; 4 is for road sign and we don't send
-    //05 FF FF FF FF FF FF FF
+    //when idx == 4 we send street sign if it is valid
     if (DAS_object_idx == 4) {
+      if (streetSignObject_active == 1) {
+        MLB = (streetSignObject_b3 << 24) + (streetSignObject_b2 << 16) + (streetSignObject_b1 << 8) + (streetSignObject_b0 << 0);
+        MHB = 0x00000000;
+      } else {
+        DAS_object_idx = 5;
+      }
+
+    }
+    if (DAS_object_idx == 5) {
       MLB = 0xFFFFFF05;
       MHB = 0xFFFFFFFF;
     }
     send_fake_message(RIR,RDTR,8,0x309,0,MLB,MHB);
     DAS_object_idx++;
-    DAS_object_idx = DAS_object_idx % 5;
+    DAS_object_idx = DAS_object_idx % 6;
   }
   
   if (fake_DAS_counter % 4 == 0) {
@@ -662,7 +680,8 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
       ovr = 1;
     }
     MLB = 0x00 + bitShift(DAS_gas_to_resume,1,2) + bitShift(DAS_apUnavailable,2,6) + bitShift(ovr,3,8) +
-         bitShift(lcAborting,2,1) + bitShift(lcUnavailableSpeed,4,3) + bitShift(DAS_noSeatbelt,3,3) + bitShift(DAS_plannerErrors,4,6);
+         bitShift(lcAborting,2,1) + bitShift(lcUnavailableSpeed,4,3) + bitShift(DAS_noSeatbelt,3,3) + bitShift(DAS_plannerErrors,4,6) +
+         bitShift(stopSignWarning,1,4) + bitShift(stopLightWarning,1,5);
     MHB = 0x00;
     send_fake_message(RIR,RDTR,8,0x349,0,MLB,MHB);
     DAS_warningMatrix3_idx ++;
@@ -1118,10 +1137,25 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
 
   addr = to_send->RIR >> 21;
 
+  //capture message for fake DAS street sign object
+  if (addr == 0x555) {
+    streetSignObject_b0 = (to_send->RDLR & 0xFF);
+    streetSignObject_b1 = ((to_send->RDLR >> 8) & 0xFF);
+    streetSignObject_b2 = ((to_send->RDLR >> 16) & 0xFF);
+    streetSignObject_b3 = ((to_send->RDLR >> 24) & 0xFF);
+    streetSignObject_active = 0;
+    int signType = ((streetSignObject_b0 >> 6) & 0x03) + ((streetSignObject_b1 << 2) & 0xFF);
+    if (signType < 0xFF) {
+       streetSignObject_active = 1;
+    }
+    return false;
+  }
+
 
   //capture message for fake DAS warning
   if (addr == 0x554) {
     int b0 = (to_send->RDLR & 0xFF); 
+    int b1 = ((to_send->RDLR >> 8) & 0xFF);
     DAS_noSeatbelt = ((b0 >> 4) & 0x01);
     DAS_canErrors = ((b0 >> 3) & 0x01);
     DAS_plannerErrors = ((b0 >> 2) & 0x01);
@@ -1129,8 +1163,11 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_notInDrive = ((b0 >> 0) & 0x01);
     enable_das_emulation = ((b0 >> 5) & 0x01);
     enable_radar_emulation = ((b0 >> 6) & 0x01);
+    stopLightWarning = ((b0 >> 7) & 0x01);
+    stopSignWarning = ((b1 >> 0) & 0x01);
     return false;
   }
+
   //capture message for fake DAS and parse
   if (addr == 0x553) {
     int b0 = (to_send->RDLR & 0xFF);

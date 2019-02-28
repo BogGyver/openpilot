@@ -77,6 +77,7 @@ class CarController(object):
     context = zmq.Context()
     self.poller = zmq.Poller()
     self.speedlimit = messaging.sub_sock(context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
+    self.trafficevents = messaging.sub_sock(context, service_list['trafficEvents'].port, conflate=True, poller=self.poller)
     self.speedlimit_ms = 0
     self.speedlimit_valid = False
     self.speedlimit_units = 0
@@ -92,6 +93,67 @@ class CarController(object):
     self.gyroYaw = 0.
     self.set_speed_limit_active = False
     self.speed_limit_offset = 0.
+
+    self.stopSign_visible = False
+    self.stopSign_distance = 1000.
+    self.stopSign_action = 0
+    self.stopSign_resume = False
+
+    self.stopLight_visible = False
+    self.stopLight_distance = 1000.
+    self.stopLight_action = 0
+    self.stopLight_resume = False
+    self.stopLight_color = 0. #0-unknown, 1-red, 2-yellow, 3-green
+
+    self.stopSignWarning = 0
+    self.stopLightWarning = 0
+    self.stopSignWarning_last = 0
+    self.stopLightWarning_last = 0
+    self.roadSignType = 0xFF
+    self.roadSignStopDist = 1000.
+    self.roadSignColor = 0.
+    self.roadSignControlActive = 0
+    self.roadSignType_last = 0xFF
+
+    self.roadSignDistanceWarning = 50.
+
+  def reset_traffic_events(self):
+    self.stopSign_visible = False
+    self.stopSign_distance = 1000.
+    self.stopSign_action = 0
+    self.stopSign_resume = False
+
+    self.stopLight_visible = False
+    self.stopLight_distance = 1000.
+    self.stopLight_action = 0
+    self.stopLight_resume = False
+    self.stopLight_color = 0. #0-unknown, 1-red, 2-yellow, 3-green
+
+  def checkWhichSign(self):
+    self.stopSignWarning = 0
+    self.stopLightWarning = 0
+    self.roadSignType_last = self.roadSignType
+    self.roadSignType = 0xFF
+    self.roadSignStopDist = 1000.
+    self.roadSignColor = 0
+    self.roadSignControlActive = 0
+    if (self.stopSign_distance < self.stopLigt_distance):
+      self.roadSignType = 0x00
+      self.roadSignStopDist = self.stopSign_distance
+      self.roadSignColor = 0
+      self.roadSignControlActive = self.stopSign_resume
+      if (self.stopSign_distance < self.roadSignDistanceWarning ):
+        self.stopSignWarning = 1
+    elif (self.stopLigt_distance < self.stopSign_distance ):
+      self.roadSignType = 0x01
+      self.roadSignStopDist = self.stopLight_distance
+      self.roadSignColor = self.stopLight_color
+      self.roadSignControlActive = self.stopLight_resume
+      if (self.stopLight_distance < self.roadSignDistanceWarning ) and (self.roadSignColor == 1):
+        self.stopLightWarning = 1
+    
+
+
 
   def update(self, sendcan, enabled, CS, frame, actuators, \
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
@@ -237,7 +299,7 @@ class CarController(object):
     # TODO: forward collission warning
     if frame % 10 == 0:
       #get speed limit
-      for socket, _ in self.poller.poll(0):
+      for socket, _ in self.poller.poll(1):
         if socket is self.speedlimit:
           lmd = messaging.recv_one(socket).liveMapData
           self.speedlimit_ms = lmd.speedLimit
@@ -245,7 +307,50 @@ class CarController(object):
           if (self.params.get("IsMetric") == "1"):
             self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
           else:
-            self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5 
+            self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
+        #for socket, _ in self.poller.poll(1):
+        if socket is self.trafficevents:
+          self.reset_traffic_events()
+          tr_ev_list = messaging.recv_sock(socket)
+          if tr_ev_list is not None:
+            for tr_ev in tr_ev_list.trafficEvents:
+              if tr_ev.type == 0x00:
+                if (tr_ev.distance < self.stopSign_distance):
+                  self.stopSign_visible = True
+                  self.stopSign_distance = tr_ev.distance 
+                  self.stopSign_action = tr_ev.action
+                  self.stopSign_resume = tr_ev.resuming
+              if tr_ev.type ==  0x04:
+                if (tr_ev.distance < self.stopLight_distance):
+                  self.stopLight_visible = True
+                  self.stopLight_distance = tr_ev.distance
+                  self.stopLight_action = tr_ev.action
+                  self.stopLight_resume = tr_ev.resuming
+                  self.stopLight_color = 1. #0-unknown, 1-red, 2-yellow, 3-green
+              if tr_ev.type == 0x01:
+                if (tr_ev.distance < self.stopLight_distance):
+                  self.stopLight_visible = True
+                  self.stopLight_distance = tr_ev.distance
+                  self.stopLight_action = tr_ev.action
+                  self.stopLight_resume = tr_ev.resuming
+                  self.stopLight_color = 1. #0-unknown, 1-red, 2-yellow, 3-green
+              if tr_ev.type == 0x02:
+                if (tr_ev.distance < self.stopLight_distance):
+                  self.stopLight_visible = True
+                  self.stopLight_distance = tr_ev.distance
+                  self.stopLight_action = tr_ev.action
+                  self.stopLight_resume = tr_ev.resuming
+                  self.stopLight_color = 2. #0-unknown, 1-red, 2-yellow, 3-green
+              if tr_ev.type == 0x03:
+                if (tr_ev.distance < self.stopLight_distance):
+                  self.stopLight_visible = True
+                  self.stopLight_distance = tr_ev.distance
+                  self.stopLight_action = tr_ev.action
+                  self.stopLight_resume = tr_ev.resuming
+                  self.stopLight_color = 3. #0-unknown, 1-red, 2-yellow, 3-green
+            self.checkWhichSign()
+            if not ((self.roadSignType_last == self.roadSignType) and (self.roadSignType == 0xFF)):
+               can_sends.append(teslacan.create_fake_DAS_sign_msg(self.roadSignType,self.roadSignStopDist,self.roadSignColor,self.roadSignControlActive))
     op_status = 0x02
     hands_on_state = 0x00
     forward_collision_warning = 0 #1 if needed
@@ -333,10 +438,13 @@ class CarController(object):
             speed_limit_to_car,
             apply_angle,
             1 if enable_steer_control else 0))
-    if send_fake_warning or (self.opState == 2) or (self.opState == 5):
+    if send_fake_warning or (self.opState == 2) or (self.opState == 5) or (self.stopSignWarning != self.stopSignWarning_last) or (self.stopLightWarning != self.stopLightWarning_last):
       #if it's time to send OR we have a warning or emergency disable
       can_sends.append(teslacan.create_fake_DAS_warning(CS.DAS_noSeatbelt, CS.DAS_canErrors, \
-            CS.DAS_plannerErrors, CS.DAS_doorOpen, CS.DAS_notInDrive, CS.enableDasEmulation, CS.enableRadarEmulation))
+            CS.DAS_plannerErrors, CS.DAS_doorOpen, CS.DAS_notInDrive, CS.enableDasEmulation, CS.enableRadarEmulation, \
+            self.stopSignWarning, self.stopLightWarning))
+      self.stopLightWarning_last = self.stopLightWarning
+      self.stopSignWarning_last = self.stopSignWarning
     # end of DAS emulation """
 
     idx = frame % 16

@@ -78,19 +78,35 @@ def create_fake_DAS_msg(speed_control_enabled,gas_to_resume,apUnavailable, colli
       (c_apply_steer >> 8) & 0xFF)
   return [msg_id, 0, msg.raw, 0]
 
+def create_fake_DAS_sign_msg(roadSignType,roadSignStopDist,roadSignColor,roadSignControlActive):
+  msg_id = 0x555
+  msg_len = 4
+  orientation = 0x00 #unknown
+  arrow = 0x04 #unknown
+  source = 0x02 #vision
+  roadSignStopDist_t = (((roadSignStopDist + 20) / 0.2) & 0x3FF)
+  sign1 = ((roadSignType & 0x03) << 6) +(roadSignColor << 3) + 0x04
+  sign2 = ((roadSignStopDist_t & 0x03) << 6) + (roadSignType >> 2)
+  sign3 = (roadSignStopDist_t >> 2)
+  sign4 = (orientation << 6) + (arrow << 3) + (source << 1) + roadSignControlActive
+  msg = create_string_buffer(msg_len)
+  struct.pack_into('BBBB',msg ,0 , sign1,sign2,sign3,sign4)
+  return [msg_id,0,msg.raw,0]
+
 def create_fake_DAS_warning(DAS_noSeatbelt, DAS_canErrors, DAS_plannerErrors, DAS_doorOpen, DAS_notInDrive,\
-      enableFakeDas,enableRadar):
+      enableFakeDas,enableRadar,stopSignWarning,redLightWarning):
   msg_id = 0x554
-  msg_len = 1
+  msg_len = 2
   fd = 0
   rd = 0
   if enableFakeDas:
     fd = 1
   if enableRadar:
     rd = 1
-  warn = (rd << 6) + (fd << 5) + (DAS_noSeatbelt << 4) + (DAS_canErrors << 3) + (DAS_plannerErrors << 2) + (DAS_doorOpen << 1) + DAS_notInDrive
+  warn1 = (redLightWarning<< 7) + (rd << 6) + (fd << 5) + (DAS_noSeatbelt << 4) + (DAS_canErrors << 3) + (DAS_plannerErrors << 2) + (DAS_doorOpen << 1) + DAS_notInDrive
+  warn2 = stopSignWarning
   msg = create_string_buffer(msg_len)
-  struct.pack_into('B',msg ,0 , warn)
+  struct.pack_into('BB',msg ,0 , warn1,warn2)
   return [msg_id,0,msg.raw,0]
 
 
