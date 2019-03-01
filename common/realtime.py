@@ -74,8 +74,9 @@ class Ratekeeper(object):
     """Rate in Hz for ratekeeping. print_delay_threshold must be nonnegative."""
     self._interval = 1. / rate
     cur_time = sec_since_boot()
-    sync_time = 5000 - ((((1000000 * cur_time) + 2500) % 5000) / 1000000)
+    sync_time = (7500 - (1000000 * cur_time) % 5000) / 1000000
     self._next_frame_time = cur_time + self._interval + sync_time
+    print(self._next_frame_time, cur_time)
     self._print_delay_threshold = print_delay_threshold
     self._frame = 0
     self._remaining = 0
@@ -107,4 +108,3 @@ class Ratekeeper(object):
     self._frame += 1
     self._remaining = remaining
     return lagged
-
