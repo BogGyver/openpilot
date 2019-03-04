@@ -152,7 +152,7 @@ def max_v_in_mapped_curve_ms(map_data, pedal_set_speed_kph):
 def max_v_by_speed_limit(pedal_set_speed_ms ,speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset_ms):
   if speed_limit_valid:
     if set_speed_limit_active:
-      v_speedlimit_ms = speed_limit_ms + speed_limit_offset
+      v_speedlimit_ms = speed_limit_ms + speed_limit_offset_ms
       return min(pedal_set_speed_ms,v_speedlimit_ms)
     else:
       return pedal_set_speed_ms
