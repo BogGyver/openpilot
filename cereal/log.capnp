@@ -607,6 +607,8 @@ struct PathPlan {
   lProb @5 :Float32;
   rPoly @6 :List(Float32);
   rProb @7 :Float32;
+  mpcAngles @10 :List(Float64);
+  mpcTimes @11 :List(Float64);
 
   angleSteers @8 :Float32;
   valid @9 :Bool;
