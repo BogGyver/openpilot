@@ -343,7 +343,7 @@ struct CarParams {
   steerReactance @51 :Float32;
   steerInductance @52 :Float32;
   steerResistance @53 :Float32;
-  
+
   # Kp and Ki for the longitudinal control
   longitudinalKpBP @36 :List(Float32);
   longitudinalKpV @37 :List(Float32);
@@ -359,6 +359,7 @@ struct CarParams {
   steerRateCost @40 :Float32; # Lateral MPC cost on steering rate
   steerControlType @46 :SteerControlType;
   radarOffCan @47 :Bool; # True when radar objects aren't visible on CAN
+  syncID @55  :Int16;  # SyncID is optional
 
   steerActuatorDelay @48 :Float32; # Steering wheel actuator delay in seconds
   openpilotLongitudinalControl @50 :Bool; # is openpilot doing the longitudinal control?
