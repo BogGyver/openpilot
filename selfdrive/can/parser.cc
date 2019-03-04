@@ -296,6 +296,7 @@ class CANParser {
 
   void update(uint64_t sec, bool wait) {
     int err;
+    int frame_count;
 
     // recv from can
     zmq_msg_t msg;
@@ -311,7 +312,7 @@ class CANParser {
         err = zmq_msg_recv(&msg, subscriber, ZMQ_DONTWAIT);
       }
       if (err < 0) break;
-
+      frame_count++;
       // format for board, make copy due to alignment issues, will be freed on out of scope
       auto amsg = kj::heapArray<capnp::word>((zmq_msg_size(&msg) / sizeof(capnp::word)) + 1);
       memcpy(amsg.begin(), zmq_msg_data(&msg), zmq_msg_size(&msg));
@@ -324,7 +325,7 @@ class CANParser {
 
       UpdateCans(sec, cans);
     }
-
+    if (frame_count > 1) printf("        %d  frames received!", frame_count);
     UpdateValid(sec);
 
     zmq_msg_close(&msg);
