@@ -434,7 +434,8 @@ class CarController(object):
             acc_speed_kph, \
             turn_signal_needed,forward_collision_warning,hands_on_state, \
             cc_state, 1 if (CS.pedal_interceptor_available) else 0,alca_state, \
-            acc_speed_limit_mph,
+            #acc_speed_limit_mph,
+            CS.v_cruise_pcm * CV.KPH_TO_MPH, 
             speed_limit_to_car,
             apply_angle,
             1 if enable_steer_control else 0))
@@ -451,7 +452,7 @@ class CarController(object):
     cruise_btn = None
     if self.ACC.enable_adaptive_cruise and not CS.pedal_interceptor_available:
       cruise_btn = self.ACC.update_acc(enabled, CS, frame, actuators, pcm_speed, \
-                    self.speedlimit_ms * CV.MS_TO_KPH,self.speedlimit_valid, \
+                    self.speedlimit_ms, self.speedlimit_valid, \
                     self.set_speed_limit_active, self.speed_limit_offset)
       if cruise_btn:
           cruise_msg = teslacan.create_cruise_adjust_msg(

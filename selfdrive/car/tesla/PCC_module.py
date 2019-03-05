@@ -339,7 +339,7 @@ class PCCController(object):
     self.prev_cruise_buttons = CS.cruise_buttons
     self.prev_pcm_acc_status = CS.pcm_acc_status
     
-  def update_pdl(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset):
+  def update_pdl(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset):
     cur_time = sec_since_boot()
     idx = self.pedal_idx
     self.pedal_idx = (self.pedal_idx + 1) % 16
@@ -381,7 +381,7 @@ class PCCController(object):
         if v_curve:
           self.v_pid = min(self.v_pid, v_curve)
       # now check and do the limit vs speed limit + offset
-      self.v_pid = max_v_by_speed_limit(self.v_pid ,speed_limit_kph * CV.KPH_TO_MS, speed_limit_valid, set_speed_limit_active, speed_limit_offset)
+      self.v_pid = max_v_by_speed_limit(self.v_pid ,speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset)
       # cruise speed can't be negative even is user is distracted
       self.v_pid = max(self.v_pid, 0.)
 
