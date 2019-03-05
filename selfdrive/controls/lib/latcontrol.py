@@ -85,7 +85,7 @@ class LatControl(object):
 
     cur_time = sec_since_boot()
     self.angle_steers_des_time = cur_time
-
+    self.angle_steers_des_mpc = path_plan.angleSteers
     if v_ego < 0.3 or not active:
       output_steer = 0.0
       self.feed_forward = 0.0
@@ -135,8 +135,9 @@ class LatControl(object):
     self.prev_angle_rate = angle_rate
     self.prev_angle_steers = angle_steers
 
-    # return MPC angle in the unused output (for ALCA)
+    # return MPC angle in the last position (for ALCA) and either torque or 
+    # adjusted angle in the first position
     if CP.steerControlType == car.CarParams.SteerControlType.torque:
-      return output_steer, angle_steers
+      return output_steer, float(self.angle_steers_des_mpc)
     else:
-      return self.angle_steers_des, float(angle_steers)
+      return self.angle_steers_des, float(self.angle_steers_des_mpc)
