@@ -217,7 +217,7 @@ class CarController(object):
     if (frame % 1000 == 0):
       CS.cstm_btns.send_button_info()
       #read speed limit params
-      self.set_speed_limit_active = self.params.get("SpeedLimitOffset") is not None #self.params.get("LimitSetSpeed") == "1" and 
+      self.set_speed_limit_active = (self.params.get("SpeedLimitOffset") is not None) and (self.params.get("LimitSetSpeed") == "1")
       if self.set_speed_limit_active:
         self.speed_limit_offset = float(self.params.get("SpeedLimitOffset"))
       else:
