@@ -135,6 +135,6 @@ class LatControl(object):
 
     # return MPC angle in the unused output (for ALCA)
     if CP.steerControlType == car.CarParams.SteerControlType.torque:
-      return output_steer, self.angle_steers_des
+      return output_steer, path_plan.angleSteers
     else:
-      return self.angle_steers_des_mpc, float(self.angle_steers_des)
+      return self.angle_steers_des, path_plan.angleSteers

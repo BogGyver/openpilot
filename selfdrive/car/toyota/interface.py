@@ -108,7 +108,7 @@ class CarInterface(object):
       ret.steerKf = 0.00006   # full torque for 10 deg at 80mph means 0.00007818594
       ret.steerReactance = 1.5
       ret.steerInductance = 1.5
-      ret.steerResistance = 0.5      
+      ret.steerResistance = 0.5
 
     elif candidate == CAR.COROLLA:
       stop_and_go = False
@@ -271,8 +271,12 @@ class CarInterface(object):
 
     # steering wheel
     ret.steeringAngle = self.CS.angle_steers
-    ret.steeringRate = self.CS.angle_steers_rate
 
+    if self.CP.carFingerprint in [CAR.RAV4H, CAR.RAV4, CAR.RAV4H, CAR.COROLLA]:
+      ret.steeringRate = self.CS.angle_steers_rate
+    else:
+      ret.steeringRate = 0
+      
     ret.steeringTorque = self.CS.steer_torque_driver
     ret.steeringPressed = self.CS.steer_override
 
