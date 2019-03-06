@@ -31,7 +31,7 @@ class LatControl(object):
       self.projection_factor = CP.steerReactance * CP.steerActuatorDelay / 2.0       # Mutiplier for reactive component (PI)
       self.accel_limit = 2.0 / CP.steerResistance                                    # Desired acceleration limit to prevent "whip steer" (resistive component)
       self.ff_angle_factor = 1.0                                                     # Kf multiplier for angle-based feed forward
-      self.ff_rate_factor = 10.0                                                      # Kf multiplier for rate-based feed forward
+      self.ff_rate_factor = 5.0                                                      # Kf multiplier for rate-based feed forward
       # Eliminate break-points, since they aren't needed (and would cause problems for resonance)
       KpV = [np.interp(25.0, CP.steerKpBP, CP.steerKpV)]
       KiV = [np.interp(25.0, CP.steerKiBP, CP.steerKiV)]
