@@ -126,7 +126,7 @@ class CarInterface(object):
       ret.steerReactance = 1.0
       ret.steerInductance = 1.0
       ret.steerResistance = 1.0
-      ret.eonToFront = 0.5
+      ret.eonToFront = 0.7
       
       # Kp and Ki for the longitudinal control
       ret.longitudinalKpBP = [0., 5., 35.]
@@ -134,16 +134,7 @@ class CarInterface(object):
       ret.longitudinalKiBP = [0., 5., 35.]
       ret.longitudinalKiV = [0.18,0.18,0.18]
       
-      #from honda
-      #ret.longitudinalKpBP = [0., 5., 35.]
-      #ret.longitudinalKpV = [1.2, 0.8, 0.5]
-      #ret.longitudinalKiBP = [0., 35.]
-      #ret.longitudinalKiV = [0.18, 0.12]
-      # from toyota
-      #ret.longitudinalKpBP = [0., 5., 35.]
-      #ret.longitudinalKpV = [3.6, 2.4, 1.5]
-      #ret.longitudinalKiBP = [0., 35.]
-      #ret.longitudinalKiV = [0.54, 0.36]
+
     else:
       raise ValueError("unsupported car %s" % candidate)
 

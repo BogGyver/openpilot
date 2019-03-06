@@ -98,6 +98,8 @@ int DAS_warningMatrix0_idx = 0;
 int DAS_warningMatrix1_idx = 0;
 int DAS_warningMatrix3_idx = 0;
 int DAS_steeringControl_idx = 0;
+int DAS_diState_idx = 0;
+int DAS_longControl_idx = 0;
 //fake DAS variables
 int DAS_longC_enabled = 0;
 int DAS_speed_limit_kph = 0;
@@ -306,6 +308,9 @@ static void reset_DAS_data() {
 static void do_fake_DI_state(uint32_t RIR, uint32_t RDTR) {
   uint32_t MLB;
   uint32_t MHB; 
+  float SPD_UNIT;
+  SPD_UNIT = 1.0; //MPH
+  SPD_UNIT = SPD_UNIT + ((DAS_diStateL >> 31 ) & 0x01) * 0.609;
   if (enable_das_emulation == 0) {
     return;
   }
@@ -313,15 +318,14 @@ static void do_fake_DI_state(uint32_t RIR, uint32_t RDTR) {
     return;
   }
   MLB = (DAS_diStateL & 0xFFFF0FFF)+ 0x2000;
-  MHB = (DAS_diStateH & 0x00FF0E00) + ((DAS_acc_speed_limit_mph *10) & 0x1FF);
-  int idx = (DAS_diStateH & 0xF000 ) >> 12;
-  idx = ( idx + 1 ) % 16;
-  MHB = MHB + (idx << 12);
+  MHB = (DAS_diStateH & 0x00FF0E00) + (((int)(DAS_acc_speed_limit_mph * 2 * SPD_UNIT)) & 0x1FF);
+  DAS_diState_idx = ( DAS_diState_idx + 1 ) % 16;
+  MHB = MHB + (DAS_diState_idx << 12);
   //cksm is different as DI_Status comes via gateway from another bus, so it's 88 or 0x058 what we need)
   int cksm = add_tesla_cksm2(MLB, MHB, 0x058, 7);
   MHB = MHB + (cksm << 24);
-  DAS_diStateL = MLB;
-  DAS_diStateH = MHB;
+  //DAS_diStateL = MLB;
+  //DAS_diStateH = MHB;
   send_fake_message(RIR,RDTR,8,0x368,0,MLB,MHB);
 }
 
@@ -412,7 +416,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
   
   if (fake_DAS_counter % 4 == 0) {
     int acc_speed_kph = 0xFFF;
-    int acc_state = 0x04;
+    int acc_state = 0x00;
     int aeb_event = 0x00;
     int jerk_min = 0x1FF;
     int jerk_max = 0x1FF;
@@ -426,8 +430,8 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
         jerk_min = 0x000;
         jerk_max = 0x0F;
         acc_speed_kph = (int)(DAS_acc_speed_kph * 10.0);
-        accel_max = (int)((DAS_accel_max + 15 ) / 0.04);
-        accel_min = (int)((DAS_accel_min + 15 ) / 0.04);
+        accel_max = 0x1FE; //(int)((DAS_accel_max + 15 ) / 0.04);
+        accel_min = 0x001; //(int)((DAS_accel_min + 15 ) / 0.04);
       }
       MLB = (0xff & acc_speed_kph) + 
         (((acc_state << 4) + ((acc_speed_kph & 0xF00) >> 8)) << 8) +
@@ -445,6 +449,39 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     send_fake_message(RIR,RDTR,8,0x2B9,0,MLB,MHB);
     DAS_control_idx++;
     DAS_control_idx = DAS_control_idx % 8;
+    //send DAS_longControl - 0x209
+    if (DAS_inDrive == 1) {
+      int das_loc_mode = 0x01;//normal
+      int das_loc_state = 0x00;//healthy
+      int das_loc_request = 0x00; //idle
+      jerk_min = 0xFF;
+      jerk_max = 0xFF;
+      accel_min = 0x1FF;
+      accel_max = 0x1FF;
+      acc_speed_kph = 0x7FF;
+      if (DAS_longC_enabled > 0) {
+        acc_state = 0x04;
+        jerk_min = 0x01;
+        jerk_max = 0xFE;
+        acc_speed_kph = (int)(DAS_acc_speed_kph * 10.0);
+        das_loc_request = 0x01;//forward
+        accel_min = 0x001;
+        accel_max = 0x1FE;
+      }
+      MLB = das_loc_mode + (das_loc_state << 2) + (das_loc_request << 5) +
+         (jerk_min << 8) + (jerk_max << 16) + ((acc_speed_kph  & 0xFF) << 24);
+      MHB = ((acc_speed_kph  >> 8) & 0x07) + ((accel_min << 3) & 0xFF) +
+          ((((accel_min >>5) & 0x0F)  + ((accel_max << 4) & 0xFF))<< 8) +
+          ((((accel_max >> 4) & 0x1F) + (DAS_longControl_idx << 5)) << 16);
+    } else {
+      MLB = 0xFFFFFF00;
+      MHB = 0x001FFFFF + (DAS_longControl_idx << 21);
+    }
+    cksm = add_tesla_cksm2(MLB, MHB, 0x209, 7);
+    MHB = MHB + (cksm << 24);
+    send_fake_message(RIR,RDTR,8,0x209,0,MLB,MHB);
+    DAS_longControl_idx++;
+    DAS_longControl_idx = DAS_longControl_idx % 8;
   }
   if (fake_DAS_counter % 4 == 2) {
     //send DAS_pscControl - 0x219
@@ -764,6 +801,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     //first save values for spamming
     DAS_diStateL = to_push->RDLR;
     DAS_diStateH = to_push->RDHR;
+    DAS_diState_idx = (DAS_diStateH & 0xF000 ) >> 12;
     int acc_state = ((to_push->RDLR & 0xF000) >> 12);
     if ((DAS_usingPedal == 1) && ( acc_state >= 2) && ( acc_state <= 4)) {
       do_fake_stalk_cancel(to_push->RIR, to_push->RDTR);

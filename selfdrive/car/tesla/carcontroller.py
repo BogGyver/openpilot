@@ -401,6 +401,7 @@ class CarController(object):
       acc_speed_limit_mph = max(self.ACC.acc_speed_kph * CV.KPH_TO_MPH,1)
       if CS.pedal_interceptor_available:
         acc_speed_limit_mph = max(self.PCC.pedal_speed_kph * CV.KPH_TO_MPH,1)
+        acc_speed_kph = self.PCC.pedal_speed_kph
       if hud_alert == AH.FCW:
         collision_warning = hud_alert[1]
         if collision_warning > 1:
