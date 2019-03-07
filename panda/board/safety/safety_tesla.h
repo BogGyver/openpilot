@@ -425,10 +425,11 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     //send DAS_control - 0x2B9
     //when not in drive it should send FF 0F FE FF FF FF XF YY - X counter YY Checksum
     if (DAS_inDrive ==1) {
+      acc_state = 0x04;
       if (DAS_longC_enabled > 0) {
-        acc_state = 0x04;
         jerk_min = 0x000;
         jerk_max = 0x0F;
+        acc_state = 0x03;
         acc_speed_kph = (int)(DAS_acc_speed_kph * 10.0);
         accel_max = 0x1FE; //(int)((DAS_accel_max + 15 ) / 0.04);
         accel_min = 0x001; //(int)((DAS_accel_min + 15 ) / 0.04);
@@ -479,7 +480,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     }
     cksm = add_tesla_cksm2(MLB, MHB, 0x209, 7);
     MHB = MHB + (cksm << 24);
-    send_fake_message(RIR,RDTR,8,0x209,0,MLB,MHB);
+    //send_fake_message(RIR,RDTR,8,0x209,0,MLB,MHB);
     DAS_longControl_idx++;
     DAS_longControl_idx = DAS_longControl_idx % 8;
   }
