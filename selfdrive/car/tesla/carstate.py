@@ -183,6 +183,8 @@ class CarState(object):
     self.limitBattery_Min = 60
     self.limitBattery_Max = 70
     self.doAutoUpdate = True
+    self.blockUploadWhileTethering = False
+    self.tetherIP = "127.0.0."
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

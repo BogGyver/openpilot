@@ -18,6 +18,8 @@ from selfdrive.loggerd.config import ROOT
 
 from common.params import Params
 from common.api import api_get
+from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
+
 
 fake_upload = os.getenv("FAKEUPLOAD") is not None
 
@@ -86,7 +88,11 @@ def is_on_hotspot():
 
     is_android = result.startswith('192.168.43.')
     is_ios = result.startswith('172.20.10.')
-    return (is_android or is_ios)
+    car_set = CarSettings()
+    blockUploadWhileTethering = car_set.get_value("blockUploadWhileTethering")
+    tetherIP = car_set.get_value("tetherIP")
+    is_other_tether = blockUploadWhileTethering and result.startswith(tetherIP)
+    return (is_android or is_ios or is_other_tether)
   except:
     return False
 

@@ -118,6 +118,20 @@ def read_config_file(CS):
       CS.limitBattery_Max = 70
     config.set('OP_CONFIG', 'limit_battery_max', CS.limitBattery_Max)
 
+    #block_upload_while_tethering -> CS.blockUploadWhileTethering
+    try:
+      CS.blockUploadWhileTethering = configr.getboolean('OP_CONFIG','block_upload_while_tethering')
+    except:
+      CS.blockUploadWhileTethering = False
+    config.set('OP_CONFIG', 'block_upload_while_tethering', CS.blockUploadWhileTethering)
+
+    #tether_ip -> CS.tetherIP
+    try:
+      CS.tetherIP = configr.get('OP_CONFIG','tether_ip')
+    except:
+      CS.tetherIP = "127.0.0."
+    config.set('OP_CONFIG', 'tether_ip', CS.tetherIP)
+
 
 
     #do_auto_update -> CS.doAutoUpdate
@@ -151,6 +165,8 @@ class CarSettings(object):
     self.limitBattery_Min = 60
     self.limitBattery_Max = 70
     self.doAutoUpdate = True
+    self.blockUploadWhileTethering = False
+    self.tetherIP = "127.0.0."
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
