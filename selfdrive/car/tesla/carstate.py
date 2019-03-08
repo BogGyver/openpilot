@@ -172,7 +172,7 @@ class CarState(object):
     self.enableALCA = True
     self.enableDasEmulation = True
     self.enableRadarEmulation = True
-    self.enableSpeedVariableDesAngle = True
+    self.enableSpeedVariableDesAngle = False
     self.enableRollAngleCorrection = False
     self.enableFeedForwardAngleCorrection = True
     self.enableDriverMonitor = True
