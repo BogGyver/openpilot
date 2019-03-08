@@ -31,7 +31,7 @@ class LatControl(object):
       self.projection_factor = CP.steerReactance * CP.steerActuatorDelay / 2.0       # Mutiplier for reactive component (PI)
       self.accel_limit = 2.0 / CP.steerResistance                                    # Desired acceleration limit to prevent "whip steer" (resistive component)
       self.ff_angle_factor = 1.0                                                     # Kf multiplier for angle-based feed forward
-      self.ff_rate_factor = 10.0                                                      # Kf multiplier for rate-based feed forward
+      self.ff_rate_factor = 5.0                                                      # Kf multiplier for rate-based feed forward
       # Eliminate break-points, since they aren't needed (and would cause problems for resonance)
       KpV = [np.interp(25.0, CP.steerKpBP, CP.steerKpV)]
       KiV = [np.interp(25.0, CP.steerKiBP, CP.steerKiV)]
@@ -52,7 +52,6 @@ class LatControl(object):
     self.feed_forward = 0.0
     self.last_mpc_ts = 0.0
     self.angle_steers_des_time = 0.0
-    self.angle_steers_des_mpc = 0.0
     self.steer_counter = 1.0
     self.steer_counter_prev = 0.0
     self.rough_steers_rate = 0.0
@@ -85,7 +84,6 @@ class LatControl(object):
 
     cur_time = sec_since_boot()
     self.angle_steers_des_time = cur_time
-    self.angle_steers_des_mpc = path_plan.angleSteers
     if v_ego < 0.3 or not active:
       output_steer = 0.0
       self.feed_forward = 0.0
@@ -138,6 +136,6 @@ class LatControl(object):
     # return MPC angle in the last position (for ALCA) and either torque or 
     # adjusted angle in the first position
     if CP.steerControlType == car.CarParams.SteerControlType.torque:
-      return output_steer, float(self.angle_steers_des_mpc)
+      return output_steer, path_plan.angleSteers
     else:
-      return self.angle_steers_des, float(self.angle_steers_des_mpc)
+      return self.angle_steers_des, path_plan.angleSteers

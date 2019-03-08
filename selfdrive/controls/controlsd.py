@@ -459,7 +459,7 @@ def controlsd_thread(gctx=None, rate=100):
   path_plan = messaging.new_message()
   path_plan.init('pathPlan')
 
-  rk = Ratekeeper(rate, print_delay_threshold=2. / 10000)
+  rk = Ratekeeper(rate, print_delay_threshold=1. / 1000)
   controls_params = params.get("ControlsParams")
   # Read angle offset from previous drive
   if controls_params is not None:
