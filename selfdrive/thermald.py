@@ -12,6 +12,7 @@ from common.params import Params
 from common.realtime import sec_since_boot
 from common.numpy_fast import clip
 from common.filter_simple import FirstOrderFilter
+from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 
 ThermalStatus = log.ThermalData.ThermalStatus
 CURRENT_TAU = 2.   # 2s time constant
@@ -83,7 +84,11 @@ _TEMP_THRS_L = [42.5, 57.5, 72.5, 10000]
 _FAN_SPEEDS = [0, 16384, 32768, 65535]
 # max fan speed only allowed if battery is hot
 _BAT_TEMP_THERSHOLD = 45.
-
+if CarSettings().get_value("hasNoctuaFan"):
+  # fan speed options
+  _FAN_SPEEDS = [0, 65535, 65535, 65535] # Noctua fan is super quiet, so it can run on high most of the time.
+  # max fan speed only allowed if battery is hot
+  _BAT_TEMP_THERSHOLD = 30. # No need to wait for the battery to get hot, when you have a Notua fan.
 
 def handle_fan(max_cpu_temp, bat_temp, fan_speed):
   new_speed_h = next(speed for speed, temp_h in zip(_FAN_SPEEDS, _TEMP_THRS_H) if temp_h > max_cpu_temp)
@@ -111,10 +116,17 @@ def check_car_battery_voltage(should_start, health, charging_disabled):
   #   - there are health packets from panda, and;
   #   - 12V battery voltage is too low, and;
   #   - onroad isn't started
-  if charging_disabled and (health is None or health.health.voltage > 11800):
+  # if limitting battery to Min-Max%. edit /data/bb_openpilot.cfg
+  car_set = CarSettings()
+  limitBatteryMinMax = car_set.get_value("limitBatteryMinMax")
+  batt_min = car_set.get_value("limitBattery_Min")
+  batt_max = car_set.get_value("limitBattery_Max")
+  limitBatteryMin = limitBatteryMinMax and (msg.thermal.batteryPercent < batt_min)
+  limitBatteryMax = limitBatteryMinMax and (msg.thermal.batteryPercent > batt_max)
+  if charging_disabled and (health is None or health.health.voltage > 11800) and (not limitBatteryMin):
     charging_disabled = False
     os.system('echo "1" > /sys/class/power_supply/battery/charging_enabled')
-  elif not charging_disabled and health is not None and health.health.voltage < 11500 and not should_start:
+  elif (not charging_disabled) and ((health is not None and health.health.voltage < 11500 and not should_start) or limitBatteryMax):
     charging_disabled = True
     os.system('echo "0" > /sys/class/power_supply/battery/charging_enabled')
 

@@ -90,7 +90,73 @@ def read_config_file(CS):
       CS.enableShowLogo = True
     config.set('OP_CONFIG', 'enable_show_logo', CS.enableShowLogo)
 
+    #has_noctua_fan -> CS.hasNoctuaFan
+    try:
+      CS.hasNoctuaFan = configr.getboolean('OP_CONFIG','has_noctua_fan')
+    except:
+      CS.hasNoctuaFan = False
+    config.set('OP_CONFIG', 'has_noctua_fan', CS.hasNoctuaFan)
+
+    #limit_battery_minmax -> CS.limitBatteryMinMax
+    try:
+      CS.limitBatteryMinMax = configr.getboolean('OP_CONFIG','limit_battery_minmax')
+    except:
+      CS.limitBatteryMinMax = False
+    config.set('OP_CONFIG', 'limit_battery_minmax', CS.limitBatteryMinMax)
+
+    #limit_battery_min -> CS.limitBattery_Min
+    try:
+      CS.limitBattery_Min = configr.getint('OP_CONFIG','limit_battery_min')
+    except:
+      CS.limitBattery_Min = 60
+    config.set('OP_CONFIG', 'limit_battery_min', CS.limitBattery_Min)
+
+    #limit_battery_max -> CS.limitBattery_Max
+    try:
+      CS.limitBattery_Max = configr.getint('OP_CONFIG','limit_battery_max')
+    except:
+      CS.limitBattery_Max = 70
+    config.set('OP_CONFIG', 'limit_battery_max', CS.limitBattery_Max)
+
+
+
+    #do_auto_update -> CS.doAutoUpdate
+    try:
+      CS.doAutoUpdate = configr.getboolean('OP_CONFIG','do_auto_update')
+    except:
+      CS.doAutoUpdate = True
+    config.set('OP_CONFIG', 'do_auto_update', CS.doAutoUpdate)
+
 
     with open(config_path, config_file_w) as configfile:
       config.write(configfile)
+
+class CarSettings(object):
+  def __init__(self):
+    ### START OF MAIN CONFIG OPTIONS ###
+    ### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
+    self.forcePedalOverCC = True
+    self.enableHSO = True 
+    self.enableALCA = True
+    self.enableDasEmulation = True
+    self.enableRadarEmulation = True
+    self.enableSpeedVariableDesAngle = True
+    self.enableRollAngleCorrection = False
+    self.enableFeedForwardAngleCorrection = True
+    self.enableDriverMonitor = True
+    self.enableShowCar = True
+    self.enableShowLogo = True
+    self.hasNoctuaFan = False
+    self.limitBatteryMinMax = False
+    self.limitBattery_Min = 60
+    self.limitBattery_Max = 70
+    self.doAutoUpdate = True
+    #read config file
+    read_config_file(self)
+    ### END OF MAIN CONFIG OPTIONS ###
+
+  def get_value(self,name_of_variable):
+    return_val = None
+    exec("%s = self.%s" % ('return_val',name_of_variable))
+    return return_val
     

@@ -100,6 +100,8 @@ int DAS_warningMatrix3_idx = 0;
 int DAS_steeringControl_idx = 0;
 int DAS_diState_idx = 0;
 int DAS_longControl_idx = 0;
+int DI_locStatus_idx = 0;
+
 //fake DAS variables
 int DAS_longC_enabled = 0;
 int DAS_speed_limit_kph = 0;
@@ -569,6 +571,27 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     send_fake_message(RIR,RDTR,8,0x239,0,MLB,MHB);
     DAS_lanes_idx ++;
     DAS_lanes_idx = DAS_lanes_idx % 16;
+
+    //send DI_locStatus2 - 0x4F6
+    //hoping to show speed for ACC in IC
+    int DI_crsState = 0x01;
+    int DI_locState = 0x01;
+    int DI_locSpeed_kph = 0x00;
+    if (DAS_longC_enabled > 0) {
+      DI_locSpeed_kph = (int)(DAS_acc_speed_kph * 2.0);
+      DI_crsState = 0x02;
+      DI_locState = 0x02;
+    }
+    MLB = 0x00 + ((DI_locStatus_idx << 8)  & 0x0F) + 
+        (DI_crsState << 12) +  (DI_locState << 16) +
+        ((DI_locSpeed_kph  & 0x1F) << 19) +
+        ((DI_locSpeed_kph >> 5) & 0x0F);
+    MHB = 0x00;
+    int cksm = add_tesla_cksm2(MLB, MHB, 0x4F6, 4);
+    MLB = MLB + cksm;
+    DI_locStatus_idx += 1;
+    DI_locStatus_idx = DI_locStatus_idx % 16;
+    //send_fake_message(RIR,RDTR,4,0x4F6,0,MLB,MHB);
   }
 
   if (fake_DAS_counter % 10 == 4) {

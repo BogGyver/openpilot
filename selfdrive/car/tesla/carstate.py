@@ -178,6 +178,11 @@ class CarState(object):
     self.enableDriverMonitor = True
     self.enableShowCar = True
     self.enableShowLogo = True
+    self.hasNoctuaFan = False
+    self.limitBatteryMinMax = False
+    self.limitBattery_Min = 60
+    self.limitBattery_Max = 70
+    self.doAutoUpdate = True
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
