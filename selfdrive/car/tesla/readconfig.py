@@ -5,10 +5,12 @@ config_file_r = 'r'
 config_file_w = 'wb'
 
 def read_config_file(CS):
+    file_changed = False
     configr = ConfigParser.ConfigParser()
     try:
       configr.read(config_path)
     except:
+      file_changed = True
       print "no config file, creating with defaults..."
     config = ConfigParser.RawConfigParser()
     config.add_section('OP_CONFIG')
@@ -18,6 +20,7 @@ def read_config_file(CS):
       CS.forcePedalOverCC = configr.getboolean('OP_CONFIG','force_pedal_over_cc')
     except:
       CS.forcePedalOverCC = True
+      file_changed = True
     config.set('OP_CONFIG', 'force_pedal_over_cc', CS.forcePedalOverCC)
     
     #enable_hso -> CS.enableHSO
@@ -25,6 +28,7 @@ def read_config_file(CS):
       CS.enableHSO = configr.getboolean('OP_CONFIG','enable_hso')
     except:
       CS.enableHSO = True
+      file_changed = True
     config.set('OP_CONFIG', 'enable_hso', CS.enableHSO)
 
     #enable_alca -> CS.enableALCA
@@ -32,6 +36,7 @@ def read_config_file(CS):
       CS.enableALCA = configr.getboolean('OP_CONFIG','enable_alca')
     except:
       CS.enableALCA = True
+      file_changed = True
     config.set('OP_CONFIG', 'enable_alca', CS.enableALCA)
 
     #enable_das_emulation -> CS.enableDasEmulation
@@ -39,6 +44,7 @@ def read_config_file(CS):
       CS.enableDasEmulation = configr.getboolean('OP_CONFIG','enable_das_emulation')
     except:
       CS.enableDasEmulation = True
+      file_changed = True
     config.set('OP_CONFIG', 'enable_das_emulation', CS.enableDasEmulation)
 
     #enable_radar_emulation -> CS.enableRadarEmulation
@@ -46,6 +52,7 @@ def read_config_file(CS):
       CS.enableRadarEmulation = configr.getboolean('OP_CONFIG','enable_radar_emulation')
     except:
       CS.enableRadarEmulation = True
+      file_changed = True
     config.set('OP_CONFIG', 'enable_radar_emulation', CS.enableRadarEmulation)
 
     #enable_speed_variable_angle -> CS.enableSpeedVariableDesAngle
@@ -53,6 +60,7 @@ def read_config_file(CS):
       CS.enableSpeedVariableDesAngle = configr.getboolean('OP_CONFIG','enable_speed_variable_angle')
     except:
       CS.enableSpeedVariableDesAngle = True
+      file_changed = True
     config.set('OP_CONFIG', 'enable_speed_variable_angle', CS.enableSpeedVariableDesAngle)
 
     #enable_roll_angle_correction -> CS.enableRollAngleCorrection
@@ -60,6 +68,7 @@ def read_config_file(CS):
       CS.enableRollAngleCorrection = configr.getboolean('OP_CONFIG','enable_roll_angle_correction')
     except:
       CS.enableRollAngleCorrection = False
+      file_changed = True
     config.set('OP_CONFIG', 'enable_roll_angle_correction', CS.enableRollAngleCorrection)
 
     #enable_feed_forward_angle_correction -> CS.enableFeedForwardAngleCorrection
@@ -67,6 +76,7 @@ def read_config_file(CS):
       CS.enableFeedForwardAngleCorrection = configr.getboolean('OP_CONFIG','enable_feed_forward_angle_correction')
     except:
       CS.enableFeedForwardAngleCorrection = True
+      file_changed = True
     config.set('OP_CONFIG', 'enable_feed_forward_angle_correction', CS.enableFeedForwardAngleCorrection)
 
     #enable_driver_monitor -> CS.enableDriverMonitor
@@ -74,6 +84,7 @@ def read_config_file(CS):
       CS.enableDriverMonitor = configr.getboolean('OP_CONFIG','enable_driver_monitor')
     except:
       CS.enableDriverMonitor = True
+      file_changed = True
     config.set('OP_CONFIG', 'enable_driver_monitor', CS.enableDriverMonitor)
 
     #enable_show_car -> CS.enableShowCar
@@ -81,6 +92,7 @@ def read_config_file(CS):
       CS.enableShowCar = configr.getboolean('OP_CONFIG','enable_show_car')
     except:
       CS.enableShowCar = True
+      file_changed = True
     config.set('OP_CONFIG', 'enable_show_car', CS.enableShowCar)
 
     #enable_show_logo -> CS.enableShowLogo
@@ -88,6 +100,7 @@ def read_config_file(CS):
       CS.enableShowLogo = configr.getboolean('OP_CONFIG','enable_show_logo')
     except:
       CS.enableShowLogo = True
+      file_changed = True
     config.set('OP_CONFIG', 'enable_show_logo', CS.enableShowLogo)
 
     #has_noctua_fan -> CS.hasNoctuaFan
@@ -95,6 +108,7 @@ def read_config_file(CS):
       CS.hasNoctuaFan = configr.getboolean('OP_CONFIG','has_noctua_fan')
     except:
       CS.hasNoctuaFan = False
+      file_changed = True
     config.set('OP_CONFIG', 'has_noctua_fan', CS.hasNoctuaFan)
 
     #limit_battery_minmax -> CS.limitBatteryMinMax
@@ -102,6 +116,7 @@ def read_config_file(CS):
       CS.limitBatteryMinMax = configr.getboolean('OP_CONFIG','limit_battery_minmax')
     except:
       CS.limitBatteryMinMax = False
+      file_changed = True
     config.set('OP_CONFIG', 'limit_battery_minmax', CS.limitBatteryMinMax)
 
     #limit_battery_min -> CS.limitBattery_Min
@@ -109,6 +124,7 @@ def read_config_file(CS):
       CS.limitBattery_Min = configr.getint('OP_CONFIG','limit_battery_min')
     except:
       CS.limitBattery_Min = 60
+      file_changed = True
     config.set('OP_CONFIG', 'limit_battery_min', CS.limitBattery_Min)
 
     #limit_battery_max -> CS.limitBattery_Max
@@ -116,6 +132,7 @@ def read_config_file(CS):
       CS.limitBattery_Max = configr.getint('OP_CONFIG','limit_battery_max')
     except:
       CS.limitBattery_Max = 70
+      file_changed = True
     config.set('OP_CONFIG', 'limit_battery_max', CS.limitBattery_Max)
 
     #block_upload_while_tethering -> CS.blockUploadWhileTethering
@@ -123,6 +140,7 @@ def read_config_file(CS):
       CS.blockUploadWhileTethering = configr.getboolean('OP_CONFIG','block_upload_while_tethering')
     except:
       CS.blockUploadWhileTethering = False
+      file_changed = True
     config.set('OP_CONFIG', 'block_upload_while_tethering', CS.blockUploadWhileTethering)
 
     #tether_ip -> CS.tetherIP
@@ -130,6 +148,7 @@ def read_config_file(CS):
       CS.tetherIP = configr.get('OP_CONFIG','tether_ip')
     except:
       CS.tetherIP = "127.0.0."
+      file_changed = True
     config.set('OP_CONFIG', 'tether_ip', CS.tetherIP)
 
 
@@ -139,11 +158,12 @@ def read_config_file(CS):
       CS.doAutoUpdate = configr.getboolean('OP_CONFIG','do_auto_update')
     except:
       CS.doAutoUpdate = True
+      file_changed = True
     config.set('OP_CONFIG', 'do_auto_update', CS.doAutoUpdate)
 
-
-    with open(config_path, config_file_w) as configfile:
-      config.write(configfile)
+    if file_changed:
+      with open(config_path, config_file_w) as configfile:
+        config.write(configfile)
 
 class CarSettings(object):
   def __init__(self):
