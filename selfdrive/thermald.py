@@ -110,7 +110,7 @@ def handle_fan(max_cpu_temp, bat_temp, fan_speed):
   return fan_speed
 
 
-def check_car_battery_voltage(should_start, health, charging_disabled):
+def check_car_battery_voltage(should_start, health, charging_disabled, msg):
 
   # charging disallowed if:
   #   - there are health packets from panda, and;
@@ -302,7 +302,7 @@ def thermald_thread():
          started_seen and (sec_since_boot() - off_ts) > 60:
         os.system('LD_LIBRARY_PATH="" svc power shutdown')
 
-    charging_disabled = check_car_battery_voltage(should_start, health, charging_disabled)
+    charging_disabled = check_car_battery_voltage(should_start, health, charging_disabled, msg)
 
     msg.thermal.chargingDisabled = charging_disabled
     msg.thermal.chargingError = current_filter.x > 1.0   # if current is > 1A out, then charger might be off
