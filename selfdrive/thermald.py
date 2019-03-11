@@ -219,6 +219,7 @@ def thermald_thread():
 
     # thermal message now also includes free space
     msg.thermal.freeSpace = avail
+    charger_off = False
     with open("/sys/class/power_supply/battery/capacity") as f:
       msg.thermal.batteryPercent = int(f.read())
     with open("/sys/class/power_supply/battery/status") as f:
@@ -229,7 +230,9 @@ def thermald_thread():
       msg.thermal.batteryVoltage = int(f.read())
     with open("/sys/class/power_supply/usb/present") as f:
       msg.thermal.usbOnline = bool(int(f.read()))
-
+    with open("/sys/class/power_supply/battery/charge_type") as f:
+      charger_status = f.read().strip()
+    charger_off = (charger_status == "N/A")
     current_filter.update(msg.thermal.batteryCurrent / 1e6)
 
     # TODO: add car battery voltage check
@@ -318,7 +321,7 @@ def thermald_thread():
 
     charging_disabled = check_car_battery_voltage(should_start, health, charging_disabled, msg, limitBatteryMinMax, batt_min, batt_max)
 
-    msg.thermal.chargingDisabled = charging_disabled
+    msg.thermal.chargingDisabled = charger_off #charging_disabled
     #BB added "and not charging_disabled" below so we don't show red LED when not charging
     msg.thermal.chargingError = (current_filter.x > 1.0) and not charging_disabled   # if current is > 1A out, then charger might be off
     msg.thermal.started = started_ts is not None
