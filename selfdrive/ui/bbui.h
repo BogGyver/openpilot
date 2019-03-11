@@ -826,14 +826,18 @@ void bb_ui_draw_measures_right2( UIState *s, int bb_x, int bb_y, int bb_w ) {
 		NVGcolor val_color = nvgRGBA(255, 255, 255, 200);
     //show RED if at max
     //show orange if lower than 16000
-    if((int)(s->b.fanSpeed) < 16000) {
-      val_color = nvgRGBA(255, 188, 3, 200);
-      s->b.fanSpeed =  15000;
+    if (s->b.fanSpeed == 0) {
+      snprintf(val_str, sizeof(val_str), "OFF");
+    } else {
+      if((int)(s->b.fanSpeed) < 12000) {
+        val_color = nvgRGBA(255, 188, 3, 200);
+        s->b.fanSpeed =  12000;
+      }
+      if((int)(s->b.fanSpeed) > 65000) {
+        val_color = nvgRGBA(255, 0, 0, 200);
+      }
+      snprintf(val_str, sizeof(val_str), "%d", (int)(s->b.fanSpeed * 4500.0 /65535.0));
     }
-    if((int)(s->b.fanSpeed) > 65000) {
-      val_color = nvgRGBA(255, 0, 0, 200);
-    }
-    snprintf(val_str, sizeof(val_str), "%d", (int)(s->b.fanSpeed * 4500.0 /65535.0));
     snprintf(uom_str, sizeof(uom_str), "RPM");
     bb_h +=bb_ui_draw_measure(s,  val_str, uom_str, "FAN SPEED", 
         bb_rx, bb_ry, bb_uom_dx,
