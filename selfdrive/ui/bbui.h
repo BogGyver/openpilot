@@ -548,6 +548,124 @@ void bb_ui_draw_measures_left( UIState *s, int bb_x, int bb_y, int bb_w ) {
   	nvgStroke(s->vg);
 }
 
+void bb_ui_draw_measures_left2( UIState *s, int bb_x, int bb_y, int bb_w ) {
+	const UIScene *scene = &s->scene;		
+	int bb_rx = bb_x + (int)(bb_w/2);
+	int bb_ry = bb_y;
+	int bb_h = 5; 
+	NVGcolor lab_color = nvgRGBA(255, 255, 255, 200);
+	NVGcolor uom_color = nvgRGBA(255, 255, 255, 200);
+	int value_fontSize=30;
+	int label_fontSize=15;
+	int uom_fontSize = 15;
+	int bb_uom_dx =  (int)(bb_w /2 - uom_fontSize*2.5) ;
+	
+	//add CPU temperature
+	if (true) {
+	    	char val_str[16];
+		char uom_str[6];
+		NVGcolor val_color = nvgRGBA(255, 255, 255, 200);
+			if((int)(s->b.maxCpuTemp/10) > 80) {
+				val_color = nvgRGBA(255, 188, 3, 200);
+			}
+			if((int)(s->b.maxCpuTemp/10) > 92) {
+				val_color = nvgRGBA(255, 0, 0, 200);
+			}
+			// temp is alway in C * 10
+			if (s->is_metric) {
+				 snprintf(val_str, sizeof(val_str), "%d C", (int)(s->b.maxCpuTemp/10));
+			} else {
+				 snprintf(val_str, sizeof(val_str), "%d F", (int)(32+9*(s->b.maxCpuTemp/10)/5));
+			}
+		snprintf(uom_str, sizeof(uom_str), "");
+		bb_h +=bb_ui_draw_measure(s,  val_str, uom_str, "CPU TEMP", 
+				bb_rx, bb_ry, bb_uom_dx,
+				val_color, lab_color, uom_color, 
+				value_fontSize, label_fontSize, uom_fontSize );
+		bb_ry = bb_y + bb_h;
+	}
+
+   //add battery temperature
+	if (true) {
+		char val_str[16];
+		char uom_str[6];
+		NVGcolor val_color = nvgRGBA(255, 255, 255, 200);
+		if((int)(s->b.maxBatTemp/1000) > 40) {
+			val_color = nvgRGBA(255, 188, 3, 200);
+		}
+		if((int)(s->b.maxBatTemp/1000) > 50) {
+			val_color = nvgRGBA(255, 0, 0, 200);
+		}
+		// temp is alway in C * 1000
+		if (s->is_metric) {
+			 snprintf(val_str, sizeof(val_str), "%d C", (int)(s->b.maxBatTemp/1000));
+		} else {
+			 snprintf(val_str, sizeof(val_str), "%d F", (int)(32+9*(s->b.maxBatTemp/1000)/5));
+		}
+		snprintf(uom_str, sizeof(uom_str), "");
+		bb_h +=bb_ui_draw_measure(s,  val_str, uom_str, "BAT TEMP", 
+				bb_rx, bb_ry, bb_uom_dx,
+				val_color, lab_color, uom_color, 
+				value_fontSize, label_fontSize, uom_fontSize );
+		bb_ry = bb_y + bb_h;
+	}
+
+  //add battery level (%)
+	if (true) {
+		char val_str[16];
+		char uom_str[3];
+		NVGcolor val_color = nvgRGBA(255, 255, 255, 200);
+
+		//show red/orange if free space is low
+		if(s->b.batteryPercent < 40) {
+			val_color = nvgRGBA(255, 188, 3, 200);
+		}
+		if(s->b.batteryPercent < 20) {
+			val_color = nvgRGBA(255, 0, 0, 200);
+		}
+
+		snprintf(val_str, sizeof(val_str), "%d", s->b.batteryPercent);
+		snprintf(uom_str, sizeof(uom_str), "%%");
+
+		bb_h +=bb_ui_draw_measure(s, val_str, uom_str, "BAT LOAD", 
+			bb_rx, bb_ry, bb_uom_dx,
+			val_color, lab_color, uom_color, 
+			value_fontSize, label_fontSize, uom_fontSize );
+		bb_ry = bb_y + bb_h;
+	}	
+	
+	//add charger status
+	if (true) {
+		char val_str[16];
+		char uom_str[3];
+		NVGcolor val_color = nvgRGBA(255, 255, 255, 200);
+		//show orange if charger is off
+	    if(!s->b.chargingEnabled) {
+	       val_color = nvgRGBA(255, 188, 3, 200);
+	    }
+		// gps accuracy is always in meters
+		if (s->b.chargingEnabled) {
+			 snprintf(val_str, sizeof(val_str), "ON");
+		} else {
+			 snprintf(val_str, sizeof(val_str), "OFF");
+		}
+		snprintf(uom_str, sizeof(uom_str), " ");
+		bb_h +=bb_ui_draw_measure(s,  val_str, uom_str, "CHARGER", 
+				bb_rx, bb_ry, bb_uom_dx,
+				val_color, lab_color, uom_color, 
+				value_fontSize, label_fontSize, uom_fontSize );
+		bb_ry = bb_y + bb_h;
+	}
+  
+	//finally draw the frame
+	bb_h += 20;
+	nvgBeginPath(s->vg);
+  	nvgRoundedRect(s->vg, bb_x, bb_y, bb_w, bb_h, 20);
+  	nvgStrokeColor(s->vg, nvgRGBA(255,255,255,80));
+  	nvgStrokeWidth(s->vg, 6);
+  	nvgStroke(s->vg);
+}
+
 
 void bb_ui_draw_measures_right( UIState *s, int bb_x, int bb_y, int bb_w ) {
 	const UIScene *scene = &s->scene;		
@@ -625,6 +743,131 @@ void bb_ui_draw_measures_right( UIState *s, int bb_x, int bb_y, int bb_w ) {
 			snprintf(uom_str, sizeof(uom_str), "mph");
 		}
 		bb_h +=bb_ui_draw_measure(s,  val_str, uom_str, "REL SPD", 
+				bb_rx, bb_ry, bb_uom_dx,
+				val_color, lab_color, uom_color, 
+				value_fontSize, label_fontSize, uom_fontSize );
+		bb_ry = bb_y + bb_h;
+	}
+	
+	//add  steering angle
+	if (true) {
+		char val_str[16];
+		char uom_str[6];
+		NVGcolor val_color = nvgRGBA(255, 255, 255, 200);
+			//show Orange if more than 6 degrees
+			//show red if  more than 12 degrees
+			if(((int)(s->b.angleSteers) < -6) || ((int)(s->b.angleSteers) > 6)) {
+				val_color = nvgRGBA(255, 188, 3, 200);
+			}
+			if(((int)(s->b.angleSteers) < -12) || ((int)(s->b.angleSteers) > 12)) {
+				val_color = nvgRGBA(255, 0, 0, 200);
+			}
+			// steering is in degrees
+			snprintf(val_str, sizeof(val_str), "%.1f",(s->b.angleSteers));
+
+	    snprintf(uom_str, sizeof(uom_str), "deg");
+		bb_h +=bb_ui_draw_measure(s,  val_str, uom_str, "STEER", 
+				bb_rx, bb_ry, bb_uom_dx,
+				val_color, lab_color, uom_color, 
+				value_fontSize, label_fontSize, uom_fontSize );
+		bb_ry = bb_y + bb_h;
+	}
+	
+	//add  desired steering angle
+	if (true) {
+		char val_str[16];
+		char uom_str[6];
+		NVGcolor val_color = nvgRGBA(255, 255, 255, 200);
+			//show Orange if more than 6 degrees
+			//show red if  more than 12 degrees
+			if(((int)(s->b.angleSteersDes) < -6) || ((int)(s->b.angleSteersDes) > 6)) {
+				val_color = nvgRGBA(255, 188, 3, 200);
+			}
+			if(((int)(s->b.angleSteersDes) < -12) || ((int)(s->b.angleSteersDes) > 12)) {
+				val_color = nvgRGBA(255, 0, 0, 200);
+			}
+			// steering is in degrees
+			snprintf(val_str, sizeof(val_str), "%.1f",(s->b.angleSteersDes));
+
+	    snprintf(uom_str, sizeof(uom_str), "deg");
+		bb_h +=bb_ui_draw_measure(s,  val_str, uom_str, "DES STEER", 
+				bb_rx, bb_ry, bb_uom_dx,
+				val_color, lab_color, uom_color, 
+				value_fontSize, label_fontSize, uom_fontSize );
+		bb_ry = bb_y + bb_h;
+	}
+	
+	
+	//finally draw the frame
+	bb_h += 20;
+	nvgBeginPath(s->vg);
+  	nvgRoundedRect(s->vg, bb_x, bb_y, bb_w, bb_h, 20);
+  	nvgStrokeColor(s->vg, nvgRGBA(255,255,255,80));
+  	nvgStrokeWidth(s->vg, 6);
+  	nvgStroke(s->vg);
+}
+
+void bb_ui_draw_measures_right2( UIState *s, int bb_x, int bb_y, int bb_w ) {
+	const UIScene *scene = &s->scene;		
+	int bb_rx = bb_x + (int)(bb_w/2);
+	int bb_ry = bb_y;
+	int bb_h = 5; 
+	NVGcolor lab_color = nvgRGBA(255, 255, 255, 200);
+	NVGcolor uom_color = nvgRGBA(255, 255, 255, 200);
+	int value_fontSize=30;
+	int label_fontSize=15;
+	int uom_fontSize = 15;
+	int bb_uom_dx =  (int)(bb_w /2 - uom_fontSize*2.5) ;
+	
+	//Fan speed
+	if (true) {
+		char val_str[16];
+		char uom_str[6];
+		NVGcolor val_color = nvgRGBA(255, 255, 255, 200);
+    //show RED if at max
+    //show orange if lower than 16000
+    if((int)(s->b.fanSpeed) < 16000) {
+      val_color = nvgRGBA(255, 188, 3, 200);
+      s->b.fanSpeed =  15000;
+    }
+    if((int)(s->b.fanSpeed) > 65000) {
+      val_color = nvgRGBA(255, 0, 0, 200);
+    }
+    snprintf(val_str, sizeof(val_str), "%d", (int)(s->b.fanSpeed * 4500.0 /65535.0));
+    snprintf(uom_str, sizeof(uom_str), "RPM");
+    bb_h +=bb_ui_draw_measure(s,  val_str, uom_str, "FAN SPEED", 
+        bb_rx, bb_ry, bb_uom_dx,
+        val_color, lab_color, uom_color, 
+        value_fontSize, label_fontSize, uom_fontSize );
+    bb_ry = bb_y + bb_h;
+  }
+	
+	//add grey panda GPS accuracy
+	if (true) {
+		char val_str[16];
+		char uom_str[3];
+		NVGcolor val_color = nvgRGBA(255, 255, 255, 200);
+		//show red/orange if gps accuracy is high
+	    if(s->b.gpsAccuracy > 0.59) {
+	       val_color = nvgRGBA(255, 188, 3, 200);
+	    }
+	    if(s->b.gpsAccuracy > 0.8) {
+	       val_color = nvgRGBA(255, 0, 0, 200);
+	    }
+
+
+		// gps accuracy is always in meters
+		if (s->is_metric) {
+			 snprintf(val_str, sizeof(val_str), "%d", (int)(s->b.gpsAccuracy*100.0));
+		} else {
+			 snprintf(val_str, sizeof(val_str), "%.1f", s->b.gpsAccuracy * 3.28084 * 12);
+		}
+		if (s->is_metric) {
+			snprintf(uom_str, sizeof(uom_str), "cm");;
+		} else {
+			snprintf(uom_str, sizeof(uom_str), "in");
+		}
+		bb_h +=bb_ui_draw_measure(s,  val_str, uom_str, "GPS PREC", 
 				bb_rx, bb_ry, bb_uom_dx,
 				val_color, lab_color, uom_color, 
 				value_fontSize, label_fontSize, uom_fontSize );
@@ -873,7 +1116,7 @@ void bb_ui_read_triState_switch( UIState *s) {
       s->b.tri_state_switch_last_read = bb_currentTimeInMilis();
     }*/
     s->b.tri_state_switch_last_read = bb_currentTimeInMilis(); 
-    s->b.tri_state_switch = 1;
+    s->b.tri_state_switch = 3;
     if (strcmp(s->b.btns[2].btn_label2,"OP")==0) {
       s->b.tri_state_switch = 1;
     }
@@ -931,6 +1174,8 @@ void bb_ui_draw_UI( UIState *s) {
 	  const int bb_dmr_w = 180;
 	  const int bb_dmr_x = scene->ui_viz_rx + scene->ui_viz_rw - bb_dmr_w - (bdr_s*2) ; 
 	  const int bb_dmr_y = (box_y + (bdr_s*1.5))+220;
+    bb_ui_draw_measures_left2(s,bb_dml_x, bb_dml_y, bb_dml_w );
+    bb_ui_draw_measures_right2(s,bb_dmr_x, bb_dmr_y, bb_dmr_w );
     bb_draw_buttons(s);
     bb_ui_draw_custom_alert(s);
 	 }

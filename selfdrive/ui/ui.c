@@ -1196,6 +1196,9 @@ static void ui_draw_vision_speedlimit(UIState *s) {
 }
 
 static void ui_draw_vision_speed(UIState *s) {
+  if (s->b.tri_state_switch == 3) {
+    return;
+  }
   const UIScene *scene = &s->scene;
   int ui_viz_rx = scene->ui_viz_rx;
   int ui_viz_rw = scene->ui_viz_rw;
@@ -1947,6 +1950,9 @@ static void ui_update(UIState *s) {
         }
         s->b.maxBatTemp=datad.bat;
         s->b.freeSpace=datad.freeSpace;
+        s->b.batteryPercent=datad.batteryPercent;
+        s->b.chargingEnabled=!datad.chargingDisabled;
+        s->b.fanSpeed=datad.fanSpeed;
         //BB END CPU TEMP
       } else if (eventd.which == cereal_Event_uiLayoutState) {
           struct cereal_UiLayoutState datad;

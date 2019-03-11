@@ -58,4 +58,7 @@ typedef struct BBUIState {
     float gyroYaw;
     bool icShowLogo;
     bool icShowCar;
+    int batteryPercent;
+    bool chargingEnabled;
+    uint16_t fanSpeed;
 } BBUIState;
