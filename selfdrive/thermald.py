@@ -17,6 +17,7 @@ from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 ThermalStatus = log.ThermalData.ThermalStatus
 CURRENT_TAU = 2.   # 2s time constant
 
+
 def read_tz(x):
   with open("/sys/devices/virtual/thermal/thermal_zone%d/temp" % x) as f:
     ret = max(0, int(f.read()))
@@ -88,7 +89,7 @@ if CarSettings().get_value("hasNoctuaFan"):
   # fan speed options
   _FAN_SPEEDS = [0, 65535, 65535, 65535] # Noctua fan is super quiet, so it can run on high most of the time.
   # max fan speed only allowed if battery is hot
-  _BAT_TEMP_THERSHOLD = 30. # No need to wait for the battery to get hot, when you have a Notua fan.
+  _BAT_TEMP_THERSHOLD = 20. # No need to wait for the battery to get hot, when you have a Notua fan.
 
 def handle_fan(max_cpu_temp, bat_temp, fan_speed):
   new_speed_h = next(speed for speed, temp_h in zip(_FAN_SPEEDS, _TEMP_THRS_H) if temp_h > max_cpu_temp)
@@ -110,26 +111,28 @@ def handle_fan(max_cpu_temp, bat_temp, fan_speed):
   return fan_speed
 
 
-def check_car_battery_voltage(should_start, health, charging_disabled, msg):
+def check_car_battery_voltage(should_start, health, charging_disabled, msg, limitBatteryMinMax, batt_min, batt_max):
 
   # charging disallowed if:
   #   - there are health packets from panda, and;
   #   - 12V battery voltage is too low, and;
   #   - onroad isn't started
-  # if limitting battery to Min-Max%. edit /data/bb_openpilot.cfg
-  car_set = CarSettings()
-  limitBatteryMinMax = car_set.get_value("limitBatteryMinMax")
-  batt_min = car_set.get_value("limitBattery_Min")
-  batt_max = car_set.get_value("limitBattery_Max")
+
   limitBatteryMin = limitBatteryMinMax and (msg.thermal.batteryPercent < batt_min)
   limitBatteryMax = limitBatteryMinMax and (msg.thermal.batteryPercent > batt_max)
-  if charging_disabled and (health is None or health.health.voltage > 11800) and (not limitBatteryMin):
+  print limitBatteryMinMax,batt_min, batt_max, msg.thermal.batteryPercent
+  if charging_disabled and (health is None or health.health.voltage > 11800) and (limitBatteryMin or not limitBatteryMinMax):
     charging_disabled = False
     os.system('echo "1" > /sys/class/power_supply/battery/charging_enabled')
   elif (not charging_disabled) and ((health is not None and health.health.voltage < 11500 and not should_start) or limitBatteryMax):
     charging_disabled = True
     os.system('echo "0" > /sys/class/power_supply/battery/charging_enabled')
-
+  if charging_disabled and limitBatteryMinMax and (msg.thermal.batteryPercent >= batt_min):# and (msg.thermal.batteryPercent <= batt_max):
+    os.system('echo "255" > /sys/class/leds/blue/brightness')
+    os.system('echo "255" > /sys/class/leds/green/brightness')
+  elif not charging_disabled:
+    os.system('echo "0" > /sys/class/leds/blue/brightness')
+    os.system('echo "255" > /sys/class/leds/green/brightness')
   return charging_disabled
 
 
@@ -165,6 +168,13 @@ class LocationStarter(object):
 
 
 def thermald_thread():
+
+  # if limitting battery to Min-Max%. edit /data/bb_openpilot.cfg
+  car_set = CarSettings()
+  limitBatteryMinMax = car_set.get_value("limitBatteryMinMax")
+  batt_min = car_set.get_value("limitBattery_Min")
+  batt_max = car_set.get_value("limitBattery_Max")
+
   setup_eon_fan()
 
   # prevent LEECO from undervoltage
@@ -302,10 +312,11 @@ def thermald_thread():
          started_seen and (sec_since_boot() - off_ts) > 60:
         os.system('LD_LIBRARY_PATH="" svc power shutdown')
 
-    charging_disabled = check_car_battery_voltage(should_start, health, charging_disabled, msg)
+    charging_disabled = check_car_battery_voltage(should_start, health, charging_disabled, msg, limitBatteryMinMax, batt_min, batt_max)
 
     msg.thermal.chargingDisabled = charging_disabled
-    msg.thermal.chargingError = current_filter.x > 1.0   # if current is > 1A out, then charger might be off
+    #BB added "and not charging_disabled" below so we don't show red LED when not charging
+    msg.thermal.chargingError = (current_filter.x > 1.0) and not charging_disabled   # if current is > 1A out, then charger might be off
     msg.thermal.started = started_ts is not None
     msg.thermal.startedTs = int(1e9*(started_ts or 0))
 
