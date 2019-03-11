@@ -127,12 +127,16 @@ def check_car_battery_voltage(should_start, health, charging_disabled, msg, limi
   elif (not charging_disabled) and ((health is not None and health.health.voltage < 11500 and not should_start) or limitBatteryMax):
     charging_disabled = True
     os.system('echo "0" > /sys/class/power_supply/battery/charging_enabled')
-  if charging_disabled and limitBatteryMinMax and (msg.thermal.batteryPercent >= batt_min):# and (msg.thermal.batteryPercent <= batt_max):
+  if charging_disabled and limitBatteryMinMax and (msg.thermal.batteryPercent >= batt_min) and (health is None):# and (msg.thermal.batteryPercent <= batt_max):
     os.system('echo "255" > /sys/class/leds/blue/brightness')
     os.system('echo "255" > /sys/class/leds/green/brightness')
-  elif not charging_disabled:
+  elif not charging_disabled and (health is None):
     os.system('echo "0" > /sys/class/leds/blue/brightness')
     os.system('echo "255" > /sys/class/leds/green/brightness')
+  elif not (health is None):
+    os.system('echo "0" > /sys/class/leds/blue/brightness')
+    os.system('echo "0" > /sys/class/leds/green/brightness')
+
   return charging_disabled
 
 
