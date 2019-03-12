@@ -120,7 +120,7 @@ def check_car_battery_voltage(should_start, health, charging_disabled, msg, limi
 
   limitBatteryMin = limitBatteryMinMax and (msg.thermal.batteryPercent < batt_min)
   limitBatteryMax = limitBatteryMinMax and (msg.thermal.batteryPercent > batt_max)
-  print limitBatteryMinMax,batt_min, batt_max, msg.thermal.batteryPercent
+  #print limitBatteryMinMax,batt_min, batt_max, msg.thermal.batteryPercent
   if charging_disabled and (health is None or health.health.voltage > 11800) and (limitBatteryMin or not limitBatteryMinMax):
     charging_disabled = False
     os.system('echo "1" > /sys/class/power_supply/battery/charging_enabled')
