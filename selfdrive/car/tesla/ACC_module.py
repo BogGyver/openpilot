@@ -68,7 +68,8 @@ class ACCController(object):
   # Tesla cruise only functions above 17 MPH
   MIN_CRUISE_SPEED_MS = 17.1 * CV.MPH_TO_MS
     
-  def __init__(self):
+  def __init__(self,carcontroller):
+    self.CC = carcontroller
     self.human_cruise_action_time = 0
     self.automated_cruise_action_time = 0
     context = zmq.Context()
@@ -198,6 +199,18 @@ class ACCController(object):
         and CS.pcm_acc_status == CruiseState.ENABLED):
       button_to_press = CruiseButtons.CANCEL
 
+    lead_1 = None
+    #if enabled:
+    for socket, _ in self.poller.poll(0):
+      if socket is self.live20:
+        lead_1 = messaging.recv_one(socket).live20.leadOne
+        if lead_1.dRel:
+          self.lead_last_seen_time_ms = current_time_ms
+          self.CC.leadDx = lead_1.dRel
+          self.CC.leadDy = lead_1.yRel
+        else:
+          self.CC.leadDx = 0.
+          self.CC.leadDy = 0.
     if self.enable_adaptive_cruise and enabled:
       if CS.cstm_btns.get_button_label2(ACCMode.BUTTON_NAME) in ["OP", "AutoOP"]:    
         button_to_press = self._calc_button(CS, pcm_speed)
@@ -206,13 +219,7 @@ class ACCController(object):
         # Alternative speed decision logic that uses the lead car's distance
         # and speed more directly.
         # Bring in the lead car distance from the Live20 feed
-        lead_1 = None
-        if enabled:
-          for socket, _ in self.poller.poll(0):
-            if socket is self.live20:
-              lead_1 = messaging.recv_one(socket).live20.leadOne
-              if lead_1.dRel:
-                self.lead_last_seen_time_ms = current_time_ms
+        
         button_to_press = self._calc_follow_button(CS, lead_1,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset)
     if button_to_press:
       self.automated_cruise_action_time = current_time_ms

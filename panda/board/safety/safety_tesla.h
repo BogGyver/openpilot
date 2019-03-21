@@ -101,6 +101,7 @@ int DAS_steeringControl_idx = 0;
 int DAS_diState_idx = 0;
 int DAS_longControl_idx = 0;
 int DI_locStatus_idx = 0;
+int DAS_carLog_idx = 0;
 
 //fake DAS variables
 int DAS_longC_enabled = 0;
@@ -123,6 +124,17 @@ int DAS_cc_state = 0;
 int DAS_acc_speed_limit_mph = 0;
 int DAS_acc_speed_kph = 0;
 int DAS_collision_warning = 0;
+
+//lanes and objects
+int tLeadDx = 0;
+int tLeadDy = 0;
+int rLine = 0;
+int lLine = 0;
+int curvC0 = 0x64;
+int curvC1 = 0x7F;
+int curvC2 = 0x7F;
+int curvC3 = 0x7F;
+int laneRange = 160; // max 160m
 
 //fake DAS for telemetry
 int DAS_telLeftMarkerQuality = 3; //3-high, 2-medium, 1-low 0-lowest
@@ -328,7 +340,7 @@ static void do_fake_DI_state(uint32_t RIR, uint32_t RDTR) {
   MHB = MHB + (cksm << 24);
   //DAS_diStateL = MLB;
   //DAS_diStateH = MHB;
-  send_fake_message(RIR,RDTR,8,0x368,0,MLB,MHB);
+  //send_fake_message(RIR,RDTR,8,0x368,0,MLB,MHB);
 }
 
 static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
@@ -349,7 +361,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     MHB = 0x00;
     MLB = ((DAS_steeringAngle >> 8) & 0x7F) + 
         ((DAS_steeringAngle & 0xFF) << 8) + 
-        ((((DAS_steeringEnabled & controls_allowed & DAS_inDrive)<< 6) + DAS_steeringControl_idx) << 16);
+        (((((DAS_steeringEnabled & controls_allowed & DAS_inDrive)  )<< 6) + DAS_steeringControl_idx) << 16);
     int cksm = add_tesla_cksm2(MLB, MHB, 0x488, 3);
     MLB = MLB + (cksm << 24);
     send_fake_message(RIR,RDTR,4,0x488,2,MLB,MHB);
@@ -357,6 +369,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     DAS_steeringControl_idx ++;
     DAS_steeringControl_idx = DAS_steeringControl_idx % 16;
   }
+
 
   if (enable_das_emulation == 0) {
     return;
@@ -368,6 +381,25 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     MHB = 0x002003BD;
     send_fake_message(RIR,RDTR,8,0x639,0,MLB,MHB);
     DAS_bootID_sent = 1;
+  }
+
+  if (fake_DAS_counter == 299) {
+    //send DAS_carLog  0x5D9
+    if (DAS_carLog_idx == 0) {
+      MLB = 0x00041603;
+      MHB = 0x00000000;
+    }
+    if (DAS_carLog_idx == 1) {
+      MLB = 0x00010002;
+      MHB = 0x00000000;
+    }
+    if (DAS_carLog_idx == 2) {
+      MLB = 0x00000001;
+      MHB = 0x00000000;
+    }
+    send_fake_message(RIR,RDTR,8,0x5D9,0,MLB,MHB);
+    DAS_carLog_idx ++;
+    DAS_carLog_idx = DAS_carLog_idx % 3;
   }
 
   if (fake_DAS_counter % 10 ==7) {
@@ -382,8 +414,13 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     //fix - 0x81,0xC0,0xF8,0xF3,0x43,0x7F,0xFD,0xF1
     //when idx==0 is lead vehicle
     if (DAS_object_idx == 0) {
-      MLB = 0xFFFFFF00;
-      MHB = 0x03FFFF83;
+      if (tLeadDx ==0 ) {
+        MLB = 0xFFFFFF00;
+        MHB = 0x03FFFF83;
+      } else {
+        MLB = 0x30080090 + (tLeadDx << 8) + (tLeadDy << 20);
+        MHB = 0x03FFFF80; 
+      }
     }
     if (DAS_object_idx == 1) {
       MLB = 0xFFFFFF01;
@@ -566,8 +603,8 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
   if (fake_DAS_counter % 10 == 3) {
     //send DAS_lanes - 0x239
     //for now fixed 0x33,0xC8,0xF0,0x7F,0x70,0x70,0x33,(idx << 4)+0x0F
-    MLB = 0x7FF0C833;
-    MHB = 0x0F337070 + (DAS_lanes_idx << 28);
+    MLB = 0x00000030 + (rLine << 1) + lLine + (laneRange << 8) + (curvC0 << 16) + (curvC1  << 24);
+    MHB = 0x0F000000 + (DAS_lanes_idx << 28) + curvC2 + (curvC3 << 8) + (((rLine << 2) + lLine) << 16);
     send_fake_message(RIR,RDTR,8,0x239,0,MLB,MHB);
     DAS_lanes_idx ++;
     DAS_lanes_idx = DAS_lanes_idx % 16;
@@ -616,8 +653,14 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
 
     //send DAS_visualDebug - 0x249
     //no counter - 8A 06 21 1F 00 00 00 00
-    MLB = 0x1F21068A;
-    MHB =0x00;
+    //80 04 21 10 40 00 00 01
+    //7th octet should be 05 when acc enabled and 01 when not?
+    int acc = 0x01;
+    if (DAS_cc_state >= 2) {
+      acc = 0x05;
+    }
+    MLB = 0x10210480;
+    MHB = 0x01000040 + (acc << 16);
     send_fake_message(RIR,RDTR,8,0x249,0,MLB,MHB);
 
   }
@@ -626,8 +669,8 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
   if (fake_DAS_counter % 50 == 0) {
     //send DAS_status - 0x399
     int sl = (int)(DAS_speed_limit_kph / 5); 
-    MLB = DAS_op_status + (sl << 8) + (((DAS_collision_warning << 6) + sl) << 16);
-    MHB = (DAS_cc_state << 3) + 
+    MLB = DAS_op_status + 0xF0 + (sl << 8) + (((DAS_collision_warning << 6) + sl) << 16);
+    MHB = ((DAS_cc_state & 0x03) << 3) + (0x00 << 5) + //SNA for laneDepartureWarning
         (((DAS_hands_on_state << 2) + ((DAS_alca_state & 0x03) << 6)) << 8) +
        ((( DAS_status_idx << 4) + (DAS_alca_state >> 2)) << 16);
     int cksm = add_tesla_cksm2(MLB, MHB, 0x399, 7);
@@ -732,7 +775,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     int lcAborting = 0;
     int lcUnavailableSpeed = 0;
     if (DAS_alca_state == 0x14) {
-      lcAborting == 1;
+      //lcAborting == 1;
     }
     if (DAS_alca_state == 0x05) {
       lcUnavailableSpeed == 1;
@@ -1200,7 +1243,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
   addr = to_send->RIR >> 21;
 
   //capture message for fake DAS street sign object
-  if (addr == 0x555) {
+  if (addr == 0x556) {
     streetSignObject_b0 = (to_send->RDLR & 0xFF);
     streetSignObject_b1 = ((to_send->RDLR >> 8) & 0xFF);
     streetSignObject_b2 = ((to_send->RDLR >> 16) & 0xFF);
@@ -1210,6 +1253,20 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     if (signType < 0xFF) {
        streetSignObject_active = 1;
     }
+    return false;
+  }
+
+  //capture message for fake DAS lane and object info
+  if (addr == 0x557) {
+    tLeadDx = (to_send->RDLR & 0xFF);
+    tLeadDy = ((to_send->RDLR >> 8) & 0xFF);
+    rLine = ((to_send->RDLR >> 16) & 0x0F);
+    lLine = ((to_send->RDLR >> 20) & 0x0F);
+    curvC0 = ((to_send->RDLR >> 24) & 0xFF);
+    curvC1 = (to_send->RDHR & 0xFF);
+    curvC2 = ((to_send->RDHR >> 8) & 0xFF);
+    curvC3 = ((to_send->RDHR >> 16) & 0xFF);
+    laneRange = ((to_send->RDHR >> 24) & 0xFF);
     return false;
   }
 
@@ -1576,7 +1633,7 @@ static int tesla_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd)
     }
 
     // remove Pedal in forwards
-    if ((addr == 0x520) || (addr == 0x521)) {
+    if ((addr == 0x551) || (addr == 0x552)) {
       return -1;
     }
 

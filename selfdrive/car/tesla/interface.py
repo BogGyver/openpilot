@@ -472,6 +472,8 @@ class CarInterface(object):
       hud_show_car = c.hudControl.leadVisible, \
       hud_alert = hud_alert, \
       snd_beep = snd_beep, \
-      snd_chime = snd_chime)
+      snd_chime = snd_chime, \
+      leftLaneVisible = c.hudControl.leftLaneVisible,\
+      rightLaneVisible = c.hudControl.rightLaneVisible)
 
     self.frame += 1

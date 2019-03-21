@@ -69,7 +69,7 @@ class CarController(object):
     self.last_angle = 0.
     self.last_accel = 0.
     self.ALCA = ALCAController(self,True,True)  # Enabled and SteerByAngle both True
-    self.ACC = ACCController()
+    self.ACC = ACCController(self)
     self.PCC = PCCController(self)
     self.HSO = HSOController(self)
     self.GYRO = GYROController()
@@ -93,6 +93,16 @@ class CarController(object):
     self.gyroYaw = 0.
     self.set_speed_limit_active = False
     self.speed_limit_offset = 0.
+
+    self.leadDx = 0.
+    self.leadDy = 0.
+    self.lLine = 0
+    self.rLine = 0
+    self.curv0 = 100. #100 for straight
+    self.curv1 = 127. #127 for straight
+    self.curv2 = 127. #127 for straight
+    self.curv3 = 127. #127 for straight
+    self.laneRange = 160  #max is 160m
 
     self.stopSign_visible = False
     self.stopSign_distance = 1000.
@@ -158,9 +168,18 @@ class CarController(object):
   def update(self, sendcan, enabled, CS, frame, actuators, \
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
              hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert, \
-             snd_beep, snd_chime):
+             snd_beep, snd_chime,leftLaneVisible,rightLaneVisible):
 
     """ Controls thread """
+
+    if leftLaneVisible:
+      self.lLine = 1
+    else:
+      self.lLine = 0
+    if rightLaneVisible:
+      self.rLine = 1
+    else:
+      self.rLine = 0
 
     ## Todo add code to detect Tesla DAS (camera) and go into listen and record mode only (for AP1 / AP2 cars)
     if not self.enable_camera:
@@ -420,6 +439,7 @@ class CarController(object):
           cc_state = 3
     send_fake_msg = False
     send_fake_warning = False
+
     if enabled:
       if frame % 2 == 0:
         send_fake_msg = True
@@ -430,6 +450,8 @@ class CarController(object):
         send_fake_msg = True
       if frame % 60 == 0:
         send_fake_warning = True
+    if frame % 10 == 0:
+      can_sends.append(teslacan.create_fake_DAS_obj_lane_msg(self.leadDx,self.leadDy,self.rLine,self.lLine,self.curv0,self.curv1,self.curv2,self.curv3,self.laneRange))
     if send_fake_msg:
       can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,gas_to_resume,apUnavailable, collision_warning, op_status, \
             acc_speed_kph, \

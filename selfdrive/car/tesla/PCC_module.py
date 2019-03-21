@@ -350,12 +350,12 @@ class PCCController(object):
     # Bring in the lead car distance from the Live20 feed
     l20 = None
     mapd = None
-    if enabled:
-      for socket, _ in self.poller.poll(0):
-        if socket is self.live20:
-          l20 = messaging.recv_one(socket)
-        elif socket is self.live_map_data:
-          mapd = messaging.recv_one(socket)
+    #if enabled: do it always
+    for socket, _ in self.poller.poll(0):
+      if socket is self.live20:
+        l20 = messaging.recv_one(socket)
+      elif socket is self.live_map_data:
+        mapd = messaging.recv_one(socket)
     if l20 is not None:
       self.lead_1 = l20.live20.leadOne
       if _is_present(self.lead_1):
@@ -365,6 +365,11 @@ class PCCController(object):
         self.continuous_lead_sightings = 0
       self.md_ts = l20.live20.mdMonoTime
       self.l100_ts = l20.live20.l100MonoTime
+      self.CC.leadDx = self.lead_1.dRel
+      self.CC.leadDy = self.lead_1.yRel
+    else:
+      self.CC.leadDx = 0.
+      self.CC.leadDy = 0.
 
     brake_max, accel_max = calc_cruise_accel_limits(CS, self.lead_1)
     output_gb = 0
