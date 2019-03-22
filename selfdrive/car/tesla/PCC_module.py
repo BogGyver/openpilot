@@ -365,11 +365,7 @@ class PCCController(object):
         self.continuous_lead_sightings = 0
       self.md_ts = l20.live20.mdMonoTime
       self.l100_ts = l20.live20.l100MonoTime
-      self.CC.leadDx = self.lead_1.dRel-2.5
-      self.CC.leadDy = self.lead_1.yRel
-    else:
-      self.CC.leadDx = 0.
-      self.CC.leadDy = 0.
+      
 
     brake_max, accel_max = calc_cruise_accel_limits(CS, self.lead_1)
     output_gb = 0

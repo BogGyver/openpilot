@@ -56,6 +56,30 @@ HUDData = namedtuple("HUDData",
                      ["pcm_accel", "v_cruise", "mini_car", "car", "X4",
                       "lanes", "beep", "chime", "fcw", "acc_alert", "steer_required"])
 
+class MovingAverage(object):
+  def __init__(self, length):
+    self.position = 0
+    self.length = length
+    self.sum = 0.
+    self.no_items = 0
+    self.values = [0.] * length
+
+  def add(self,element):
+    if self.no_items == self.length:
+      self.no_items -= 1
+      self.sum -= self.values[self.position]
+    self.values[self.position] = element
+    self.sum += self.values[self.position]
+    self.no_items += 1
+    self.position += 1
+    if self.sum == 0.:
+      #all empty so initialize
+      self.position = 0
+      self.sum = 0.
+      self.no_items = 0
+      return 0.
+    self.position = self.position % self.length
+    return self.sum/self.no_items
 
 class CarController(object):
   def __init__(self, dbc_name, enable_camera=True):
@@ -79,6 +103,7 @@ class CarController(object):
     self.speedlimit = messaging.sub_sock(context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
     self.trafficevents = messaging.sub_sock(context, service_list['trafficEvents'].port, conflate=True, poller=self.poller)
     self.pathPlan = messaging.sub_sock(context, service_list['pathPlan'].port, conflate=True, poller=self.poller)
+    self.live20 = messaging.sub_sock(context, service_list['live20'].port, conflate=True, poller=self.poller)
     self.speedlimit_ms = 0
     self.speedlimit_valid = False
     self.speedlimit_units = 0
@@ -95,15 +120,23 @@ class CarController(object):
     self.set_speed_limit_active = False
     self.speed_limit_offset = 0.
 
+    # items for IC integration for Lane and Lead Car
+    self.average_over_x_pathplan_values = 5
+    self.curv0Matrix =  MovingAverage(self.average_over_x_pathplan_values)
+    self.curv1Matrix =  MovingAverage(self.average_over_x_pathplan_values) 
+    self.curv2Matrix =  MovingAverage(self.average_over_x_pathplan_values) 
+    self.curv3Matrix =  MovingAverage(self.average_over_x_pathplan_values)
+    self.leadDxMatrix = MovingAverage(self.average_over_x_pathplan_values)
+    self.leadDyMatrix = MovingAverage(self.average_over_x_pathplan_values)
     self.leadDx = 0.
     self.leadDy = 0.
     self.lLine = 0
     self.rLine = 0
-    self.curv0 = 100. #100 for straight
-    self.curv1 = 127. #127 for straight
-    self.curv2 = 127. #127 for straight
-    self.curv3 = 127. #127 for straight
-    self.laneRange = 30  #max is 160m
+    self.curv0 = 0. 
+    self.curv1 = 0. 
+    self.curv2 = 0. 
+    self.curv3 = 0. 
+    self.laneRange = 30  #max is 160m but OP has issues with precision beyond that
 
 
     self.stopSign_visible = False
@@ -149,14 +182,14 @@ class CarController(object):
     self.roadSignStopDist = 1000.
     self.roadSignColor = 0
     self.roadSignControlActive = 0
-    if (self.stopSign_distance < self.stopLigt_distance):
+    if (self.stopSign_distance < self.stopLight_distance):
       self.roadSignType = 0x00
       self.roadSignStopDist = self.stopSign_distance
       self.roadSignColor = 0
       self.roadSignControlActive = self.stopSign_resume
       if (self.stopSign_distance < self.roadSignDistanceWarning ):
         self.stopSignWarning = 1
-    elif (self.stopLigt_distance < self.stopSign_distance ):
+    elif (self.stopLight_distance < self.stopSign_distance ):
       self.roadSignType = 0x01
       self.roadSignStopDist = self.stopLight_distance
       self.roadSignColor = self.stopLight_color
@@ -320,6 +353,15 @@ class CarController(object):
             self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
           else:
             self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
+        #to show lead car on IC
+        if socket is self.live20:
+          lead_1 = messaging.recv_one(socket).live20.leadOne
+          if lead_1.dRel:
+            self.leadDx = self.leadDxMatrix.add(lead_1.dRel-2.5)
+            self.leadDy = self.leadDyMatrix.add(-lead_1.yRel)
+          else:
+            self.leadDx = self.leadDxMatrix.add(0.)
+            self.leadDy = self.leadDxMatrix.add(0.)
         #to show curvature and lanes on IC
         if socket is self.pathPlan:
           pp = messaging.recv_one(socket).pathPlan
@@ -332,21 +374,18 @@ class CarController(object):
               self.rLine = 1
             else:
               self.rLine = 0
-            c0 = -clip(pp.cPoly[0],-3.5,3.5)
-            c1 = -clip(pp.cPoly[1],-0.2,0.2)
-            c2 = -clip(pp.cPoly[2],-0.0025,0.0025)
-            c3 = -clip(pp.cPoly[3],-0.00003,0.00003)
-            self.curv0 = (c0 + 3.5)/0.035 #100 for straight
-            self.curv1 = (c1 + 0.2)/0.0016 #127 for straight
-            self.curv2 = (c2  + 0.0025)/0.00002 #127 for straight
-            self.curv3 = (c3 + 0.00003)/0.00000024 #127 for straight
+            #first we clip to the AP limits of the coefficients
+            self.curv0 = self.curv0Matrix.add(-clip(pp.cPoly[0],-3.5,3.5))
+            self.curv1 = self.curv0Matrix.add(-clip(pp.cPoly[1],-0.2,0.2))
+            self.curv2 = self.curv0Matrix.add(-clip(pp.cPoly[2],-0.0025,0.0025))
+            self.curv3 = self.curv0Matrix.add(-clip(pp.cPoly[3],-0.00003,0.00003))
           else:
             self.lLine = 0
             self.rLine = 0
-            self.curv0 = 100. #100 for straight
-            self.curv1 = 127. #127 for straight
-            self.curv2 = 127. #127 for straight
-            self.curv3 = 127. #127 for straight
+            self.curv0 = self.curv0Matrix.add(0.)
+            self.curv1 = self.curv0Matrix.add(0.)
+            self.curv2 = self.curv0Matrix.add(0.)
+            self.curv3 = self.curv0Matrix.add(0.)
         if socket is self.trafficevents:
           self.reset_traffic_events()
           tr_ev_list = messaging.recv_sock(socket)

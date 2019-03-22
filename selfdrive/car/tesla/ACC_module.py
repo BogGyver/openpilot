@@ -206,11 +206,6 @@ class ACCController(object):
         lead_1 = messaging.recv_one(socket).live20.leadOne
         if lead_1.dRel:
           self.lead_last_seen_time_ms = current_time_ms
-          self.CC.leadDx = lead_1.dRel-2.5
-          self.CC.leadDy = lead_1.yRel
-        else:
-          self.CC.leadDx = 0.
-          self.CC.leadDy = 0.
     if self.enable_adaptive_cruise and enabled:
       if CS.cstm_btns.get_button_label2(ACCMode.BUTTON_NAME) in ["OP", "AutoOP"]:    
         button_to_press = self._calc_button(CS, pcm_speed)
