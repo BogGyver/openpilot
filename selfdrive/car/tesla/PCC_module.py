@@ -365,7 +365,7 @@ class PCCController(object):
         self.continuous_lead_sightings = 0
       self.md_ts = l20.live20.mdMonoTime
       self.l100_ts = l20.live20.l100MonoTime
-      self.CC.leadDx = self.lead_1.dRel
+      self.CC.leadDx = self.lead_1.dRel-2.5
       self.CC.leadDy = self.lead_1.yRel
     else:
       self.CC.leadDx = 0.

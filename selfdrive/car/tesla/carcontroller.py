@@ -78,6 +78,7 @@ class CarController(object):
     self.poller = zmq.Poller()
     self.speedlimit = messaging.sub_sock(context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
     self.trafficevents = messaging.sub_sock(context, service_list['trafficEvents'].port, conflate=True, poller=self.poller)
+    self.pathPlan = messaging.sub_sock(context, service_list['pathPlan'].port, conflate=True, poller=self.poller)
     self.speedlimit_ms = 0
     self.speedlimit_valid = False
     self.speedlimit_units = 0
@@ -102,7 +103,7 @@ class CarController(object):
     self.curv1 = 127. #127 for straight
     self.curv2 = 127. #127 for straight
     self.curv3 = 127. #127 for straight
-    self.laneRange = 160  #max is 160m
+    self.laneRange = 30  #max is 160m
 
     self.stopSign_visible = False
     self.stopSign_distance = 1000.
@@ -171,15 +172,6 @@ class CarController(object):
              snd_beep, snd_chime,leftLaneVisible,rightLaneVisible):
 
     """ Controls thread """
-
-    if leftLaneVisible:
-      self.lLine = 1
-    else:
-      self.lLine = 0
-    if rightLaneVisible:
-      self.rLine = 1
-    else:
-      self.rLine = 0
 
     ## Todo add code to detect Tesla DAS (camera) and go into listen and record mode only (for AP1 / AP2 cars)
     if not self.enable_camera:
@@ -327,7 +319,33 @@ class CarController(object):
             self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
           else:
             self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
-        #for socket, _ in self.poller.poll(1):
+        #to show curvature and lanes on IC
+        if socket is self.pathPlan:
+          pp = messaging.recv_one(socket).pathPlan
+          if pp.valid:
+            if pp.lProb > 0.5:
+              self.lLine = 1
+            else:
+              self.lLine = 0
+            if pp.rProb > 0.5:
+              self.rLine = 1
+            else:
+              self.rLine = 0
+            c0 = -clip(pp.dPoly[0],-3.5,3.5)
+            c1 = -clip(pp.dPoly[1],-0.2,0.2)
+            c2 = -clip(pp.dPoly[2],-0.0025,0.0025)
+            c3 = -clip(pp.dPoly[3],-0.00003,0.00003)
+            self.curv0 = (c0 + 3.5)/0.035 #100 for straight
+            self.curv1 = (c1 + 0.2)/0.0016 #127 for straight
+            self.curv2 = (c2  + 0.0025)/0.00002 #127 for straight
+            self.curv3 = (c3 + 0.00003)/0.00000024 #127 for straight
+          else:
+            self.lLine = 0
+            self.rLine = 0
+            self.curv0 = 100. #100 for straight
+            self.curv1 = 127. #127 for straight
+            self.curv2 = 127. #127 for straight
+            self.curv3 = 127. #127 for straight
         if socket is self.trafficevents:
           self.reset_traffic_events()
           tr_ev_list = messaging.recv_sock(socket)

@@ -91,10 +91,10 @@ def create_fake_DAS_obj_lane_msg(leadDx,leadDy,rLine,lLine,curv0,curv1,curv2,cur
     leadDy = -22
   tLeadDx = int(leadDx / 0.5)
   tLeadDy = int(22.5 + leadDy) / 0.35
-  tCurv0 = int(curv0)
-  tCurv1 = int(curv1)
-  tCurv2 = int(curv2)
-  tCurv3 = int(curv3)
+  tCurv0 = int(curv0) & 0xFF
+  tCurv1 = int(curv1) & 0xFF
+  tCurv2 = int(curv2) & 0xFF
+  tCurv3 = int(curv3) & 0xFF
   msg = create_string_buffer(msg_len)
   struct.pack_into('BBBBBBBB',msg ,0 , tLeadDx,tLeadDy,(lLine << 4) + rLine, tCurv0,tCurv1,tCurv2,tCurv3,laneRange)
   return [msg_id,0,msg.raw,0]

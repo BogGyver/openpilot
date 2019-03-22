@@ -206,7 +206,7 @@ class ACCController(object):
         lead_1 = messaging.recv_one(socket).live20.leadOne
         if lead_1.dRel:
           self.lead_last_seen_time_ms = current_time_ms
-          self.CC.leadDx = lead_1.dRel
+          self.CC.leadDx = lead_1.dRel-2.5
           self.CC.leadDy = lead_1.yRel
         else:
           self.CC.leadDx = 0.
