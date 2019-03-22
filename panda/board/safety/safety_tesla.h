@@ -603,8 +603,9 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
   if (fake_DAS_counter % 10 == 3) {
     //send DAS_lanes - 0x239
     //for now fixed 0x33,0xC8,0xF0,0x7F,0x70,0x70,0x33,(idx << 4)+0x0F
+    int fuse = 2;
     MLB = 0x00000030 + (rLine << 1) + lLine + (laneRange << 8) + (curvC0 << 16) + (curvC1  << 24);
-    MHB = 0x0F000000 + (DAS_lanes_idx << 28) + curvC2 + (curvC3 << 8) + (((rLine << 2) + lLine) << 16);
+    MHB = 0x0F000000 + (DAS_lanes_idx << 28) + curvC2 + (curvC3 << 8) + ((((rLine * fuse) << 2) + (lLine * fuse)) << 16);
     send_fake_message(RIR,RDTR,8,0x239,0,MLB,MHB);
     DAS_lanes_idx ++;
     DAS_lanes_idx = DAS_lanes_idx % 16;

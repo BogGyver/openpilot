@@ -103,7 +103,8 @@ class CarController(object):
     self.curv1 = 127. #127 for straight
     self.curv2 = 127. #127 for straight
     self.curv3 = 127. #127 for straight
-    self.laneRange = 30  #max is 160m
+    self.laneRange = 60  #max is 160m
+
 
     self.stopSign_visible = False
     self.stopSign_distance = 1000.
@@ -331,10 +332,10 @@ class CarController(object):
               self.rLine = 1
             else:
               self.rLine = 0
-            c0 = -clip(pp.dPoly[0],-3.5,3.5)
-            c1 = -clip(pp.dPoly[1],-0.2,0.2)
-            c2 = -clip(pp.dPoly[2],-0.0025,0.0025)
-            c3 = -clip(pp.dPoly[3],-0.00003,0.00003)
+            c0 = -clip(pp.cPoly[0],-3.5,3.5)
+            c1 = -clip(pp.cPoly[1],-0.2,0.2)
+            c2 = -clip(pp.cPoly[2],-0.0025,0.0025)
+            c3 = -clip(pp.cPoly[3],-0.00003,0.00003)
             self.curv0 = (c0 + 3.5)/0.035 #100 for straight
             self.curv1 = (c1 + 0.2)/0.0016 #127 for straight
             self.curv2 = (c2  + 0.0025)/0.00002 #127 for straight
