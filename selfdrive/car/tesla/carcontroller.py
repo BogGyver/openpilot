@@ -138,6 +138,7 @@ class CarController(object):
     self.curv3 = 0. 
     self.laneRange = 30  #max is 160m but OP has issues with precision beyond that
     self.useBaseMapC0C1 = False
+    self.useZeroC0C1 = True
     self.useMapOnly = False
 
     self.stopSign_visible = False
@@ -438,14 +439,20 @@ class CarController(object):
     elif CS.csaRoadCurvRange > 20:
       self.curv2 = -CS.csaRoadCurvC2
       self.curv3 = -CS.csaRoadCurvC3
-      if self.useBaseMapC0C1:
+      if self.useZeroC0C1:
+        self.curv0 = 0.
+        self.curv1 = 0.
+      elif self.useBaseMapC0C1:
         self.curv0 = -clip(CS.roadCurvC0,-0.5,0.5)
         self.curv1 = -CS.roadCurvC1
       self.laneRange = CS.csaRoadCurvRange
     elif CS.csaOfframpCurvRange > 20:
       self.curv2 = -CS.csaOfframpCurvC2
       self.curv3 = -CS.csaOfframpCurvC3
-      if self.useBaseMapC0C1:
+      if self.useZeroC0C1:
+        self.curvC0 = 0.
+        self.curvC1 = 0.
+      elif self.useBaseMapC0C1:
         self.curv0 = -clip(CS.roadCurvC0,-0.5,0.5)
         self.curv1 = -CS.roadCurvC1
       self.laneRange = CS.csaOfframpCurvRange
