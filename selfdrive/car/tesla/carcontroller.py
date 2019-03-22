@@ -121,7 +121,7 @@ class CarController(object):
     self.speed_limit_offset = 0.
 
     # items for IC integration for Lane and Lead Car
-    self.average_over_x_pathplan_values = 5
+    self.average_over_x_pathplan_values = 15
     self.curv0Matrix =  MovingAverage(self.average_over_x_pathplan_values)
     self.curv1Matrix =  MovingAverage(self.average_over_x_pathplan_values) 
     self.curv2Matrix =  MovingAverage(self.average_over_x_pathplan_values) 
