@@ -137,7 +137,7 @@ class CarController(object):
     self.curv2 = 0. 
     self.curv3 = 0. 
     self.laneRange = 30  #max is 160m but OP has issues with precision beyond that
-
+    self.useBaseMapC0C1 = False
 
     self.stopSign_visible = False
     self.stopSign_distance = 1000.
@@ -428,6 +428,22 @@ class CarController(object):
             self.checkWhichSign()
             if not ((self.roadSignType_last == self.roadSignType) and (self.roadSignType == 0xFF)):
                can_sends.append(teslacan.create_fake_DAS_sign_msg(self.roadSignType,self.roadSignStopDist,self.roadSignColor,self.roadSignControlActive))
+    if CS.csaRoadCurvRange > 20:
+      self.curv2 = -CS.csaRoadCurvC2
+      self.curv3 = -CS.csaRoadCurvC3
+      if self.useBaseMapC0C1:
+        self.curv0 = -CS.roadCurvC0
+        self.curv1 = -CS.roadCurvC1
+      self.laneRange = CS.csaRoadCurvRange
+    elif CS.csaOfframpCurvRange > 20:
+      self.curv2 = -CS.csaOfframpCurvC2
+      self.curv3 = -CS.csaOfframpCurvC3
+      if self.useBaseMapC0C1:
+        self.curv0 = -CS.roadCurvC0
+        self.curv1 = -CS.roadCurvC1
+      self.laneRange = CS.csaOfframpCurvRange
+    else:
+      self.laneRange = 30
     op_status = 0x02
     hands_on_state = 0x00
     forward_collision_warning = 0 #1 if needed

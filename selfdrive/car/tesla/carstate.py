@@ -103,6 +103,24 @@ def get_can_signals(CP):
       ("DI_regenLight", "DI_state",0),
       ("GTW_dasHw", "GTW_carConfig",0),
       ("SDM_bcklDrivStatus", "SDM1", 0),
+
+      ("UI_csaOfframpCurvC3", "UI_csaOfframpCurvature", 0),
+      ("UI_csaOfframpCurvC2", "UI_csaOfframpCurvature", 0),
+      ("UI_csaOfframpCurvRange", "UI_csaOfframpCurvature", 0),
+      ("UI_csaOfframpCurvUsingTspline", "UI_csaOfframpCurvature", 0),
+
+      ("UI_csaRoadCurvC3", "UI_csaRoadCurvature", 0),
+      ("UI_csaRoadCurvC2", "UI_csaRoadCurvature", 0),
+      ("UI_csaRoadCurvRange", "UI_csaRoadCurvature", 0),
+      ("UI_csaRoadCurvUsingTspline", "UI_csaRoadCurvature", 0),
+
+      ("UI_roadCurvHealth", "UI_roadCurvature", 0),
+      ("UI_roadCurvRange", "UI_roadCurvature", 0),
+      ("UI_roadCurvC0", "UI_roadCurvature", 0),
+      ("UI_roadCurvC1", "UI_roadCurvature", 0),
+      ("UI_roadCurvC2", "UI_roadCurvature", 0),
+      ("UI_roadCurvC3", "UI_roadCurvature", 0),
+
       
   ]
 
@@ -189,6 +207,24 @@ class CarState(object):
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
 
+
+    # for map integration
+    self.csaRoadCurvC3 = 0.
+    self.csaRoadCurvC2 = 0.
+    self.csaRoadCurvRange = 0.
+    self.csaRoadCurvUsingTspline = 0
+
+    self.csaOfframpCurvC3 = 0.
+    self.csaOfframpCurvC2 = 0.
+    self.csaOfframpCurvRange = 0.
+    self.csaOfframpCurvUsingTspline = 0
+
+    self.roadCurvHealth = 0
+    self.roadCurvRange = 0.
+    self.roadCurvC0 = 0.
+    self.roadCurvC1 = 0.
+    self.roadCurvC2 = 0.
+    self.roadCurvC3 = 0.
 
 
     if (CP.carFingerprint == CAR.MODELS):
@@ -392,6 +428,24 @@ class CarState(object):
                                cp.vl["GTW_carState"]['DOOR_STATE_RL'], cp.vl["GTW_carState"]['DOOR_STATE_RR']])  #JCT
     self.seatbelt = cp.vl["SDM1"]['SDM_bcklDrivStatus']
     #self.seatbelt = cp.vl["SDM1"]['SDM_bcklDrivStatus'] and cp.vl["GTW_status"]['GTW_driverPresent']
+
+    #Nav Map Data
+    self.csaRoadCurvC3 = cp.vl['UI_csaRoadCurvature']["UI_csaRoadCurvC3"]
+    self.csaRoadCurvC2 = cp.vl['UI_csaRoadCurvature']["UI_csaRoadCurvC2"]
+    self.csaRoadCurvRange = cp.vl['UI_csaRoadCurvature']["UI_csaRoadCurvRange"]
+    self.csaRoadCurvUsingTspline = cp.vl['UI_csaRoadCurvature']["UI_csaRoadCurvUsingTspline"]
+
+    self.csaOfframpCurvC3 = cp.vl['UI_csaOfframpCurvature']["UI_csaOfframpCurvC3"]
+    self.csaOfframpCurvC2 = cp.vl['UI_csaOfframpCurvature']["UI_csaOfframpCurvC2"]
+    self.csaOfframpCurvRange = cp.vl['UI_csaOfframpCurvature']["UI_csaOfframpCurvRange"]
+    self.csaOfframpCurvUsingTspline = cp.vl['UI_csaOfframpCurvature']["UI_csaOfframpCurvUsingTspline"]
+
+    self.roadCurvHealth = cp.vl['UI_roadCurvature']["UI_roadCurvHealth"]
+    self.roadCurvRange = cp.vl['UI_roadCurvature']["UI_roadCurvRange"]
+    self.roadCurvC0 = cp.vl['UI_roadCurvature']["UI_roadCurvC0"]
+    self.roadCurvC1 = cp.vl['UI_roadCurvature']["UI_roadCurvC1"]
+    self.roadCurvC2 = cp.vl['UI_roadCurvature']["UI_roadCurvC2"]
+    self.roadCurvC3 = cp.vl['UI_roadCurvature']["UI_roadCurvC3"]
 
     # 2 = temporary 3= TBD 4 = temporary, hit a bump 5 (permanent) 6 = temporary 7 (permanent)
     # TODO: Use values from DBC to parse this field
