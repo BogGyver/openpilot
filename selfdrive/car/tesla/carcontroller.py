@@ -103,7 +103,7 @@ class CarController(object):
     self.curv1 = 127. #127 for straight
     self.curv2 = 127. #127 for straight
     self.curv3 = 127. #127 for straight
-    self.laneRange = 60  #max is 160m
+    self.laneRange = 30  #max is 160m
 
 
     self.stopSign_visible = False
