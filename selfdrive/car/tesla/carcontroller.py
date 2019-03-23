@@ -450,14 +450,15 @@ class CarController(object):
       self.curv2 = -CS.csaOfframpCurvC2
       self.curv3 = -CS.csaOfframpCurvC3
       if self.useZeroC0C1:
-        self.curvC0 = 0.
-        self.curvC1 = 0.
+        self.curv0 = 0.
+        self.curv1 = 0.
       elif self.useBaseMapC0C1:
         self.curv0 = -clip(CS.roadCurvC0,-0.5,0.5)
         self.curv1 = -CS.roadCurvC1
       self.laneRange = CS.csaOfframpCurvRange
     else:
       self.laneRange = 30
+    self.laneRange = clip(self.laneRange,0,159)
     op_status = 0x02
     hands_on_state = 0x00
     forward_collision_warning = 0 #1 if needed
