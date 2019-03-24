@@ -81,6 +81,25 @@ class MovingAverage(object):
     self.position = self.position % self.length
     return self.sum/self.no_items
 
+
+  def dele(self):
+    if self.no_items == 0:
+      return 0.
+    if self.no_items > 0:
+      self.no_items -= 1
+      self.sum -= self.values[self.position]
+      self.values[self.position] = 0.
+      self.position -= 1
+      if self.position < 0:
+        self.position = self.length-1
+    if self.sum == 0. or self.no_items == 0.:
+      #all empty so initialize
+      self.position = 0
+      self.sum = 0.
+      self.no_items = 0
+      return 0.
+    self.position = self.position % self.length
+    return self.sum/self.no_items
 class CarController(object):
   def __init__(self, dbc_name, enable_camera=True):
     self.params = Params()
@@ -362,8 +381,8 @@ class CarController(object):
             self.leadDx = self.leadDxMatrix.add(lead_1.dRel-2.5)
             self.leadDy = self.leadDyMatrix.add(-lead_1.yRel)
           else:
-            self.leadDx = self.leadDxMatrix.add(0.)
-            self.leadDy = self.leadDxMatrix.add(0.)
+            self.leadDx = self.leadDxMatrix.dele()
+            self.leadDy = self.leadDyMatrix.dele()
         #to show curvature and lanes on IC
         if socket is self.pathPlan:
           pp = messaging.recv_one(socket).pathPlan
