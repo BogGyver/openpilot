@@ -468,7 +468,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
       if (DAS_longC_enabled > 0) {
         jerk_min = 0x000;
         jerk_max = 0x0F;
-        acc_state = 0x03;
+        acc_state = 0x05;//bb send HOLD?
         acc_speed_kph = (int)(DAS_acc_speed_kph * 10.0);
         accel_max = 0x1FE; //(int)((DAS_accel_max + 15 ) / 0.04);
         accel_min = 0x001; //(int)((DAS_accel_min + 15 ) / 0.04);
@@ -1289,7 +1289,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
   }
 
   //capture message for fake DAS and parse
-  if (addr == 0x553) {
+  if (addr == 0x659) { //0x553) {
     int b0 = (to_send->RDLR & 0xFF);
     int b1 = ((to_send->RDLR >> 8) & 0xFF);
     int b2 = ((to_send->RDLR >> 16) & 0xFF);
@@ -1348,7 +1348,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     }
     tesla_desired_angle_last = desired_angle;
 
-    return false;
+    return true; //we have to send this to the spamIC 
   }
 
   return true;

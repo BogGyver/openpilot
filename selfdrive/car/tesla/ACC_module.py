@@ -53,15 +53,23 @@ class ACCMode(object):
 def _current_time_millis():
   return int(round(time.time() * 1000))
 
-def max_v_by_speed_limit(acc_set_speed_kph ,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset):
-  if speed_limit_valid:
+def max_v_by_speed_limit(acc_set_speed_kph ,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset,CS):
+  # if more than 10 kph / 2.78 ms, consider we have speed limit
+  if speed_limit_kph > 10:
     if set_speed_limit_active:
       v_speedlimit = speed_limit_kph + speed_limit_offset
-      return min(acc_set_speed_kph,v_speedlimit)
+      sl1 = min(acc_set_speed_kph,v_speedlimit)
+      return min(sl1, CS.maxdrivespeed * CV.MS_TO_KPH)
+    elif CS.maxdrivespeed > 0:
+      return min(acc_set_speed_kph, CS.maxdrivespeed * CV.MS_TO_KPH)
     else:
       return acc_set_speed_kph
+  elif CS.maxdrivespeed > 0:
+    return min(acc_set_speed_kph, CS.maxdrivespeed * CV.MS_TO_KPH)
   else:
     return acc_set_speed_kph
+
+
 
 class ACCController(object):
   
@@ -246,7 +254,7 @@ class ACCController(object):
     # Relative velocity between the lead car and our set cruise speed.
     future_vrel_kph = lead_speed_kph - CS.v_cruise_actual
     # How much we can accelerate without exceeding the max allowed speed.
-    available_speed_kph = max_v_by_speed_limit(self.acc_speed_kph, speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset) - CS.v_cruise_actual
+    available_speed_kph = max_v_by_speed_limit(self.acc_speed_kph, speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset,CS) - CS.v_cruise_actual
     half_press_kph, full_press_kph = self._get_cc_units_kph(CS.imperial_speed_units)
     # button to issue
     button = None

@@ -119,11 +119,11 @@ class CarController(object):
     self.sent_DAS_bootID = False
     context = zmq.Context()
     self.poller = zmq.Poller()
-    self.speedlimit = messaging.sub_sock(context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
+    #self.speedlimit = messaging.sub_sock(context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
     self.trafficevents = messaging.sub_sock(context, service_list['trafficEvents'].port, conflate=True, poller=self.poller)
     self.pathPlan = messaging.sub_sock(context, service_list['pathPlan'].port, conflate=True, poller=self.poller)
     self.live20 = messaging.sub_sock(context, service_list['live20'].port, conflate=True, poller=self.poller)
-    self.speedlimit_ms = 0
+    self.speedlimit_ms = 0.
     self.speedlimit_valid = False
     self.speedlimit_units = 0
     self.opState = 0 # 0-disabled, 1-enabled, 2-disabling, 3-unavailable, 5-warning
@@ -363,17 +363,25 @@ class CarController(object):
     # DAS_speed_limit_units(8)
     #send fake_das data as 0x553
     # TODO: forward collission warning
+    self.speedlimit_ms = CS.speedLimitKph * CV.KPH_TO_MS
+    self.speedlimit_valid = 1
+    if self.speedlimit_ms == 0:
+      self.speedlimit_valid = 0
+    if (self.params.get("IsMetric") == "1"):
+      self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
+    else:
+      self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
     if frame % 10 == 0:
       #get speed limit
       for socket, _ in self.poller.poll(1):
-        if socket is self.speedlimit:
-          lmd = messaging.recv_one(socket).liveMapData
-          self.speedlimit_ms = lmd.speedLimit
-          self.speedlimit_valid = lmd.speedLimitValid
-          if (self.params.get("IsMetric") == "1"):
-            self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
-          else:
-            self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
+        #if socket is self.speedlimit:
+        #  lmd = messaging.recv_one(socket).liveMapData
+        #  self.speedlimit_ms = lmd.speedLimit
+        #  self.speedlimit_valid = lmd.speedLimitValid
+        #  if (self.params.get("IsMetric") == "1"):
+        #    self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
+        #  else:
+        #    self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
         #to show lead car on IC
         if socket is self.live20:
           lead_1 = messaging.recv_one(socket).live20.leadOne
@@ -583,7 +591,7 @@ class CarController(object):
     cruise_btn = None
     if self.ACC.enable_adaptive_cruise and not CS.pedal_interceptor_available:
       cruise_btn = self.ACC.update_acc(enabled, CS, frame, actuators, pcm_speed, \
-                    self.speedlimit_ms, self.speedlimit_valid, \
+                    self.speedlimit_ms * CV.MS_TO_KPH, self.speedlimit_valid, \
                     self.set_speed_limit_active, self.speed_limit_offset)
       if cruise_btn:
           cruise_msg = teslacan.create_cruise_adjust_msg(
@@ -595,8 +603,8 @@ class CarController(object):
     apply_accel = 0.
     if CS.pedal_interceptor_available and frame % 5 == 0: # pedal processed at 20Hz
       apply_accel, accel_needed, accel_idx = self.PCC.update_pdl(enabled, CS, frame, actuators, pcm_speed, \
-                    self.speedlimit_ms * CV.MS_TO_KPH, self.speedlimit_valid, \
-                    self.set_speed_limit_active, self.speed_limit_offset)
+                    self.speedlimit_ms, self.speedlimit_valid, \
+                    self.set_speed_limit_active, self.speed_limit_offset * CV.KPH_TO_MS)
       can_sends.append(teslacan.create_pedal_command_msg(apply_accel, int(accel_needed), accel_idx))
     self.last_angle = apply_angle
     self.last_accel = apply_accel

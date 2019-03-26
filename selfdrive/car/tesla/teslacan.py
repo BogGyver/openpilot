@@ -64,7 +64,7 @@ def create_fake_DAS_msg(speed_control_enabled,gas_to_resume,apUnavailable, colli
                  legal_speed_limit,
                  apply_angle,
                  enable_steer_control):
-  msg_id = 0x553
+  msg_id = 0x659 #0x553 //we will try to use DAS_udsRequest to send this info to IC
   msg_len = 8
   msg = create_string_buffer(msg_len)
   c_apply_steer = ((int( apply_angle * 10 + 0x4000 )) & 0x7FFF) + (enable_steer_control << 15)

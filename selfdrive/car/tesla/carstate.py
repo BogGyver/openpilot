@@ -121,6 +121,17 @@ def get_can_signals(CP):
       ("UI_roadCurvC2", "UI_roadCurvature", 0),
       ("UI_roadCurvC3", "UI_roadCurvature", 0),
 
+      ("UI_mapSpeedUnits", "UI_driverAssistMapData", 0),
+      ("UI_mapSpeedLimit", "UI_driverAssistMapData", 0),
+
+      ("UI_roadSign","UI_driverAssistRoadSign", 0),
+      ("UI_meanFleetSplineSpeedMPS", "UI_driverAssistRoadSign", 0),
+      ("UI_medianFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
+      ("UI_topQrtlFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
+      ("UI_splineLocConfidence", "UI_driverAssistRoadSign", 0),
+      ("UI_baseMapSpeedLimitMPS", "UI_driverAssistRoadSign", 0),
+      ("UI_bottomQrtlFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
+
       
   ]
 
@@ -226,6 +237,20 @@ class CarState(object):
     self.roadCurvC2 = 0.
     self.roadCurvC3 = 0.
 
+    self.speedLimitUnits = 0
+    self.speedLimit = 0
+
+    self.meanFleetSplineSpeedMPS = 0.
+    self.medianFleetSpeedMPS = 0.
+    self.topQrtlFleetSplineSpeedMPS = 0.
+    self.splineLocConfidence = 0
+    self.baseMapSpeedLimitMPS = 0.
+    self.bottomQrtlFleetSpeedMPS = 0.
+
+    self.mapBasedSuggestedSpeed = 0.
+    self.splineBasedSuggestedSpeed = 0.
+    self.maxdrivespeed = 0.
+
 
     if (CP.carFingerprint == CAR.MODELS):
       # ALCA PARAMS
@@ -330,6 +355,8 @@ class CarState(object):
     self.DAS_plannerErrors = 0
     self.DAS_doorOpen = 0
     self.DAS_notInDrive = 0
+
+
 
     #BB variables for pedal CC
     self.pedal_speed_kph = 0.
@@ -446,6 +473,37 @@ class CarState(object):
     self.roadCurvC1 = cp.vl['UI_roadCurvature']["UI_roadCurvC1"]
     self.roadCurvC2 = cp.vl['UI_roadCurvature']["UI_roadCurvC2"]
     self.roadCurvC3 = cp.vl['UI_roadCurvature']["UI_roadCurvC3"]
+
+    speed_limit_tesla_lookup = [0,5,7,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,130,140,150,160,0,0] 
+    self.speedLimitUnits = cp.vl["UI_driverAssistMapData"]["UI_mapSpeedUnits"]
+    self.speedLimitKph = speed_limit_tesla_lookup[int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])] * (1 + 0.609 * (1 - self.speedLimitUnits))
+
+
+    rdSignMsg = cp.vl["UI_driverAssistRoadSign"]["UI_roadSign"]
+    if rdSignMsg == 4:
+      self.meanFleetSplineSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_meanFleetSplineSpeedMPS"]
+      self.medianFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_medianFleetSpeedMPS"]
+      self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
+      # if one of them is zero, select max of the two
+      if self.meanFleetSplineSpeedMPS == 0 or self.medianFleetSpeedMPS == 0:
+        self.splineBasedSuggestedSpeed = max(self.meanFleetSplineSpeedMPS,self.medianFleetSpeedMPS)
+      else:
+        self.splineBasedSuggestedSpeed = (self.splineLocConfidence * self.meanFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.medianFleetSpeedMPS ) / 100
+    if rdSignMsg == 3:
+      self.topQrtlFleetSplineSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_topQrtlFleetSpeedMPS"]
+      self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
+      self.baseMapSpeedLimitMPS = cp.vl["UI_driverAssistRoadSign"]["UI_baseMapSpeedLimitMPS"]
+      self.bottomQrtlFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_bottomQrtlFleetSpeedMPS"]
+      # if confidence over 60%, then weight between bottom speed and top speed
+      # if less than 40% then use map data
+      if self.splineLocConfidence > 60:
+        self.mapBasedSuggestedSpeed = (self.splineLocConfidence * self.topQrtlFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.bottomQrtlFleetSpeedMPS ) / 100
+      else:
+        self.mapBasedSuggestedSpeed = self.baseMapSpeedLimitMPS
+    if self.mapBasedSuggestedSpeed > 0 and self.splineBasedSuggestedSpeed > 0:
+      self.maxdrivespeed = min(self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed)
+    else:
+      self.maxdrivespeed = max(self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed)
 
     # 2 = temporary 3= TBD 4 = temporary, hit a bump 5 (permanent) 6 = temporary 7 (permanent)
     # TODO: Use values from DBC to parse this field

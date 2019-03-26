@@ -149,13 +149,23 @@ def max_v_in_mapped_curve_ms(map_data, pedal_set_speed_kph):
   else:
     return None
 
-def max_v_by_speed_limit(pedal_set_speed_ms ,speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset_ms):
-  if speed_limit_valid:
+def max_v_by_speed_limit(pedal_set_speed_ms ,speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset_ms,CS):
+  # if more than 10 kph / 2.78 ms, consider we have speed limit
+  if speed_limit_ms > 2.78:
     if set_speed_limit_active:
       v_speedlimit_ms = speed_limit_ms + speed_limit_offset_ms
-      return min(pedal_set_speed_ms,v_speedlimit_ms)
+      sl1 = min(pedal_set_speed_ms,v_speedlimit_ms)
+
+      if CS.maxdrivespeed > 0:
+        return min(sl1, CS.maxdrivespeed)
+      else:
+        return sl1
+    elif CS.maxdrivespeed >  0:
+      return min(pedal_set_speed_ms, CS.maxdrivespeed)
     else:
       return pedal_set_speed_ms
+  elif CS.maxdrivespeed > 0:
+    return min(pedal_set_speed_ms, CS.maxdrivespeed)
   else:
     return pedal_set_speed_ms
 
@@ -382,7 +392,7 @@ class PCCController(object):
         if v_curve:
           self.v_pid = min(self.v_pid, v_curve)
       # now check and do the limit vs speed limit + offset
-      self.v_pid = max_v_by_speed_limit(self.v_pid ,speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset)
+      self.v_pid = max_v_by_speed_limit(self.v_pid ,speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset,CS)
       # cruise speed can't be negative even is user is distracted
       self.v_pid = max(self.v_pid, 0.)
 
