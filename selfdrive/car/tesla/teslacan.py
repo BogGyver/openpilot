@@ -54,7 +54,15 @@ def create_pedal_command_msg(accelCommand, enable, idx):
   struct.pack_into('B', msg, msg_len-1, add_tesla_checksum(msg_id,msg))
   return [msg_id, 0, msg.raw, 2]    
   
-
+def create_fake_IC_msg(useAnalogWhenNoEon):
+  msg_id = 0x649
+  msg_len = 8
+  msg = create_string_buffer(msg_len)
+  useAnalog = 0
+  if useAnalogWhenNoEon:
+    useAnalog = 1
+  struct.pack_into('BBBBBBBB', msg, 0, 0xFF,0xFF,0x01,0x02,0x03,0x04,0xFF,useAnalog)
+  return [msg_id, 0, msg.raw, 0]
 
 def create_fake_DAS_msg(speed_control_enabled,gas_to_resume,apUnavailable, collision_warning, op_status, \
                  acc_speed_kph, \

@@ -296,9 +296,13 @@ BO_ 904 MCU_clusterBacklightRequest: 3 NEO
  SG_ MCU_clusterReadyForPowerOff : 5|1@1+ (1,0) [0|1] "" NEO
 
 BO_ 984 MCU_locationStatus: 8 MCU
- SG_ MCU_gpsAccuracy : 56|7@1+ (0.200000003,0) [0|25.200000378] "m" NEO
- SG_ MCU_latitude : 0|28@1- (1E-006,0) [-134.217727597347|134.217726597347] "deg"  NEO
- SG_ MCU_longitude : 28|28@1- (1E-006,0) [-268.435455194694|268.435454194694] "deg"  NEO
+ SG_ MCU_gpsAccuracy : 57|7@1+ (0.2,0) [0|0] "m" NEO
+ SG_ MCU_latitude : 0|28@1- (1E-06,0) [0|0] "deg" NEO
+ SG_ MCU_longitude : 28|29@1- (1E-06,0) [0|0] "deg" NEO
+
+BO_ 104 MCU_locationStatus2: 8 MCU
+ SG_ MCU_elevation : 0|32@1- (0.1,0) [0|0] "m" GTW
+ SG_ MCU_navigonExpectedSpeed : 32|7@1+ (1,0) [0|126] "mph" GTW
 
 BO_ 840 GTW_status: 8 GTW
  SG_ GTW_accGoingDown : 6|1@0+ (1,0) [0|1] ""  NEO

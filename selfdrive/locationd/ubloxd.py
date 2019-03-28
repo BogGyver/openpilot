@@ -12,6 +12,7 @@ import zmq
 import selfdrive.messaging as messaging
 from selfdrive.services import service_list
 from ephemeris import EphemerisData, GET_FIELD_U
+from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 
 panda = os.getenv("PANDA") is not None   # panda directly connected
 grey = not (os.getenv("EVAL") is not None)     # panda through boardd
@@ -269,21 +270,24 @@ def main(gctx=None):
   for i in xrange(1,33):
     nav_frame_buffer[0][i] = {}
 
+  if not CarSettings().get_value("useTeslaGPS"):
+    context = zmq.Context()
+    gpsLocationExternal = messaging.pub_sock(context, service_list['gpsLocationExternal'].port)
+    ubloxGnss = messaging.pub_sock(context, service_list['ubloxGnss'].port)
 
-  context = zmq.Context()
-  gpsLocationExternal = messaging.pub_sock(context, service_list['gpsLocationExternal'].port)
-  ubloxGnss = messaging.pub_sock(context, service_list['ubloxGnss'].port)
-
-  dev = init_reader()
-  while True:
-    try:
-      msg = dev.receive_message()
-    except serial.serialutil.SerialException as e:
-      print(e)
-      dev.close()
-      dev = init_reader()
-    if msg is not None:
-      handle_msg(dev, msg, nav_frame_buffer)
+    dev = init_reader()
+    while True:
+      try:
+        msg = dev.receive_message()
+      except serial.serialutil.SerialException as e:
+        print(e)
+        dev.close()
+        dev = init_reader()
+      if msg is not None:
+        handle_msg(dev, msg, nav_frame_buffer)
+  else:
+    while True:
+      time.sleep(1.1)
 
 if __name__ == "__main__":
   main()

@@ -151,7 +151,38 @@ def read_config_file(CS):
       file_changed = True
     config.set('OP_CONFIG', 'tether_ip', CS.tetherIP)
 
+    #use_tesla_gps -> CS.useTeslaGPS
+    try:
+      CS.useTeslaGPS = configr.getboolean('OP_CONFIG','use_tesla_gps')
+    except:
+      CS.useTeslaGPS = False
+      file_changed = True
+    config.set('OP_CONFIG', 'use_tesla_gps', CS.useTeslaGPS)
 
+    #use_tesla_map_data -> CS.useTeslaMapData
+    try:
+      CS.useTeslaMapData = configr.getboolean('OP_CONFIG','use_tesla_map_data')
+    except:
+      CS.useTeslaMapData = False
+      file_changed = True
+    config.set('OP_CONFIG', 'use_tesla_map_data', CS.useTeslaMapData)
+
+    #has_tesla_IC_integration -> CS.hasTeslaIcIntegration
+    try:
+      CS.hasTeslaIcIntegration = configr.getboolean('OP_CONFIG','has_tesla_ic_integration')
+    except:
+      CS.hasTeslaIcIntegration = False
+      file_changed = True
+    config.set('OP_CONFIG', 'has_tesla_ic_integration', CS.hasTeslaIcIntegration)
+
+    #use_analog_when_no_eon -> CS.useAnalogWhenNoEon
+    try:
+      CS.useAnalogWhenNoEon = configr.getboolean('OP_CONFIG','use_analog_when_no_eon')
+    except:
+      CS.useAnalogWhenNoEon = False
+      file_changed = True
+    config.set('OP_CONFIG', 'use_analog_when_no_eon', CS.useAnalogWhenNoEon)
+    
 
     #do_auto_update -> CS.doAutoUpdate
     try:
@@ -187,6 +218,10 @@ class CarSettings(object):
     self.doAutoUpdate = True
     self.blockUploadWhileTethering = False
     self.tetherIP = "127.0.0."
+    self.useTeslaGPS = False
+    self.useTeslaMapData = False
+    self.hasTeslaIcIntegration = False
+    self.useAnalogWhenNoEon = False
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

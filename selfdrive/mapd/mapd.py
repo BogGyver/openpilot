@@ -31,6 +31,7 @@ import selfdrive.messaging as messaging
 from mapd_helpers import MAPS_LOOKAHEAD_DISTANCE, Way, circle_through_points
 import selfdrive.crash as crash
 from selfdrive.version import version, dirty
+from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 
 
 OVERPASS_API_URL = "https://overpass.kumi.systems/api/interpreter"
@@ -296,22 +297,25 @@ def mapsd_thread():
 
 def main(gctx=None):
   params = Params()
-  dongle_id = params.get("DongleId")
-  crash.bind_user(id=dongle_id)
-  crash.bind_extra(version=version, dirty=dirty, is_eon=True)
-  crash.install()
+  if not CarSettings().get_value("useTeslaMapData"):
+    dongle_id = params.get("DongleId")
+    crash.bind_user(id=dongle_id)
+    crash.bind_extra(version=version, dirty=dirty, is_eon=True)
+    crash.install()
 
-  setup_thread_excepthook()
-  main_thread = threading.Thread(target=mapsd_thread)
-  main_thread.daemon = True
-  main_thread.start()
+    setup_thread_excepthook()
+    main_thread = threading.Thread(target=mapsd_thread)
+    main_thread.daemon = True
+    main_thread.start()
 
-  q_thread = threading.Thread(target=query_thread)
-  q_thread.daemon = True
-  q_thread.start()
-
-  while True:
-    time.sleep(0.1)
+    q_thread = threading.Thread(target=query_thread)
+    q_thread.daemon = True
+    q_thread.start()
+    while True:
+      time.sleep(0.1)
+  else:
+    while True:
+      time.sleep(1.1)
 
 
 if __name__ == "__main__":

@@ -59,12 +59,15 @@ def max_v_by_speed_limit(acc_set_speed_kph ,speed_limit_kph, speed_limit_valid, 
     if set_speed_limit_active:
       v_speedlimit = speed_limit_kph + speed_limit_offset
       sl1 = min(acc_set_speed_kph,v_speedlimit)
-      return min(sl1, CS.maxdrivespeed * CV.MS_TO_KPH)
-    elif CS.maxdrivespeed > 0:
+      if CS.maxdrivespeed > 0 and CS.useTeslaMapData:
+        return min(sl1, CS.maxdrivespeed * CV.MS_TO_KPH)
+      else:
+        return sl1
+    elif CS.maxdrivespeed > 0  and CS.useTeslaMapData:
       return min(acc_set_speed_kph, CS.maxdrivespeed * CV.MS_TO_KPH)
     else:
       return acc_set_speed_kph
-  elif CS.maxdrivespeed > 0:
+  elif CS.maxdrivespeed > 0  and CS.useTeslaMapData:
     return min(acc_set_speed_kph, CS.maxdrivespeed * CV.MS_TO_KPH)
   else:
     return acc_set_speed_kph

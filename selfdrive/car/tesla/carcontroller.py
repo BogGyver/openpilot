@@ -1,8 +1,10 @@
 import os
+import datetime
 import subprocess
 from  threading import Thread
 import traceback
 import shlex
+from cereal import log
 from common.params import Params
 from collections import namedtuple
 from selfdrive.boardd.boardd import can_list_to_can_capnp
@@ -34,6 +36,27 @@ ANGLE_DELTA_VU = [5., 3.5, 0.8]   # unwind limit
 #steering adjustment with speed
 DES_ANGLE_ADJUST_FACTOR_BP = [0.,13., 44.]
 DES_ANGLE_ADJUST_FACTOR = [1.0, 1.0, 1.0]
+
+def gen_solution(CS):
+  fix = 0
+  if CS.gpsAccuracy < 2:
+    fix = 1
+  timestamp = int(((datetime.datetime.now() - datetime.datetime(1970,1,1)).total_seconds())*1e+03)
+  gps_fix = {'bearing': CS.gpsHeading,  # heading of motion in degrees
+             'altitude': CS.gpsElevation,  # altitude above ellipsoid
+             'latitude': CS.gpsLatitude,  # latitude in degrees
+             'longitude': CS.gpsLongitude,  # longitude in degrees
+             'speed': CS.gpsVehicleSpeed,  # ground speed in meters
+             'accuracy': CS.gpsAccuracy,  # horizontal accuracy (1 sigma?)
+             'timestamp': timestamp,  # UTC time in ms since start of UTC stime
+             'vNED': [0.,0.,0.],  # velocity in NED frame in m/s
+             'speedAccuracy': 0.,  # speed accuracy in m/s
+             'verticalAccuracy': 0.,  # vertical accuracy in meters
+             'bearingAccuracy': 0.,  # heading accuracy in degrees
+             'source': 'ublox',
+             'flags': fix, # 1 of gpsAccuracy less than 2 meters
+  }
+  return log.Event.new_message(gpsLocationExternal=gps_fix)
 
 def process_hud_alert(hud_alert):
   # initialize to no alert
@@ -117,12 +140,13 @@ class CarController(object):
     self.HSO = HSOController(self)
     self.GYRO = GYROController()
     self.sent_DAS_bootID = False
-    context = zmq.Context()
+    self.context = zmq.Context()
     self.poller = zmq.Poller()
     #self.speedlimit = messaging.sub_sock(context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
-    self.trafficevents = messaging.sub_sock(context, service_list['trafficEvents'].port, conflate=True, poller=self.poller)
-    self.pathPlan = messaging.sub_sock(context, service_list['pathPlan'].port, conflate=True, poller=self.poller)
-    self.live20 = messaging.sub_sock(context, service_list['live20'].port, conflate=True, poller=self.poller)
+    self.trafficevents = messaging.sub_sock(self.context, service_list['trafficEvents'].port, conflate=True, poller=self.poller)
+    self.pathPlan = messaging.sub_sock(self.context, service_list['pathPlan'].port, conflate=True, poller=self.poller)
+    self.live20 = messaging.sub_sock(self.context, service_list['live20'].port, conflate=True, poller=self.poller)
+    self.gpsLocationExternal = None 
     self.speedlimit_ms = 0.
     self.speedlimit_valid = False
     self.speedlimit_units = 0
@@ -288,6 +312,13 @@ class CarController(object):
         self.speed_limit_offset = float(self.params.get("SpeedLimitOffset"))
       else:
         self.speed_limit_offset = 0.
+
+    if CS.useTeslaGPS:
+      if self.gpsLocationExternal == None:
+        self.gpsLocationExternal = messaging.pub_sock(self.context, service_list['gpsLocationExternal'].port)
+      sol = gen_solution(CS)
+      sol.logMonoTime = int(sec_since_boot() * 1e9)
+      self.gpsLocationExternal.send(sol.to_bytes())
 
     #get pitch/roll/yaw every 0.1 sec
     if (frame %10 == 0):
@@ -586,7 +617,9 @@ class CarController(object):
       self.stopLightWarning_last = self.stopLightWarning
       self.stopSignWarning_last = self.stopSignWarning
     # end of DAS emulation """
-
+    if frame % 100 == 0: # and CS.hasTeslaIcIntegration:
+        #IF WE HAVE spamIC RUNNING, send a message every second to say we are still awake
+        can_sends.append(teslacan.create_fake_IC_msg(CS.useAnalogWhenNoEon))
     idx = frame % 16
     cruise_btn = None
     if self.ACC.enable_adaptive_cruise and not CS.pedal_interceptor_available:

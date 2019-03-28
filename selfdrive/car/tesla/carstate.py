@@ -48,9 +48,11 @@ def get_can_signals(CP):
 # this function generates lists for signal, messages and initial values
   signals = [
       ("MCU_gpsVehicleHeading", "MCU_gpsVehicleSpeed", 0),
+      ("MCU_gpsVehicleSpeed", "MCU_gpsVehicleSpeed", 0),
       ("MCU_gpsAccuracy", "MCU_locationStatus", 0),
       ("MCU_latitude", "MCU_locationStatus", 0),
       ("MCU_longitude", "MCU_locationStatus", 0),
+      ("MCU_elevation", "MCU_locationStatus2", 0),
       #("StW_AnglHP", "STW_ANGLHP_STAT", 0),
       ("DI_gear", "DI_torque2", 3),
       ("DI_brakePedal", "DI_torque2", 0),
@@ -125,6 +127,7 @@ def get_can_signals(CP):
       ("UI_mapSpeedLimit", "UI_driverAssistMapData", 0),
 
       ("UI_roadSign","UI_driverAssistRoadSign", 0),
+      ("UI_meanFleetSplineAccelMPS2", "UI_driverAssistRoadSign", 0),
       ("UI_meanFleetSplineSpeedMPS", "UI_driverAssistRoadSign", 0),
       ("UI_medianFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
       ("UI_topQrtlFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
@@ -214,6 +217,10 @@ class CarState(object):
     self.doAutoUpdate = True
     self.blockUploadWhileTethering = False
     self.tetherIP = "127.0.0."
+    self.useTeslaGPS = False
+    self.useTeslaMapData = False
+    self.hasTeslaIcIntegration = False
+    self.useAnalogWhenNoEon = False
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
@@ -241,6 +248,7 @@ class CarState(object):
     self.speedLimit = 0
 
     self.meanFleetSplineSpeedMPS = 0.
+    self.meanFleetSplineAccelMPS2 = 0.
     self.medianFleetSpeedMPS = 0.
     self.topQrtlFleetSplineSpeedMPS = 0.
     self.splineLocConfidence = 0
@@ -250,6 +258,13 @@ class CarState(object):
     self.mapBasedSuggestedSpeed = 0.
     self.splineBasedSuggestedSpeed = 0.
     self.maxdrivespeed = 0.
+
+    self.gpsLongitude = 0.
+    self.gpsLatitude = 0.
+    self.gpsAccuracy = 0.
+    self.gpsElevation = 0.
+    self.gpsHeading = 0.
+    self.gpsVehicleSpeed = 0.
 
 
     if (CP.carFingerprint == CAR.MODELS):
@@ -474,6 +489,13 @@ class CarState(object):
     self.roadCurvC2 = cp.vl['UI_roadCurvature']["UI_roadCurvC2"]
     self.roadCurvC3 = cp.vl['UI_roadCurvature']["UI_roadCurvC3"]
 
+    self.gpsLongitude =  cp.vl['MCU_locationStatus']["MCU_longitude"]
+    self.gpsLatitude = cp.vl['MCU_locationStatus']["MCU_latitude"]
+    self.gpsAccuracy = cp.vl['MCU_locationStatus']["MCU_gpsAccuracy"]
+    self.gpsElevation = cp.vl['MCU_locationStatus2']["MCU_elevation"]
+    self.gpsHeading = cp.vl['MCU_gpsVehicleSpeed']["MCU_gpsVehicleHeading"]
+    self.gpsVehicleSpeed = cp.vl['MCU_gpsVehicleSpeed']["MCU_gpsVehicleSpeed"] * CV.KPH_TO_MS
+
     speed_limit_tesla_lookup = [0,5,7,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,130,140,150,160,0,0] 
     self.speedLimitUnits = cp.vl["UI_driverAssistMapData"]["UI_mapSpeedUnits"]
     self.speedLimitKph = speed_limit_tesla_lookup[int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])] * (1 + 0.609 * (1 - self.speedLimitUnits))
@@ -482,6 +504,7 @@ class CarState(object):
     rdSignMsg = cp.vl["UI_driverAssistRoadSign"]["UI_roadSign"]
     if rdSignMsg == 4:
       self.meanFleetSplineSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_meanFleetSplineSpeedMPS"]
+      self.meanFleetSplineAccelMPS2  = cp.vl["UI_driverAssistRoadSign"]["UI_meanFleetSplineAccelMPS2"]
       self.medianFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_medianFleetSpeedMPS"]
       self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
       # if one of them is zero, select max of the two
