@@ -102,6 +102,7 @@ int DAS_diState_idx = 0;
 int DAS_longControl_idx = 0;
 int DI_locStatus_idx = 0;
 int DAS_carLog_idx = 0;
+int DAS_telemetry_idx = 0;
 
 //fake DAS variables
 int DAS_longC_enabled = 0;
@@ -458,7 +459,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     int acc_state = 0x00;
     int aeb_event = 0x00;
     int jerk_min = 0x1FF;
-    int jerk_max = 0x1FF;
+    int jerk_max = 0xFF;
     int accel_min = 0x1FF;
     int accel_max = 0x1FF;
     //send DAS_control - 0x2B9
@@ -468,8 +469,8 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
       if (DAS_longC_enabled > 0) {
         jerk_min = 0x000;
         jerk_max = 0x0F;
-        acc_state = 0x05;//bb send HOLD?
-        acc_speed_kph = (int)(DAS_acc_speed_kph * 10.0);
+        acc_state = 0x03;//bb send HOLD?
+        acc_speed_kph = (int)(DAS_acc_speed_limit_mph * 1.609 * 10.0);
         accel_max = 0x1FE; //(int)((DAS_accel_max + 15 ) / 0.04);
         accel_min = 0x001; //(int)((DAS_accel_min + 15 ) / 0.04);
       }
@@ -482,7 +483,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
         (((DAS_control_idx << 5) + ((accel_max >> 4) & 0x1F))<< 16);
     } else {
       MLB = 0xFFFE0FFF;
-      MHB = 0x000FFFFF + (DAS_control_idx << 21);
+      MHB = 0x001FFFFF + (DAS_control_idx << 21);
     }
     int cksm = add_tesla_cksm2(MLB, MHB, 0x2B9, 7);
     MHB = MHB + (cksm << 24);
@@ -635,10 +636,39 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
   if (fake_DAS_counter % 10 == 4) {
     //send DAS_telemetry - 0x3A9
     //no counter - 00 00 00 00 00 00 00 00
-    MLB = 0x00 + ((DAS_telLeftLaneType + (DAS_telRightLaneType << 3) + (DAS_telLeftMarkerQuality << 6)) << 8 ) +
-        ((DAS_telRightMarkerQuality +(DAS_telLeftMarkerColor << 2) + 
-        (DAS_telRightMarkerColor << 4) + (DAS_telLeftLaneCrossing << 6) +(DAS_telRightLaneCrossing <<6)) << 16);
-    MHB =0x00;
+    //ROAD INFO
+    //if (DAS_telemetry_idx==0) {
+      MLB = 0x00 + ((DAS_telLeftLaneType + (DAS_telRightLaneType << 3) + (DAS_telLeftMarkerQuality << 6)) << 8 ) +
+          ((DAS_telRightMarkerQuality +(DAS_telLeftMarkerColor << 2) + 
+          (DAS_telRightMarkerColor << 4) + (DAS_telLeftLaneCrossing << 6) +(DAS_telRightLaneCrossing <<6)) << 16);
+      MHB =0x00;
+    //}
+    //ACC DRIVER MONITORING
+    //if (DAS_telemetry_idx==1) {
+    //  MLB=0x01;
+    //  MHB=0x00;
+    //}
+    //TRAFFIC SIGNS
+    //if (DAS_telemetry_idx==2) {
+    //  MLB=0x02;
+    //  MHB=0x00;
+    //}
+    //CSA EVENT
+    //if (DAS_telemetry_idx==3) {
+    //  MLB=0x07;
+    //  MHB=0x00;
+    //}
+    //STATIONARY OBJECT
+    //if (DAS_telemetry_idx==4) {
+    //  MLB=0x08;
+    //  MHB=0x00;
+    //CRUISE STALK
+    //if (DAS_telemetry_idx==5) {
+    //  MLB=0x09;
+    //  MHB=0x00;
+    //}
+    DAS_telemetry_idx ++;
+    DAS_telemetry_idx = DAS_telemetry_idx % 6;
     send_fake_message(RIR,RDTR,8,0x3A9,0,MLB,MHB);
   }
 

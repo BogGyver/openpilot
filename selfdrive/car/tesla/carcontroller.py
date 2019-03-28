@@ -142,7 +142,7 @@ class CarController(object):
     self.sent_DAS_bootID = False
     self.context = zmq.Context()
     self.poller = zmq.Poller()
-    #self.speedlimit = messaging.sub_sock(context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
+    self.speedlimit = None
     self.trafficevents = messaging.sub_sock(self.context, service_list['trafficEvents'].port, conflate=True, poller=self.poller)
     self.pathPlan = messaging.sub_sock(self.context, service_list['pathPlan'].port, conflate=True, poller=self.poller)
     self.live20 = messaging.sub_sock(self.context, service_list['live20'].port, conflate=True, poller=self.poller)
@@ -162,6 +162,7 @@ class CarController(object):
     self.gyroYaw = 0.
     self.set_speed_limit_active = False
     self.speed_limit_offset = 0.
+    self.speed_limit_for_cc = 0.
 
     # items for IC integration for Lane and Lead Car
     self.average_over_x_pathplan_values = 15
@@ -252,6 +253,10 @@ class CarController(object):
 
     """ Controls thread """
 
+    if not CS.useTeslaMapData:
+      if self.speedlimit == None:
+        self.speedlimit = messaging.sub_sock(self.context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
+
     ## Todo add code to detect Tesla DAS (camera) and go into listen and record mode only (for AP1 / AP2 cars)
     if not self.enable_camera:
       return
@@ -304,15 +309,21 @@ class CarController(object):
     #upodate custom UI buttons and alerts
     CS.UE.update_custom_ui()
       
-    if (frame % 1000 == 0):
+    if (frame % 100 == 0):
       CS.cstm_btns.send_button_info()
       #read speed limit params
-      self.set_speed_limit_active = (self.params.get("SpeedLimitOffset") is not None) and (self.params.get("LimitSetSpeed") == "1")
-      if self.set_speed_limit_active:
-        self.speed_limit_offset = float(self.params.get("SpeedLimitOffset"))
+      if CS.hasTeslaIcIntegration:
+        self.set_speed_limit_active = 1
+        self.speed_limit_offset = CS.userSpeedLimitOffsetKph
+        self.speed_limit_for_cc = CS.userSpeedLimitKph
       else:
-        self.speed_limit_offset = 0.
-
+        self.set_speed_limit_active = (self.params.get("SpeedLimitOffset") is not None) and (self.params.get("LimitSetSpeed") == "1")
+        if self.set_speed_limit_active:
+          self.speed_limit_offset = float(self.params.get("SpeedLimitOffset"))
+        else:
+          self.speed_limit_offset = 0.
+        if (self.params.get("IsMetric") == "0"):
+          self.speed_limit_offset = self.speed_limit_offset * CV.MPH_TO_MS
     if CS.useTeslaGPS:
       if self.gpsLocationExternal == None:
         self.gpsLocationExternal = messaging.pub_sock(self.context, service_list['gpsLocationExternal'].port)
@@ -394,25 +405,34 @@ class CarController(object):
     # DAS_speed_limit_units(8)
     #send fake_das data as 0x553
     # TODO: forward collission warning
-    self.speedlimit_ms = CS.speedLimitKph * CV.KPH_TO_MS
-    self.speedlimit_valid = 1
-    if self.speedlimit_ms == 0:
-      self.speedlimit_valid = 0
-    if (self.params.get("IsMetric") == "1"):
-      self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
-    else:
-      self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
+
+    if CS.hasTeslaIcIntegration:
+        self.set_speed_limit_active = 1
+        self.speed_limit_offset = CS.userSpeedLimitOffsetKph
+        self.speed_limit_for_cc = CS.userSpeedLimitKph
+
+    if CS.useTeslaMapData:    
+      self.speedlimit_ms = CS.speedLimitKph * CV.KPH_TO_MS
+      self.speedlimit_valid = 1
+      if self.speedlimit_ms == 0:
+        self.speedlimit_valid = 0
+      if (self.params.get("IsMetric") == "1"):
+        self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
+      else:
+        self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
     if frame % 10 == 0:
       #get speed limit
       for socket, _ in self.poller.poll(1):
-        #if socket is self.speedlimit:
-        #  lmd = messaging.recv_one(socket).liveMapData
-        #  self.speedlimit_ms = lmd.speedLimit
-        #  self.speedlimit_valid = lmd.speedLimitValid
-        #  if (self.params.get("IsMetric") == "1"):
-        #    self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
-        #  else:
-        #    self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
+        if not CS.useTeslaMapData:
+          if socket is self.speedlimit:
+            lmd = messaging.recv_one(socket).liveMapData
+            self.speedlimit_ms = lmd.speedLimit
+            self.speedlimit_valid = lmd.speedLimitValid
+            if (self.params.get("IsMetric") == "1"):
+              self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
+            else:
+              self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
+            self.speed_limit_for_cc = self.speedlimit_ms * CV.MS_TO_KPH
         #to show lead car on IC
         if socket is self.live20:
           lead_1 = messaging.recv_one(socket).live20.leadOne
@@ -624,7 +644,7 @@ class CarController(object):
     cruise_btn = None
     if self.ACC.enable_adaptive_cruise and not CS.pedal_interceptor_available:
       cruise_btn = self.ACC.update_acc(enabled, CS, frame, actuators, pcm_speed, \
-                    self.speedlimit_ms * CV.MS_TO_KPH, self.speedlimit_valid, \
+                    self.self.speed_limit_for_cc, self.speedlimit_valid, \
                     self.set_speed_limit_active, self.speed_limit_offset)
       if cruise_btn:
           cruise_msg = teslacan.create_cruise_adjust_msg(
@@ -636,7 +656,7 @@ class CarController(object):
     apply_accel = 0.
     if CS.pedal_interceptor_available and frame % 5 == 0: # pedal processed at 20Hz
       apply_accel, accel_needed, accel_idx = self.PCC.update_pdl(enabled, CS, frame, actuators, pcm_speed, \
-                    self.speedlimit_ms, self.speedlimit_valid, \
+                    self.speed_limit_for_cc * CV.KPH_TO_MS, self.speedlimit_valid, \
                     self.set_speed_limit_active, self.speed_limit_offset * CV.KPH_TO_MS)
       can_sends.append(teslacan.create_pedal_command_msg(apply_accel, int(accel_needed), accel_idx))
     self.last_angle = apply_angle

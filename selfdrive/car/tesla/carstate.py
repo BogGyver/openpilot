@@ -49,6 +49,10 @@ def get_can_signals(CP):
   signals = [
       ("MCU_gpsVehicleHeading", "MCU_gpsVehicleSpeed", 0),
       ("MCU_gpsVehicleSpeed", "MCU_gpsVehicleSpeed", 0),
+      ("MCU_userSpeedOffset", "MCU_gpsVehicleSpeed", 0),
+      ("MCU_userSpeedOffsetUnits", "MCU_gpsVehicleSpeed", 0),
+      ("MCU_mppSpeedLimit", "MCU_gpsVehicleSpeed", 0),
+      ("MCU_speedLimitUnits", "MCU_gpsVehicleSpeed", 0),
       ("MCU_gpsAccuracy", "MCU_locationStatus", 0),
       ("MCU_latitude", "MCU_locationStatus", 0),
       ("MCU_longitude", "MCU_locationStatus", 0),
@@ -265,6 +269,9 @@ class CarState(object):
     self.gpsElevation = 0.
     self.gpsHeading = 0.
     self.gpsVehicleSpeed = 0.
+
+    self.userSpeedLimitKph = 0.
+    self.userSpeedLimitOffsetKph = 0.
 
 
     if (CP.carFingerprint == CAR.MODELS):
@@ -495,6 +502,17 @@ class CarState(object):
     self.gpsElevation = cp.vl['MCU_locationStatus2']["MCU_elevation"]
     self.gpsHeading = cp.vl['MCU_gpsVehicleSpeed']["MCU_gpsVehicleHeading"]
     self.gpsVehicleSpeed = cp.vl['MCU_gpsVehicleSpeed']["MCU_gpsVehicleSpeed"] * CV.KPH_TO_MS
+
+    usu = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffsetUnits"]
+    if usu == 1:
+      self.userSpeedLimitOffsetKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffset"]
+    else:
+      self.userSpeedLimitOffsetKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffset"] * CV.MPH_TO_KPH
+    msu = cp.vl['MCU_gpsVehicleSpeed']["MCU_speedLimitUnits"]
+    if msu == 1:
+      self.userSpeedLimitKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_mppSpeedLimit"]
+    else:
+      self.userSpeedLimitKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_mppSpeedLimit"] * CV.MPH_TO_KPH
 
     speed_limit_tesla_lookup = [0,5,7,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,130,140,150,160,0,0] 
     self.speedLimitUnits = cp.vl["UI_driverAssistMapData"]["UI_mapSpeedUnits"]
