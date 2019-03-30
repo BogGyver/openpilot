@@ -644,7 +644,7 @@ class CarController(object):
     cruise_btn = None
     if self.ACC.enable_adaptive_cruise and not CS.pedal_interceptor_available:
       cruise_btn = self.ACC.update_acc(enabled, CS, frame, actuators, pcm_speed, \
-                    self.self.speed_limit_for_cc, self.speedlimit_valid, \
+                    self.speed_limit_for_cc, self.speedlimit_valid, \
                     self.set_speed_limit_active, self.speed_limit_offset)
       if cruise_btn:
           cruise_msg = teslacan.create_cruise_adjust_msg(

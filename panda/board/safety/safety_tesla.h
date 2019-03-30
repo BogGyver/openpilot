@@ -469,7 +469,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
       if (DAS_longC_enabled > 0) {
         jerk_min = 0x000;
         jerk_max = 0x0F;
-        acc_state = 0x03;//bb send HOLD?
+        acc_state = 0x04;//bb send HOLD?
         acc_speed_kph = (int)(DAS_acc_speed_limit_mph * 1.609 * 10.0);
         accel_max = 0x1FE; //(int)((DAS_accel_max + 15 ) / 0.04);
         accel_min = 0x001; //(int)((DAS_accel_min + 15 ) / 0.04);
