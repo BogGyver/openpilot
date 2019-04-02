@@ -711,12 +711,23 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     DAS_status_idx = DAS_status_idx % 16;
 
     //send DAS_status2 - 0x389
-    int sl2 = (int)(DAS_acc_speed_limit_mph / 0.2);
+    int sl2 = ((int)(DAS_acc_speed_limit_mph / 0.2)) & 0x3FF;
     if (sl2 == 0) {
       sl2 = 0x3FF;
     }
     MLB = sl2;
-    MHB = 0x8017 + (DAS_status2_idx << 20) + (DAS_forward_collision_warning << 16);
+    int lcw = 0x0F;
+    if (DAS_forward_collision_warning > 0) {
+        lcw = 0x01;
+    }
+    int b4 = 0x80;
+    int b5 = 0x13;
+    if (DAS_cc_state > 1) { //enabled or hold
+        b4 = 0x60;
+        b5 = 0x12;
+    }
+    MLB = MLB + (b4 << 24);
+    MHB = 0x8000 + b5 + (DAS_status2_idx << 20) + (lcw << 16);
     cksm = add_tesla_cksm2(MLB, MHB, 0x389, 7);
     MHB = MHB + (cksm << 24);
     send_fake_message(RIR,RDTR,8,0x389,0,MLB,MHB);
