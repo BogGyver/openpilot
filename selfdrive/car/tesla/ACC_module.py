@@ -257,7 +257,8 @@ class ACCController(object):
     # Relative velocity between the lead car and our set cruise speed.
     future_vrel_kph = lead_speed_kph - CS.v_cruise_actual
     # How much we can accelerate without exceeding the max allowed speed.
-    available_speed_kph = max_v_by_speed_limit(self.acc_speed_kph, speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset,CS) - CS.v_cruise_actual
+    max_acc_speed_kph = max_v_by_speed_limit(self.acc_speed_kph, speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset,CS)
+    available_speed_kph = max_acc_speed_kph - CS.v_cruise_actual
     half_press_kph, full_press_kph = self._get_cc_units_kph(CS.imperial_speed_units)
     # button to issue
     button = None
@@ -279,10 +280,10 @@ class ACCController(object):
         self.new_speed = 1
         
       # if cruise is set to faster than the max speed, slow down
-      elif CS.v_cruise_actual > self.acc_speed_kph and self._no_action_for(milliseconds=300):
+      elif CS.v_cruise_actual > max_acc_speed_kph and self._no_action_for(milliseconds=300):
         msg =  "Slow to max"
         button = CruiseButtons.DECEL_SET
-        self.new_speed =  self.acc_speed_kph 
+        self.new_speed =  max_acc_speed_kph 
         
       elif (# if we have a populated lead_distance
             lead_dist_m > 0
