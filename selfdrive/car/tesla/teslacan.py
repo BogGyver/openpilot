@@ -64,7 +64,7 @@ def create_fake_IC_msg(useAnalogWhenNoEon):
   struct.pack_into('BBBBBBBB', msg, 0, 0xFF,0xFF,0x01,0x02,0x03,0x04,0xFF,useAnalog)
   return [msg_id, 0, msg.raw, 0]
 
-def create_fake_DAS_msg(speed_control_enabled,gas_to_resume,apUnavailable, collision_warning, op_status, \
+def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, collision_warning, op_status, \
                  acc_speed_kph, \
                  turn_signal_needed,forward_collission_warning,hands_on_state, \
                  cc_state, pedal_state, alca_state, \
@@ -76,7 +76,7 @@ def create_fake_DAS_msg(speed_control_enabled,gas_to_resume,apUnavailable, colli
   msg_len = 8
   msg = create_string_buffer(msg_len)
   c_apply_steer = ((int( apply_angle * 10 + 0x4000 )) & 0x7FFF) + (enable_steer_control << 15)
-  struct.pack_into('BBBBBBBB', msg, 0,(speed_control_enabled << 7) + (gas_to_resume << 6) + (apUnavailable << 5) + (collision_warning << 4) + op_status, \
+  struct.pack_into('BBBBBBBB', msg, 0,(speed_control_enabled << 7) + (speed_override << 6) + (apUnavailable << 5) + (collision_warning << 4) + op_status, \
       acc_speed_kph, \
       (turn_signal_needed << 6) + (forward_collission_warning << 4) + hands_on_state, \
       (cc_state << 6) + (pedal_state << 5) + alca_state, \

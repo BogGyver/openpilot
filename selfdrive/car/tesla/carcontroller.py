@@ -397,7 +397,7 @@ class CarController(object):
     can_sends = []
 
     #First we emulate DAS.
-    # DAS_longC_enabled (1),DAS_gas_to_resume (1),DAS_apUnavailable (1), DAS_collision_warning (1),  DAS_op_status (4)
+    # DAS_longC_enabled (1),DAS_speed_override (1),DAS_apUnavailable (1), DAS_collision_warning (1),  DAS_op_status (4)
     # DAS_speed_kph(8), 
     # DAS_turn_signal_request (2),DAS_forward_collision_warning (2), DAS_hands_on_state (4), 
     # DAS_cc_state (2), DAS_usingPedal(1),DAS_alca_state (5),
@@ -549,7 +549,7 @@ class CarController(object):
     speed_limit_to_car = int(self.speedlimit_units)
     alca_state = 0x00 
     apUnavailable = 0
-    gas_to_resume = 0
+    speed_override = 0
     collision_warning = 0x00
     acc_speed_limit_mph = 0
     speed_control_enabled = 0
@@ -578,7 +578,7 @@ class CarController(object):
       if not enable_steer_control:
         #op_status = 0x08
         hands_on_state = 0x02
-        apUnavailable = 1
+        apUnavailable = 0 #1
       if hud_alert == AH.STEER:
         if snd_chime == CM.MUTE:
           hands_on_state = 0x03
@@ -619,8 +619,15 @@ class CarController(object):
         send_fake_warning = True
     if frame % 10 == 0:
       can_sends.append(teslacan.create_fake_DAS_obj_lane_msg(self.leadDx,self.leadDy,self.rLine,self.lLine,self.curv0,self.curv1,self.curv2,self.curv3,self.laneRange))
+    speed_override = 0
+    if (CS.pedal_interceptor_value > 10) and (cc_state > 1):
+      speed_override = 0 #force zero for now
     if send_fake_msg:
-      can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,gas_to_resume,apUnavailable, collision_warning, op_status, \
+      if (not enable_steer_control) and op_status == 3:
+        hands_on_state = 0x03
+      if enable_steer_control and op_status == 3:
+        op_status = 0x5
+      can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, collision_warning, op_status, \
             acc_speed_kph, \
             turn_signal_needed,forward_collision_warning,hands_on_state, \
             cc_state, 1 if (CS.pedal_interceptor_available) else 0,alca_state, \

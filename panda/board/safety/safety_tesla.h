@@ -320,29 +320,6 @@ static void reset_DAS_data() {
   DAS_diStateH = 0x00;
 }
 
-static void do_fake_DI_state(uint32_t RIR, uint32_t RDTR) {
-  uint32_t MLB;
-  uint32_t MHB; 
-  float SPD_UNIT;
-  SPD_UNIT = 1.0; //MPH
-  SPD_UNIT = SPD_UNIT + ((DAS_diStateL >> 31 ) & 0x01) * 0.609;
-  if (enable_das_emulation == 0) {
-    return;
-  }
-  if (((DAS_diStateL == 0x00) && (DAS_diStateH == 0x00)) || (DAS_cc_state != 2)) {
-    return;
-  }
-  MLB = (DAS_diStateL & 0xFFFF0FFF)+ 0x2000;
-  MHB = (DAS_diStateH & 0x00FF0E00) + (((int)(DAS_acc_speed_limit_mph * 2 * SPD_UNIT)) & 0x1FF);
-  DAS_diState_idx = ( DAS_diState_idx + 1 ) % 16;
-  MHB = MHB + (DAS_diState_idx << 12);
-  //cksm is different as DI_Status comes via gateway from another bus, so it's 88 or 0x058 what we need)
-  int cksm = add_tesla_cksm2(MLB, MHB, 0x058, 7);
-  MHB = MHB + (cksm << 24);
-  //DAS_diStateL = MLB;
-  //DAS_diStateH = MHB;
-  //send_fake_message(RIR,RDTR,8,0x368,0,MLB,MHB);
-}
 
 static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
 
@@ -403,12 +380,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     DAS_carLog_idx = DAS_carLog_idx % 3;
   }
 
-  if (fake_DAS_counter % 10 ==7) {
-    //spam DI_State if we control speed as well
-    if (DAS_cc_state == 2) {
-      //do_fake_DI_state(RIR,RDTR);
-    }
-  }
+
 
   if (fake_DAS_counter % 3 == 0) {
     //send DAS_object - 0x309
@@ -915,9 +887,6 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     if ((DAS_usingPedal == 1) && ( acc_state >= 2) && ( acc_state <= 4)) {
       do_fake_stalk_cancel(to_push->RIR, to_push->RDTR);
     } 
-    if (DAS_cc_state == 2) {
-      //do_fake_DI_state(to_push->RIR,to_push->RDTR);
-    }
 
   }
 
