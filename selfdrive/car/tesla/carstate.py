@@ -57,6 +57,8 @@ def get_can_signals(CP):
       ("MCU_latitude", "MCU_locationStatus", 0),
       ("MCU_longitude", "MCU_locationStatus", 0),
       ("MCU_elevation", "MCU_locationStatus2", 0),
+      ("MCU_latControlEnable", "MCU_chassisControl", 0),
+      ("MCU_fcwSensitivity", "MCU_chassisControl", 0),
       #("StW_AnglHP", "STW_ANGLHP_STAT", 0),
       ("DI_gear", "DI_torque2", 3),
       ("DI_brakePedal", "DI_torque2", 0),
@@ -229,6 +231,8 @@ class CarState(object):
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
 
+    self.apEnabled = True
+    self.apFollowDistance =  2.5 #time in seconds to follow
 
     # for map integration
     self.csaRoadCurvC3 = 0.
@@ -502,6 +506,10 @@ class CarState(object):
     self.gpsElevation = cp.vl['MCU_locationStatus2']["MCU_elevation"]
     self.gpsHeading = cp.vl['MCU_gpsVehicleSpeed']["MCU_gpsVehicleHeading"]
     self.gpsVehicleSpeed = cp.vl['MCU_gpsVehicleSpeed']["MCU_gpsVehicleSpeed"] * CV.KPH_TO_MS
+
+    if (self.hasTeslaIcIntegration):
+      self.apEnabled = (cp.vl["MCU_chassisControl"]["MCU_latControlEnable"] == 1)
+      self.apFollowDistance =  1 + (3 - cp.vl["MCU_chassisControl"]["MCU_fcwSensitivity"]) * 0.5
 
     usu = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffsetUnits"]
     if usu == 1:

@@ -164,6 +164,10 @@ class CarController(object):
     self.speed_limit_offset = 0.
     self.speed_limit_for_cc = 0.
 
+    # for warnings
+    self.warningCounter = 0
+    self.apUnavailable = 0
+
     # items for IC integration for Lane and Lead Car
     self.average_over_x_pathplan_values = 15
     self.curv0Matrix =  MovingAverage(self.average_over_x_pathplan_values)
@@ -251,6 +255,12 @@ class CarController(object):
              hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert, \
              snd_beep, snd_chime,leftLaneVisible,rightLaneVisible):
 
+    if self.warningCounter > 0:
+      self.warningCounter = self.warningCounter - 1
+      if self.warningCounter == 0:
+        # when zero reset all warnings
+        self.apUnavailable = 0
+        
     """ Controls thread """
 
     if not CS.useTeslaMapData:
@@ -548,7 +558,7 @@ class CarController(object):
     cc_state = 1 
     speed_limit_to_car = int(self.speedlimit_units)
     alca_state = 0x00 
-    apUnavailable = 0
+    
     speed_override = 0
     collision_warning = 0x00
     acc_speed_limit_mph = 0
@@ -578,7 +588,6 @@ class CarController(object):
       if not enable_steer_control:
         #op_status = 0x08
         hands_on_state = 0x02
-        apUnavailable = 0 #1
       if hud_alert == AH.STEER:
         if snd_chime == CM.MUTE:
           hands_on_state = 0x03
@@ -627,7 +636,7 @@ class CarController(object):
         hands_on_state = 0x03
       if enable_steer_control and op_status == 3:
         op_status = 0x5
-      can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, collision_warning, op_status, \
+      can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,speed_override,self.apUnavailable, collision_warning, op_status, \
             acc_speed_kph, \
             turn_signal_needed,forward_collision_warning,hands_on_state, \
             cc_state, 1 if (CS.pedal_interceptor_available) else 0,alca_state, \

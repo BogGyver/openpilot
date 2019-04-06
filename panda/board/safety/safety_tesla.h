@@ -778,7 +778,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     DAS_warningMatrix0_idx = DAS_warningMatrix0_idx % 16;
 
     //send DAS_warningMatrix1 - 0x369
-    MLB = 0x00;
+    MLB = 0x00 ;
     MHB = 0x00;
     send_fake_message(RIR,RDTR,8,0x369,0,MLB,MHB);
     DAS_warningMatrix1_idx ++;
@@ -797,7 +797,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     if ((DAS_cc_state == 2) && (DAS_pedalPressed > 10)) {
       ovr = 1;
     }
-    MLB = 0x00 + bitShift(DAS_gas_to_resume,1,2) + bitShift(DAS_apUnavailable,2,6) + bitShift(ovr,3,8) +
+    MLB = 0x00 + bitShift(DAS_gas_to_resume,1,2) +  bitShift(DAS_apUnavailable,2,6)  + bitShift(ovr,3,8) +
          bitShift(lcAborting,2,1) + bitShift(lcUnavailableSpeed,4,3) + bitShift(DAS_noSeatbelt,3,3) + bitShift(DAS_plannerErrors,4,6) +
          bitShift(stopSignWarning,1,4) + bitShift(stopLightWarning,1,5);
     MHB = 0x00;

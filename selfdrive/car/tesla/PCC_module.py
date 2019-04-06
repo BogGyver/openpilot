@@ -37,7 +37,7 @@ MIN_SAFE_DIST_M = 10.
 #BBTODO: move the vehicle variables; maybe make them speed variable
 TORQUE_LEVEL_ACC = 0.
 TORQUE_LEVEL_DECEL = -30.
-FOLLOW_TIME_S = 1.5  # time in seconds to follow car in front
+FOLLOW_TIME_S = 1.5  # defined by CS.apFollowDistance
 MIN_PCC_V_KPH = 0. #
 MAX_PCC_V_KPH = 170.
 
@@ -350,6 +350,7 @@ class PCCController(object):
     
   def update_pdl(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset):
     cur_time = sec_since_boot()
+    FOLLOW_TIME_S = CS.apFollowDistance
     idx = self.pedal_idx
     self.pedal_idx = (self.pedal_idx + 1) % 16
     if not CS.pedal_interceptor_available or not enabled:
