@@ -415,10 +415,18 @@ class CarInterface(object):
           (cur_time - self.last_enable_sent) > 0.2 and
           ret.cruiseState.enabled) or \
          (enable_pressed and get_events(events, [ET.NO_ENTRY])):
-        events.append(create_event('buttonEnable', [ET.ENABLE]))
+        if self.CS.apEnabled:
+          events.append(create_event('buttonEnable', [ET.ENABLE]))
+        else:
+          self.CC.apUnavailable = 1
+          self.CC.warningCounter = 300
         self.last_enable_sent = cur_time
     elif enable_pressed:
-      events.append(create_event('buttonEnable', [ET.ENABLE]))
+      if self.CS.apEnabled:
+        events.append(create_event('buttonEnable', [ET.ENABLE]))
+      else:
+        self.CC.apUnavailable = 1
+        self.CC.warningCounter = 300
 
     ret.events = events
     ret.canMonoTimes = canMonoTimes

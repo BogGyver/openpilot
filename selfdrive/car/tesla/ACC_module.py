@@ -53,15 +53,26 @@ class ACCMode(object):
 def _current_time_millis():
   return int(round(time.time() * 1000))
 
-def max_v_by_speed_limit(acc_set_speed_kph ,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset):
-  if speed_limit_valid:
+def max_v_by_speed_limit(acc_set_speed_kph ,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset,CS):
+  # if more than 10 kph / 2.78 ms, consider we have speed limit
+  if speed_limit_kph > 10:
     if set_speed_limit_active:
       v_speedlimit = speed_limit_kph + speed_limit_offset
-      return min(acc_set_speed_kph,v_speedlimit)
+      sl1 = min(acc_set_speed_kph,v_speedlimit)
+      if CS.maxdrivespeed > 0 and CS.useTeslaMapData:
+        return min(sl1, CS.maxdrivespeed * CV.MS_TO_KPH)
+      else:
+        return sl1
+    elif CS.maxdrivespeed > 0  and CS.useTeslaMapData:
+      return min(acc_set_speed_kph, CS.maxdrivespeed * CV.MS_TO_KPH)
     else:
       return acc_set_speed_kph
+  elif CS.maxdrivespeed > 0  and CS.useTeslaMapData:
+    return min(acc_set_speed_kph, CS.maxdrivespeed * CV.MS_TO_KPH)
   else:
     return acc_set_speed_kph
+
+
 
 class ACCController(object):
   
@@ -235,7 +246,7 @@ class ACCController(object):
     if lead_car is None:
       return None
     # Desired gap (in seconds) between cars.
-    follow_time_s = 2.0
+    follow_time_s = CS.apFollowDistance
     # v_ego is in m/s, so safe_dist_m is in meters.
     safe_dist_m = CS.v_ego * follow_time_s
     current_time_ms = _current_time_millis()
@@ -246,7 +257,8 @@ class ACCController(object):
     # Relative velocity between the lead car and our set cruise speed.
     future_vrel_kph = lead_speed_kph - CS.v_cruise_actual
     # How much we can accelerate without exceeding the max allowed speed.
-    available_speed_kph = max_v_by_speed_limit(self.acc_speed_kph, speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset) - CS.v_cruise_actual
+    max_acc_speed_kph = max_v_by_speed_limit(self.acc_speed_kph, speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset,CS)
+    available_speed_kph = max_acc_speed_kph - CS.v_cruise_actual
     half_press_kph, full_press_kph = self._get_cc_units_kph(CS.imperial_speed_units)
     # button to issue
     button = None
@@ -268,10 +280,10 @@ class ACCController(object):
         self.new_speed = 1
         
       # if cruise is set to faster than the max speed, slow down
-      elif CS.v_cruise_actual > self.acc_speed_kph and self._no_action_for(milliseconds=300):
+      elif CS.v_cruise_actual > max_acc_speed_kph and self._no_action_for(milliseconds=300):
         msg =  "Slow to max"
         button = CruiseButtons.DECEL_SET
-        self.new_speed =  self.acc_speed_kph 
+        self.new_speed =  max_acc_speed_kph 
         
       elif (# if we have a populated lead_distance
             lead_dist_m > 0

@@ -1,8 +1,10 @@
 import os
+import datetime
 import subprocess
 from  threading import Thread
 import traceback
 import shlex
+from cereal import log
 from common.params import Params
 from collections import namedtuple
 from selfdrive.boardd.boardd import can_list_to_can_capnp
@@ -34,6 +36,27 @@ ANGLE_DELTA_VU = [5., 3.5, 0.8]   # unwind limit
 #steering adjustment with speed
 DES_ANGLE_ADJUST_FACTOR_BP = [0.,13., 44.]
 DES_ANGLE_ADJUST_FACTOR = [1.0, 1.0, 1.0]
+
+def gen_solution(CS):
+  fix = 0
+  if CS.gpsAccuracy < 2:
+    fix = 1
+  timestamp = int(((datetime.datetime.now() - datetime.datetime(1970,1,1)).total_seconds())*1e+03)
+  gps_fix = {'bearing': CS.gpsHeading,  # heading of motion in degrees
+             'altitude': CS.gpsElevation,  # altitude above ellipsoid
+             'latitude': CS.gpsLatitude,  # latitude in degrees
+             'longitude': CS.gpsLongitude,  # longitude in degrees
+             'speed': CS.gpsVehicleSpeed,  # ground speed in meters
+             'accuracy': CS.gpsAccuracy,  # horizontal accuracy (1 sigma?)
+             'timestamp': timestamp,  # UTC time in ms since start of UTC stime
+             'vNED': [0.,0.,0.],  # velocity in NED frame in m/s
+             'speedAccuracy': 0.,  # speed accuracy in m/s
+             'verticalAccuracy': 0.,  # vertical accuracy in meters
+             'bearingAccuracy': 0.,  # heading accuracy in degrees
+             'source': 'ublox',
+             'flags': fix, # 1 of gpsAccuracy less than 2 meters
+  }
+  return log.Event.new_message(gpsLocationExternal=gps_fix)
 
 def process_hud_alert(hud_alert):
   # initialize to no alert
@@ -117,13 +140,14 @@ class CarController(object):
     self.HSO = HSOController(self)
     self.GYRO = GYROController()
     self.sent_DAS_bootID = False
-    context = zmq.Context()
+    self.context = zmq.Context()
     self.poller = zmq.Poller()
-    self.speedlimit = messaging.sub_sock(context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
-    self.trafficevents = messaging.sub_sock(context, service_list['trafficEvents'].port, conflate=True, poller=self.poller)
-    self.pathPlan = messaging.sub_sock(context, service_list['pathPlan'].port, conflate=True, poller=self.poller)
-    self.live20 = messaging.sub_sock(context, service_list['live20'].port, conflate=True, poller=self.poller)
-    self.speedlimit_ms = 0
+    self.speedlimit = None
+    self.trafficevents = messaging.sub_sock(self.context, service_list['trafficEvents'].port, conflate=True, poller=self.poller)
+    self.pathPlan = messaging.sub_sock(self.context, service_list['pathPlan'].port, conflate=True, poller=self.poller)
+    self.live20 = messaging.sub_sock(self.context, service_list['live20'].port, conflate=True, poller=self.poller)
+    self.gpsLocationExternal = None 
+    self.speedlimit_ms = 0.
     self.speedlimit_valid = False
     self.speedlimit_units = 0
     self.opState = 0 # 0-disabled, 1-enabled, 2-disabling, 3-unavailable, 5-warning
@@ -138,6 +162,11 @@ class CarController(object):
     self.gyroYaw = 0.
     self.set_speed_limit_active = False
     self.speed_limit_offset = 0.
+    self.speed_limit_for_cc = 0.
+
+    # for warnings
+    self.warningCounter = 0
+    self.apUnavailable = 0
 
     # items for IC integration for Lane and Lead Car
     self.average_over_x_pathplan_values = 15
@@ -226,7 +255,17 @@ class CarController(object):
              hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert, \
              snd_beep, snd_chime,leftLaneVisible,rightLaneVisible):
 
+    if self.warningCounter > 0:
+      self.warningCounter = self.warningCounter - 1
+      if self.warningCounter == 0:
+        # when zero reset all warnings
+        self.apUnavailable = 0
+        
     """ Controls thread """
+
+    if not CS.useTeslaMapData:
+      if self.speedlimit == None:
+        self.speedlimit = messaging.sub_sock(self.context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
 
     ## Todo add code to detect Tesla DAS (camera) and go into listen and record mode only (for AP1 / AP2 cars)
     if not self.enable_camera:
@@ -280,14 +319,27 @@ class CarController(object):
     #upodate custom UI buttons and alerts
     CS.UE.update_custom_ui()
       
-    if (frame % 1000 == 0):
+    if (frame % 100 == 0):
       CS.cstm_btns.send_button_info()
       #read speed limit params
-      self.set_speed_limit_active = (self.params.get("SpeedLimitOffset") is not None) and (self.params.get("LimitSetSpeed") == "1")
-      if self.set_speed_limit_active:
-        self.speed_limit_offset = float(self.params.get("SpeedLimitOffset"))
+      if CS.hasTeslaIcIntegration:
+        self.set_speed_limit_active = 1
+        self.speed_limit_offset = CS.userSpeedLimitOffsetKph
+        self.speed_limit_for_cc = CS.userSpeedLimitKph
       else:
-        self.speed_limit_offset = 0.
+        self.set_speed_limit_active = (self.params.get("SpeedLimitOffset") is not None) and (self.params.get("LimitSetSpeed") == "1")
+        if self.set_speed_limit_active:
+          self.speed_limit_offset = float(self.params.get("SpeedLimitOffset"))
+        else:
+          self.speed_limit_offset = 0.
+        if (self.params.get("IsMetric") == "0"):
+          self.speed_limit_offset = self.speed_limit_offset * CV.MPH_TO_MS
+    if CS.useTeslaGPS:
+      if self.gpsLocationExternal == None:
+        self.gpsLocationExternal = messaging.pub_sock(self.context, service_list['gpsLocationExternal'].port)
+      sol = gen_solution(CS)
+      sol.logMonoTime = int(sec_since_boot() * 1e9)
+      self.gpsLocationExternal.send(sol.to_bytes())
 
     #get pitch/roll/yaw every 0.1 sec
     if (frame %10 == 0):
@@ -355,7 +407,7 @@ class CarController(object):
     can_sends = []
 
     #First we emulate DAS.
-    # DAS_longC_enabled (1),DAS_gas_to_resume (1),DAS_apUnavailable (1), DAS_collision_warning (1),  DAS_op_status (4)
+    # DAS_longC_enabled (1),DAS_speed_override (1),DAS_apUnavailable (1), DAS_collision_warning (1),  DAS_op_status (4)
     # DAS_speed_kph(8), 
     # DAS_turn_signal_request (2),DAS_forward_collision_warning (2), DAS_hands_on_state (4), 
     # DAS_cc_state (2), DAS_usingPedal(1),DAS_alca_state (5),
@@ -363,17 +415,34 @@ class CarController(object):
     # DAS_speed_limit_units(8)
     #send fake_das data as 0x553
     # TODO: forward collission warning
+
+    if CS.hasTeslaIcIntegration:
+        self.set_speed_limit_active = 1
+        self.speed_limit_offset = CS.userSpeedLimitOffsetKph
+        self.speed_limit_for_cc = CS.userSpeedLimitKph
+
+    if CS.useTeslaMapData:    
+      self.speedlimit_ms = CS.speedLimitKph * CV.KPH_TO_MS
+      self.speedlimit_valid = 1
+      if self.speedlimit_ms == 0:
+        self.speedlimit_valid = 0
+      if (self.params.get("IsMetric") == "1"):
+        self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
+      else:
+        self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
     if frame % 10 == 0:
       #get speed limit
       for socket, _ in self.poller.poll(1):
-        if socket is self.speedlimit:
-          lmd = messaging.recv_one(socket).liveMapData
-          self.speedlimit_ms = lmd.speedLimit
-          self.speedlimit_valid = lmd.speedLimitValid
-          if (self.params.get("IsMetric") == "1"):
-            self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
-          else:
-            self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
+        if not CS.useTeslaMapData:
+          if socket is self.speedlimit:
+            lmd = messaging.recv_one(socket).liveMapData
+            self.speedlimit_ms = lmd.speedLimit
+            self.speedlimit_valid = lmd.speedLimitValid
+            if (self.params.get("IsMetric") == "1"):
+              self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
+            else:
+              self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
+            self.speed_limit_for_cc = self.speedlimit_ms * CV.MS_TO_KPH
         #to show lead car on IC
         if socket is self.live20:
           lead_1 = messaging.recv_one(socket).live20.leadOne
@@ -489,8 +558,8 @@ class CarController(object):
     cc_state = 1 
     speed_limit_to_car = int(self.speedlimit_units)
     alca_state = 0x00 
-    apUnavailable = 0
-    gas_to_resume = 0
+    
+    speed_override = 0
     collision_warning = 0x00
     acc_speed_limit_mph = 0
     speed_control_enabled = 0
@@ -519,7 +588,6 @@ class CarController(object):
       if not enable_steer_control:
         #op_status = 0x08
         hands_on_state = 0x02
-        apUnavailable = 1
       if hud_alert == AH.STEER:
         if snd_chime == CM.MUTE:
           hands_on_state = 0x03
@@ -560,8 +628,15 @@ class CarController(object):
         send_fake_warning = True
     if frame % 10 == 0:
       can_sends.append(teslacan.create_fake_DAS_obj_lane_msg(self.leadDx,self.leadDy,self.rLine,self.lLine,self.curv0,self.curv1,self.curv2,self.curv3,self.laneRange))
+    speed_override = 0
+    if (CS.pedal_interceptor_value > 10) and (cc_state > 1):
+      speed_override = 0 #force zero for now
     if send_fake_msg:
-      can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,gas_to_resume,apUnavailable, collision_warning, op_status, \
+      if (not enable_steer_control) and op_status == 3:
+        hands_on_state = 0x03
+      if enable_steer_control and op_status == 3:
+        op_status = 0x5
+      can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,speed_override,self.apUnavailable, collision_warning, op_status, \
             acc_speed_kph, \
             turn_signal_needed,forward_collision_warning,hands_on_state, \
             cc_state, 1 if (CS.pedal_interceptor_available) else 0,alca_state, \
@@ -578,12 +653,14 @@ class CarController(object):
       self.stopLightWarning_last = self.stopLightWarning
       self.stopSignWarning_last = self.stopSignWarning
     # end of DAS emulation """
-
+    if frame % 100 == 0: # and CS.hasTeslaIcIntegration:
+        #IF WE HAVE spamIC RUNNING, send a message every second to say we are still awake
+        can_sends.append(teslacan.create_fake_IC_msg(CS.useAnalogWhenNoEon))
     idx = frame % 16
     cruise_btn = None
     if self.ACC.enable_adaptive_cruise and not CS.pedal_interceptor_available:
       cruise_btn = self.ACC.update_acc(enabled, CS, frame, actuators, pcm_speed, \
-                    self.speedlimit_ms, self.speedlimit_valid, \
+                    self.speed_limit_for_cc, self.speedlimit_valid, \
                     self.set_speed_limit_active, self.speed_limit_offset)
       if cruise_btn:
           cruise_msg = teslacan.create_cruise_adjust_msg(
@@ -595,8 +672,8 @@ class CarController(object):
     apply_accel = 0.
     if CS.pedal_interceptor_available and frame % 5 == 0: # pedal processed at 20Hz
       apply_accel, accel_needed, accel_idx = self.PCC.update_pdl(enabled, CS, frame, actuators, pcm_speed, \
-                    self.speedlimit_ms * CV.MS_TO_KPH, self.speedlimit_valid, \
-                    self.set_speed_limit_active, self.speed_limit_offset)
+                    self.speed_limit_for_cc * CV.KPH_TO_MS, self.speedlimit_valid, \
+                    self.set_speed_limit_active, self.speed_limit_offset * CV.KPH_TO_MS)
       can_sends.append(teslacan.create_pedal_command_msg(apply_accel, int(accel_needed), accel_idx))
     self.last_angle = apply_angle
     self.last_accel = apply_accel

@@ -500,12 +500,12 @@ void bb_ui_draw_measures_left( UIState *s, int bb_x, int bb_y, int bb_w ) {
 
 
 		// gps accuracy is always in meters
-		if (s->is_metric) {
+		if (true) {
 			 snprintf(val_str, sizeof(val_str), "%d", (int)(s->b.gpsAccuracy*100.0));
 		} else {
 			 snprintf(val_str, sizeof(val_str), "%.1f", s->b.gpsAccuracy * 3.28084 * 12);
 		}
-		if (s->is_metric) {
+		if (true) {
 			snprintf(uom_str, sizeof(uom_str), "cm");;
 		} else {
 			snprintf(uom_str, sizeof(uom_str), "in");
@@ -861,12 +861,12 @@ void bb_ui_draw_measures_right2( UIState *s, int bb_x, int bb_y, int bb_w ) {
 
 
 		// gps accuracy is always in meters
-		if (s->is_metric) {
+		if (true) {
 			 snprintf(val_str, sizeof(val_str), "%d", (int)(s->b.gpsAccuracy*100.0));
 		} else {
 			 snprintf(val_str, sizeof(val_str), "%.1f", s->b.gpsAccuracy * 3.28084 * 12);
 		}
-		if (s->is_metric) {
+		if (true) {
 			snprintf(uom_str, sizeof(uom_str), "cm");;
 		} else {
 			snprintf(uom_str, sizeof(uom_str), "in");
@@ -1446,7 +1446,7 @@ void  bb_ui_poll_update( UIState *s) {
             cereal_read_Event(&eventd, eventp);
 
             struct cereal_GpsLocationData datad;
-            cereal_read_GpsLocationData(&datad, eventd.gpsLocation);
+            cereal_read_GpsLocationData(&datad, eventd.gpsLocationExternal);
 
             s->b.gpsAccuracy = datad.accuracy;
             if (s->b.gpsAccuracy>100)

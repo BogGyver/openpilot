@@ -289,6 +289,36 @@ BO_ 760 MCU_gpsVehicleSpeed: 8 MCU
  SG_ MCU_userSpeedOffset : 42|6@1+ (1,-30) [-30|33] "kph/mph" NEO
  SG_ MCU_userSpeedOffsetUnits : 40|1@1+ (1,0) [-1|2] ""  NEO
 
+BO_ 536 MCU_chassisControl: 8 GTW
+ SG_ MCU_dasDebugEnable : 0|1@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_parkBrakeRequest : 1|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_trailerModeCH : 3|1@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_fcwSensitivity : 4|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_fcwEnable : 6|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_latControlEnable : 8|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_accOvertakeEnable : 10|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_ldwEnable : 12|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_aebEnable : 14|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_bsdEnable : 16|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_ahlbEnable : 18|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_parkSetting : 20|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_pedalSafetyEnable : 22|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_frontDefrostReq_das : 24|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_autoParkRequest : 26|4@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_redLightStopSignEnable : 30|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_enableCreepTorqueCH : 32|1@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_narrowGarages : 33|1@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_rebootAutopilot : 34|1@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_enableAutowipers : 35|1@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_overPaintedUSS : 38|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_selfParkTune : 40|4@1+ (1,0) [0|15] "" NEO
+ SG_ MCU_towModeEnable : 44|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_zeroSpeedConfirmed : 46|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_aesEnable : 48|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_autoLaneChangeEnable : 50|2@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_chassisControlCounter : 52|4@1+ (1,0) [0|0] "" NEO
+ SG_ MCU_chassisControlChecksum : 56|8@1+ (1,0) [0|0] "" NEO
+
 BO_ 904 MCU_clusterBacklightRequest: 3 NEO
  SG_ MCU_clusterBacklightOn : 7|1@1+ (1,0) [0|1] "" NEO
  SG_ MCU_clusterBrightnessLevel : 8|8@1+ (0.5,0) [0|127.5] "%" NEO
@@ -296,9 +326,13 @@ BO_ 904 MCU_clusterBacklightRequest: 3 NEO
  SG_ MCU_clusterReadyForPowerOff : 5|1@1+ (1,0) [0|1] "" NEO
 
 BO_ 984 MCU_locationStatus: 8 MCU
- SG_ MCU_gpsAccuracy : 56|7@1+ (0.200000003,0) [0|25.200000378] "m" NEO
- SG_ MCU_latitude : 0|28@1- (1E-006,0) [-134.217727597347|134.217726597347] "deg"  NEO
- SG_ MCU_longitude : 28|28@1- (1E-006,0) [-268.435455194694|268.435454194694] "deg"  NEO
+ SG_ MCU_gpsAccuracy : 57|7@1+ (0.2,0) [0|0] "m" NEO
+ SG_ MCU_latitude : 0|28@1- (1E-06,0) [0|0] "deg" NEO
+ SG_ MCU_longitude : 28|29@1- (1E-06,0) [0|0] "deg" NEO
+
+BO_ 104 MCU_locationStatus2: 8 MCU
+ SG_ MCU_elevation : 0|32@1- (0.1,0) [0|0] "m" GTW
+ SG_ MCU_navigonExpectedSpeed : 32|7@1+ (1,0) [0|126] "mph" GTW
 
 BO_ 840 GTW_status: 8 GTW
  SG_ GTW_accGoingDown : 6|1@0+ (1,0) [0|1] ""  NEO

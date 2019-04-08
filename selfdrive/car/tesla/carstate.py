@@ -48,9 +48,17 @@ def get_can_signals(CP):
 # this function generates lists for signal, messages and initial values
   signals = [
       ("MCU_gpsVehicleHeading", "MCU_gpsVehicleSpeed", 0),
+      ("MCU_gpsVehicleSpeed", "MCU_gpsVehicleSpeed", 0),
+      ("MCU_userSpeedOffset", "MCU_gpsVehicleSpeed", 0),
+      ("MCU_userSpeedOffsetUnits", "MCU_gpsVehicleSpeed", 0),
+      ("MCU_mppSpeedLimit", "MCU_gpsVehicleSpeed", 0),
+      ("MCU_speedLimitUnits", "MCU_gpsVehicleSpeed", 0),
       ("MCU_gpsAccuracy", "MCU_locationStatus", 0),
       ("MCU_latitude", "MCU_locationStatus", 0),
       ("MCU_longitude", "MCU_locationStatus", 0),
+      ("MCU_elevation", "MCU_locationStatus2", 0),
+      ("MCU_latControlEnable", "MCU_chassisControl", 0),
+      ("MCU_fcwSensitivity", "MCU_chassisControl", 0),
       #("StW_AnglHP", "STW_ANGLHP_STAT", 0),
       ("DI_gear", "DI_torque2", 3),
       ("DI_brakePedal", "DI_torque2", 0),
@@ -120,6 +128,18 @@ def get_can_signals(CP):
       ("UI_roadCurvC1", "UI_roadCurvature", 0),
       ("UI_roadCurvC2", "UI_roadCurvature", 0),
       ("UI_roadCurvC3", "UI_roadCurvature", 0),
+
+      ("UI_mapSpeedUnits", "UI_driverAssistMapData", 0),
+      ("UI_mapSpeedLimit", "UI_driverAssistMapData", 0),
+
+      ("UI_roadSign","UI_driverAssistRoadSign", 0),
+      ("UI_meanFleetSplineAccelMPS2", "UI_driverAssistRoadSign", 0),
+      ("UI_meanFleetSplineSpeedMPS", "UI_driverAssistRoadSign", 0),
+      ("UI_medianFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
+      ("UI_topQrtlFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
+      ("UI_splineLocConfidence", "UI_driverAssistRoadSign", 0),
+      ("UI_baseMapSpeedLimitMPS", "UI_driverAssistRoadSign", 0),
+      ("UI_bottomQrtlFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
 
       
   ]
@@ -203,10 +223,16 @@ class CarState(object):
     self.doAutoUpdate = True
     self.blockUploadWhileTethering = False
     self.tetherIP = "127.0.0."
+    self.useTeslaGPS = False
+    self.useTeslaMapData = False
+    self.hasTeslaIcIntegration = False
+    self.useAnalogWhenNoEon = False
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
 
+    self.apEnabled = True
+    self.apFollowDistance =  2.5 #time in seconds to follow
 
     # for map integration
     self.csaRoadCurvC3 = 0.
@@ -225,6 +251,31 @@ class CarState(object):
     self.roadCurvC1 = 0.
     self.roadCurvC2 = 0.
     self.roadCurvC3 = 0.
+
+    self.speedLimitUnits = 0
+    self.speedLimit = 0
+
+    self.meanFleetSplineSpeedMPS = 0.
+    self.meanFleetSplineAccelMPS2 = 0.
+    self.medianFleetSpeedMPS = 0.
+    self.topQrtlFleetSplineSpeedMPS = 0.
+    self.splineLocConfidence = 0
+    self.baseMapSpeedLimitMPS = 0.
+    self.bottomQrtlFleetSpeedMPS = 0.
+
+    self.mapBasedSuggestedSpeed = 0.
+    self.splineBasedSuggestedSpeed = 0.
+    self.maxdrivespeed = 0.
+
+    self.gpsLongitude = 0.
+    self.gpsLatitude = 0.
+    self.gpsAccuracy = 0.
+    self.gpsElevation = 0.
+    self.gpsHeading = 0.
+    self.gpsVehicleSpeed = 0.
+
+    self.userSpeedLimitKph = 0.
+    self.userSpeedLimitOffsetKph = 0.
 
 
     if (CP.carFingerprint == CAR.MODELS):
@@ -330,6 +381,8 @@ class CarState(object):
     self.DAS_plannerErrors = 0
     self.DAS_doorOpen = 0
     self.DAS_notInDrive = 0
+
+
 
     #BB variables for pedal CC
     self.pedal_speed_kph = 0.
@@ -446,6 +499,60 @@ class CarState(object):
     self.roadCurvC1 = cp.vl['UI_roadCurvature']["UI_roadCurvC1"]
     self.roadCurvC2 = cp.vl['UI_roadCurvature']["UI_roadCurvC2"]
     self.roadCurvC3 = cp.vl['UI_roadCurvature']["UI_roadCurvC3"]
+
+    self.gpsLongitude =  cp.vl['MCU_locationStatus']["MCU_longitude"]
+    self.gpsLatitude = cp.vl['MCU_locationStatus']["MCU_latitude"]
+    self.gpsAccuracy = cp.vl['MCU_locationStatus']["MCU_gpsAccuracy"]
+    self.gpsElevation = cp.vl['MCU_locationStatus2']["MCU_elevation"]
+    self.gpsHeading = cp.vl['MCU_gpsVehicleSpeed']["MCU_gpsVehicleHeading"]
+    self.gpsVehicleSpeed = cp.vl['MCU_gpsVehicleSpeed']["MCU_gpsVehicleSpeed"] * CV.KPH_TO_MS
+
+    if (self.hasTeslaIcIntegration):
+      self.apEnabled = (cp.vl["MCU_chassisControl"]["MCU_latControlEnable"] == 1)
+      self.apFollowDistance =  1 + (3 - cp.vl["MCU_chassisControl"]["MCU_fcwSensitivity"]) * 0.5
+
+    usu = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffsetUnits"]
+    if usu == 1:
+      self.userSpeedLimitOffsetKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffset"]
+    else:
+      self.userSpeedLimitOffsetKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffset"] * CV.MPH_TO_KPH
+    msu = cp.vl['MCU_gpsVehicleSpeed']["MCU_speedLimitUnits"]
+    if msu == 1:
+      self.userSpeedLimitKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_mppSpeedLimit"]
+    else:
+      self.userSpeedLimitKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_mppSpeedLimit"] * CV.MPH_TO_KPH
+
+    speed_limit_tesla_lookup = [0,5,7,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,130,140,150,160,0,0] 
+    self.speedLimitUnits = cp.vl["UI_driverAssistMapData"]["UI_mapSpeedUnits"]
+    self.speedLimitKph = speed_limit_tesla_lookup[int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])] * (1 + 0.609 * (1 - self.speedLimitUnits))
+
+
+    rdSignMsg = cp.vl["UI_driverAssistRoadSign"]["UI_roadSign"]
+    if rdSignMsg == 4:
+      self.meanFleetSplineSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_meanFleetSplineSpeedMPS"]
+      self.meanFleetSplineAccelMPS2  = cp.vl["UI_driverAssistRoadSign"]["UI_meanFleetSplineAccelMPS2"]
+      self.medianFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_medianFleetSpeedMPS"]
+      self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
+      # if one of them is zero, select max of the two
+      if self.meanFleetSplineSpeedMPS == 0 or self.medianFleetSpeedMPS == 0:
+        self.splineBasedSuggestedSpeed = max(self.meanFleetSplineSpeedMPS,self.medianFleetSpeedMPS)
+      else:
+        self.splineBasedSuggestedSpeed = (self.splineLocConfidence * self.meanFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.medianFleetSpeedMPS ) / 100
+    if rdSignMsg == 3:
+      self.topQrtlFleetSplineSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_topQrtlFleetSpeedMPS"]
+      self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
+      self.baseMapSpeedLimitMPS = cp.vl["UI_driverAssistRoadSign"]["UI_baseMapSpeedLimitMPS"]
+      self.bottomQrtlFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_bottomQrtlFleetSpeedMPS"]
+      # if confidence over 60%, then weight between bottom speed and top speed
+      # if less than 40% then use map data
+      if self.splineLocConfidence > 60:
+        self.mapBasedSuggestedSpeed = (self.splineLocConfidence * self.topQrtlFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.bottomQrtlFleetSpeedMPS ) / 100
+      else:
+        self.mapBasedSuggestedSpeed = self.baseMapSpeedLimitMPS
+    if self.mapBasedSuggestedSpeed > 0 and self.splineBasedSuggestedSpeed > 0:
+      self.maxdrivespeed = min(self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed)
+    else:
+      self.maxdrivespeed = max(self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed)
 
     # 2 = temporary 3= TBD 4 = temporary, hit a bump 5 (permanent) 6 = temporary 7 (permanent)
     # TODO: Use values from DBC to parse this field
