@@ -8,7 +8,7 @@ import subprocess
 import sys
 import time
 import zmq
-  
+ 
 
 class ACCState(object):
   # Possible states of the ACC system, following the DI_cruiseState naming
@@ -59,15 +59,15 @@ def max_v_by_speed_limit(acc_set_speed_kph ,speed_limit_kph, speed_limit_valid, 
     if set_speed_limit_active or CS.hasTeslaIcIntegration:
       v_speedlimit = speed_limit_kph + speed_limit_offset
       sl1 = min(acc_set_speed_kph,v_speedlimit)
-      if CS.maxdrivespeed > 0 and CS.useTeslaMapData and CS.mapAwareSpeed:
+      if (CS.maxdrivespeed > 0) and CS.useTeslaMapData and CS.mapAwareSpeed:
         return min(sl1, CS.maxdrivespeed * CV.MS_TO_KPH)
       else:
         return sl1
-    elif CS.maxdrivespeed > 0  and CS.useTeslaMapData  and CS.mapAwareSpeed:
+    elif (CS.maxdrivespeed > 0)  and CS.useTeslaMapData  and CS.mapAwareSpeed:
       return min(acc_set_speed_kph, CS.maxdrivespeed * CV.MS_TO_KPH)
     else:
       return acc_set_speed_kph
-  elif CS.maxdrivespeed > 0  and CS.useTeslaMapData  and CS.mapAwareSpeed:
+  elif (CS.maxdrivespeed > 0) and CS.useTeslaMapData  and CS.mapAwareSpeed:
     return min(acc_set_speed_kph, CS.maxdrivespeed * CV.MS_TO_KPH)
   else:
     return acc_set_speed_kph

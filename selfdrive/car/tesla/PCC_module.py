@@ -155,15 +155,15 @@ def max_v_by_speed_limit(pedal_set_speed_ms ,speed_limit_ms, speed_limit_valid, 
     if set_speed_limit_active or CS.hasTeslaIcIntegration:
       v_speedlimit_ms = speed_limit_ms + speed_limit_offset_ms
       sl1 = min(pedal_set_speed_ms,v_speedlimit_ms)
-      if CS.maxdrivespeed > 0 and CS.useTeslaMapData and CS.mapAwareSpeed:
+      if (CS.maxdrivespeed > 0) and CS.useTeslaMapData and CS.mapAwareSpeed:
         return min(sl1, CS.maxdrivespeed)
       else:
         return sl1
-    elif CS.maxdrivespeed >  0  and CS.useTeslaMapData and CS.mapAwareSpeed:
+    elif (CS.maxdrivespeed >  0)  and CS.useTeslaMapData and CS.mapAwareSpeed:
       return min(pedal_set_speed_ms, CS.maxdrivespeed)
     else:
       return pedal_set_speed_ms
-  elif CS.maxdrivespeed > 0  and CS.useTeslaMapData and CS.mapAwareSpeed:
+  elif (CS.maxdrivespeed > 0)  and CS.useTeslaMapData and CS.mapAwareSpeed:
     return min(pedal_set_speed_ms, CS.maxdrivespeed)
   else:
     return pedal_set_speed_ms

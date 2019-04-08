@@ -354,6 +354,7 @@ class CarController(object):
         self.set_speed_limit_active = True
         self.speed_limit_offset = CS.userSpeedLimitOffsetKph
         self.speed_limit_for_cc = CS.userSpeedLimitKph
+        #print self.speed_limit_for_cc
       else:
         self.set_speed_limit_active = (self.params.get("SpeedLimitOffset") is not None) and (self.params.get("LimitSetSpeed") == "1")
         if self.set_speed_limit_active:
