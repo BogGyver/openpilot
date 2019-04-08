@@ -166,7 +166,17 @@ class CarController(object):
 
     # for warnings
     self.warningCounter = 0
-    self.apUnavailable = 0
+    self.DAS_206_apUnavailable = 0
+    self.DAS_222_accCameraBlind = 0 #DAS_206 lkas not ebabled
+    self.DAS_219_lcTempUnavailableSpeed = 0
+    self.DAS_220_lcTempUnavailableRoad = 0
+    self.DAS_201_lcAborting = 0
+    self.DAS_211_accNoSeatBelt = 0
+    self.DAS_207_lkasUnavailable = 0 #use for manual steer?
+    self.DAS_208_rackDetected = 0 #use for low battery?
+    self.DAS_202_noisyEnvironment = 0 #use for planner error?
+    self.DAS_025_steeringOverride = 0 #another one to use for manual steer?
+    self.warningNeeded = 0
 
     # items for IC integration for Lane and Lead Car
     self.average_over_x_pathplan_values = 15
@@ -185,9 +195,10 @@ class CarController(object):
     self.curv2 = 0. 
     self.curv3 = 0. 
     self.laneRange = 30  #max is 160m but OP has issues with precision beyond that
-    self.useBaseMapC0C1 = False
-    self.useZeroC0C1 = True
-    self.useMapOnly = False
+    self.useZeroC0 = True
+    self.useMap = True
+    self.clipC0 = False
+    self.useMapOnly = True
 
     self.stopSign_visible = False
     self.stopSign_distance = 1000.
@@ -258,9 +269,26 @@ class CarController(object):
     if self.warningCounter > 0:
       self.warningCounter = self.warningCounter - 1
       if self.warningCounter == 0:
+        self.warningNeeded = 1
+    if self.warningCounter == 0:
         # when zero reset all warnings
-        self.apUnavailable = 0
-        
+        self.DAS_222_accCameraBlind = 0 #we will see what we can use this for
+        self.DAS_219_lcTempUnavailableSpeed = 0
+        self.DAS_220_lcTempUnavailableRoad = 0
+        self.DAS_201_lcAborting = 0
+        self.DAS_211_accNoSeatBelt = 0
+        self.DAS_207_lkasUnavailable = 0 #use for manual not in drive?
+        self.DAS_208_rackDetected = 0 #use for low battery?
+        self.DAS_202_noisyEnvironment = 0 #use for planner error?
+        self.DAS_025_steeringOverride = 0 #use for manual steer?
+        self.DAS_206_apUnavailable = 0 #Ap disabled from CID
+
+    if CS.keepEonOff:
+      if CS.cstm_btns.get_button_status("dsp") != 9:
+        CS.cstm_btns.set_button_status("dsp",9)
+    else:
+      if CS.cstm_btns.get_button_status("dsp") != 1:
+        CS.cstm_btns.set_button_status("dsp",1) 
     """ Controls thread """
 
     if not CS.useTeslaMapData:
@@ -323,7 +351,7 @@ class CarController(object):
       CS.cstm_btns.send_button_info()
       #read speed limit params
       if CS.hasTeslaIcIntegration:
-        self.set_speed_limit_active = 1
+        self.set_speed_limit_active = True
         self.speed_limit_offset = CS.userSpeedLimitOffsetKph
         self.speed_limit_for_cc = CS.userSpeedLimitKph
       else:
@@ -350,7 +378,7 @@ class CarController(object):
     if self.ALCA.pid == None:
       self.ALCA.set_pid(CS)
     if (frame % 10 == 0):
-      self.ALCA.update_status(CS.cstm_btns.get_button_status("alca") > 0 and CS.enableALCA)
+      self.ALCA.update_status((CS.cstm_btns.get_button_status("alca") > 0) and ((CS.enableALCA and not CS.hasTeslaIcIntegration) or (CS.hasTeslaIcIntegration and CS.alcaEnabled)))
       #print CS.cstm_btns.get_button_status("alca")
 
     
@@ -417,15 +445,15 @@ class CarController(object):
     # TODO: forward collission warning
 
     if CS.hasTeslaIcIntegration:
-        self.set_speed_limit_active = 1
+        self.set_speed_limit_active = True
         self.speed_limit_offset = CS.userSpeedLimitOffsetKph
         self.speed_limit_for_cc = CS.userSpeedLimitKph
 
     if CS.useTeslaMapData:    
       self.speedlimit_ms = CS.speedLimitKph * CV.KPH_TO_MS
-      self.speedlimit_valid = 1
+      self.speedlimit_valid = True
       if self.speedlimit_ms == 0:
-        self.speedlimit_valid = 0
+        self.speedlimit_valid = False
       if (self.params.get("IsMetric") == "1"):
         self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
       else:
@@ -518,32 +546,43 @@ class CarController(object):
             self.checkWhichSign()
             if not ((self.roadSignType_last == self.roadSignType) and (self.roadSignType == 0xFF)):
                can_sends.append(teslacan.create_fake_DAS_sign_msg(self.roadSignType,self.roadSignStopDist,self.roadSignColor,self.roadSignControlActive))
-    if CS.roadCurvRange > 20 and self.useMapOnly:
-      self.curv0 = -clip(CS.roadCurvC0,-0.5,0.5)
-      self.curv1 = -CS.roadCurvC1
+    if CS.roadCurvRange > 20 and self.useMap:
+      if self.useZeroC0:
+        self.curv0 = 0.
+      elif self.clipC0:
+        self.curv0 = -clip(CS.roadCurvC0,-0.5,0.5)
+      else:
+        self.curv0 = -CS.roadCurvC0
+      if CS.v_ego > 9:
+        self.curv1 = -CS.roadCurvC1
+      else:
+        self.curv1 = 0.
       self.curv2 = -CS.roadCurvC2
       self.curv3 = -CS.roadCurvC3
+      self.laneRange = CS.roadCurvRange
+    else:
+      self.curv0 = 0.
+      self.curv1 = 0.
+      self.curv2 = 0.
+      self.curv3 = 0.
+      self.laneRange = 0
     
-    elif CS.csaRoadCurvRange > 20:
-      self.curv2 = -CS.csaRoadCurvC2
-      self.curv3 = -CS.csaRoadCurvC3
-      if self.useZeroC0C1:
-        self.curv0 = 0.
-        self.curv1 = 0.
-      elif self.useBaseMapC0C1:
-        self.curv0 = -clip(CS.roadCurvC0,-0.5,0.5)
-        self.curv1 = -CS.roadCurvC1
-      self.laneRange = CS.csaRoadCurvRange
+    if CS.csaRoadCurvRange > 20 and not self.useMapOnly:
+      self.curv2 += -CS.csaRoadCurvC2
+      self.curv3 += -CS.csaRoadCurvC3
+      if self.laneRange > 0:
+        self.laneRange = min(self.laneRange,CS.csaRoadCurvRange)
+      else:
+        self.laneRange = CS.csaRoadCurvRange
     elif CS.csaOfframpCurvRange > 20:
       self.curv2 = -CS.csaOfframpCurvC2
       self.curv3 = -CS.csaOfframpCurvC3
-      if self.useZeroC0C1:
-        self.curv0 = 0.
-        self.curv1 = 0.
-      elif self.useBaseMapC0C1:
-        self.curv0 = -clip(CS.roadCurvC0,-0.5,0.5)
-        self.curv1 = -CS.roadCurvC1
-      self.laneRange = CS.csaOfframpCurvRange
+      self.curv0 = 0.
+      self.curv1 = 0.
+      if self.laneRange > 0:
+        self.laneRange = min(self.laneRange,CS.csaOfframpCurvRange)
+      else:
+        self.laneRange = CS.csaOfframpCurvRange
     else:
       self.laneRange = 30
     self.laneRange = clip(self.laneRange,0,159)
@@ -631,12 +670,19 @@ class CarController(object):
     speed_override = 0
     if (CS.pedal_interceptor_value > 10) and (cc_state > 1):
       speed_override = 0 #force zero for now
+    if (not enable_steer_control) and op_status == 3:
+      #hands_on_state = 0x03
+      self.DAS_219_lcTempUnavailableSpeed = 1
+      self.warningCounter = 100
+      self.warningNeeded = 1
+    if self.ALCA.laneChange_cancelled and (not CS.steer_override) and (not CS.blinker_on) :
+      self.DAS_201_lcAborting = 1
+      self.warningCounter = 300
+      self.warningNeeded = 1
     if send_fake_msg:
-      if (not enable_steer_control) and op_status == 3:
-        hands_on_state = 0x03
       if enable_steer_control and op_status == 3:
         op_status = 0x5
-      can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,speed_override,self.apUnavailable, collision_warning, op_status, \
+      can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,speed_override,self.DAS_206_apUnavailable, collision_warning, op_status, \
             acc_speed_kph, \
             turn_signal_needed,forward_collision_warning,hands_on_state, \
             cc_state, 1 if (CS.pedal_interceptor_available) else 0,alca_state, \
@@ -645,13 +691,16 @@ class CarController(object):
             speed_limit_to_car,
             apply_angle,
             1 if enable_steer_control else 0))
-    if send_fake_warning or (self.opState == 2) or (self.opState == 5) or (self.stopSignWarning != self.stopSignWarning_last) or (self.stopLightWarning != self.stopLightWarning_last):
+    if send_fake_warning or (self.opState == 2) or (self.opState == 5) or (self.stopSignWarning != self.stopSignWarning_last) or (self.stopLightWarning != self.stopLightWarning_last) or (self.warningNeeded == 1):
       #if it's time to send OR we have a warning or emergency disable
-      can_sends.append(teslacan.create_fake_DAS_warning(CS.DAS_noSeatbelt, CS.DAS_canErrors, \
-            CS.DAS_plannerErrors, CS.DAS_doorOpen, CS.DAS_notInDrive, CS.enableDasEmulation, CS.enableRadarEmulation, \
-            self.stopSignWarning, self.stopLightWarning))
+      can_sends.append(teslacan.create_fake_DAS_warning(self.DAS_211_accNoSeatBelt, CS.DAS_canErrors, \
+            self.DAS_202_noisyEnvironment, CS.DAS_doorOpen, CS.DAS_notInDrive, CS.enableDasEmulation, CS.enableRadarEmulation, \
+            self.stopSignWarning, self.stopLightWarning, \
+            self.DAS_222_accCameraBlind, self.DAS_219_lcTempUnavailableSpeed, self.DAS_220_lcTempUnavailableRoad, self.DAS_201_lcAborting, \
+            self.DAS_207_lkasUnavailable,self.DAS_208_rackDetected, self.DAS_025_steeringOverride))
       self.stopLightWarning_last = self.stopLightWarning
       self.stopSignWarning_last = self.stopSignWarning
+      self.warningNeeded = 0
     # end of DAS emulation """
     if frame % 100 == 0: # and CS.hasTeslaIcIntegration:
         #IF WE HAVE spamIC RUNNING, send a message every second to say we are still awake

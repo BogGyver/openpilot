@@ -59,6 +59,9 @@ def get_can_signals(CP):
       ("MCU_elevation", "MCU_locationStatus2", 0),
       ("MCU_latControlEnable", "MCU_chassisControl", 0),
       ("MCU_fcwSensitivity", "MCU_chassisControl", 0),
+      ("MCU_ldwEnable", "MCU_chassisControl", 0),
+      ("MCU_aebEnable", "MCU_chassisControl", 0),
+      ("MCU_pedalSafetyEnable", "MCU_chassisControl", 0),
       #("StW_AnglHP", "STW_ANGLHP_STAT", 0),
       ("DI_gear", "DI_torque2", 3),
       ("DI_brakePedal", "DI_torque2", 0),
@@ -233,6 +236,9 @@ class CarState(object):
 
     self.apEnabled = True
     self.apFollowDistance =  2.5 #time in seconds to follow
+    self.keepEonOff = False
+    self.alcaEnabled = True
+    self.mapAwareSpeed = False
 
     # for map integration
     self.csaRoadCurvC3 = 0.
@@ -376,7 +382,6 @@ class CarState(object):
     self.DAS_control_idx = 0
 
     #BB notification messages for DAS
-    self.DAS_noSeatbelt = 0
     self.DAS_canErrors = 0
     self.DAS_plannerErrors = 0
     self.DAS_doorOpen = 0
@@ -509,7 +514,10 @@ class CarState(object):
 
     if (self.hasTeslaIcIntegration):
       self.apEnabled = (cp.vl["MCU_chassisControl"]["MCU_latControlEnable"] == 1)
-      self.apFollowDistance =  1 + (3 - cp.vl["MCU_chassisControl"]["MCU_fcwSensitivity"]) * 0.5
+      self.apFollowDistance =  1 + cp.vl["MCU_chassisControl"]["MCU_fcwSensitivity"] * 0.5
+      self.keepEonOff = cp.vl["MCU_chassisControl"]["MCU_ldwEnable"] == 1
+      self.alcaEnabled = cp.vl["MCU_chassisControl"]["MCU_pedalSafetyEnable"] == 1
+      self.mapAwareSpeed = cp.vl["MCU_chassisControl"]["MCU_aebEnable"] == 1
 
     usu = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffsetUnits"]
     if usu == 1:

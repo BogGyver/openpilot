@@ -213,8 +213,6 @@ class CarInterface(object):
     else:
       ret.gasPressed = self.CS.user_gas_pressed
 
-    
-
     # brake pedal
     ret.brakePressed =False # (self.CS.brake_pressed != 0) and (self.CS.cstm_btns.get_button_status("brake") == 0)
     # FIXME: read sendcan for brakelights
@@ -292,11 +290,6 @@ class CarInterface(object):
     events = []
 
     #notification messages for DAS
-    self.CS.DAS_noSeatbelt = 0
-    self.CS.DAS_canErrors = 0
-    self.CS.DAS_plannerErrors = 0
-    self.CS.DAS_doorOpen = 0
-    self.CS.DAS_notInDrive = 0
     if (not c.enabled) and (self.CC.opState == 2):
       self.CC.opState = 0
     if c.enabled and (self.CC.opState == 0):
@@ -324,9 +317,11 @@ class CarInterface(object):
           self.CC.opState = 2
     if not ret.gearShifter == 'drive':
       events.append(create_event('wrongGear', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
-      self.CS.DAS_notInDrive = 1
       if self.CC.opState == 1:
-          self.CC.opState = 0
+        self.CC.DAS_222_accCameraBlind = 1
+        self.CC.warningCounter = 300
+        self.CC.warningNeeded = 1
+        self.CC.opState = 0
     if ret.doorOpen:
       events.append(create_event('doorOpen', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
       self.CS.DAS_doorOpen = 1
@@ -335,7 +330,9 @@ class CarInterface(object):
     if ret.seatbeltUnlatched:
       events.append(create_event('seatbeltNotLatched', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
       if c.enabled:
-        self.CS.DAS_noSeatbelt = 1
+        self.CC.DAS_211_accNoSeatBelt = 1
+        self.CC.warningCounter = 300
+        self.CC.warningNeeded = 1
       if self.CC.opState == 1:
         self.CC.opState = 2
     if self.CS.esp_disabled:
@@ -415,18 +412,38 @@ class CarInterface(object):
           (cur_time - self.last_enable_sent) > 0.2 and
           ret.cruiseState.enabled) or \
          (enable_pressed and get_events(events, [ET.NO_ENTRY])):
-        if self.CS.apEnabled:
-          events.append(create_event('buttonEnable', [ET.ENABLE]))
-        else:
-          self.CC.apUnavailable = 1
+        if ret.seatbeltUnlatched:
+          self.CC.DAS_211_accNoSeatBelt = 1
           self.CC.warningCounter = 300
+          self.CC.warningNeeded = 1
+        elif not ret.gearShifter == 'drive':
+          self.CC.DAS_222_accCameraBlind = 1
+          self.CC.warningCounter = 300
+          self.CC.warningNeeded = 1
+        elif not self.CS.apEnabled:
+          self.CC.DAS_206_apUnavailable = 1
+          self.CC.warningCounter = 300
+          self.CC.warningNeeded = 1
+        else:
+          events.append(create_event('buttonEnable', [ET.ENABLE]))
         self.last_enable_sent = cur_time
     elif enable_pressed:
-      if self.CS.apEnabled:
-        events.append(create_event('buttonEnable', [ET.ENABLE]))
-      else:
-        self.CC.apUnavailable = 1
+      if ret.seatbeltUnlatched:
+        self.CC.DAS_211_accNoSeatBelt = 1
         self.CC.warningCounter = 300
+        self.CC.warningNeeded = 1
+      elif not ret.gearShifter == 'drive':
+        self.CC.DAS_222_accCameraBlind = 1
+        self.CC.warningCounter = 300
+        self.CC.warningNeeded = 1
+      elif not self.CS.apEnabled:
+        self.CC.DAS_206_apUnavailable = 1
+        self.CC.warningCounter = 300
+        self.CC.warningNeeded = 1
+      else:
+        events.append(create_event('buttonEnable', [ET.ENABLE]))
+     
+        
 
     ret.events = events
     ret.canMonoTimes = canMonoTimes

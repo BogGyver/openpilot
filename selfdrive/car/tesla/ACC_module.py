@@ -56,18 +56,18 @@ def _current_time_millis():
 def max_v_by_speed_limit(acc_set_speed_kph ,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset,CS):
   # if more than 10 kph / 2.78 ms, consider we have speed limit
   if speed_limit_kph > 10:
-    if set_speed_limit_active:
+    if set_speed_limit_active or CS.hasTeslaIcIntegration:
       v_speedlimit = speed_limit_kph + speed_limit_offset
       sl1 = min(acc_set_speed_kph,v_speedlimit)
-      if CS.maxdrivespeed > 0 and CS.useTeslaMapData:
+      if CS.maxdrivespeed > 0 and CS.useTeslaMapData and CS.mapAwareSpeed:
         return min(sl1, CS.maxdrivespeed * CV.MS_TO_KPH)
       else:
         return sl1
-    elif CS.maxdrivespeed > 0  and CS.useTeslaMapData:
+    elif CS.maxdrivespeed > 0  and CS.useTeslaMapData  and CS.mapAwareSpeed:
       return min(acc_set_speed_kph, CS.maxdrivespeed * CV.MS_TO_KPH)
     else:
       return acc_set_speed_kph
-  elif CS.maxdrivespeed > 0  and CS.useTeslaMapData:
+  elif CS.maxdrivespeed > 0  and CS.useTeslaMapData  and CS.mapAwareSpeed:
     return min(acc_set_speed_kph, CS.maxdrivespeed * CV.MS_TO_KPH)
   else:
     return acc_set_speed_kph
