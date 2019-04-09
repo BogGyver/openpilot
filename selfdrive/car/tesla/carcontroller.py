@@ -170,7 +170,7 @@ class CarController(object):
     self.DAS_222_accCameraBlind = 0 #DAS_206 lkas not ebabled
     self.DAS_219_lcTempUnavailableSpeed = 0
     self.DAS_220_lcTempUnavailableRoad = 0
-    self.DAS_201_lcAborting = 0
+    self.DAS_221_lcAborting = 0
     self.DAS_211_accNoSeatBelt = 0
     self.DAS_207_lkasUnavailable = 0 #use for manual steer?
     self.DAS_208_rackDetected = 0 #use for low battery?
@@ -266,16 +266,20 @@ class CarController(object):
              hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert, \
              snd_beep, snd_chime,leftLaneVisible,rightLaneVisible):
 
+    if (not enabled) and (self.ALCA.laneChange_cancelled):
+      self.ALCA.laneChange_cancelled = False
+      self.ALCA.laneChange_cancelled_counter = 0
+      self.warningNeeded = 1
     if self.warningCounter > 0:
       self.warningCounter = self.warningCounter - 1
       if self.warningCounter == 0:
         self.warningNeeded = 1
-    if self.warningCounter == 0:
+    if self.warningCounter == 0 or not enabled:
         # when zero reset all warnings
         self.DAS_222_accCameraBlind = 0 #we will see what we can use this for
         self.DAS_219_lcTempUnavailableSpeed = 0
         self.DAS_220_lcTempUnavailableRoad = 0
-        self.DAS_201_lcAborting = 0
+        self.DAS_221_lcAborting = 0
         self.DAS_211_accNoSeatBelt = 0
         self.DAS_207_lkasUnavailable = 0 #use for manual not in drive?
         self.DAS_208_rackDetected = 0 #use for low battery?
@@ -678,8 +682,8 @@ class CarController(object):
       self.DAS_219_lcTempUnavailableSpeed = 1
       self.warningCounter = 100
       self.warningNeeded = 1
-    if self.ALCA.laneChange_cancelled and (not CS.steer_override) and (not CS.blinker_on) and (self.ALCA.laneChange_cancelled_counter > 0): 
-      self.DAS_201_lcAborting = 1
+    if enabled and self.ALCA.laneChange_cancelled and (not CS.steer_override) and (not CS.blinker_on) and (self.ALCA.laneChange_cancelled_counter > 0): 
+      self.DAS_221_lcAborting = 1
       self.warningCounter = 300
       self.warningNeeded = 1
     if send_fake_msg:
@@ -694,12 +698,12 @@ class CarController(object):
             speed_limit_to_car,
             apply_angle,
             1 if enable_steer_control else 0))
-    if send_fake_warning or (self.opState == 2) or (self.opState == 5) or (self.stopSignWarning != self.stopSignWarning_last) or (self.stopLightWarning != self.stopLightWarning_last) or (self.warningNeeded == 1):
+    if send_fake_warning or (self.opState == 2) or (self.opState == 5) or (self.stopSignWarning != self.stopSignWarning_last) or (self.stopLightWarning != self.stopLightWarning_last) or (self.warningNeeded == 1) or (frame % 100 == 0):
       #if it's time to send OR we have a warning or emergency disable
       can_sends.append(teslacan.create_fake_DAS_warning(self.DAS_211_accNoSeatBelt, CS.DAS_canErrors, \
             self.DAS_202_noisyEnvironment, CS.DAS_doorOpen, CS.DAS_notInDrive, CS.enableDasEmulation, CS.enableRadarEmulation, \
             self.stopSignWarning, self.stopLightWarning, \
-            self.DAS_222_accCameraBlind, self.DAS_219_lcTempUnavailableSpeed, self.DAS_220_lcTempUnavailableRoad, self.DAS_201_lcAborting, \
+            self.DAS_222_accCameraBlind, self.DAS_219_lcTempUnavailableSpeed, self.DAS_220_lcTempUnavailableRoad, self.DAS_221_lcAborting, \
             self.DAS_207_lkasUnavailable,self.DAS_208_rackDetected, self.DAS_025_steeringOverride))
       self.stopLightWarning_last = self.stopLightWarning
       self.stopSignWarning_last = self.stopSignWarning

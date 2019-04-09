@@ -186,7 +186,7 @@ int DAS_220_lcTempUnavailableRoad = 0x00;
 int DAS_207_lkasUnavailable = 0x00;
 int DAS_208_rackDetected = 0x00;
 int DAS_025_steeringOverride = 0x00;
-int DAS_201_lcAborting = 0x00;
+int DAS_221_lcAborting = 0x00;
 
 
 static int add_tesla_crc(uint32_t MLB, uint32_t MHB , int msg_len) {
@@ -337,7 +337,7 @@ static void reset_DAS_data() {
   DAS_207_lkasUnavailable = 0x00;
   DAS_208_rackDetected = 0x00;
   DAS_025_steeringOverride = 0x00;
-  DAS_201_lcAborting = 0x00;
+  DAS_221_lcAborting = 0x00;
 }
 
 
@@ -821,7 +821,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     MLB = 0x00 + bitShift(DAS_gas_to_resume,1,2) +  bitShift(DAS_206_apUnavailable,2,6)  + bitShift(ovr,3,8) +
          bitShift(lcAborting,2,1) + bitShift(lcUnavailableSpeed,4,3) + bitShift(DAS_211_accNoSeatBelt,3,3) + bitShift(DAS_202_noisyEnvironment,4,6) +
          bitShift(stopSignWarning,1,4) + bitShift(stopLightWarning,1,5) + bitShift(DAS_207_lkasUnavailable,2,7) + bitShift(DAS_219_lcTempUnavailableSpeed,4,3) +
-         bitShift(DAS_220_lcTempUnavailableRoad,4,4) + bitShift(DAS_201_lcAborting,4,5) + bitShift(DAS_222_accCameraBlind,4,6) + bitShift(DAS_208_rackDetected,2,8);
+         bitShift(DAS_220_lcTempUnavailableRoad,4,4) + bitShift(DAS_221_lcAborting,4,5) + bitShift(DAS_222_accCameraBlind,4,6) + bitShift(DAS_208_rackDetected,2,8);
     MHB = 0x00;
     send_fake_message(RIR,RDTR,8,0x349,0,MLB,MHB);
     DAS_warningMatrix3_idx ++;
@@ -1317,10 +1317,10 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     enable_radar_emulation = ((b0 >> 6) & 0x01);
     stopLightWarning = ((b0 >> 7) & 0x01);
     stopSignWarning = ((b1 >> 0) & 0x01);
-    DAS_222_accCameraBlind = ((b0 >> 1) & 0x01); //we will not override the one set in 0x553
+    DAS_222_accCameraBlind = ((b1 >> 1) & 0x01); //we will not override the one set in 0x553
     DAS_219_lcTempUnavailableSpeed = ((b1 >> 2) & 0x01);
     DAS_220_lcTempUnavailableRoad = ((b1 >> 3) & 0x01);
-    DAS_201_lcAborting = ((b1 >> 4) & 0x01);
+    DAS_221_lcAborting = ((b1 >> 4) & 0x01);
     DAS_207_lkasUnavailable = ((b1 >> 5) & 0x01);
     DAS_208_rackDetected = ((b1 >> 6) & 0x01);
     DAS_025_steeringOverride = ((b1 >> 7) & 0x01);

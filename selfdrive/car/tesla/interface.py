@@ -317,11 +317,10 @@ class CarInterface(object):
           self.CC.opState = 2
     if not ret.gearShifter == 'drive':
       events.append(create_event('wrongGear', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
-      if self.CC.opState == 1:
+      if c.enabled:
         self.CC.DAS_222_accCameraBlind = 1
         self.CC.warningCounter = 300
         self.CC.warningNeeded = 1
-        self.CC.opState = 0
     if ret.doorOpen:
       events.append(create_event('doorOpen', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
       self.CS.DAS_doorOpen = 1
