@@ -198,7 +198,7 @@ class CarController(object):
     self.useZeroC0 = True
     self.useMap = True
     self.clipC0 = False
-    self.useMapOnly = True
+    self.useMapOnly = False
 
     self.stopSign_visible = False
     self.stopSign_distance = 1000.
