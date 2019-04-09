@@ -678,7 +678,7 @@ class CarController(object):
       self.DAS_219_lcTempUnavailableSpeed = 1
       self.warningCounter = 100
       self.warningNeeded = 1
-    if self.ALCA.laneChange_cancelled and (not CS.steer_override) and (not CS.blinker_on) :
+    if self.ALCA.laneChange_cancelled and (not CS.steer_override) and (not CS.blinker_on) and (self.ALCA.laneChange_cancelled_counter > 0): 
       self.DAS_201_lcAborting = 1
       self.warningCounter = 300
       self.warningNeeded = 1
