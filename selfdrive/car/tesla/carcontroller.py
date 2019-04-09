@@ -723,7 +723,6 @@ class CarController(object):
           can_sends.insert(0, cruise_msg)
     apply_accel = 0.
     if CS.pedal_interceptor_available and frame % 5 == 0: # pedal processed at 20Hz
-      self.PCC.
       apply_accel, accel_needed, accel_idx = self.PCC.update_pdl(enabled, CS, frame, actuators, pcm_speed, \
                     self.speed_limit_for_cc * CV.KPH_TO_MS, self.speedlimit_valid, \
                     self.set_speed_limit_active, self.speed_limit_offset * CV.KPH_TO_MS)

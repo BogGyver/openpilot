@@ -52,7 +52,7 @@ def get_can_signals(CP):
       ("MCU_userSpeedOffset", "MCU_gpsVehicleSpeed", 0),
       ("MCU_userSpeedOffsetUnits", "MCU_gpsVehicleSpeed", 0),
       ("MCU_mppSpeedLimit", "MCU_gpsVehicleSpeed", 0),
-      ("MCU_speedLimitUnits", "MCU_gpsVehicleSpeed", 0),
+      ("MCU_mapSpeedLimitUnits", "MCU_gpsVehicleSpeed", 0),
       ("MCU_gpsAccuracy", "MCU_locationStatus", 0),
       ("MCU_latitude", "MCU_locationStatus", 0),
       ("MCU_longitude", "MCU_locationStatus", 0),
@@ -524,7 +524,7 @@ class CarState(object):
       self.userSpeedLimitOffsetKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffset"]
     else:
       self.userSpeedLimitOffsetKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffset"] * CV.MPH_TO_KPH
-    msu = cp.vl['MCU_gpsVehicleSpeed']["MCU_speedLimitUnits"]
+    msu = cp.vl['MCU_gpsVehicleSpeed']["MCU_mapSpeedLimitUnits"]
     if msu == 1:
       self.userSpeedLimitKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_mppSpeedLimit"]
     else:
