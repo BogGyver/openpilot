@@ -54,7 +54,7 @@ def _current_time_millis():
   return int(round(time.time() * 1000))
 
 def max_v_by_speed_limit(acc_set_speed_kph ,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset,CS):
-  if (CS.maxdrivespeed > 0) and CS.useTeslaMapData  and CS.mapAwareSpeed:
+  if (CS.maxdrivespeed > 0) and CS.useTeslaMapData  and (CS.mapAwareSpeed or (speed_limit_kph < 10)):
     return min(acc_set_speed_kph, CS.maxdrivespeed * CV.MS_TO_KPH)
   else:
     return acc_set_speed_kph
