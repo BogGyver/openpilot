@@ -151,19 +151,7 @@ def max_v_in_mapped_curve_ms(map_data, pedal_set_speed_kph):
 
 def max_v_by_speed_limit(pedal_set_speed_ms ,speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset_ms,CS):
   # if more than 10 kph / 2.78 ms, consider we have speed limit
-  if speed_limit_ms > 2.78:
-    if set_speed_limit_active or CS.hasTeslaIcIntegration:
-      v_speedlimit_ms = speed_limit_ms + speed_limit_offset_ms
-      sl1 = min(pedal_set_speed_ms,v_speedlimit_ms)
-      if (CS.maxdrivespeed > 0) and CS.useTeslaMapData and CS.mapAwareSpeed:
-        return min(sl1, CS.maxdrivespeed)
-      else:
-        return sl1
-    elif (CS.maxdrivespeed >  0)  and CS.useTeslaMapData and CS.mapAwareSpeed:
-      return min(pedal_set_speed_ms, CS.maxdrivespeed)
-    else:
-      return pedal_set_speed_ms
-  elif (CS.maxdrivespeed > 0)  and CS.useTeslaMapData and CS.mapAwareSpeed:
+  if (CS.maxdrivespeed > 0)  and CS.useTeslaMapData and CS.mapAwareSpeed:
     return min(pedal_set_speed_ms, CS.maxdrivespeed)
   else:
     return pedal_set_speed_ms
@@ -200,6 +188,8 @@ class PCCController(object):
     self.prev_pcm_acc_status = 0
     self.prev_cruise_buttons = CruiseButtons.IDLE
     self.pedal_speed_kph = 0.
+    self.speed_limit_kph = 0.
+    self.prev_speed_limit_kph = 0.
     self.pedal_idx = 0
     self.pedal_steady = 0.
     self.prev_tesla_accel = 0.
@@ -296,7 +286,7 @@ class PCCController(object):
         self.enable_pedal_cruise = True
         self.LoC.reset(CS.v_ego)
         # Increase PCC speed to match current, if applicable.
-        self.pedal_speed_kph = max(CS.v_ego * CV.MS_TO_KPH, self.pedal_speed_kph)
+        self.pedal_speed_kph = max(CS.v_ego * CV.MS_TO_KPH, self.speed_limit_kph)
     # Handle pressing the cancel button.
     elif CS.cruise_buttons == CruiseButtons.CANCEL:
       self.enable_pedal_cruise = False
@@ -352,6 +342,11 @@ class PCCController(object):
     cur_time = sec_since_boot()
     FOLLOW_TIME_S = CS.apFollowDistance
     idx = self.pedal_idx
+    self.prev_speed_limit_kph = self.speed_limit_kph
+    if speed_limit_valid and set_speed_limit_active and (speed_limit_ms > 2.7):
+      self.speed_limit_kph = (speed_limit_ms +  speed_limit_offset) * CV.MS_TO_KPH
+      if not (int(self.prev_speed_limit_kph) == int(self.speed_limit_kph)):
+        self.pedal_speed_kph = self.speed_limit_kph
     self.pedal_idx = (self.pedal_idx + 1) % 16
     if not CS.pedal_interceptor_available or not enabled:
       return 0., 0, idx

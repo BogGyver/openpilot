@@ -54,20 +54,7 @@ def _current_time_millis():
   return int(round(time.time() * 1000))
 
 def max_v_by_speed_limit(acc_set_speed_kph ,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset,CS):
-  # if more than 10 kph / 2.78 ms, consider we have speed limit
-  if speed_limit_kph > 10:
-    if set_speed_limit_active or CS.hasTeslaIcIntegration:
-      v_speedlimit = speed_limit_kph + speed_limit_offset
-      sl1 = min(acc_set_speed_kph,v_speedlimit)
-      if (CS.maxdrivespeed > 0) and CS.useTeslaMapData and CS.mapAwareSpeed:
-        return min(sl1, CS.maxdrivespeed * CV.MS_TO_KPH)
-      else:
-        return sl1
-    elif (CS.maxdrivespeed > 0)  and CS.useTeslaMapData  and CS.mapAwareSpeed:
-      return min(acc_set_speed_kph, CS.maxdrivespeed * CV.MS_TO_KPH)
-    else:
-      return acc_set_speed_kph
-  elif (CS.maxdrivespeed > 0) and CS.useTeslaMapData  and CS.mapAwareSpeed:
+  if (CS.maxdrivespeed > 0) and CS.useTeslaMapData  and CS.mapAwareSpeed:
     return min(acc_set_speed_kph, CS.maxdrivespeed * CV.MS_TO_KPH)
   else:
     return acc_set_speed_kph
@@ -96,6 +83,8 @@ class ACCController(object):
     self.prev_cruise_buttons = CruiseButtons.IDLE
     self.prev_pcm_acc_status = 0
     self.acc_speed_kph = 0.
+    self.speed_limit_kph = 0.
+    self.prev_speed_limit_kph = 0.
     self.user_has_braked = False
     self.has_gone_below_min_speed = False
     self.fast_decel_time = 0
@@ -129,7 +118,7 @@ class ACCController(object):
         # A double pull enables ACC. updating the max ACC speed if necessary.
         self.enable_adaptive_cruise = True
         # Increase ACC speed to match current, if applicable.
-        self.acc_speed_kph = max(CS.v_ego_raw * CV.MS_TO_KPH, self.acc_speed_kph)
+        self.acc_speed_kph = max(CS.v_ego_raw * CV.MS_TO_KPH, self.speed_limit_kph)
         self.user_has_braked = False
         self.has_gone_below_min_speed = False
       else:
@@ -200,6 +189,11 @@ class ACCController(object):
   # desired speed.
   def update_acc(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset):
     # Adaptive cruise control
+    self.prev_speed_limit_kph = self.speed_limit_kph
+    if speed_limit_valid and set_speed_limit_active and (speed_limit_kph >= 10):
+      self.speed_limit_kph = speed_limit_kph +  speed_limit_offset
+      if not (int(self.prev_speed_limit_kph) == int(self.speed_limit_kph)):
+        self.acc_speed_kph = self.speed_limit_kph
     current_time_ms = _current_time_millis()
     if CruiseButtons.should_be_throttled(CS.cruise_buttons):
       self.human_cruise_action_time = current_time_ms
