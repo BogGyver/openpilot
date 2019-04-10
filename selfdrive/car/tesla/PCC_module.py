@@ -151,7 +151,7 @@ def max_v_in_mapped_curve_ms(map_data, pedal_set_speed_kph):
 
 def max_v_by_speed_limit(pedal_set_speed_ms ,speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset_ms,CS):
   # if more than 10 kph / 2.78 ms, consider we have speed limit
-  if (CS.maxdrivespeed > 0)  and CS.useTeslaMapData and CS.mapAwareSpeed:
+  if (CS.maxdrivespeed > 0)  and CS.useTeslaMapData and (CS.mapAwareSpeed or (speed_limit_ms <2.7)):
     return min(pedal_set_speed_ms, CS.maxdrivespeed)
   else:
     return pedal_set_speed_ms
