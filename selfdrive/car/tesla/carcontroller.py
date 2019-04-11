@@ -22,6 +22,7 @@ from selfdrive.car.modules.GYRO_module import GYROController
 from selfdrive.car.tesla.ACC_module import ACCController
 from selfdrive.car.tesla.PCC_module import PCCController
 from selfdrive.car.tesla.HSO_module import HSOController
+from selfdrive.car.tesla.movingaverage import MovingAverage
 import zmq
 import selfdrive.messaging as messaging
 from selfdrive.services import service_list
@@ -79,50 +80,8 @@ HUDData = namedtuple("HUDData",
                      ["pcm_accel", "v_cruise", "mini_car", "car", "X4",
                       "lanes", "beep", "chime", "fcw", "acc_alert", "steer_required"])
 
-class MovingAverage(object):
-  def __init__(self, length):
-    self.position = 0
-    self.length = length
-    self.sum = 0.
-    self.no_items = 0
-    self.values = [0.] * length
-
-  def add(self,element):
-    if self.no_items == self.length:
-      self.no_items -= 1
-      self.sum -= self.values[self.position]
-    self.values[self.position] = element
-    self.sum += self.values[self.position]
-    self.no_items += 1
-    self.position += 1
-    if self.sum == 0.:
-      #all empty so initialize
-      self.position = 0
-      self.sum = 0.
-      self.no_items = 0
-      return 0.
-    self.position = self.position % self.length
-    return self.sum/self.no_items
 
 
-  def dele(self):
-    if self.no_items == 0:
-      return 0.
-    if self.no_items > 0:
-      self.no_items -= 1
-      self.sum -= self.values[self.position]
-      self.values[self.position] = 0.
-      self.position -= 1
-      if self.position < 0:
-        self.position = self.length-1
-    if self.sum == 0. or self.no_items == 0.:
-      #all empty so initialize
-      self.position = 0
-      self.sum = 0.
-      self.no_items = 0
-      return 0.
-    self.position = self.position % self.length
-    return self.sum/self.no_items
 class CarController(object):
   def __init__(self, dbc_name, enable_camera=True):
     self.params = Params()

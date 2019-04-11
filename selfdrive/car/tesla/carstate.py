@@ -143,6 +143,7 @@ def get_can_signals(CP):
       ("UI_splineLocConfidence", "UI_driverAssistRoadSign", 0),
       ("UI_baseMapSpeedLimitMPS", "UI_driverAssistRoadSign", 0),
       ("UI_bottomQrtlFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
+      ("UI_rampType", "UI_driverAssistRoadSign", 0),
 
       
   ]
@@ -268,6 +269,7 @@ class CarState(object):
     self.splineLocConfidence = 0
     self.baseMapSpeedLimitMPS = 0.
     self.bottomQrtlFleetSpeedMPS = 0.
+    self.rampType = 0
 
     self.mapBasedSuggestedSpeed = 0.
     self.splineBasedSuggestedSpeed = 0.
@@ -450,6 +452,28 @@ class CarState(object):
     btn.btn_status = 1
     self.cstm_btns.update_ui_buttons(1, 1)    
 
+  def compute_speed(self):
+    # if one of them is zero, select max of the two
+    if self.meanFleetSplineSpeedMPS == 0 or self.medianFleetSpeedMPS == 0:
+      self.splineBasedSuggestedSpeed = max(self.meanFleetSplineSpeedMPS,self.medianFleetSpeedMPS)
+    else:
+      self.splineBasedSuggestedSpeed = (self.splineLocConfidence * self.meanFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.medianFleetSpeedMPS ) / 100
+    # if confidence over 60%, then weight between bottom speed and top speed
+    # if less than 40% then use map data
+    if self.splineLocConfidence > 60:
+      self.mapBasedSuggestedSpeed = (self.splineLocConfidence * self.topQrtlFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.bottomQrtlFleetSpeedMPS ) / 100
+    else:
+      self.mapBasedSuggestedSpeed = self.baseMapSpeedLimitMPS
+    if self.rampType > 0:
+      #we are on a ramp, use the spline info if available
+      if self.splineBasedSuggestedSpeed > 0:
+        self.maxdrivespeed = self.splineBasedSuggestedSpeed
+      else:
+        self.maxdrivespeed = self.mapBasedSuggestedSpeed
+    else:
+      #we are on a normal road, use max of the two
+      self.maxdrivespeed = max(self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed)
+
   def update_ui_buttons(self,id,btn_status):
     # we only focus on id=3, which is for visiond
     if (id == 3) and (self.cstm_btns.btns[id].btn_status > 0) and (self.last_visiond != self.cstm_btns.btns[id].btn_label2):
@@ -541,26 +565,15 @@ class CarState(object):
       self.meanFleetSplineAccelMPS2  = cp.vl["UI_driverAssistRoadSign"]["UI_meanFleetSplineAccelMPS2"]
       self.medianFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_medianFleetSpeedMPS"]
       self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
-      # if one of them is zero, select max of the two
-      if self.meanFleetSplineSpeedMPS == 0 or self.medianFleetSpeedMPS == 0:
-        self.splineBasedSuggestedSpeed = max(self.meanFleetSplineSpeedMPS,self.medianFleetSpeedMPS)
-      else:
-        self.splineBasedSuggestedSpeed = (self.splineLocConfidence * self.meanFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.medianFleetSpeedMPS ) / 100
+      self.rampType = cp.vl["UI_driverAssistRoadSign"]["UI_rampType"]
+      
     if rdSignMsg == 3:
       self.topQrtlFleetSplineSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_topQrtlFleetSpeedMPS"]
       self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
       self.baseMapSpeedLimitMPS = cp.vl["UI_driverAssistRoadSign"]["UI_baseMapSpeedLimitMPS"]
       self.bottomQrtlFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_bottomQrtlFleetSpeedMPS"]
-      # if confidence over 60%, then weight between bottom speed and top speed
-      # if less than 40% then use map data
-      if self.splineLocConfidence > 60:
-        self.mapBasedSuggestedSpeed = (self.splineLocConfidence * self.topQrtlFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.bottomQrtlFleetSpeedMPS ) / 100
-      else:
-        self.mapBasedSuggestedSpeed = self.baseMapSpeedLimitMPS
-    if self.mapBasedSuggestedSpeed > 0 and self.splineBasedSuggestedSpeed > 0:
-      self.maxdrivespeed = min(self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed)
-    else:
-      self.maxdrivespeed = max(self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed)
+    
+    self.compute_speed()
 
     # 2 = temporary 3= TBD 4 = temporary, hit a bump 5 (permanent) 6 = temporary 7 (permanent)
     # TODO: Use values from DBC to parse this field

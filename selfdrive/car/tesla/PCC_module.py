@@ -17,6 +17,7 @@ import math
 import numpy as np
 from collections import OrderedDict
 from common.params import Params
+from selfdrive.car.tesla.movingaverage import MovingAverage
 
 
 _DT = 0.05    # 20Hz in our case, since we don't want to process more than once the same live20 message
@@ -149,12 +150,7 @@ def max_v_in_mapped_curve_ms(map_data, pedal_set_speed_kph):
   else:
     return None
 
-def max_v_by_speed_limit(pedal_set_speed_ms ,speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset_ms,CS):
-  # if more than 10 kph / 2.78 ms, consider we have speed limit
-  if (CS.maxdrivespeed > 0)  and CS.useTeslaMapData and (CS.mapAwareSpeed or (speed_limit_ms <2.7)):
-    return min(pedal_set_speed_ms, CS.maxdrivespeed)
-  else:
-    return pedal_set_speed_ms
+
 
 class PCCState(object):
   # Possible state of the ACC system, following the DI_cruiseState naming
@@ -224,6 +220,23 @@ class PCCController(object):
     self.lead_last_seen_time_ms = 0
     self.continuous_lead_sightings = 0
     self.params = Params()
+    self.average_speed_over_x_suggestions = 20 #2 seconds.... 10x a second
+    self.maxsuggestedspeed_avg = MovingAverage(self.average_speed_over_x_suggestions)
+
+  def max_v_by_speed_limit(self,pedal_set_speed_ms ,speed_limit_ms, CS):
+    # if more than 10 kph / 2.78 ms, consider we have speed limit
+    if (CS.maxdrivespeed > 0)  and CS.useTeslaMapData and (CS.mapAwareSpeed or (CS.baseMapSpeedLimitMPS <2.7)):
+      #do we know the based speed limit?
+      sl1 = 0.
+      if CS.baseMapSpeedLimitMPS >= 2.7:
+        #computer adjusted maxdrive based on set speed
+        sl1 = min (speed_limit_ms *  CS.maxdrivespeed / CS.baseMapSpeedLimitMPS, speed_limit_ms)
+        sl1 = self.maxsuggestedspeed_avg.add(sl1)
+      else:
+        sl1 = self.maxsuggestedspeed_avg.add(CS.maxdrivespeed)
+      return min(pedal_set_speed_ms, sl1)
+    else:
+      return pedal_set_speed_ms
 
   def reset(self, v_pid):
     if self.LoC:
@@ -347,6 +360,8 @@ class PCCController(object):
       self.speed_limit_kph = (speed_limit_ms +  speed_limit_offset) * CV.MS_TO_KPH
       if not (int(self.prev_speed_limit_kph) == int(self.speed_limit_kph)):
         self.pedal_speed_kph = self.speed_limit_kph
+        #also reset maxsuggestedspeed_avg
+        self.maxsuggestedspeed_avg.reset()
     self.pedal_idx = (self.pedal_idx + 1) % 16
     if not CS.pedal_interceptor_available or not enabled:
       return 0., 0, idx
@@ -387,7 +402,7 @@ class PCCController(object):
         if v_curve:
           self.v_pid = min(self.v_pid, v_curve)
       # now check and do the limit vs speed limit + offset
-      self.v_pid = max_v_by_speed_limit(self.v_pid ,speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset,CS)
+      self.v_pid = self.max_v_by_speed_limit(self.v_pid ,self.pedal_speed_kph * CV.KPH_TO_MS, CS)
       # cruise speed can't be negative even is user is distracted
       self.v_pid = max(self.v_pid, 0.)
 
