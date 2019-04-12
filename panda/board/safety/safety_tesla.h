@@ -131,6 +131,7 @@ int tLeadDx = 0;
 int tLeadDy = 0;
 int rLine = 0;
 int lLine = 0;
+int lWidth = 29;
 int curvC0 = 0x64;
 int curvC1 = 0x7F;
 int curvC2 = 0x7F;
@@ -597,7 +598,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     //send DAS_lanes - 0x239
     //for now fixed 0x33,0xC8,0xF0,0x7F,0x70,0x70,0x33,(idx << 4)+0x0F
     int fuse = 2;
-    MLB = 0x00000030 + (rLine << 1) + lLine + (laneRange << 8) + (curvC0 << 16) + (curvC1  << 24);
+    MLB = (lWidth << 4) + (rLine << 1) + lLine + (laneRange << 8) + (curvC0 << 16) + (curvC1  << 24);
     MHB = 0x0F000000 + (DAS_lanes_idx << 28) + curvC2 + (curvC3 << 8) + ((((rLine * fuse) << 2) + (lLine * fuse)) << 16);
     send_fake_message(RIR,RDTR,8,0x239,0,MLB,MHB);
     DAS_lanes_idx ++;
@@ -1293,8 +1294,9 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
   if (addr == 0x557) {
     tLeadDx = (to_send->RDLR & 0xFF);
     tLeadDy = ((to_send->RDLR >> 8) & 0xFF);
-    rLine = ((to_send->RDLR >> 16) & 0x0F);
-    lLine = ((to_send->RDLR >> 20) & 0x0F);
+    rLine = ((to_send->RDLR >> 16) & 0x01);
+    lLine = ((to_send->RDLR >> 17) & 0x01);
+    lWidth = ((to_send->RDLR >> 20) & 0x0F);
     curvC0 = ((to_send->RDLR >> 24) & 0xFF);
     curvC1 = (to_send->RDHR & 0xFF);
     curvC2 = ((to_send->RDHR >> 8) & 0xFF);

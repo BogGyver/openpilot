@@ -139,6 +139,7 @@ class PathPlanner(object):
     plan_send.pathPlan.mpcAngles = map(float, self.mpc_angles)
     plan_send.pathPlan.mpcTimes = map(float, self.mpc_times)
     plan_send.pathPlan.valid = bool(plan_valid)
+    plan_send.pathPlan.pPoly = map(float, p_poly)
 
     self.plan.send(plan_send.to_bytes())
 

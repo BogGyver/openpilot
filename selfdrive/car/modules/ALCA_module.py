@@ -144,6 +144,8 @@ class ALCAController(object):
     self.roll_correction_factor = 0.
     self.pitch_angle = 0.
     self.pitch_accuracy = -1.
+    self.visionCurvC0 = 0.
+    self.prev_visionCurvC0 = 0.
 
 
   def last10delta_reset(self):
@@ -179,7 +181,9 @@ class ALCAController(object):
                             (CS.CP.steerKiBP, CS.CP.steerKiV),
                             k_f=CS.CP.steerKf, pos_limit=1.0)
 
-  def update_angle(self,enabled,CS,frame,actuators):
+  def update_angle(self,enabled,CS,frame,actuators,visionCurvC0):
+    self.prev_visionCurvC0 = self.visionCurvC0
+    self.visionCurvC0 = visionCurvC0
     alcaMode = CS.cstm_btns.get_button_label2_index("alca")
     adj058 = 0.8
     #parameters that define the speed/aggressiveness of lane change modes
@@ -309,16 +313,15 @@ class ALCAController(object):
           delta_angle = (-actuators.steerAngle - self.laneChange_angle - self.laneChange_angled)/cl_adjust_factor 
           self.laneChange_angle += delta_angle
         # wait 0.05 sec before starting to check if angle increases or if we are within X deg of actuator.angleSteer
-        if ((current_delta > previous_delta) or  (current_delta <= cl_reentry_angle)) and (self.laneChange_counter > cl_lane_pass_time):
-          self.laneChange_enabled = 7
+        if ((current_delta > previous_delta) or  (current_delta <= cl_reentry_angle) or (abs(self.visionCurvC0) < 0.3) ) and \
+         (self.laneChange_counter > cl_lane_pass_time) and (abs(self.visionCurvC0) < 0.3):
+          self.laneChange_enabled = 6
           self.laneChange_counter = 1
-          self.laneChange_direction = 0
         # we crossed the line, so  x sec later give control back to OP
         laneChange_after_lane_duration = cl_timea_t * self.laneChange_after_lane_duration_mult
-        if (self.laneChange_counter > laneChange_after_lane_duration * 100):
-          self.laneChange_enabled = 7
+        if (self.laneChange_counter > laneChange_after_lane_duration * 100) and (abs(self.visionCurvC0) < 0.5):
+          self.laneChange_enabled = 6
           self.laneChange_counter = 1
-          self.laneChange_direction = 0
       # this is the main stage once we start turning
       # we have to detect when to let go control back to OP or raise alarm if max timer passed
       # there are three conditions we look for:
@@ -341,8 +344,14 @@ class ALCAController(object):
           # we didn't cross the line, so keep computing the actuator delta until it flips
           actuator_delta = self.laneChange_direction * (-actuators.steerAngle - self.laneChange_last_actuator_angle)
           actuator_ratio = (-actuators.steerAngle)/self.laneChange_last_actuator_angle
+          center_distance_sign = (self.visionCurvC0 * self.prev_visionCurvC0 < 0)
         if (actuator_ratio < 1) and (abs(actuator_delta) > 0.5 * cl_lane_detect_factor):
           # sudden change in actuator angle or sign means we are on the other side of the line
+          self.laneChange_over_the_line = 1
+          self.laneChange_enabled = 2
+          self.laneChange_counter = 1
+        if (abs(self.prev_visionCurvC0) > 1.0) and center_distance_sign:
+          # sudden change in the sign of the distance to the center of the road means we crossed
           self.laneChange_over_the_line = 1
           self.laneChange_enabled = 2
           self.laneChange_counter = 1
@@ -426,15 +435,22 @@ class ALCAController(object):
         if self.laneChange_counter > (self.laneChange_wait -1) *100:
           self.laneChange_avg_angle +=  -actuators.steerAngle
           self.laneChange_avg_count += 1
-        if self.laneChange_counter == self.laneChange_wait * 100:
+        if (self.laneChange_counter >= self.laneChange_wait * 100) and (self.visionCurvC0 < 0.3):
           self.laneChange_enabled = 4
           self.laneChange_counter = 1
       # this is the final stage of the ALCAS
       # this just shows a message that we completed the lane change 
       # CONTROL: during this time we use the actuator angle to steer (OP Control)
-      if self.laneChange_enabled == 7:
+      if self.laneChange_enabled == 6:
         if self.laneChange_counter ==1:
           CS.UE.custom_alert_message(2,"Auto Lane Change Complete!",300,4)
+        self.laneChange_counter +=1
+        if self.laneChange_counter == 50:
+          self.laneChange_direction = 0
+          self.laneChange_enabled = 7
+          self.laneChange_counter = 1
+      if self.laneChange_enabled == 7:
+        if self.laneChange_counter ==1:
           CS.cstm_btns.set_button_status("alca",1)
         self.laneChange_counter +=1
     alca_enabled = (self.laneChange_enabled > 1)
@@ -461,7 +477,7 @@ class ALCAController(object):
 
 
 
-  def update(self,enabled,CS,frame,actuators):
+  def update(self,enabled,CS,frame,actuators,visionCurvC0):
     # we will read 'roll' from liveLocation and use to correct for road crown
     ll_data = None
     for socket, _ in self.poller.poll(0):
@@ -487,7 +503,7 @@ class ALCAController(object):
         new_angle = 0.
         new_ALCA_Enabled = False
         new_turn_signal = 0
-        new_angle,new_ALCA_Enabled,new_turn_signal = self.update_angle(enabled,CS,frame,actuators)
+        new_angle,new_ALCA_Enabled,new_turn_signal = self.update_angle(enabled,CS,frame,actuators,visionCurvC0)
         if new_ALCA_Enabled:
           self.last_time_enabled = sec_since_boot()
         output_steer = 0.

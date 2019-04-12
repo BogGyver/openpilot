@@ -138,7 +138,7 @@ class CarController(object):
     self.warningNeeded = 0
 
     # items for IC integration for Lane and Lead Car
-    self.average_over_x_pathplan_values = 15
+    self.average_over_x_pathplan_values = 1 
     self.curv0Matrix =  MovingAverage(self.average_over_x_pathplan_values)
     self.curv1Matrix =  MovingAverage(self.average_over_x_pathplan_values) 
     self.curv2Matrix =  MovingAverage(self.average_over_x_pathplan_values) 
@@ -153,11 +153,13 @@ class CarController(object):
     self.curv1 = 0. 
     self.curv2 = 0. 
     self.curv3 = 0. 
+    self.visionCurvC0 = 0.
     self.laneRange = 30  #max is 160m but OP has issues with precision beyond that
-    self.useZeroC0 = True
-    self.useMap = True
+    self.useZeroC0 = False
+    self.useMap = False
     self.clipC0 = False
     self.useMapOnly = False
+    self.laneWidth = 0.
 
     self.stopSign_visible = False
     self.stopSign_distance = 1000.
@@ -369,7 +371,7 @@ class CarController(object):
     alca_enabled = False
     turn_signal_needed = 0
     alca_steer = 0.
-    apply_angle, alca_steer,alca_enabled, turn_signal_needed = self.ALCA.update(enabled, CS, frame, actuators)
+    apply_angle, alca_steer,alca_enabled, turn_signal_needed = self.ALCA.update(enabled, CS, frame, actuators,self.visionCurvC0)
     apply_angle = -apply_angle  # Tesla is reversed vs OP.
     human_control = self.HSO.update_stat(self,CS, enabled, actuators, frame)
     human_lane_changing = changing_lanes and not alca_enabled
@@ -442,7 +444,7 @@ class CarController(object):
           lead_1 = messaging.recv_one(socket).live20.leadOne
           if lead_1.dRel:
             self.leadDx = self.leadDxMatrix.add(lead_1.dRel-2.5)
-            self.leadDy = self.leadDyMatrix.add(-lead_1.yRel)
+            self.leadDy = self.leadDyMatrix.add(self.curv0-lead_1.yRel)
           else:
             self.leadDx = self.leadDxMatrix.dele()
             self.leadDy = self.leadDyMatrix.dele()
@@ -459,17 +461,19 @@ class CarController(object):
             else:
               self.rLine = 0
             #first we clip to the AP limits of the coefficients
-            self.curv0 = self.curv0Matrix.add(-clip(pp.cPoly[0],-3.5,3.5))
-            self.curv1 = self.curv0Matrix.add(-clip(pp.cPoly[1],-0.2,0.2))
-            self.curv2 = self.curv0Matrix.add(-clip(pp.cPoly[2],-0.0025,0.0025))
-            self.curv3 = self.curv0Matrix.add(-clip(pp.cPoly[3],-0.00003,0.00003))
+            self.curv0 = self.curv0Matrix.add(-clip(pp.cPoly[3],-3.5,3.5))
+            self.curv1 = self.curv1Matrix.add(-clip(pp.cPoly[2],-0.2,0.2))
+            self.curv2 = self.curv2Matrix.add(-clip(pp.cPoly[1],-0.0025,0.0025))
+            self.curv3 = self.curv3Matrix.add(-clip(pp.cPoly[0],-0.00003,0.00003))
+            self.laneWidth = pp.laneWidth
+            self.visionCurvC0 = self.curv0
           else:
             self.lLine = 0
             self.rLine = 0
             self.curv0 = self.curv0Matrix.add(0.)
-            self.curv1 = self.curv0Matrix.add(0.)
-            self.curv2 = self.curv0Matrix.add(0.)
-            self.curv3 = self.curv0Matrix.add(0.)
+            self.curv1 = self.curv1Matrix.add(0.)
+            self.curv2 = self.curv2Matrix.add(0.)
+            self.curv3 = self.curv3Matrix.add(0.)
         if socket is self.trafficevents:
           self.reset_traffic_events()
           tr_ev_list = messaging.recv_sock(socket)
@@ -512,39 +516,39 @@ class CarController(object):
             self.checkWhichSign()
             if not ((self.roadSignType_last == self.roadSignType) and (self.roadSignType == 0xFF)):
                can_sends.append(teslacan.create_fake_DAS_sign_msg(self.roadSignType,self.roadSignStopDist,self.roadSignColor,self.roadSignControlActive))
-    if CS.roadCurvRange > 20 and self.useMap:
+    if (CS.roadCurvRange > 20) and self.useMap:
       if self.useZeroC0:
         self.curv0 = 0.
       elif self.clipC0:
         self.curv0 = -clip(CS.roadCurvC0,-0.5,0.5)
-      else:
-        self.curv0 = -CS.roadCurvC0
-      if CS.v_ego > 9:
-        self.curv1 = -CS.roadCurvC1
-      else:
-        self.curv1 = 0.
+      #else:
+      #  self.curv0 = -CS.roadCurvC0
+      #if CS.v_ego > 9:
+      #  self.curv1 = -CS.roadCurvC1
+      #else:
+      #  self.curv1 = 0.
       self.curv2 = -CS.roadCurvC2
       self.curv3 = -CS.roadCurvC3
       self.laneRange = CS.roadCurvRange
-    else:
-      self.curv0 = 0.
-      self.curv1 = 0.
-      self.curv2 = 0.
-      self.curv3 = 0.
-      self.laneRange = 0
+    #else:
+    #  self.curv0 = 0.
+    #  self.curv1 = 0.
+    #  self.curv2 = 0.
+    #  self.curv3 = 0.
+    #  self.laneRange = 0
     
-    if CS.csaRoadCurvRange > 20 and not self.useMapOnly:
+    if (CS.csaRoadCurvRange > 20) and self.useMap and not self.useMapOnly:
       self.curv2 += -CS.csaRoadCurvC2
       self.curv3 += -CS.csaRoadCurvC3
       if self.laneRange > 0:
         self.laneRange = min(self.laneRange,CS.csaRoadCurvRange)
       else:
         self.laneRange = CS.csaRoadCurvRange
-    elif CS.csaOfframpCurvRange > 20:
+    elif (CS.csaOfframpCurvRange > 20) and self.useMap and not self.useMapOnly:
       self.curv2 = -CS.csaOfframpCurvC2
       self.curv3 = -CS.csaOfframpCurvC3
-      self.curv0 = 0.
-      self.curv1 = 0.
+      #self.curv0 = 0.
+      #self.curv1 = 0.
       if self.laneRange > 0:
         self.laneRange = min(self.laneRange,CS.csaOfframpCurvRange)
       else:
@@ -632,7 +636,7 @@ class CarController(object):
       if frame % 60 == 0:
         send_fake_warning = True
     if frame % 10 == 0:
-      can_sends.append(teslacan.create_fake_DAS_obj_lane_msg(self.leadDx,self.leadDy,self.rLine,self.lLine,self.curv0,self.curv1,self.curv2,self.curv3,self.laneRange))
+      can_sends.append(teslacan.create_fake_DAS_obj_lane_msg(self.leadDx,self.leadDy,self.rLine,self.lLine,self.curv0,self.curv1,self.curv2,self.curv3,self.laneRange,self.laneWidth))
     speed_override = 0
     if (CS.pedal_interceptor_value > 10) and (cc_state > 1):
       speed_override = 0 #force zero for now
