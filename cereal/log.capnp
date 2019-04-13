@@ -419,7 +419,7 @@ struct Live100Data {
   alertType @44 :Text;
   alertSound @45 :Text;
   awarenessStatus @26 :Float32;
-  angleOffset @27 :Float32;
+  angleModelBias @27 :Float32;
   gpsPlannerActive @40 :Bool;
   engageable @41 :Bool;  # can OP be engaged?
   driverMonitoringOn @43 :Bool;
@@ -582,6 +582,9 @@ struct Plan {
   vCurvature @21 :Float32;
   decelForTurn @22 :Bool;
   mapValid @25 :Bool;
+  radarValid @28 :Bool;
+
+  processingDelay @29 :Float32;
 
 
   struct GpsTrajectory {
@@ -607,14 +610,15 @@ struct PathPlan {
   lProb @5 :Float32;
   rPoly @6 :List(Float32);
   rProb @7 :Float32;
-  
-  mpcAngles @10 :List(Float64);
-  mpcTimes @11 :List(Float64);
 
-  angleSteers @8 :Float32;
+  angleSteers @8 :Float32; # deg
+  rateSteers @13 :Float32; # deg/s
   valid @9 :Bool;
-  pPoly @12 :List(Float32);
-  viewRange @13 :Float32;
+  pPoly @14 :List(Float32);
+  viewRange @15 :Float32;
+  paramsValid @10 :Bool;
+  modelValid @12 :Bool;
+  angleOffset @11 :Float32;
 }
 
 struct LiveLocationData {
@@ -1607,6 +1611,9 @@ struct LiveParametersData {
   valid @0 :Bool;
   gyroBias @1 :Float32;
   angleOffset @2 :Float32;
+  angleOffsetAverage @3 :Float32;
+  stiffnessFactor @4 :Float32;
+  steerRatio @5 :Float32;
 }
 
 struct LiveMapData {

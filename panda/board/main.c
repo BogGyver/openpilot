@@ -549,6 +549,9 @@ int main() {
   } else {
     // enable ESP uart
     uart_init(USART1, 115200);
+    #ifdef EON
+      set_esp_mode(ESP_DISABLED);
+    #endif
   }
   // enable LIN
   uart_init(UART5, 10400);
@@ -599,8 +602,6 @@ int main() {
     uint64_t marker = 0;
     #define CURRENT_THRESHOLD 0xF00
     #define CLICKS 8
-    // Enough clicks to ensure that enumeration happened. Should be longer than bootup time of the device connected to EON
-    #define CLICKS_BOOTUP 30
   #endif
 
   for (cnt=0;;cnt++) {
@@ -627,8 +628,9 @@ int main() {
           }
           break;
         case USB_POWER_CDP:
-          // been CLICKS_BOOTUP clicks since we switched to CDP
-          if ((cnt-marker) >= CLICKS_BOOTUP ) {
+#ifndef EON
+          // been CLICKS clicks since we switched to CDP
+          if ((cnt-marker) >= CLICKS) {
             // measure current draw, if positive and no enumeration, switch to DCP
             if (!is_enumerated && current < CURRENT_THRESHOLD) {
               puts("USBP: no enumeration with current draw, switching to DCP mode\n");
@@ -640,6 +642,7 @@ int main() {
           if (current >= CURRENT_THRESHOLD) {
             marker = cnt;
           }
+#endif
           break;
         case USB_POWER_DCP:
           // been at least CLICKS clicks since we switched to DCP
