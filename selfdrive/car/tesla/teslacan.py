@@ -105,7 +105,7 @@ def create_fake_DAS_obj_lane_msg(leadDx,leadDy,rLine,lLine,curv0,curv1,curv2,cur
   tCurv3 = (int((curv3 + 0.00003)/0.00000024)) & 0xFF
   lWidth = (int((laneWidth - 2.0)/0.3125)) & 0x0F
   msg = create_string_buffer(msg_len)
-  struct.pack_into('BBBBBBBB',msg ,0 , tLeadDx,tLeadDy,(lWidth << 4) + (lLine << 1) + rLine, tCurv0,tCurv1,tCurv2,tCurv3,laneRange)
+  struct.pack_into('BBBBBBBB',msg ,0 , tLeadDx,tLeadDy,(lWidth << 4) + (lLine << 2) + rLine, tCurv0,tCurv1,tCurv2,tCurv3,int(laneRange))
   return [msg_id,0,msg.raw,0]
 
 def create_fake_DAS_sign_msg(roadSignType,roadSignStopDist,roadSignColor,roadSignControlActive):

@@ -184,6 +184,8 @@ class CarController(object):
 
     self.roadSignDistanceWarning = 50.
 
+    self.alca_enabled = False
+
   def reset_traffic_events(self):
     self.stopSign_visible = False
     self.stopSign_distance = 1000.
@@ -368,13 +370,12 @@ class CarController(object):
     else:
       CS.v_cruise_pcm = CS.v_cruise_actual
     # Get the angle from ALCA.
-    alca_enabled = False
     turn_signal_needed = 0
     alca_steer = 0.
-    apply_angle, alca_steer,alca_enabled, turn_signal_needed = self.ALCA.update(enabled, CS, frame, actuators,self.visionCurvC0)
+    apply_angle, alca_steer,self.alca_enabled, turn_signal_needed = self.ALCA.update(enabled, CS, frame, actuators,self.visionCurvC0)
     apply_angle = -apply_angle  # Tesla is reversed vs OP.
     human_control = self.HSO.update_stat(self,CS, enabled, actuators, frame)
-    human_lane_changing = changing_lanes and not alca_enabled
+    human_lane_changing = changing_lanes and not self.alca_enabled
     enable_steer_control = (enabled
                             and not human_lane_changing
                             and not human_control 
@@ -389,7 +390,7 @@ class CarController(object):
       angle_rate_lim = interp(CS.v_ego, ANGLE_DELTA_BP, ANGLE_DELTA_VU)
 
     des_angle_factor = interp(CS.v_ego, DES_ANGLE_ADJUST_FACTOR_BP, DES_ANGLE_ADJUST_FACTOR )
-    if alca_enabled or not CS.enableSpeedVariableDesAngle:
+    if self.alca_enabled or not CS.enableSpeedVariableDesAngle:
       des_angle_factor = 1.
     #BB disable limits to test 0.5.8
     # apply_angle = clip(apply_angle * des_angle_factor, self.last_angle - angle_rate_lim, self.last_angle + angle_rate_lim) 
@@ -452,21 +453,34 @@ class CarController(object):
         if socket is self.pathPlan:
           pp = messaging.recv_one(socket).pathPlan
           if pp.valid:
-            if pp.lProb > 0.5:
+            if pp.lProb > 0.25:
               self.lLine = 1
+            elif pp.lProb > 0.5:
+              self.lLine = 2
+            elif pp.lProb > 0.75:
+              self.lLine = 3
             else:
               self.lLine = 0
-            if pp.rProb > 0.5:
+            if pp.rProb > 0.25:
               self.rLine = 1
+            elif pp.rProb > 0.5:
+              self.rLine = 2
+            elif pp.rProb > 0.75:
+              self.rLine = 3
             else:
               self.rLine = 0
             #first we clip to the AP limits of the coefficients
-            self.curv0 = self.curv0Matrix.add(-clip(pp.cPoly[3],-3.5,3.5))
-            self.curv1 = self.curv1Matrix.add(-clip(pp.cPoly[2],-0.2,0.2))
-            self.curv2 = self.curv2Matrix.add(-clip(pp.cPoly[1],-0.0025,0.0025))
-            self.curv3 = self.curv3Matrix.add(-clip(pp.cPoly[0],-0.00003,0.00003))
+            self.curv0 = -clip(pp.cPoly[3],-3.5,3.5) #self.curv0Matrix.add(-clip(pp.cPoly[3],-3.5,3.5))
+            self.curv1 = -clip(pp.cPoly[2],-0.2,0.2) #self.curv1Matrix.add(-clip(pp.cPoly[2],-0.2,0.2))
+            self.curv2 = -clip(pp.cPoly[1],-0.0025,0.0025) #self.curv2Matrix.add(-clip(pp.cPoly[1],-0.0025,0.0025))
+            self.curv3 = -clip(pp.cPoly[0],-0.00003,0.00003) #self.curv3Matrix.add(-clip(pp.cPoly[0],-0.00003,0.00003))
             self.laneWidth = pp.laneWidth
+            self.laneRange = pp.viewRange
             self.visionCurvC0 = self.curv0
+            if self.alca_enabled:
+              #exagerate position a little during ALCA to make lane change look smoother on IC
+              self.curv0 = self.curv0 * 1.2
+              self.curv0 = clip(self.curv0, -self.laneWidth/2.0, self.laneWidth/2.0)
           else:
             self.lLine = 0
             self.rLine = 0
@@ -555,7 +569,7 @@ class CarController(object):
         self.laneRange = CS.csaOfframpCurvRange
     else:
       self.laneRange = 30
-    self.laneRange = clip(self.laneRange,0,159)
+    self.laneRange = int(clip(self.laneRange,0,159))
     op_status = 0x02
     hands_on_state = 0x00
     forward_collision_warning = 0 #1 if needed

@@ -131,6 +131,8 @@ int tLeadDx = 0;
 int tLeadDy = 0;
 int rLine = 0;
 int lLine = 0;
+int rLine_qual = 0;
+int lLine_qual = 0;
 int lWidth = 29;
 int curvC0 = 0x64;
 int curvC1 = 0x7F;
@@ -578,7 +580,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
         break;
     } 
     MLB = MLB + (DAS_telemetryPeriodic_idx2 << 5);
-    send_fake_message(RIR,RDTR,1,0x379,0,MLB,MHB);
+    //send_fake_message(RIR,RDTR,1,0x379,0,MLB,MHB);
     DAS_telemetryPeriodic_idx2++;
     DAS_telemetryPeriodic_idx2 = DAS_telemetryPeriodic_idx2 % 10;
     if (DAS_telemetryPeriodic_idx2 == 0) {
@@ -631,9 +633,33 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     //no counter - 00 00 00 00 00 00 00 00
     //ROAD INFO
     //if (DAS_telemetry_idx==0) {
-      MLB = 0x00 + ((DAS_telLeftLaneType + (DAS_telRightLaneType << 3) + (DAS_telLeftMarkerQuality << 6)) << 8 ) +
+      DAS_telRightMarkerQuality = rLine_qual;
+      DAS_telLeftMarkerQuality = lLine_qual;
+      if (rLine == 1) {
+        DAS_telRightLaneType = 3;
+      } else {
+        DAS_telRightLaneType = 1;
+      }
+      if (lLine == 1) {
+        DAS_telLeftLaneType = 3;
+      } else {
+        DAS_telLeftLaneType = 1;
+      }
+      if (DAS_alca_state == 0x09) {
+        //alca in progress, left
+        DAS_telRightLaneCrossing = 0;
+        DAS_telLeftLaneCrossing = 1;
+      } else if (DAS_alca_state == 0x0a) {
+        //alca in progress, right
+        DAS_telRightLaneCrossing = 1;
+        DAS_telLeftLaneCrossing = 0;
+      } else {
+        DAS_telRightLaneCrossing = 0;
+        DAS_telLeftLaneCrossing = 0;
+      }
+      MLB = 0x00 + ((DAS_telLeftLaneType + (DAS_telRightLaneType << 3) + (DAS_telLeftMarkerQuality  << 6)) << 8 ) +
           ((DAS_telRightMarkerQuality +(DAS_telLeftMarkerColor << 2) + 
-          (DAS_telRightMarkerColor << 4) + (DAS_telLeftLaneCrossing << 6) +(DAS_telRightLaneCrossing <<6)) << 16);
+          (DAS_telRightMarkerColor << 4) + (DAS_telLeftLaneCrossing << 6) +(DAS_telRightLaneCrossing <<7)) << 16);
       MHB =0x00;
     //}
     //ACC DRIVER MONITORING
@@ -1294,8 +1320,18 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
   if (addr == 0x557) {
     tLeadDx = (to_send->RDLR & 0xFF);
     tLeadDy = ((to_send->RDLR >> 8) & 0xFF);
-    rLine = ((to_send->RDLR >> 16) & 0x01);
-    lLine = ((to_send->RDLR >> 17) & 0x01);
+    rLine_qual = ((to_send->RDLR >> 16) & 0x03);
+    lLine_qual = ((to_send->RDLR >> 18) & 0x03);
+    if (rLine_qual > 1) {
+      rLine = 1;
+    } else {
+      rLine = 0;
+    }
+    if (lLine_qual > 1) {
+      lLine = 1;
+    } else {
+      lLine = 0;
+    }
     lWidth = ((to_send->RDLR >> 20) & 0x0F);
     curvC0 = ((to_send->RDLR >> 24) & 0xFF);
     curvC1 = (to_send->RDHR & 0xFF);

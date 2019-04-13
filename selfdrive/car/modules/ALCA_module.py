@@ -344,8 +344,8 @@ class ALCAController(object):
           # we didn't cross the line, so keep computing the actuator delta until it flips
           actuator_delta = self.laneChange_direction * (-actuators.steerAngle - self.laneChange_last_actuator_angle)
           actuator_ratio = (-actuators.steerAngle)/self.laneChange_last_actuator_angle
-          center_distance_sign = (self.visionCurvC0 * self.prev_visionCurvC0 < 0)
-        if (actuator_ratio < 1) and (abs(actuator_delta) > 0.5 * cl_lane_detect_factor):
+          center_distance_sign = ((self.visionCurvC0 * self.prev_visionCurvC0) < 0)
+        if (actuator_ratio < 1) and (abs(actuator_delta) > (0.5 * cl_lane_detect_factor)) and (abs(self.visionCurvC0) < 1.0):
           # sudden change in actuator angle or sign means we are on the other side of the line
           self.laneChange_over_the_line = 1
           self.laneChange_enabled = 2

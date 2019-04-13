@@ -51,6 +51,12 @@ class ModelParser(object):
       self.lead_prob = md.model.lead.prob
       self.lead_var = md.model.lead.std**2
 
+      #BB added to try to prevent car from going too crazy
+      if lane_width_certainty >= 0.7:
+        self.lane_width = clip(self.lane_width,2.0,7.0)
+      else:
+        self.lane_width = clip(self.lane_width,2.9,3.9)
+
       # compute target path
       self.d_poly, self.c_poly, self.c_prob = calc_desired_path(
         l_poly, r_poly, p_poly, l_prob, r_prob, p_prob, v_ego, self.lane_width)

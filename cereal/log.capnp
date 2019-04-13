@@ -614,6 +614,7 @@ struct PathPlan {
   angleSteers @8 :Float32;
   valid @9 :Bool;
   pPoly @12 :List(Float32);
+  viewRange @13 :Float32;
 }
 
 struct LiveLocationData {

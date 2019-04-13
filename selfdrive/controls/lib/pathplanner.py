@@ -140,6 +140,13 @@ class PathPlanner(object):
     plan_send.pathPlan.mpcTimes = map(float, self.mpc_times)
     plan_send.pathPlan.valid = bool(plan_valid)
     plan_send.pathPlan.pPoly = map(float, p_poly)
+    lld = 0.
+    rld = 0.
+    if md.model.leftLane.std > 0:
+      lld = math.sqrt(2)/md.model.leftLane.std
+    if md.model.rightLane.std > 0:
+      rld = math.sqrt(2)/md.model.rightLane.std
+    plan_send.pathPlan.viewRange = float(max(lld,rld))
 
     self.plan.send(plan_send.to_bytes())
 
