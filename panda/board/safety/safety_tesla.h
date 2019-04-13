@@ -581,7 +581,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
         break;
     } 
     MLB = MLB + (DAS_telemetryPeriodic_idx2 << 5);
-    send_fake_message(RIR,RDTR,1,0x379,0,MLB,MHB);
+    //send_fake_message(RIR,RDTR,1,0x379,0,MLB,MHB);
     DAS_telemetryPeriodic_idx2++;
     DAS_telemetryPeriodic_idx2 = DAS_telemetryPeriodic_idx2 % 10;
     if (DAS_telemetryPeriodic_idx2 == 0) {
@@ -602,7 +602,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     //for now fixed 0x33,0xC8,0xF0,0x7F,0x70,0x70,0x33,(idx << 4)+0x0F
     int fuse = 2;
     MLB = (lWidth << 4) + (rLine << 1) + lLine + (laneRange << 8) + (curvC0 << 16) + (curvC1  << 24);
-    MHB = 0x0F000000 + (DAS_lanes_idx << 28) + curvC2 + (curvC3 << 8) + ((((rLine * fuse) << 2) + (lLine * fuse)) << 16);
+    MHB = 0x00000000 + (DAS_lanes_idx << 28) + curvC2 + (curvC3 << 8) + ((((rLine * fuse) << 2) + (lLine * fuse)) << 16); //0x0F000000
     send_fake_message(RIR,RDTR,8,0x239,0,MLB,MHB);
     DAS_lanes_idx ++;
     DAS_lanes_idx = DAS_lanes_idx % 16;
