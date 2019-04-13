@@ -125,6 +125,7 @@ int DAS_cc_state = 0;
 int DAS_acc_speed_limit_mph = 0;
 int DAS_acc_speed_kph = 0;
 int DAS_collision_warning = 0;
+int DAS_ldwStatus = 0;
 
 //lanes and objects
 int tLeadDx = 0;
@@ -720,7 +721,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     //send DAS_status - 0x399
     int sl = (int)(DAS_speed_limit_kph / 5); 
     MLB = DAS_op_status + 0xF0 + (sl << 8) + (((DAS_collision_warning << 6) + sl) << 16);
-    MHB = ((DAS_cc_state & 0x03) << 3) + (0x00 << 5) + //SNA for laneDepartureWarning
+    MHB = ((DAS_cc_state & 0x03) << 3) + (DAS_ldwStatus << 5) + 
         (((DAS_hands_on_state << 2) + ((DAS_alca_state & 0x03) << 6)) << 8) +
        ((( DAS_status_idx << 4) + (DAS_alca_state >> 2)) << 16);
     int cksm = add_tesla_cksm2(MLB, MHB, 0x399, 7);
@@ -1346,6 +1347,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
   if (addr == 0x554) {
     int b0 = (to_send->RDLR & 0xFF); 
     int b1 = ((to_send->RDLR >> 8) & 0xFF);
+    int b2 = ((to_send->RDLR >> 16) & 0xFF);
     DAS_211_accNoSeatBelt = ((b0 >> 4) & 0x01);
     DAS_canErrors = ((b0 >> 3) & 0x01);
     DAS_202_noisyEnvironment = ((b0 >> 2) & 0x01);
@@ -1362,6 +1364,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_207_lkasUnavailable = ((b1 >> 5) & 0x01);
     DAS_208_rackDetected = ((b1 >> 6) & 0x01);
     DAS_025_steeringOverride = ((b1 >> 7) & 0x01);
+    DAS_ldwStatus = (b2 & 0x07);
     return false;
   }
 
