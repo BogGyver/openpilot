@@ -581,7 +581,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
         break;
     } 
     MLB = MLB + (DAS_telemetryPeriodic_idx2 << 5);
-    //send_fake_message(RIR,RDTR,1,0x379,0,MLB,MHB);
+    send_fake_message(RIR,RDTR,1,0x379,0,MLB,MHB);
     DAS_telemetryPeriodic_idx2++;
     DAS_telemetryPeriodic_idx2 = DAS_telemetryPeriodic_idx2 % 10;
     if (DAS_telemetryPeriodic_idx2 == 0) {

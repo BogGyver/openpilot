@@ -1,4 +1,4 @@
-from common.numpy_fast import interp
+from common.numpy_fast import clip,interp
 from selfdrive.controls.lib.latcontrol_helpers import model_polyfit, calc_desired_path, compute_path_pinv
 
 CAMERA_OFFSET = 0.06  # m from center car to camera
@@ -52,7 +52,7 @@ class ModelParser(object):
       self.lead_var = md.model.lead.std**2
 
       #BB added to try to prevent car from going too crazy
-      if lane_width_certainty >= 0.7:
+      if self.lane_width_certainty >= 0.7:
         self.lane_width = clip(self.lane_width,2.0,7.0)
       else:
         self.lane_width = clip(self.lane_width,2.9,3.9)
