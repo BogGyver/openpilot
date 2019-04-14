@@ -25,10 +25,10 @@ _DT_MPC = 0.05  # 20Hz
 
 # TODO: these should end up in values.py at some point, probably variable by trim
 # Accel limits
-MAX_PEDAL_VALUE = 112.
+MAX_PEDAL_VALUE = 90.
 PEDAL_HYST_GAP = 1.0  # don't change pedal command for small oscilalitons within this value
-# Cap the pedal to go from 0 to max in 4 seconds
-PEDAL_MAX_UP = MAX_PEDAL_VALUE * _DT / 4
+# Cap the pedal to go from 0 to max in 5 seconds
+PEDAL_MAX_UP = MAX_PEDAL_VALUE * _DT / 5
 # Cap the pedal to go from max to 0 in 0.4 seconds
 PEDAL_MAX_DOWN = MAX_PEDAL_VALUE * _DT / 0.4
 
@@ -664,7 +664,7 @@ def _jerk_limits(v_ego, lead, max_speed_kph, lead_last_seen_time_ms):
     (0, 0.18),
     (9, 0.10)])
   accel_jerk = _interp_map(v_ego, accel_jerk_by_speed)
-
+  
   # prevent high accel jerk near max speed
   near_max_speed_multipliers = OrderedDict([
     # (kph under max speed, accel jerk multiplier)
@@ -672,7 +672,7 @@ def _jerk_limits(v_ego, lead, max_speed_kph, lead_last_seen_time_ms):
     (4, 1.0)])
   near_max_speed_multiplier = _interp_map(max_speed_kph - v_ego * CV.MS_TO_KPH, near_max_speed_multipliers)
   accel_jerk *= near_max_speed_multiplier
-
+  
   if _is_present(lead):
     # pick decel jerk based on how much time we have til collision
     decel_jerk_map = OrderedDict([
@@ -683,7 +683,7 @@ def _jerk_limits(v_ego, lead, max_speed_kph, lead_last_seen_time_ms):
       (8, -0.001)])
     decel_jerk = _interp_map(_sec_til_collision(lead), decel_jerk_map)
     safe_dist_m = _safe_distance_m(v_ego) 
-    distance_multipliers  = OrderedDict([
+    distance_multipliers = OrderedDict([
       # (distance in m, accel jerk)
       (0.8 * safe_dist_m, 0.01),
       (2.8 * safe_dist_m, 1.00)])
@@ -702,5 +702,5 @@ def _jerk_limits(v_ego, lead, max_speed_kph, lead_last_seen_time_ms):
       (2000, 1.0)])
     time_since_lead_seen_multiplier = _interp_map(time_since_lead_seen_ms, time_since_lead_seen_multipliers)
     accel_jerk *= time_since_lead_seen_multiplier
-
+    
     return decel_jerk, accel_jerk
