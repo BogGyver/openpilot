@@ -116,7 +116,7 @@ def calc_cruise_accel_limits(CS, lead):
   # Reduce accel if lead car is close
   a_cruise_max *= _accel_limit_multiplier(CS.v_ego, lead)
   # Reduce decel if lead car is distant
-  a_cruise_min *= _decel_limit_multiplier(CS.v_ego, lead)
+  a_cruise_min *= _decel_limit_multiplier(CS.v_ego, lead, CS)
   
   return float(a_cruise_min), float(a_cruise_max)
 
@@ -409,7 +409,7 @@ class PCCController(object):
       enabled = self.enable_pedal_cruise and self.LoC.long_control_state in [LongCtrlState.pid, LongCtrlState.stopping]
 
       if self.enable_pedal_cruise:
-        jerk_min, jerk_max = _jerk_limits(CS.v_ego, self.lead_1, self.v_pid * CV.MS_TO_KPH, self.lead_last_seen_time_ms)
+        jerk_min, jerk_max = _jerk_limits(CS.v_ego, self.lead_1, self.v_pid * CV.MS_TO_KPH, self.lead_last_seen_time_ms, CS)
         self.v_cruise, self.a_cruise = speed_smoother(self.v_acc_start, self.a_acc_start,
                                                       self.v_pid,
                                                       accel_max, brake_max,
@@ -518,7 +518,10 @@ class PCCController(object):
     if self.lead_1 is None:
       return None, None, None
     # dRel is in meters.
-    lead_dist_m = _visual_radar_adjusted_dist_m(self.lead_1.dRel)
+    if CS.useTeslaRadar:
+      lead_dist_m = self.lead_1.dRel
+    else:
+      lead_dist_m = _visual_radar_adjusted_dist_m(self.lead_1.dRel, CS)
     # Grab the relative speed.
     rel_speed_kph = self.lead_1.vRel * CV.MS_TO_KPH
     # v_ego is in m/s, so safe_distance is in meters.
@@ -557,6 +560,9 @@ class PCCController(object):
             # accel until lead lead car gets close enough to read.
             (2.0 * safe_dist_m, -2)])
           max_vrel_kph = _interp_map(lead_dist_m, max_vrel_kph_map)
+          if CS.useTeslaRadar:
+            min_vrel_kph = -1
+            max_vrel_kph = 1
           min_kph = lead_absolute_speed_kph - max_vrel_kph
           max_kph = lead_absolute_speed_kph - min_vrel_kph
           # In the special case were we are going faster than intended but it's
@@ -594,7 +600,7 @@ class PCCController(object):
       self.pedal_steady = pedal + PEDAL_HYST_GAP
     return self.pedal_steady
 
-def _visual_radar_adjusted_dist_m(m):
+def _visual_radar_adjusted_dist_m(m, CS):
   # visual radar sucks at short distances. It rarely shows readings below 7m.
   # So rescale distances with 7m -> 0m. Maxes out at 1km, if that matters.
   mapping = OrderedDict([
@@ -620,9 +626,12 @@ def _min_safe_vrel_kph(m):
 def _is_present(lead):
   return bool(lead and lead.dRel)
 
-def _sec_til_collision(lead):
+def _sec_til_collision(lead, CS):
   if _is_present(lead) and lead.vRel < 0:
-    return _visual_radar_adjusted_dist_m(lead.dRel) / abs(lead.vRel)
+    if CS.useTeslaRadar:
+      return lead.dRel / abs(lead.vRel)
+    else:
+      return _visual_radar_adjusted_dist_m(lead.dRel, CS) / abs(lead.vRel)
   else:
     return 60  # Arbitrary, but better than MAXINT because we can still do math on it.
   
@@ -646,18 +655,18 @@ def _accel_limit_multiplier(v_ego, lead):
   else:
     return 1.0
 
-def _decel_limit_multiplier(v_ego, lead):
+def _decel_limit_multiplier(v_ego, lead, CS):
   if _is_present(lead):
     decel_map = OrderedDict([
       # (sec to collision, decel)
       (2, 1.0),
       (4, 0.4),
       (8, 0.1)])
-    return _interp_map(_sec_til_collision(lead), decel_map)
+    return _interp_map(_sec_til_collision(lead, CS), decel_map)
   else:
     return 1.0
     
-def _jerk_limits(v_ego, lead, max_speed_kph, lead_last_seen_time_ms):
+def _jerk_limits(v_ego, lead, max_speed_kph, lead_last_seen_time_ms, CS):
   # Allow higher accel jerk at low speed, to get started
   accel_jerk_by_speed = OrderedDict([
     # (Speed in m/s, accel jerk)
@@ -681,7 +690,7 @@ def _jerk_limits(v_ego, lead, max_speed_kph, lead_last_seen_time_ms):
       (2, -0.25),
       (4, -0.01),
       (8, -0.001)])
-    decel_jerk = _interp_map(_sec_til_collision(lead), decel_jerk_map)
+    decel_jerk = _interp_map(_sec_til_collision(lead, CS), decel_jerk_map)
     safe_dist_m = _safe_distance_m(v_ego) 
     distance_multipliers  = OrderedDict([
       # (distance in m, accel jerk)

@@ -81,7 +81,7 @@ class RadarInterface(object):
           self.valid_cnt[ii] = max(self.valid_cnt[ii] -1, 0)
 
         #score = self.rcp.vl[ii+16]['SCORE']
-        print ii, self.valid_cnt[ii], cpt['Valid'], cpt['LongDist'], cpt['LatDist']
+        #print ii, self.valid_cnt[ii], cpt['Valid'], cpt['LongDist'], cpt['LatDist']
 
         # radar point only valid if it's a valid measurement and score is above 50
         # bosch radar data needs to match Index and Index2 for validity
@@ -91,7 +91,7 @@ class RadarInterface(object):
             self.pts[ii].trackId = self.track_id
             self.track_id += 1
           self.pts[ii].dRel = cpt['LongDist']  # from front of car
-          self.pts[ii].yRel = -cpt['LatDist']  # in car frame's y axis, left is positive
+          self.pts[ii].yRel = cpt['LatDist']  # in car frame's y axis, left is positive
           self.pts[ii].vRel = cpt['LongSpeed']
           self.pts[ii].aRel = cpt['LongAccel']
           self.pts[ii].yvRel = self.rcp.vl[ii+1]['LatSpeed']

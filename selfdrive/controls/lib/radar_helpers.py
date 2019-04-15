@@ -268,6 +268,33 @@ class Cluster(object):
 
     return abs(d_path) < 1.5 and not self.stationary and not self.oncoming
 
+  def is_potential_lead_dx(self, v_ego,dx):
+    # predict cut-ins by extrapolating lateral speed by a lookahead time
+    # lookahead time depends on cut-in distance. more attentive for close cut-ins
+    # also, above 50 meters the predicted path isn't very reliable
+
+    # the distance at which v_lat matters is higher at higher speed
+    lookahead_dist = 40. + v_ego/1.2   #40m at 0mph, ~70m at 80mph
+
+    t_lookahead_v  = [1., 0.]
+    t_lookahead_bp = [10., lookahead_dist]
+
+    # average dist
+    d_path = self.dPath
+
+    # lat_corr used to be gated on enabled, now always running
+    t_lookahead = interp(self.dRel, t_lookahead_bp, t_lookahead_v)
+
+    # correct d_path for lookahead time, considering only cut-ins and no more than 1m impact.
+    lat_corr = clip(t_lookahead * self.vLat, -1., 1.) if self.measured else 0.
+
+    # consider only cut-ins
+    d_path = clip(d_path + lat_corr, min(0., d_path), max(0.,d_path))
+
+    return abs(d_path) < 1.5 and not self.stationary and not self.oncoming
+
+  
+
   def is_potential_lead2(self, lead_clusters):
     if len(lead_clusters) > 0:
       lead_cluster = lead_clusters[0]

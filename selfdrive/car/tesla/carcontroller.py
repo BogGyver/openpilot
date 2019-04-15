@@ -451,11 +451,19 @@ class CarController(object):
         if socket is self.live20:
           lead_1 = messaging.recv_one(socket).live20.leadOne
           if lead_1.dRel:
-            self.leadDx = self.leadDxMatrix.add(lead_1.dRel-2.5)
-            self.leadDy = self.leadDyMatrix.add(self.curv0-lead_1.yRel)
+            if CS.useTeslaRadar:
+              self.leadDx = lead_1.dRel-2.5
+              self.leadDy = self.curv0-lead_1.yRel
+            else:
+              self.leadDx = self.leadDxMatrix.add(lead_1.dRel-2.5)
+              self.leadDy = self.leadDyMatrix.add(self.curv0-lead_1.yRel)
           else:
-            self.leadDx = self.leadDxMatrix.dele()
-            self.leadDy = self.leadDyMatrix.dele()
+            if CS.useTeslaRadar:
+              self.leadDx = 0.
+              self.leadDy = 0.
+            else:
+              self.leadDx = self.leadDxMatrix.dele()
+              self.leadDy = self.leadDyMatrix.dele()
         #to show curvature and lanes on IC
         if socket is self.pathPlan:
           pp = messaging.recv_one(socket).pathPlan

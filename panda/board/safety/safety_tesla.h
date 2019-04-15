@@ -923,21 +923,6 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     DAS_pedalPressed = (int)((((to_push->RDLR & 0xFF00) >> 8) + ((to_push->RDLR & 0xFF) << 8)) * 0.050796813 -22.85856576);
   }
 
-  if (addr == 0x001) {
-    //ISw_Stat that starts at 0 and is 3 bit long is the ignition key status
-    int ign = (int)(to_push->RDLR & 0x03);
-    if ((ign == 0x04) || (ign == 0x05)) {
-      DAS_ignitionOn = 1;
-    } else {
-      DAS_ignitionOn = 0;
-    }
-    if ((DAS_ignitionOn * DAS_present * DAS_useTeslaRadar ) == 1) {
-      set_uja1023_output_bits(1<< 7);
-    } else {
-      clear_uja1023_output_bits(1 << 7);
-    }
-  }
-
   //we use 0x108 at 100Hz to detect timing of messages sent by our fake DAS and EPB
   if (addr == 0x108) {
     if (fake_DAS_counter % 10 == 5) {
@@ -1104,7 +1089,16 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     // GTW_status
     int drive_rail_on = (to_push->RDLR & 0x0001);
     tesla_ignition_started = drive_rail_on == 1;
-
+    if (drive_rail_on == 1) {
+      DAS_ignitionOn = 1;
+    } else {
+      DAS_ignitionOn = 0;
+    }
+    if ((DAS_ignitionOn * DAS_present * DAS_useTeslaRadar ) == 1) {
+      set_uja1023_output_bits(1 << 7);
+    } else {
+      clear_uja1023_output_bits(1 << 7);
+    }
     //ALSO use this for radar timeout, this message is always on
     uint32_t ts = TIM2->CNT;
     uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_last_radar_signal);
@@ -1467,6 +1461,7 @@ static void tesla_init(int16_t param)
   controls_allowed = 0;
   tesla_ignition_started = 0;
   gmlan_switch_init(1); //init the gmlan switch with 1s timeout enabled
+  uja1023_init();
 }
 
 static int tesla_ign_hook()
@@ -1506,24 +1501,19 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
   if (addr == 0x405 )
   {
     to_send.RIR = (0x2B9 << 21) + (addr_mask & (to_fwd->RIR | 1));
-    if (((to_send.RDLR & 0x10) == 0x10) && (sizeof(radar_VIN) == 17))
+    if (((to_send.RDLR & 0x10) == 0x10) && (sizeof(radar_VIN) >= 4))
     {
       int rec = to_send.RDLR &  0xFF;
       if (rec == 0x10) {
         to_send.RDLR = 0x00000000 | rec;
-        to_send.RDHR = 0x00000000;
         to_send.RDHR = radar_VIN_char(0,1) | radar_VIN_char(1,2) | radar_VIN_char(2,3);
       }
       if (rec == 0x11) {
-        to_send.RDLR = 0x00000000 | rec;
-        to_send.RDLR = radar_VIN_char(3,1) | radar_VIN_char(4,2) | radar_VIN_char(5,3);
-        to_send.RDHR = 0x00000000;
+        to_send.RDLR = rec | radar_VIN_char(3,1) | radar_VIN_char(4,2) | radar_VIN_char(5,3);
         to_send.RDHR = radar_VIN_char(6,0) | radar_VIN_char(7,1) | radar_VIN_char(8,2) | radar_VIN_char(9,3);
       }
       if (rec == 0x12) {
-        to_send.RDLR = 0x00000000 | rec;
-        to_send.RDLR = radar_VIN_char(10,1) | radar_VIN_char(11,2) | radar_VIN_char(12,3);
-        to_send.RDHR = 0x00000000;
+        to_send.RDLR = rec | radar_VIN_char(10,1) | radar_VIN_char(11,2) | radar_VIN_char(12,3);
         to_send.RDHR = radar_VIN_char(13,0) | radar_VIN_char(14,1) | radar_VIN_char(15,2) | radar_VIN_char(16,3);
       }
     }
@@ -1548,7 +1538,7 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
     to_send.RDHR = to_fwd->RDHR & 0xCFFFFFFF;
     to_send.RDHR = to_send.RDHR | 0x10000000;
     
-    if ((sizeof(radar_VIN) == 17) && ((int)(radar_VIN[7]) == 0x32)) {
+    if ((sizeof(radar_VIN) >= 4) && ((int)(radar_VIN[7]) == 0x32)) {
         //also change to AWD if needed (most likely) if manual VIN and if position 8 of VIN is a 2 (dual motor)
         to_send.RDLR = to_send.RDLR | 0x08;
     }
