@@ -183,6 +183,13 @@ def read_config_file(CS):
       file_changed = True
     config.set('OP_CONFIG', 'use_analog_when_no_eon', CS.useAnalogWhenNoEon)
     
+    #use_tesla_radar -> CS.useTeslaRadar
+    try:
+      CS.useTeslaRadar = configr.getboolean('OP_CONFIG','use_tesla_radar')
+    except:
+      CS.useTeslaRadar = False
+      file_changed = True
+    config.set('OP_CONFIG', 'use_tesla_radar', CS.useTeslaRadar)
 
     #do_auto_update -> CS.doAutoUpdate
     try:
@@ -222,6 +229,7 @@ class CarSettings(object):
     self.useTeslaMapData = False
     self.hasTeslaIcIntegration = False
     self.useAnalogWhenNoEon = False
+    self.useTeslaRadar = False
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

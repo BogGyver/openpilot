@@ -38,6 +38,11 @@ ANGLE_DELTA_VU = [5., 3.5, 0.8]   # unwind limit
 DES_ANGLE_ADJUST_FACTOR_BP = [0.,13., 44.]
 DES_ANGLE_ADJUST_FACTOR = [1.0, 1.0, 1.0]
 
+#LDW WARNING LEVELS
+LDW_WARNING_1 = 1.0
+LDW_WARNING_2 = 0.9
+LDW_LANE_PROBAB = 0.3
+
 def gen_solution(CS):
   fix = 0
   if CS.gpsAccuracy < 2:
@@ -154,7 +159,7 @@ class CarController(object):
     self.curv2 = 0. 
     self.curv3 = 0. 
     self.visionCurvC0 = 0.
-    self.laneRange = 30  #max is 160m but OP has issues with precision beyond that
+    self.laneRange = 50  #max is 160m but OP has issues with precision beyond 50
     self.useZeroC0 = False
     self.useMap = False
     self.clipC0 = False
@@ -185,6 +190,8 @@ class CarController(object):
     self.roadSignDistanceWarning = 50.
 
     self.alca_enabled = False
+    self.ldwStatus = 0
+    self.prev_ldwStatus = 0
 
   def reset_traffic_events(self):
     self.stopSign_visible = False
@@ -453,20 +460,20 @@ class CarController(object):
         if socket is self.pathPlan:
           pp = messaging.recv_one(socket).pathPlan
           if pp.valid:
-            if pp.lProb > 0.25:
-              self.lLine = 1
+            if pp.lProb > 0.75:
+              self.lLine = 3
             elif pp.lProb > 0.5:
               self.lLine = 2
-            elif pp.lProb > 0.75:
-              self.lLine = 3
+            elif pp.lProb > 0.25:
+              self.lLine = 1
             else:
               self.lLine = 0
-            if pp.rProb > 0.25:
-              self.rLine = 1
+            if pp.rProb > 0.75:
+              self.rLine = 3
             elif pp.rProb > 0.5:
               self.rLine = 2
-            elif pp.rProb > 0.75:
-              self.rLine = 3
+            elif pp.rProb > 0.25:
+              self.rLine = 1
             else:
               self.rLine = 0
             #first we clip to the AP limits of the coefficients
@@ -475,12 +482,33 @@ class CarController(object):
             self.curv2 = -clip(pp.cPoly[1],-0.0025,0.0025) #self.curv2Matrix.add(-clip(pp.cPoly[1],-0.0025,0.0025))
             self.curv3 = -clip(pp.cPoly[0],-0.00003,0.00003) #self.curv3Matrix.add(-clip(pp.cPoly[0],-0.00003,0.00003))
             self.laneWidth = pp.laneWidth
-            self.laneRange = pp.viewRange
+            self.laneRange = 50 # it is fixed in OP at 50m pp.viewRange
             self.visionCurvC0 = self.curv0
+            self.prev_ldwStatus = self.ldwStatus
+            self.ldwStatus = 0
             if self.alca_enabled:
               #exagerate position a little during ALCA to make lane change look smoother on IC
-              self.curv0 = self.curv0 * 1.2
-              self.curv0 = clip(self.curv0, -self.laneWidth/2.0, self.laneWidth/2.0)
+              if self.ALCA.laneChange_over_the_line:
+                self.curv0 = self.ALCA.laneChange_direction * self.laneWidth - self.curv0
+              self.curv0 = clip(self.curv0, -3.5, 3.5)
+            else:
+              if (not CS.blinker_on):
+                if pp.lProb > LDW_LANE_PROBAB:
+                  lLaneC0 = -pp.lPoly[3]
+                  if abs(lLaneC0) < LDW_WARNING_2:
+                    self.ldwStatus = 3
+                  elif  abs(lLaneC0) < LDW_WARNING_1:
+                    self.ldwStatus = 1
+                if pp.rProb > LDW_LANE_PROBAB:
+                  rLaneC0 = -pp.rPoly[3]
+                  if abs(rLaneC0) < LDW_WARNING_2:
+                    self.ldwStatus = 3
+                  elif  abs(rLaneC0) < LDW_WARNING_1:
+                    self.ldwStatus = 1
+            if not(self.prev_ldwStatus == self.ldwStatus):
+              self.warningNeeded = 1
+              if self.ldwStatus > 0:
+                self.warningCounter = 50
           else:
             self.lLine = 0
             self.rLine = 0
@@ -681,7 +709,7 @@ class CarController(object):
             self.DAS_202_noisyEnvironment, CS.DAS_doorOpen, CS.DAS_notInDrive, CS.enableDasEmulation, CS.enableRadarEmulation, \
             self.stopSignWarning, self.stopLightWarning, \
             self.DAS_222_accCameraBlind, self.DAS_219_lcTempUnavailableSpeed, self.DAS_220_lcTempUnavailableRoad, self.DAS_221_lcAborting, \
-            self.DAS_207_lkasUnavailable,self.DAS_208_rackDetected, self.DAS_025_steeringOverride))
+            self.DAS_207_lkasUnavailable,self.DAS_208_rackDetected, self.DAS_025_steeringOverride,self.ldwStatus,CS.useTeslaRadar))
       self.stopLightWarning_last = self.stopLightWarning
       self.stopSignWarning_last = self.stopSignWarning
       self.warningNeeded = 0

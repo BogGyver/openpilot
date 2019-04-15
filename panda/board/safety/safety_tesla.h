@@ -125,6 +125,7 @@ int DAS_cc_state = 0;
 int DAS_acc_speed_limit_mph = 0;
 int DAS_acc_speed_kph = 0;
 int DAS_collision_warning = 0;
+int DAS_ldwStatus = 0;
 
 //lanes and objects
 int tLeadDx = 0;
@@ -165,6 +166,9 @@ int DAS_usingPedal = 0;
 //fake DAS - are we in drive?
 int DAS_inDrive = 0;
 int DAS_inDrive_prev = 0;
+int DAS_ignitionOn = 0;
+int DAS_present = 0;
+int DAS_useTeslaRadar = 0;
 
 //fake DAS - last stalk data used to cancel
 uint32_t DAS_lastStalkL =0x00;
@@ -294,6 +298,7 @@ static void send_fake_message(uint32_t RIR, uint32_t RDTR,int msg_len, int msg_a
 
 static void reset_DAS_data() {
   //fake DAS variables
+  DAS_present = 0;
   DAS_longC_enabled = 0;
   DAS_speed_limit_kph = 0;
   DAS_accel_min = 0;
@@ -355,6 +360,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
   if (current_car_time - time_last_DAS_data > 2) {
     //no message in the last 2 seconds, reset all variables
     reset_DAS_data();
+    
   }
 
   if (fake_DAS_counter % 2 == 0) {
@@ -601,7 +607,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     //for now fixed 0x33,0xC8,0xF0,0x7F,0x70,0x70,0x33,(idx << 4)+0x0F
     int fuse = 2;
     MLB = (lWidth << 4) + (rLine << 1) + lLine + (laneRange << 8) + (curvC0 << 16) + (curvC1  << 24);
-    MHB = 0x0F000000 + (DAS_lanes_idx << 28) + curvC2 + (curvC3 << 8) + ((((rLine * fuse) << 2) + (lLine * fuse)) << 16);
+    MHB = 0x00F00000 + (DAS_lanes_idx << 28) + curvC2 + (curvC3 << 8) + ((((rLine * fuse) << 2) + (lLine * fuse)) << 16); //0x0F000000
     send_fake_message(RIR,RDTR,8,0x239,0,MLB,MHB);
     DAS_lanes_idx ++;
     DAS_lanes_idx = DAS_lanes_idx % 16;
@@ -638,12 +644,12 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
       if (rLine == 1) {
         DAS_telRightLaneType = 3;
       } else {
-        DAS_telRightLaneType = 1;
+        DAS_telRightLaneType = 7;
       }
       if (lLine == 1) {
         DAS_telLeftLaneType = 3;
       } else {
-        DAS_telLeftLaneType = 1;
+        DAS_telLeftLaneType = 7;
       }
       if (DAS_alca_state == 0x09) {
         //alca in progress, left
@@ -720,7 +726,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     //send DAS_status - 0x399
     int sl = (int)(DAS_speed_limit_kph / 5); 
     MLB = DAS_op_status + 0xF0 + (sl << 8) + (((DAS_collision_warning << 6) + sl) << 16);
-    MHB = ((DAS_cc_state & 0x03) << 3) + (0x00 << 5) + //SNA for laneDepartureWarning
+    MHB = ((DAS_cc_state & 0x03) << 3) + (DAS_ldwStatus << 5) + 
         (((DAS_hands_on_state << 2) + ((DAS_alca_state & 0x03) << 6)) << 8) +
        ((( DAS_status_idx << 4) + (DAS_alca_state >> 2)) << 16);
     int cksm = add_tesla_cksm2(MLB, MHB, 0x399, 7);
@@ -915,6 +921,21 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     //m2 = 0.101593626
     //d = -22.85856576
     DAS_pedalPressed = (int)((((to_push->RDLR & 0xFF00) >> 8) + ((to_push->RDLR & 0xFF) << 8)) * 0.050796813 -22.85856576);
+  }
+
+  if (addr == 0x001) {
+    //ISw_Stat that starts at 0 and is 3 bit long is the ignition key status
+    int ign = (int)(to_push->RDLR & 0x03);
+    if ((ign == 0x04) || (ign == 0x05)) {
+      DAS_ignitionOn = 1;
+    } else {
+      DAS_ignitionOn = 0;
+    }
+    if ((DAS_ignitionOn * DAS_present * DAS_useTeslaRadar ) == 1) {
+      set_uja1023_output_bits(1<< 7);
+    } else {
+      clear_uja1023_output_bits(1 << 7);
+    }
   }
 
   //we use 0x108 at 100Hz to detect timing of messages sent by our fake DAS and EPB
@@ -1346,6 +1367,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
   if (addr == 0x554) {
     int b0 = (to_send->RDLR & 0xFF); 
     int b1 = ((to_send->RDLR >> 8) & 0xFF);
+    int b2 = ((to_send->RDLR >> 16) & 0xFF);
     DAS_211_accNoSeatBelt = ((b0 >> 4) & 0x01);
     DAS_canErrors = ((b0 >> 3) & 0x01);
     DAS_202_noisyEnvironment = ((b0 >> 2) & 0x01);
@@ -1362,6 +1384,8 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_207_lkasUnavailable = ((b1 >> 5) & 0x01);
     DAS_208_rackDetected = ((b1 >> 6) & 0x01);
     DAS_025_steeringOverride = ((b1 >> 7) & 0x01);
+    DAS_ldwStatus = (b2 & 0x07);
+    DAS_useTeslaRadar = ((b2 >> 3) & 0x01);
     return false;
   }
 
@@ -1391,6 +1415,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_alca_state = (b3 & 0x1F);
     DAS_speed_limit_kph = b5;
     time_last_DAS_data = current_car_time;
+    DAS_present = 1;
     DAS_steeringAngle = ((b7 << 8) + b6) & 0x7FFF;
     DAS_steeringEnabled = (b7 >> 7);
 

@@ -231,6 +231,7 @@ class CarState(object):
     self.useTeslaMapData = False
     self.hasTeslaIcIntegration = False
     self.useAnalogWhenNoEon = False
+    self.useTeslaRadar = False
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

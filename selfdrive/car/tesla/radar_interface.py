@@ -2,6 +2,24 @@
 from cereal import car
 import time
 
+RADAR_A_MSGS = list(range(0x310, 0x36F , 3))
+RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
+
+def _create_radard_can_parser():
+  dbc_f = 'teslaradar.dbc'
+
+  msg_a_n = len(RADAR_A_MSGS)
+  msg_b_n = len(RADAR_B_MSGS)
+
+  signals = zip(['LongDist'] * msg_a_n + ['NEW_TRACK'] * msg_a_n + ['LatDist'] * msg_a_n +
+                ['LongSpeed'] * msg_a_n + ['LongAccel'] * msg_a_n + ['LatSpeed'] * msg_b_n,
+                RADAR_A_MSGS * 5 + RADAR_B_MSGS,
+                [255] * msg_a_n + [1] * msg_a_n + [0] * msg_a_n + [0] * msg_a_n + [0] * msg_a_n + [0] * msg_b_n)
+
+  checks = zip(RADAR_A_MSGS + RADAR_B_MSGS, [20]*(msg_a_n + msg_b_n))
+
+  return CANParser(os.path.splitext(dbc_f)[0], signals, checks, 1)
+
 
 class RadarInterface(object):
   def __init__(self, CP):
