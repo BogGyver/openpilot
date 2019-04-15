@@ -127,7 +127,7 @@ def create_fake_DAS_warning(DAS_211_accNoSeatBelt, DAS_canErrors, \
             DAS_202_noisyEnvironment, DAS_doorOpen, DAS_notInDrive, enableDasEmulation, enableRadarEmulation, \
             stopSignWarning, stopLightWarning, \
             DAS_222_accCameraBlind, DAS_219_lcTempUnavailableSpeed, DAS_220_lcTempUnavailableRoad, DAS_221_lcAborting, \
-            DAS_207_lkasUnavailable,DAS_208_rackDetected, DAS_025_steeringOverride, ldwStatus,useTeslaRadar,useTeslaRadar):
+            DAS_207_lkasUnavailable,DAS_208_rackDetected, DAS_025_steeringOverride, ldwStatus,useTeslaRadar):
   msg_id = 0x554
   msg_len = 3
   fd = 0
