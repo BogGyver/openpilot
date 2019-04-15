@@ -40,8 +40,8 @@ DES_ANGLE_ADJUST_FACTOR = [1.0, 1.0, 1.0]
 
 #LDW WARNING LEVELS
 LDW_WARNING_1 = 1.0
-LDW_WARNING_2 = 0.5
-LDW_LANE_PROBAB = 0.6
+LDW_WARNING_2 = 0.9
+LDW_LANE_PROBAB = 0.3
 
 def gen_solution(CS):
   fix = 0
@@ -488,24 +488,27 @@ class CarController(object):
             self.ldwStatus = 0
             if self.alca_enabled:
               #exagerate position a little during ALCA to make lane change look smoother on IC
-              self.curv0 = self.curv0 * 1.2
-              self.curv0 = clip(self.curv0, -self.laneWidth/2.0, self.laneWidth/2.0)
+              if self.ALCA.laneChange_over_the_line:
+                self.curv0 = self.ALCA.laneChange_direction * self.laneWidth - self.curv0
+              self.curv0 = clip(self.curv0, -3.5, 3.5)
             else:
               if (not CS.blinker_on):
                 if pp.lProb > LDW_LANE_PROBAB:
                   lLaneC0 = -pp.lPoly[3]
-                  if abs(lLaneC0) < LDW_WARNING_1:
-                    self.ldwStatus = 1
-                  elif  abs(lLaneC0) < LDW_WARNING_2:
+                  if abs(lLaneC0) < LDW_WARNING_2:
                     self.ldwStatus = 3
+                  elif  abs(lLaneC0) < LDW_WARNING_1:
+                    self.ldwStatus = 1
                 if pp.rProb > LDW_LANE_PROBAB:
                   rLaneC0 = -pp.rPoly[3]
-                  if abs(rLaneC0) < LDW_WARNING_1:
-                    self.ldwStatus = 2
-                  elif  abs(rLaneC0) < LDW_WARNING_2:
-                    self.ldwStatus = 4
+                  if abs(rLaneC0) < LDW_WARNING_2:
+                    self.ldwStatus = 3
+                  elif  abs(rLaneC0) < LDW_WARNING_1:
+                    self.ldwStatus = 1
             if not(self.prev_ldwStatus == self.ldwStatus):
               self.warningNeeded = 1
+              if self.ldwStatus > 0:
+                self.warningCounter = 50
           else:
             self.lLine = 0
             self.rLine = 0
@@ -706,7 +709,7 @@ class CarController(object):
             self.DAS_202_noisyEnvironment, CS.DAS_doorOpen, CS.DAS_notInDrive, CS.enableDasEmulation, CS.enableRadarEmulation, \
             self.stopSignWarning, self.stopLightWarning, \
             self.DAS_222_accCameraBlind, self.DAS_219_lcTempUnavailableSpeed, self.DAS_220_lcTempUnavailableRoad, self.DAS_221_lcAborting, \
-            self.DAS_207_lkasUnavailable,self.DAS_208_rackDetected, self.DAS_025_steeringOverride,self.ldwStatus))
+            self.DAS_207_lkasUnavailable,self.DAS_208_rackDetected, self.DAS_025_steeringOverride,self.ldwStatus,CS.useTeslaRadar))
       self.stopLightWarning_last = self.stopLightWarning
       self.stopSignWarning_last = self.stopSignWarning
       self.warningNeeded = 0
