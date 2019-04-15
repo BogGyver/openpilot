@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 from cereal import car
 import time
+import os
+import zmq
+from selfdrive.can.parser import CANParser
+from common.realtime import sec_since_boot
+from selfdrive.services import service_list
+import selfdrive.messaging as messaging
 
 RADAR_A_MSGS = list(range(0x310, 0x36F , 3))
 RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
