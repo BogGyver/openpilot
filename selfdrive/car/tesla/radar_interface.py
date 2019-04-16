@@ -9,13 +9,22 @@ from selfdrive.services import service_list
 import selfdrive.messaging as messaging
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 
-RADAR_A_MSGS = list(range(0x310, 0x36F , 3))
-RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
+USE_ALL_OBJECTS = False
+RADAR_A_MSGS = list(range(0x371, 0x37F , 3))
+RADAR_B_MSGS = list(range(0x372, 0x37F, 3))
+
 
 BOSCH_MAX_DIST = 150. #max distance for radar
 
+# Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
+# definetly switch to all objects when calibrating but most likely use select set of 5 for normal use
+USE_ALL_OBJECTS = False
+
 def _create_radard_can_parser():
   dbc_f = 'teslaradar.dbc'
+  if USE_ALL_OBJECTS:
+    RADAR_A_MSGS = list(range(0x310, 0x36F , 3))
+    RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
 
   msg_a_n = len(RADAR_A_MSGS)
   msg_b_n = len(RADAR_B_MSGS)
@@ -45,7 +54,7 @@ class RadarInterface(object):
       self.pts = {}
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
       self.track_id = 0
-      self.delay = 0.0  # Delay of radar
+      self.delay = 0.1  # Delay of radar
       self.rcp = _create_radard_can_parser()
       context = zmq.Context()
       self.logcan = messaging.sub_sock(context, service_list['can'].port)
@@ -54,7 +63,6 @@ class RadarInterface(object):
 
     ret = car.RadarState.new_message()
     if not self.useTeslaRadar:
-      # TODO: make a adas dbc file for dsu-less models
       time.sleep(0.05)
       return ret
 

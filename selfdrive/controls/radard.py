@@ -162,14 +162,17 @@ def radard_thread(gctx=None):
         del ar_pts[VISION_POINT]
 
     # *** compute the likely path_y ***
-    if (active and not steer_override) or mocked:
-      # use path from model (always when mocking as steering is too noisy)
-      path_y = np.polyval(MP.d_poly, path_x)
-    else:
-      # use path from steer, set angle_offset to 0 it does not only report the physical offset
-      path_y = calc_lookahead_offset(v_ego, steer_angle, path_x, VM, angle_offset=0)[0]
+    #if (active and not steer_override) or mocked:
+    #  # use path from model (always when mocking as steering is too noisy)
+    #  path_y = np.polyval(MP.d_poly, path_x)
+    #else:
+    #  # use path from steer, set angle_offset to 0 it does not only report the physical offset
+    #  path_y = calc_lookahead_offset(v_ego, steer_angle, path_x, VM, angle_offset=0)[0]
 
-    # *** remove missing points from meta data ***
+    #BB always using the path from mode
+    path_y = np.polyval(MP.d_poly, path_x)
+
+    # *** remove missing points from meta data *** 
     for ids in tracks.keys():
       if ids not in ar_pts:
         tracks.pop(ids, None)

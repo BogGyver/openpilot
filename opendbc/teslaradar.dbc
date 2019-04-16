@@ -515,3 +515,79 @@ BO_ 878 M_373hex2: 8 XXX
  SG_ LatSpeed : 0|10@1+ (0.125,-64) [-64|64] "meters/sec" XXX
  SG_ Index2 : 63|1@1+ (1,0) [0|1] "" XXX
 
+BO_ 881 L_1_371hex: 8 XXX
+ SG_ LongDist : 0|12@1+ (0.0625,0) [0|255.9] "meters" XXX
+ SG_ LongSpeed : 12|12@1+ (0.0625,-128) [-128|128] "meters/sec" XXX
+ SG_ LatDist : 24|11@1+ (0.125,-128) [-128|128] "meters" XXX
+ SG_ LongAccel : 40|10@1+ (0.03125,-16) [-16|16] "meters/sec/sec" XXX
+ SG_ Flags : 56|4@1+ (1,0) [0|15] "" XXX
+ SG_ Flag1 : 60|1@1+ (1,0) [0|1] "" XXX
+ SG_ Valid : 61|1@1+ (1,0) [0|1] "" XXX
+ SG_ Existing : 62|1@1+ (1,0) [0|1] "" XXX
+ SG_ Index : 63|1@1+ (1,0) [0|1] "" XXX
+
+BO_ 882 L_1_371hex2: 8 XXX
+ SG_ LatSpeed : 0|10@1+ (0.125,-64) [-64|64] "meters/sec" XXX
+ SG_ Index2 : 63|1@1+ (1,0) [0|1] "" XXX
+
+BO_ 884 L_2_374hex: 8 XXX
+ SG_ LongDist : 0|12@1+ (0.0625,0) [0|255.9] "meters" XXX
+ SG_ LongSpeed : 12|12@1+ (0.0625,-128) [-128|128] "meters/sec" XXX
+ SG_ LatDist : 24|11@1+ (0.125,-128) [-128|128] "meters" XXX
+ SG_ LongAccel : 40|10@1+ (0.03125,-16) [-16|16] "meters/sec/sec" XXX
+ SG_ Flags : 56|4@1+ (1,0) [0|15] "" XXX
+ SG_ Flag1 : 60|1@1+ (1,0) [0|1] "" XXX
+ SG_ Valid : 61|1@1+ (1,0) [0|1] "" XXX
+ SG_ Existing : 62|1@1+ (1,0) [0|1] "" XXX
+ SG_ Index : 63|1@1+ (1,0) [0|1] "" XXX
+
+BO_ 885 L_2_375hex2: 8 XXX
+ SG_ LatSpeed : 0|10@1+ (0.125,-64) [-64|64] "meters/sec" XXX
+ SG_ Index2 : 63|1@1+ (1,0) [0|1] "" XXX
+
+BO_ 887 L_3_377hex: 8 XXX
+ SG_ LongDist : 0|12@1+ (0.0625,0) [0|255.9] "meters" XXX
+ SG_ LongSpeed : 12|12@1+ (0.0625,-128) [-128|128] "meters/sec" XXX
+ SG_ LatDist : 24|11@1+ (0.125,-128) [-128|128] "meters" XXX
+ SG_ LongAccel : 40|10@1+ (0.03125,-16) [-16|16] "meters/sec/sec" XXX
+ SG_ Flags : 56|4@1+ (1,0) [0|15] "" XXX
+ SG_ Flag1 : 60|1@1+ (1,0) [0|1] "" XXX
+ SG_ Valid : 61|1@1+ (1,0) [0|1] "" XXX
+ SG_ Existing : 62|1@1+ (1,0) [0|1] "" XXX
+ SG_ Index : 63|1@1+ (1,0) [0|1] "" XXX
+
+BO_ 888 L_3_378hex2: 8 XXX
+ SG_ LatSpeed : 0|10@1+ (0.125,-64) [-64|64] "meters/sec" XXX
+ SG_ Index2 : 63|1@1+ (1,0) [0|1] "" XXX
+
+BO_ 890 L_4_37ahex: 8 XXX
+ SG_ LongDist : 0|12@1+ (0.0625,0) [0|255.9] "meters" XXX
+ SG_ LongSpeed : 12|12@1+ (0.0625,-128) [-128|128] "meters/sec" XXX
+ SG_ LatDist : 24|11@1+ (0.125,-128) [-128|128] "meters" XXX
+ SG_ LongAccel : 40|10@1+ (0.03125,-16) [-16|16] "meters/sec/sec" XXX
+ SG_ Flags : 56|4@1+ (1,0) [0|15] "" XXX
+ SG_ Flag1 : 60|1@1+ (1,0) [0|1] "" XXX
+ SG_ Valid : 61|1@1+ (1,0) [0|1] "" XXX
+ SG_ Existing : 62|1@1+ (1,0) [0|1] "" XXX
+ SG_ Index : 63|1@1+ (1,0) [0|1] "" XXX
+
+BO_ 891 L_4_37ahex2: 8 XXX
+ SG_ LatSpeed : 0|10@1+ (0.125,-64) [-64|64] "meters/sec" XXX
+ SG_ Index2 : 63|1@1+ (1,0) [0|1] "" XXX
+
+BO_ 893 L_5_37dhex: 8 XXX
+ SG_ LongDist : 0|12@1+ (0.0625,0) [0|255.9] "meters" XXX
+ SG_ LongSpeed : 12|12@1+ (0.0625,-128) [-128|128] "meters/sec" XXX
+ SG_ LatDist : 24|11@1+ (0.125,-128) [-128|128] "meters" XXX
+ SG_ LongAccel : 40|10@1+ (0.03125,-16) [-16|16] "meters/sec/sec" XXX
+ SG_ Flags : 56|4@1+ (1,0) [0|15] "" XXX
+ SG_ Flag1 : 60|1@1+ (1,0) [0|1] "" XXX
+ SG_ Valid : 61|1@1+ (1,0) [0|1] "" XXX
+ SG_ Existing : 62|1@1+ (1,0) [0|1] "" XXX
+ SG_ Index : 63|1@1+ (1,0) [0|1] "" XXX
+
+BO_ 894 L_5_37dhex2: 8 XXX
+ SG_ LatSpeed : 0|10@1+ (0.125,-64) [-64|64] "meters/sec" XXX
+ SG_ Index2 : 63|1@1+ (1,0) [0|1] "" XXX
+
+
