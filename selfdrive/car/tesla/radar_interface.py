@@ -18,7 +18,7 @@ OBJECT_MIN_PROBABILITY = 50.
 
 # Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
 # definetly switch to all objects when calibrating but most likely use select set of 5 for normal use
-USE_ALL_OBJECTS = False
+USE_ALL_OBJECTS = True
 
 def _create_radard_can_parser():
   dbc_f = 'teslaradar.dbc'
@@ -33,12 +33,12 @@ def _create_radard_can_parser():
                 ['Index'] * msg_a_n + ['ProbObstacle'] * msg_a_n + 
                 ['LatSpeed'] * msg_b_n + ['Index2'] * msg_b_n +
                 ['Class'] * msg_b_n + ['ProbClass'] * msg_b_n + 
-                ['Length'] * msg_b_n + ['dZ'] * msg_b_n,
-                RADAR_A_MSGS * 9 + RADAR_B_MSGS * 2,
+                ['Length'] * msg_b_n + ['dZ'] * msg_b_n + ['MovingState'] * msg_b_n,
+                RADAR_A_MSGS * 10 + RADAR_B_MSGS * 7,
                 [255.] * msg_a_n + [0.] * msg_a_n + [0.] * msg_a_n + [0.] * msg_a_n + 
                 [0] * msg_a_n + [0] * msg_a_n + [0] * msg_a_n + [0.] * msg_a_n +
                 [0] * msg_a_n + [0.] * msg_a_n + [0.] * msg_b_n + [0] * msg_b_n +
-                [0] * msg_b_n + [0.] * msg_b_n + [0.] * msg_b_n +[0.] * msg_b_n)
+                [0] * msg_b_n + [0.] * msg_b_n + [0.] * msg_b_n +[0.] * msg_b_n + [0]* msg_b_n)
 
   checks = zip(RADAR_A_MSGS + RADAR_B_MSGS, [20]*(msg_a_n + msg_b_n))
 
@@ -94,7 +94,7 @@ class RadarInterface(object):
 
         # radar point only valid if it's a valid measurement and score is above 50
         # bosch radar data needs to match Index and Index2 for validity
-        if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and (self.valid_cnt[ii] > 0) and (cpt['Index'] == self.rcp.vl[ii+1]['Index2']) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) :
+        if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and (self.valid_cnt[ii] > 0) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) :
           if ii not in self.pts and ( cpt['Tracked']):
             self.pts[ii] = car.RadarState.RadarPoint.new_message()
             self.pts[ii].trackId = self.track_id
