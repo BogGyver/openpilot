@@ -38,7 +38,7 @@ class CarInterface(object):
     self.can_invalid_count = 0
 
     self.cp = get_can_parser(CP)
-    self.epas_cp = get_epas_parser(CP)
+    self.epas_cp = get_epas_parser(CP,2)
 
     # *** init the major players ***
     self.CS = CarState(CP)

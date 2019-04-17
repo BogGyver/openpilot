@@ -152,6 +152,7 @@ class CarController(object):
     self.leadDyMatrix = MovingAverage(self.average_over_x_pathplan_values)
     self.leadDx = 0.
     self.leadDy = 0.
+    self.leadClass = 0
     self.lLine = 0
     self.rLine = 0
     self.curv0 = 0. 
@@ -452,18 +453,22 @@ class CarController(object):
           lead_1 = messaging.recv_one(socket).live20.leadOne
           if lead_1.dRel:
             if CS.useTeslaRadar:
-              self.leadDx = lead_1.dRel-2.5
+              self.leadDx = lead_1.dRel
               self.leadDy = self.curv0-lead_1.yRel
+              self.leadClass = lead_1.oClass
             else:
-              self.leadDx = self.leadDxMatrix.add(lead_1.dRel-2.5)
+              self.leadDx = self.leadDxMatrix.add(lead_1.dRel)
               self.leadDy = self.leadDyMatrix.add(self.curv0-lead_1.yRel)
+              self.leadClass = 1
           else:
             if CS.useTeslaRadar:
               self.leadDx = 0.
               self.leadDy = 0.
+              self.leadClass = 0
             else:
               self.leadDx = self.leadDxMatrix.dele()
               self.leadDy = self.leadDyMatrix.dele()
+              self.leadClass = 0
         #to show curvature and lanes on IC
         if socket is self.pathPlan:
           pp = messaging.recv_one(socket).pathPlan
@@ -686,7 +691,7 @@ class CarController(object):
       if frame % 60 == 0:
         send_fake_warning = True
     if frame % 10 == 0:
-      can_sends.append(teslacan.create_fake_DAS_obj_lane_msg(self.leadDx,self.leadDy,self.rLine,self.lLine,self.curv0,self.curv1,self.curv2,self.curv3,self.laneRange,self.laneWidth))
+      can_sends.append(teslacan.create_fake_DAS_obj_lane_msg(self.leadDx,self.leadDy,self.leadClass,self.rLine,self.lLine,self.curv0,self.curv1,self.curv2,self.curv3,self.laneRange,self.laneWidth))
     speed_override = 0
     if (CS.pedal_interceptor_value > 10) and (cc_state > 1):
       speed_override = 0 #force zero for now
@@ -717,7 +722,7 @@ class CarController(object):
             self.DAS_202_noisyEnvironment, CS.DAS_doorOpen, CS.DAS_notInDrive, CS.enableDasEmulation, CS.enableRadarEmulation, \
             self.stopSignWarning, self.stopLightWarning, \
             self.DAS_222_accCameraBlind, self.DAS_219_lcTempUnavailableSpeed, self.DAS_220_lcTempUnavailableRoad, self.DAS_221_lcAborting, \
-            self.DAS_207_lkasUnavailable,self.DAS_208_rackDetected, self.DAS_025_steeringOverride,self.ldwStatus,CS.useTeslaRadar))
+            self.DAS_207_lkasUnavailable,self.DAS_208_rackDetected, self.DAS_025_steeringOverride,self.ldwStatus,CS.useTeslaRadar,CS.useWithoutHarness))
       self.stopLightWarning_last = self.stopLightWarning
       self.stopSignWarning_last = self.stopSignWarning
       self.warningNeeded = 0

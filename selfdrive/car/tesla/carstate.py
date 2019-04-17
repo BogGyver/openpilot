@@ -192,9 +192,9 @@ def get_can_parser(CP):
   signals, checks = get_can_signals(CP)
   return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 0)
 
-def get_epas_parser(CP):
+def get_epas_parser(CP,epascan):
   signals, checks = get_epas_can_signals(CP)
-  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 2)
+  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, epascan)
 
 
 class CarState(object):
@@ -232,6 +232,7 @@ class CarState(object):
     self.hasTeslaIcIntegration = False
     self.useAnalogWhenNoEon = False
     self.useTeslaRadar = False
+    self.useWithoutHarness = False
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

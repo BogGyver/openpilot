@@ -560,9 +560,9 @@ class PCCController(object):
             # accel until lead lead car gets close enough to read.
             (2.0 * safe_dist_m, -2)])
           max_vrel_kph = _interp_map(lead_dist_m, max_vrel_kph_map)
-          if CS.useTeslaRadar:
-            min_vrel_kph = -1
-            max_vrel_kph = 1
+          #if CS.useTeslaRadar:
+          #  min_vrel_kph = -1
+          #  max_vrel_kph = -2
           min_kph = lead_absolute_speed_kph - max_vrel_kph
           max_kph = lead_absolute_speed_kph - min_vrel_kph
           # In the special case were we are going faster than intended but it's

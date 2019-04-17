@@ -106,7 +106,7 @@ def radard_thread(gctx=None):
 
     ar_pts = {}
     for pt in rr.points:
-      ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured]
+      ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured, pt.aRel, pt.vLat, pt.oClass, pt.length]
 
     # receive the live100s
     l100 = None
@@ -194,7 +194,7 @@ def radard_thread(gctx=None):
       # create the track if it doesn't exist or it's a new track
       if ids not in tracks:
         tracks[ids] = Track()
-      tracks[ids].update(rpt[0], rpt[1], rpt[2], d_path, v_ego_t_aligned, rpt[3], steer_override)
+      tracks[ids].update(rpt[0], rpt[1], rpt[2], rpt[3], rpt[4],rpt[5],rpt[6],rpt[7],d_path, v_ego_t_aligned, steer_override)
 
     # allow the vision model to remove the stationary flag if distance and rel speed roughly match
     if VISION_POINT in ar_pts:

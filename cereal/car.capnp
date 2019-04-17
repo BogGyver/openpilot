@@ -202,6 +202,13 @@ struct RadarState {
 
     # some radars flag measurements VS estimates
     measured @6 :Bool;
+
+    # some TeslaBosch specific items
+    objectClass @7 :UInt8; # 0-unknown 1-four wheel vehicle 2-two wheel vehicle 3-pedestrian 4-construction element
+    dz @8 :Float32; # height in meter
+    movingState @9 :UInt8; # 0-indeterminate 1-moving 2-stopped 3-standing
+    length @10 :Float32; # length in meters
+    obstacleProb @11 :Float32; # probability to be an obstacle
   }
 }
 

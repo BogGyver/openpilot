@@ -9,12 +9,12 @@ from selfdrive.services import service_list
 import selfdrive.messaging as messaging
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 
-USE_ALL_OBJECTS = False
-RADAR_A_MSGS = list(range(0x371, 0x37F , 3))
-RADAR_B_MSGS = list(range(0x372, 0x37F, 3))
-
-
+#RADAR_A_MSGS = list(range(0x371, 0x37F , 3))
+#RADAR_B_MSGS = list(range(0x372, 0x37F, 3))
 BOSCH_MAX_DIST = 150. #max distance for radar
+RADAR_A_MSGS = list(range(0x310, 0x36F , 3))
+RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
+OBJECT_MIN_PROBABILITY = 50.
 
 # Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
 # definetly switch to all objects when calibrating but most likely use select set of 5 for normal use
@@ -22,22 +22,23 @@ USE_ALL_OBJECTS = False
 
 def _create_radard_can_parser():
   dbc_f = 'teslaradar.dbc'
-  if USE_ALL_OBJECTS:
-    RADAR_A_MSGS = list(range(0x310, 0x36F , 3))
-    RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
 
   msg_a_n = len(RADAR_A_MSGS)
   msg_b_n = len(RADAR_B_MSGS)
 
   signals = zip(['LongDist'] * msg_a_n +  ['LatDist'] * msg_a_n +
                 ['LongSpeed'] * msg_a_n + ['LongAccel'] * msg_a_n + 
-                ['Flags'] * msg_a_n + ['Flag1'] * msg_a_n + 
-                ['Valid'] * msg_a_n + ['Existing'] * msg_a_n + 
-                ['Index'] * msg_a_n + ['LatSpeed'] * msg_b_n + ['Index2'] * msg_b_n,
+                ['Valid'] * msg_a_n + ['Tracked'] * msg_a_n + 
+                ['Meas'] * msg_a_n + ['ProbExist'] * msg_a_n + 
+                ['Index'] * msg_a_n + ['ProbObstacle'] * msg_a_n + 
+                ['LatSpeed'] * msg_b_n + ['Index2'] * msg_b_n +
+                ['Class'] * msg_b_n + ['ProbClass'] * msg_b_n + 
+                ['Length'] * msg_b_n + ['dZ'] * msg_b_n,
                 RADAR_A_MSGS * 9 + RADAR_B_MSGS * 2,
-                [255] * msg_a_n + [0] * msg_a_n + [0] * msg_a_n + [0] * msg_a_n + 
-                [0] * msg_a_n + [0] * msg_a_n + [0] * msg_a_n + [0] * msg_a_n +
-                [3] * msg_a_n + [0] * msg_b_n +[3] * msg_b_n)
+                [255.] * msg_a_n + [0.] * msg_a_n + [0.] * msg_a_n + [0.] * msg_a_n + 
+                [0] * msg_a_n + [0] * msg_a_n + [0] * msg_a_n + [0.] * msg_a_n +
+                [0] * msg_a_n + [0.] * msg_a_n + [0.] * msg_b_n + [0] * msg_b_n +
+                [0] * msg_b_n + [0.] * msg_b_n + [0.] * msg_b_n +[0.] * msg_b_n)
 
   checks = zip(RADAR_A_MSGS + RADAR_B_MSGS, [20]*(msg_a_n + msg_b_n))
 
@@ -54,7 +55,7 @@ class RadarInterface(object):
       self.pts = {}
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
       self.track_id = 0
-      self.delay = 0.1  # Delay of radar
+      self.delay = 0.0  # Delay of radar
       self.rcp = _create_radard_can_parser()
       context = zmq.Context()
       self.logcan = messaging.sub_sock(context, service_list['can'].port)
@@ -81,9 +82,9 @@ class RadarInterface(object):
     for ii in updated_messages:
       if ii in RADAR_A_MSGS:
         cpt = self.rcp.vl[ii]
-        if (cpt['LongDist'] >= BOSCH_MAX_DIST) or (cpt['Valid'] and not cpt['Existing']):
+        if (cpt['LongDist'] >= BOSCH_MAX_DIST) or (cpt['LongDist']==0) or (not cpt['Tracked']):
           self.valid_cnt[ii] = 0    # reset counter
-        if cpt['Valid'] and cpt['LongDist'] < BOSCH_MAX_DIST:
+        if cpt['Valid'] and (cpt['LongDist'] < BOSCH_MAX_DIST) and (cpt['LongDist'] > 0) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY):
           self.valid_cnt[ii] += 1
         else:
           self.valid_cnt[ii] = max(self.valid_cnt[ii] -1, 0)
@@ -93,17 +94,36 @@ class RadarInterface(object):
 
         # radar point only valid if it's a valid measurement and score is above 50
         # bosch radar data needs to match Index and Index2 for validity
-        if cpt['Valid'] and (cpt['LongDist'] < BOSCH_MAX_DIST) and (self.valid_cnt[ii] > 0) and (cpt['Index'] == self.rcp.vl[ii+1]['Index2']):
-          if ii not in self.pts or (cpt['Valid'] and not cpt['Existing']):
+        if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and (self.valid_cnt[ii] > 0) and (cpt['Index'] == self.rcp.vl[ii+1]['Index2']) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) :
+          if ii not in self.pts and ( cpt['Tracked']):
             self.pts[ii] = car.RadarState.RadarPoint.new_message()
             self.pts[ii].trackId = self.track_id
             self.track_id += 1
-          self.pts[ii].dRel = cpt['LongDist']  # from front of car
-          self.pts[ii].yRel = cpt['LatDist']  # in car frame's y axis, left is positive
-          self.pts[ii].vRel = cpt['LongSpeed']
-          self.pts[ii].aRel = cpt['LongAccel']
-          self.pts[ii].yvRel = self.rcp.vl[ii+1]['LatSpeed']
-          self.pts[ii].measured = bool(cpt['Valid'])
+          if ii in self.pts:
+            self.pts[ii].dRel = cpt['LongDist']  # from front of car
+            self.pts[ii].yRel = cpt['LatDist']  # in car frame's y axis, left is positive
+            self.pts[ii].vRel = cpt['LongSpeed']
+            self.pts[ii].aRel = cpt['LongAccel']
+            self.pts[ii].yvRel = self.rcp.vl[ii+1]['LatSpeed']
+            self.pts[ii].measured = bool(cpt['Meas'])
+            self.pts[ii].dz = self.rcp.vl[ii+1]['dZ']
+            self.pts[ii].movingState = self.rcp.vl[ii+1]['MovingState']
+            self.pts[ii].length = self.rcp.vl[ii+1]['Length']
+            self.pts[ii].obstacleProb = cpt['ProbObstacle']
+            if self.rcp.vl[ii+1]['Class'] > OBJECT_MIN_PROBABILITY:
+              self.pts[ii].objectClass = self.rcp.vl[ii+1]['Class']
+              # for now we will use class 0- unknown stuff to show trucks
+              # we will base that on being a class 1 and length of 2 (hoping they meant width not length, but as germans could not decide)
+              # 0-unknown 1-four wheel vehicle 2-two wheel vehicle 3-pedestrian 4-construction element
+              # going to 0-unknown 1-truck 2-car 3/4-motorcycle/bicycle 5 pedestrian - we have two bits so
+              if self.pts[ii].objectClass == 0:
+                self.pts[ii].objectClass = 1
+              if (self.pts[ii].objectClass == 1) and (self.pts[ii].length >= 1.8):
+                self.pts[ii].objectClass = 0
+              if self.pts[ii].objectClass == 4:
+                self.pts[ii].objectClass = 1
+            else:
+              self.pts[ii].objectClass = 1
         else:
           if ii in self.pts:
             del self.pts[ii]

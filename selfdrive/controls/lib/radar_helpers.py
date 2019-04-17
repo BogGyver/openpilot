@@ -42,7 +42,7 @@ class Track(object):
     self.stationary = True
     self.initted = False
 
-  def update(self, d_rel, y_rel, v_rel, d_path, v_ego_t_aligned, measured, steer_override):
+  def update(self, d_rel, y_rel, v_rel,measured, a_rel, vy_rel, oClass, length, d_path, v_ego_t_aligned, steer_override):
     if self.initted:
       # pylint: disable=access-member-before-definition
       self.dPathPrev = self.dPath
@@ -53,6 +53,10 @@ class Track(object):
     self.dRel = d_rel   # LONG_DIST
     self.yRel = y_rel   # -LAT_DIST
     self.vRel = v_rel   # REL_SPEED
+    self.aRel = a_rel   # rel acceleration
+    self.vLat = vy_rel  # rel lateral speed
+    self.oClass = oClass # object class
+    self.length = length #length
     self.measured = measured   # measured or estimate
 
     # compute distance to path
@@ -67,8 +71,6 @@ class Track(object):
       self.cnt = 1
       self.vision_cnt = 0
       self.vision = False
-      self.aRel = 0.      # nidec gives no information about this
-      self.vLat = 0.
       self.kf = KF1D([[self.vLead], [0.0]], _VLEAD_A, _VLEAD_C, _VLEAD_K)
     else:
       # estimate acceleration
@@ -215,6 +217,14 @@ class Cluster(object):
   def oncoming(self):
     return all([t.oncoming for t in self.tracks])
 
+  @property
+  def oClass(self):
+    return all([t.oClass for t in self.tracks])
+
+  @property
+  def length(self):
+    return max([t.length for t in self.tracks])
+
   def toLive20(self):
     return {
       "dRel": float(self.dRel) - RDR_TO_LDR,
@@ -228,7 +238,9 @@ class Cluster(object):
       "aLeadK": float(self.aLeadK),
       "status": True,
       "fcw": self.is_potential_fcw(),
-      "aLeadTau": float(self.aLeadTau)
+      "aLeadTau": float(self.aLeadTau),
+      "oClass": int(self.oClass),
+      "length": float(self.length),
     }
 
   def __str__(self):

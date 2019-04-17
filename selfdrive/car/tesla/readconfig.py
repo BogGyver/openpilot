@@ -191,6 +191,14 @@ def read_config_file(CS):
       file_changed = True
     config.set('OP_CONFIG', 'use_tesla_radar', CS.useTeslaRadar)
 
+    #use_without_harness = CS.useWithoutHarness
+    try:
+      CS.useWithoutHarness = configr.getboolean('OP_CONFIG','use_without_harness')
+    except:
+      CS.useWithoutHarness = False
+      file_changed = True
+    config.set('OP_CONFIG', 'use_without_harness', CS.useWithoutHarness)
+
     #do_auto_update -> CS.doAutoUpdate
     try:
       CS.doAutoUpdate = configr.getboolean('OP_CONFIG','do_auto_update')
@@ -230,6 +238,7 @@ class CarSettings(object):
     self.hasTeslaIcIntegration = False
     self.useAnalogWhenNoEon = False
     self.useTeslaRadar = False
+    self.useWithoutHarness = False
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

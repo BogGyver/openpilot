@@ -130,6 +130,7 @@ int DAS_ldwStatus = 0;
 //lanes and objects
 int tLeadDx = 0;
 int tLeadDy = 0;
+int tLeadClass = 0;
 int rLine = 0;
 int lLine = 0;
 int rLine_qual = 0;
@@ -420,7 +421,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
         MLB = 0xFFFFFF00;
         MHB = 0x03FFFF83;
       } else {
-        MLB = 0x30080090 + (tLeadDx << 8) + (tLeadDy << 20);
+        MLB = 0x30080080 + (tLeadDx << 8) + (tLeadDy << 20) + (tLeadClass << 3);
         MHB = 0x03FFFF80; 
       }
     }
@@ -1352,7 +1353,13 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     curvC1 = (to_send->RDHR & 0xFF);
     curvC2 = ((to_send->RDHR >> 8) & 0xFF);
     curvC3 = ((to_send->RDHR >> 16) & 0xFF);
-    laneRange = ((to_send->RDHR >> 24) & 0xFF);
+    laneRange = ((to_send->RDHR >> 24) & 0x3F) * 4;
+    tLeadClass = ((to_send->RDHR >> 30) & 0x03);
+    tLeadClass ++;
+    //we used 4 - bicycle for 5-pedestrian
+    if (tLeadClass == 4) {
+      tLeadClass = 5;
+    }
     return false;
   }
 
@@ -1592,6 +1599,13 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
 
     return;
   }
+  
+  /*if (addr == 0x175)
+  {
+    to_send.RIR = (0x169 << 21) + (addr_mask & (to_fwd->RIR | 1));
+    can_send(&to_send, bus_num);
+    return;
+  }*/
 
   if (addr == 0x118 )
   {
@@ -1618,7 +1632,7 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
 
     to_send.RIR = (0x175 << 21) + (addr_mask & (to_fwd->RIR | 1));
     //can_send(&to_send, 0);
-
+    
     return;
   }
   if (addr == 0x108 )
