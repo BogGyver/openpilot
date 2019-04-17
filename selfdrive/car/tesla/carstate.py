@@ -174,18 +174,25 @@ def get_epas_can_signals(CP):
       ("EPAS_handsOnLevel", "EPAS_sysStatus", 0),
       ("EPAS_steeringFault", "EPAS_sysStatus", 0),
       ("EPAS_internalSAS",  "EPAS_sysStatus", 0), #BB see if this works better than STW_ANGLHP_STAT for angle
+  ]
+
+  checks = [
+      ("EPAS_sysStatus", 7), #JCT Actual message freq is 1.3 Hz (0.76 sec)
+  ]
+
+  #checks = []
+  return signals, checks
+
+def get_pedal_can_signals(CP):
+# this function generates lists for signal, messages and initial values
+  signals = [
       ("INTERCEPTOR_GAS", "GAS_SENSOR", 0),
       ("INTERCEPTOR_GAS2", "GAS_SENSOR", 0),
       ("STATE", "GAS_SENSOR", 0),
       ("IDX", "GAS_SENSOR", 0),
   ]
 
-  checks = [
-      ("EPAS_sysStatus", 7), #JCT Actual message freq is 1.3 Hz (0.76 sec)
-      #("GAS_SENSOR", 50), # BB Actual message freq is 10 Hz (0.1 sec)
-  ]
-
-  #checks = []
+  checks = []
   return signals, checks
   
 def get_can_parser(CP):
@@ -196,6 +203,9 @@ def get_epas_parser(CP,epascan):
   signals, checks = get_epas_can_signals(CP)
   return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, epascan)
 
+def get_pedal_parser(CP):
+  signals, checks = get_pedal_can_signals(CP)
+  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 2)
 
 class CarState(object):
   def __init__(self, CP):
@@ -485,7 +495,7 @@ class CarState(object):
       subprocess.Popen(args, shell = False, stdin=None, stdout=None, stderr=None, env = dict(os.environ), close_fds=True)
 
 
-  def update(self, cp, epas_cp):
+  def update(self, cp, epas_cp, pedal_cp):
 
     # copy can_valid
     self.can_valid = cp.can_valid
@@ -602,9 +612,9 @@ class CarState(object):
     self.a_ego = float(v_ego_x[1])
 
     #BB use this set for pedal work as the user_gas_xx is used in other places
-    self.pedal_interceptor_state = epas_cp.vl["GAS_SENSOR"]['STATE']
-    self.pedal_interceptor_value = epas_cp.vl["GAS_SENSOR"]['INTERCEPTOR_GAS']
-    self.pedal_interceptor_value2 = epas_cp.vl["GAS_SENSOR"]['INTERCEPTOR_GAS2']
+    self.pedal_interceptor_state = pedal_cp.vl["GAS_SENSOR"]['STATE']
+    self.pedal_interceptor_value = pedal_cp.vl["GAS_SENSOR"]['INTERCEPTOR_GAS']
+    self.pedal_interceptor_value2 = pedal_cp.vl["GAS_SENSOR"]['INTERCEPTOR_GAS2']
 
     can_gear_shifter = cp.vl["DI_torque2"]['DI_gear']
     self.gear = 0 # JCT

@@ -609,7 +609,7 @@ class CarController(object):
       else:
         self.laneRange = CS.csaOfframpCurvRange
     else:
-      self.laneRange = 30
+      self.laneRange = 50
     self.laneRange = int(clip(self.laneRange,0,159))
     op_status = 0x02
     hands_on_state = 0x00

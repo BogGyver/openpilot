@@ -122,6 +122,10 @@ class Track(object):
     # Weigh y higher since radar is inaccurate in this dimension
     return [self.dRel, self.yRel*2, self.vRel]
 
+  def get_key_for_cluster_dy(self, dy):
+    # Weigh y higher since radar is inaccurate in this dimension
+    return [self.dRel, (self.yRel-dy)*2, self.vRel]
+
 
 # ******************* Cluster *******************
 if platform.machine() == 'aarch64':
@@ -280,7 +284,7 @@ class Cluster(object):
 
     return abs(d_path) < 1.5 and not self.stationary and not self.oncoming
 
-  def is_potential_lead_dx(self, v_ego,dx):
+  def is_potential_lead_dy(self, v_ego,dy):
     # predict cut-ins by extrapolating lateral speed by a lookahead time
     # lookahead time depends on cut-in distance. more attentive for close cut-ins
     # also, above 50 meters the predicted path isn't very reliable
@@ -292,7 +296,7 @@ class Cluster(object):
     t_lookahead_bp = [10., lookahead_dist]
 
     # average dist
-    d_path = self.dPath
+    d_path = self.dPath - dy
 
     # lat_corr used to be gated on enabled, now always running
     t_lookahead = interp(self.dRel, t_lookahead_bp, t_lookahead_v)

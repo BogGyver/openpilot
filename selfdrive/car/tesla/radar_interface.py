@@ -15,6 +15,8 @@ BOSCH_MAX_DIST = 150. #max distance for radar
 RADAR_A_MSGS = list(range(0x310, 0x36F , 3))
 RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
 OBJECT_MIN_PROBABILITY = 50.
+CLASS_MIN_PROBABILITY = 20.
+
 
 # Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
 # definetly switch to all objects when calibrating but most likely use select set of 5 for normal use
@@ -51,11 +53,13 @@ class RadarInterface(object):
     self.pts = {}
     self.delay = 0.1
     self.useTeslaRadar = CarSettings().get_value("useTeslaRadar")
+    self.TRACK_LEFT_LANE = True
+    self.TRACK_RIGHT_LANE = True
     if self.useTeslaRadar:
       self.pts = {}
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
       self.track_id = 0
-      self.delay = 0.0  # Delay of radar
+      self.delay = 0.05  # Delay of radar
       self.rcp = _create_radard_can_parser()
       context = zmq.Context()
       self.logcan = messaging.sub_sock(context, service_list['can'].port)
@@ -94,7 +98,9 @@ class RadarInterface(object):
 
         # radar point only valid if it's a valid measurement and score is above 50
         # bosch radar data needs to match Index and Index2 for validity
-        if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and (self.valid_cnt[ii] > 0) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) :
+        if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
+            (cpt['Index'] == self.rcp.vl[ii+1]['Index2']) and (self.valid_cnt[ii] > 0) and \
+            (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) :
           if ii not in self.pts and ( cpt['Tracked']):
             self.pts[ii] = car.RadarState.RadarPoint.new_message()
             self.pts[ii].trackId = self.track_id
@@ -110,7 +116,7 @@ class RadarInterface(object):
             self.pts[ii].movingState = self.rcp.vl[ii+1]['MovingState']
             self.pts[ii].length = self.rcp.vl[ii+1]['Length']
             self.pts[ii].obstacleProb = cpt['ProbObstacle']
-            if self.rcp.vl[ii+1]['Class'] > OBJECT_MIN_PROBABILITY:
+            if self.rcp.vl[ii+1]['Class'] >= CLASS_MIN_PROBABILITY:
               self.pts[ii].objectClass = self.rcp.vl[ii+1]['Class']
               # for now we will use class 0- unknown stuff to show trucks
               # we will base that on being a class 1 and length of 2 (hoping they meant width not length, but as germans could not decide)
@@ -118,7 +124,7 @@ class RadarInterface(object):
               # going to 0-unknown 1-truck 2-car 3/4-motorcycle/bicycle 5 pedestrian - we have two bits so
               if self.pts[ii].objectClass == 0:
                 self.pts[ii].objectClass = 1
-              if (self.pts[ii].objectClass == 1) and (self.pts[ii].length >= 1.8):
+              if (self.pts[ii].objectClass == 1) and ((self.pts[ii].length >= 1.8) or (1.6 < self.pts[ii].dz < 4.5)):
                 self.pts[ii].objectClass = 0
               if self.pts[ii].objectClass == 4:
                 self.pts[ii].objectClass = 1

@@ -134,6 +134,7 @@ def radard_thread(gctx=None):
 
     if md is not None:
       last_md_ts = md.logMonoTime
+    
 
     # *** get path prediction from the model ***
     MP.update(v_ego, md)
@@ -253,6 +254,80 @@ def radard_thread(gctx=None):
                       if c.is_potential_lead2(lead_clusters)]
     lead2_clusters.sort(key=lambda x: x.dRel)
     lead2_len = len(lead2_clusters)
+
+    #################################################################
+    #BB For Tesla integration we will also track Left and Right lanes
+    #################################################################
+    #LEFT LANE
+    if RI.TRACK_LEFT_LANE:
+      ll_track_pts = np.array([tracks[iden].get_key_for_cluster_dy(-MP.lane_width) for iden in idens])
+      # If we have multiple points, cluster them
+      if len(ll_track_pts) > 1:
+        ll_link = linkage_vector(ll_track_pts, method='centroid')
+        ll_cluster_idxs = fcluster(ll_link, 2.5, criterion='distance')
+        ll_clusters = [None]*max(ll_cluster_idxs)
+
+        for idx in xrange(len(ll_track_pts)):
+          ll_cluster_i = ll_cluster_idxs[idx]-1
+
+          if ll_clusters[ll_cluster_i] == None:
+            ll_clusters[ll_cluster_i] = Cluster()
+          ll_clusters[ll_cluster_i].add(tracks[idens[idx]])
+      elif len(ll_track_pts) == 1:
+        # TODO: why do we need this?
+        ll_clusters = [Cluster()]
+        ll_clusters[0].add(tracks[idens[0]])
+      else:
+        ll_clusters = []
+      if DEBUG:
+        for i in ll_clusters:
+          print(i)
+      # *** extract the lead car ***
+      ll_lead_clusters = [c for c in ll_clusters
+                      if c.is_potential_lead_dy(v_ego,-MP.lane_width)]
+      ll_lead_clusters.sort(key=lambda x: x.dRel)
+      ll_lead_len = len(ll_lead_clusters)
+
+      # *** extract the second lead from the whole set of leads ***
+      ll_lead2_clusters = [c for c in ll_lead_clusters
+                        if c.is_potential_lead2(ll_lead_clusters)]
+      ll_lead2_clusters.sort(key=lambda x: x.dRel)
+      ll_lead2_len = len(ll_lead2_clusters)
+    #RIGHT LANE
+    if RI.TRACK_RIGHT_LANE:
+      rl_track_pts = np.array([tracks[iden].get_key_for_cluster_dy(MP.lane_width) for iden in idens])
+      # If we have multiple points, cluster them
+      if len(rl_track_pts) > 1:
+        rl_link = linkage_vector(rl_track_pts, method='centroid')
+        rl_cluster_idxs = fcluster(rl_link, 2.5, criterion='distance')
+        rl_clusters = [None]*max(rl_cluster_idxs)
+
+        for idx in xrange(len(rl_track_pts)):
+          rl_cluster_i = rl_cluster_idxs[idx]-1
+
+          if rl_clusters[rl_cluster_i] == None:
+            rl_clusters[rl_cluster_i] = Cluster()
+          rl_clusters[rl_cluster_i].add(tracks[idens[idx]])
+      elif len(rl_track_pts) == 1:
+        # TODO: why do we need this?
+        rl_clusters = [Cluster()]
+        rl_clusters[0].add(tracks[idens[0]])
+      else:
+        rl_clusters = []
+      if DEBUG:
+        for i in rl_clusters:
+          print(i)
+      # *** extract the lead car ***
+      rl_lead_clusters = [c for c in rl_clusters
+                      if c.is_potential_lead_dy(v_ego,MP.lane_width)]
+      rl_lead_clusters.sort(key=lambda x: x.dRel)
+      rl_lead_len = len(rl_lead_clusters)
+
+      # *** extract the second lead from the whole set of leads ***
+      rl_lead2_clusters = [c for c in rl_lead_clusters
+                        if c.is_potential_lead2(rl_lead_clusters)]
+      rl_lead2_clusters.sort(key=lambda x: x.dRel)
+      rl_lead2_len = len(rl_lead2_clusters)
 
     # *** publish live20 ***
     dat = messaging.new_message()

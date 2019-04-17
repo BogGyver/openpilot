@@ -7,7 +7,7 @@ from common.realtime import sec_since_boot
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.drive_helpers import create_event, EventTypes as ET, get_events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
-from selfdrive.car.tesla.carstate import CarState, get_can_parser, get_epas_parser
+from selfdrive.car.tesla.carstate import CarState, get_can_parser, get_epas_parser, get_pedal_parser
 from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V_FOLLOWING
 
@@ -37,12 +37,19 @@ class CarInterface(object):
     self.brake_pressed_prev = False
     self.can_invalid_count = 0
 
-    self.cp = get_can_parser(CP)
-    self.epas_cp = get_epas_parser(CP,2)
+    
 
     # *** init the major players ***
     self.CS = CarState(CP)
     self.VM = VehicleModel(CP)
+
+    self.cp = get_can_parser(CP)
+    self.epas_cp = None
+    if self.CS.useWithoutHarness:
+      self.epas_cp = get_epas_parser(CP,0)
+    else:
+      self.epas_cp = get_epas_parser(CP,2)
+    self.pedal_cp = get_pedal_parser(CP)
 
     # sending if read only is False
     if sendcan is not None:
@@ -189,8 +196,9 @@ class CarInterface(object):
 
     self.cp.update(int(sec_since_boot() * 1e9), True)
     self.epas_cp.update(int(sec_since_boot() * 1e9), False)
+    self.pedal_cp.update(int(sec_since_boot() * 1e9), False)
 
-    self.CS.update(self.cp, self.epas_cp)
+    self.CS.update(self.cp, self.epas_cp, self.pedal_cp)
 
     # create message
     ret = car.CarState.new_message()

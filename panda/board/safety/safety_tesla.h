@@ -170,6 +170,7 @@ int DAS_inDrive_prev = 0;
 int DAS_ignitionOn = 0;
 int DAS_present = 0;
 int DAS_useTeslaRadar = 0;
+int DAS_noEpasHarness = 0;
 
 //fake DAS - last stalk data used to cancel
 uint32_t DAS_lastStalkL =0x00;
@@ -372,7 +373,9 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
         (((((DAS_steeringEnabled & controls_allowed & DAS_inDrive)  )<< 6) + DAS_steeringControl_idx) << 16);
     int cksm = add_tesla_cksm2(MLB, MHB, 0x488, 3);
     MLB = MLB + (cksm << 24);
-    send_fake_message(RIR,RDTR,4,0x488,2,MLB,MHB);
+    if (DAS_noEpasHarness == 0) {
+      send_fake_message(RIR,RDTR,4,0x488,2,MLB,MHB);
+    }
     send_fake_message(RIR,RDTR,4,0x488,0,MLB,MHB);
     DAS_steeringControl_idx ++;
     DAS_steeringControl_idx = DAS_steeringControl_idx % 16;
@@ -870,7 +873,11 @@ static void do_EPB_epasControl(uint32_t RIR, uint32_t RDTR) {
   MHB = 0x00;
   int cksm = add_tesla_cksm2(MLB, MHB, 0x214, 2);
   MLB = MLB + (cksm << 16);
-  send_fake_message(RIR,RDTR,3,0x214,2,MLB,MHB);
+  if (DAS_noEpasHarness == 0) {
+    send_fake_message(RIR,RDTR,3,0x214,2,MLB,MHB);
+  } else {
+    send_fake_message(RIR,RDTR,3,0x214,0,MLB,MHB);
+  }
   EPB_epasControl_idx++;
   EPB_epasControl_idx = EPB_epasControl_idx % 16;
 }
@@ -1387,6 +1394,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_025_steeringOverride = ((b1 >> 7) & 0x01);
     DAS_ldwStatus = (b2 & 0x07);
     DAS_useTeslaRadar = ((b2 >> 3) & 0x01);
+    DAS_noEpasHarness = ((b2 >> 4) & 0x01);
     return false;
   }
 
@@ -1708,7 +1716,11 @@ static int tesla_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd)
       int checksum = (((to_fwd->RDLR & 0xFF00) >> 8) + (to_fwd->RDLR & 0xFF) + 2) & 0xFF;
       to_fwd->RDLR = to_fwd->RDLR & 0xFFFF;
       to_fwd->RDLR = to_fwd->RDLR + (checksum << 16);
-      return 2;
+      if (DAS_noEpasHarness == 0) {
+        return 2;
+      } else {
+        return -1;
+      }
     }
 
     // remove EPB_epasControl
@@ -1717,7 +1729,11 @@ static int tesla_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd)
       return -1;
     }
 
-    return 2; // Custom EPAS bus
+    if (DAS_noEpasHarness == 0) {
+      return 2;
+    } else {
+      return -1;
+    }
   }
 
   if (bus_num == 1) {
@@ -1744,6 +1760,11 @@ static int tesla_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd)
       return -1;
     }
 
+    if (DAS_noEpasHarness == 0) {
+      return 0;
+    } else {
+      return -1;
+    }
     return 0; // Chassis CAN
   }
   return -1;
