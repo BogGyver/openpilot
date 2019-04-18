@@ -12,7 +12,7 @@ class HSOController(object):
         self.frame_humanSteered = 0
     
 
-    def update_stat(self,CS,enabled,actuators,frame):
+    def update_stat(self,CC,CS,enabled,actuators,frame):
         human_control = False
         if CS.enableHSO and enabled:
           #if steering but not by ALCA
@@ -39,4 +39,7 @@ class HSOController(object):
         #else:
         #    if CS.cstm_btns.get_button_status("steer") > 0:
         #      CS.cstm_btns.set_button_status("steer",1)
+        if (not human_control) and (CC.DAS_219_lcTempUnavailableSpeed == 1):
+          CC.DAS_219_lcTempUnavailableSpeed = 0
+          CC.warningNeeded = 1
         return human_control and enabled

@@ -17,6 +17,7 @@ import math
 import numpy as np
 from collections import OrderedDict
 from common.params import Params
+from selfdrive.car.tesla.movingaverage import MovingAverage
 
 
 _DT = 0.05    # 20Hz in our case, since we don't want to process more than once the same live20 message
@@ -24,10 +25,10 @@ _DT_MPC = 0.05  # 20Hz
 
 # TODO: these should end up in values.py at some point, probably variable by trim
 # Accel limits
-MAX_PEDAL_VALUE = 112.
+MAX_PEDAL_VALUE = 90.
 PEDAL_HYST_GAP = 1.0  # don't change pedal command for small oscilalitons within this value
-# Cap the pedal to go from 0 to max in 4 seconds
-PEDAL_MAX_UP = MAX_PEDAL_VALUE * _DT / 4
+# Cap the pedal to go from 0 to max in 5 seconds
+PEDAL_MAX_UP = MAX_PEDAL_VALUE * _DT / 5
 # Cap the pedal to go from max to 0 in 0.4 seconds
 PEDAL_MAX_DOWN = MAX_PEDAL_VALUE * _DT / 0.4
 
@@ -149,24 +150,7 @@ def max_v_in_mapped_curve_ms(map_data, pedal_set_speed_kph):
   else:
     return None
 
-def max_v_by_speed_limit(pedal_set_speed_ms ,speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset_ms,CS):
-  # if more than 10 kph / 2.78 ms, consider we have speed limit
-  if speed_limit_ms > 2.78:
-    if set_speed_limit_active:
-      v_speedlimit_ms = speed_limit_ms + speed_limit_offset_ms
-      sl1 = min(pedal_set_speed_ms,v_speedlimit_ms)
-      if CS.maxdrivespeed > 0 and CS.useTeslaMapData:
-        return min(sl1, CS.maxdrivespeed)
-      else:
-        return sl1
-    elif CS.maxdrivespeed >  0  and CS.useTeslaMapData:
-      return min(pedal_set_speed_ms, CS.maxdrivespeed)
-    else:
-      return pedal_set_speed_ms
-  elif CS.maxdrivespeed > 0  and CS.useTeslaMapData:
-    return min(pedal_set_speed_ms, CS.maxdrivespeed)
-  else:
-    return pedal_set_speed_ms
+
 
 class PCCState(object):
   # Possible state of the ACC system, following the DI_cruiseState naming
@@ -200,6 +184,8 @@ class PCCController(object):
     self.prev_pcm_acc_status = 0
     self.prev_cruise_buttons = CruiseButtons.IDLE
     self.pedal_speed_kph = 0.
+    self.speed_limit_kph = 0.
+    self.prev_speed_limit_kph = 0.
     self.pedal_idx = 0
     self.pedal_steady = 0.
     self.prev_tesla_accel = 0.
@@ -234,6 +220,23 @@ class PCCController(object):
     self.lead_last_seen_time_ms = 0
     self.continuous_lead_sightings = 0
     self.params = Params()
+    self.average_speed_over_x_suggestions = 20 #2 seconds.... 10x a second
+    self.maxsuggestedspeed_avg = MovingAverage(self.average_speed_over_x_suggestions)
+
+  def max_v_by_speed_limit(self,pedal_set_speed_ms ,speed_limit_ms, CS):
+    # if more than 10 kph / 2.78 ms, consider we have speed limit
+    if (CS.maxdrivespeed > 0)  and CS.useTeslaMapData and (CS.mapAwareSpeed or (CS.baseMapSpeedLimitMPS <2.7)):
+      #do we know the based speed limit?
+      sl1 = 0.
+      if CS.baseMapSpeedLimitMPS >= 2.7:
+        #computer adjusted maxdrive based on set speed
+        sl1 = min (speed_limit_ms *  CS.maxdrivespeed / CS.baseMapSpeedLimitMPS, speed_limit_ms)
+        sl1 = self.maxsuggestedspeed_avg.add(sl1)
+      else:
+        sl1 = self.maxsuggestedspeed_avg.add(CS.maxdrivespeed)
+      return min(pedal_set_speed_ms, sl1)
+    else:
+      return pedal_set_speed_ms
 
   def reset(self, v_pid):
     if self.LoC:
@@ -296,7 +299,7 @@ class PCCController(object):
         self.enable_pedal_cruise = True
         self.LoC.reset(CS.v_ego)
         # Increase PCC speed to match current, if applicable.
-        self.pedal_speed_kph = max(CS.v_ego * CV.MS_TO_KPH, self.pedal_speed_kph)
+        self.pedal_speed_kph = max(CS.v_ego * CV.MS_TO_KPH, self.speed_limit_kph)
     # Handle pressing the cancel button.
     elif CS.cruise_buttons == CruiseButtons.CANCEL:
       self.enable_pedal_cruise = False
@@ -352,6 +355,13 @@ class PCCController(object):
     cur_time = sec_since_boot()
     FOLLOW_TIME_S = CS.apFollowDistance
     idx = self.pedal_idx
+    self.prev_speed_limit_kph = self.speed_limit_kph
+    if speed_limit_valid and set_speed_limit_active and (speed_limit_ms > 2.7):
+      self.speed_limit_kph = (speed_limit_ms +  speed_limit_offset) * CV.MS_TO_KPH
+      if not (int(self.prev_speed_limit_kph) == int(self.speed_limit_kph)):
+        self.pedal_speed_kph = self.speed_limit_kph
+        #also reset maxsuggestedspeed_avg
+        self.maxsuggestedspeed_avg.reset()
     self.pedal_idx = (self.pedal_idx + 1) % 16
     if not CS.pedal_interceptor_available or not enabled:
       return 0., 0, idx
@@ -392,14 +402,14 @@ class PCCController(object):
         if v_curve:
           self.v_pid = min(self.v_pid, v_curve)
       # now check and do the limit vs speed limit + offset
-      self.v_pid = max_v_by_speed_limit(self.v_pid ,speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset,CS)
+      self.v_pid = self.max_v_by_speed_limit(self.v_pid ,self.pedal_speed_kph * CV.KPH_TO_MS, CS)
       # cruise speed can't be negative even is user is distracted
       self.v_pid = max(self.v_pid, 0.)
 
       enabled = self.enable_pedal_cruise and self.LoC.long_control_state in [LongCtrlState.pid, LongCtrlState.stopping]
 
       if self.enable_pedal_cruise:
-        jerk_min, jerk_max = _jerk_limits(CS.v_ego, self.lead_1, self.pedal_speed_kph, self.lead_last_seen_time_ms)
+        jerk_min, jerk_max = _jerk_limits(CS.v_ego, self.lead_1, self.v_pid * CV.MS_TO_KPH, self.lead_last_seen_time_ms)
         self.v_cruise, self.a_cruise = speed_smoother(self.v_acc_start, self.a_acc_start,
                                                       self.v_pid,
                                                       accel_max, brake_max,
@@ -654,7 +664,7 @@ def _jerk_limits(v_ego, lead, max_speed_kph, lead_last_seen_time_ms):
     (0, 0.18),
     (9, 0.10)])
   accel_jerk = _interp_map(v_ego, accel_jerk_by_speed)
-
+  
   # prevent high accel jerk near max speed
   near_max_speed_multipliers = OrderedDict([
     # (kph under max speed, accel jerk multiplier)
@@ -662,7 +672,7 @@ def _jerk_limits(v_ego, lead, max_speed_kph, lead_last_seen_time_ms):
     (4, 1.0)])
   near_max_speed_multiplier = _interp_map(max_speed_kph - v_ego * CV.MS_TO_KPH, near_max_speed_multipliers)
   accel_jerk *= near_max_speed_multiplier
-
+  
   if _is_present(lead):
     # pick decel jerk based on how much time we have til collision
     decel_jerk_map = OrderedDict([
@@ -673,7 +683,7 @@ def _jerk_limits(v_ego, lead, max_speed_kph, lead_last_seen_time_ms):
       (8, -0.001)])
     decel_jerk = _interp_map(_sec_til_collision(lead), decel_jerk_map)
     safe_dist_m = _safe_distance_m(v_ego) 
-    distance_multipliers  = OrderedDict([
+    distance_multipliers = OrderedDict([
       # (distance in m, accel jerk)
       (0.8 * safe_dist_m, 0.01),
       (2.8 * safe_dist_m, 1.00)])
@@ -692,5 +702,5 @@ def _jerk_limits(v_ego, lead, max_speed_kph, lead_last_seen_time_ms):
       (2000, 1.0)])
     time_since_lead_seen_multiplier = _interp_map(time_since_lead_seen_ms, time_since_lead_seen_multipliers)
     accel_jerk *= time_since_lead_seen_multiplier
-
+    
     return decel_jerk, accel_jerk

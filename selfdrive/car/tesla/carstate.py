@@ -52,13 +52,16 @@ def get_can_signals(CP):
       ("MCU_userSpeedOffset", "MCU_gpsVehicleSpeed", 0),
       ("MCU_userSpeedOffsetUnits", "MCU_gpsVehicleSpeed", 0),
       ("MCU_mppSpeedLimit", "MCU_gpsVehicleSpeed", 0),
-      ("MCU_speedLimitUnits", "MCU_gpsVehicleSpeed", 0),
+      ("MCU_mapSpeedLimitUnits", "MCU_gpsVehicleSpeed", 0),
       ("MCU_gpsAccuracy", "MCU_locationStatus", 0),
       ("MCU_latitude", "MCU_locationStatus", 0),
       ("MCU_longitude", "MCU_locationStatus", 0),
       ("MCU_elevation", "MCU_locationStatus2", 0),
       ("MCU_latControlEnable", "MCU_chassisControl", 0),
       ("MCU_fcwSensitivity", "MCU_chassisControl", 0),
+      ("MCU_ldwEnable", "MCU_chassisControl", 0),
+      ("MCU_aebEnable", "MCU_chassisControl", 0),
+      ("MCU_pedalSafetyEnable", "MCU_chassisControl", 0),
       #("StW_AnglHP", "STW_ANGLHP_STAT", 0),
       ("DI_gear", "DI_torque2", 3),
       ("DI_brakePedal", "DI_torque2", 0),
@@ -140,6 +143,7 @@ def get_can_signals(CP):
       ("UI_splineLocConfidence", "UI_driverAssistRoadSign", 0),
       ("UI_baseMapSpeedLimitMPS", "UI_driverAssistRoadSign", 0),
       ("UI_bottomQrtlFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
+      ("UI_rampType", "UI_driverAssistRoadSign", 0),
 
       
   ]
@@ -233,6 +237,9 @@ class CarState(object):
 
     self.apEnabled = True
     self.apFollowDistance =  2.5 #time in seconds to follow
+    self.keepEonOff = False
+    self.alcaEnabled = True
+    self.mapAwareSpeed = False
 
     # for map integration
     self.csaRoadCurvC3 = 0.
@@ -262,6 +269,7 @@ class CarState(object):
     self.splineLocConfidence = 0
     self.baseMapSpeedLimitMPS = 0.
     self.bottomQrtlFleetSpeedMPS = 0.
+    self.rampType = 0
 
     self.mapBasedSuggestedSpeed = 0.
     self.splineBasedSuggestedSpeed = 0.
@@ -376,7 +384,6 @@ class CarState(object):
     self.DAS_control_idx = 0
 
     #BB notification messages for DAS
-    self.DAS_noSeatbelt = 0
     self.DAS_canErrors = 0
     self.DAS_plannerErrors = 0
     self.DAS_doorOpen = 0
@@ -445,6 +452,28 @@ class CarState(object):
     btn.btn_status = 1
     self.cstm_btns.update_ui_buttons(1, 1)    
 
+  def compute_speed(self):
+    # if one of them is zero, select max of the two
+    if self.meanFleetSplineSpeedMPS == 0 or self.medianFleetSpeedMPS == 0:
+      self.splineBasedSuggestedSpeed = max(self.meanFleetSplineSpeedMPS,self.medianFleetSpeedMPS)
+    else:
+      self.splineBasedSuggestedSpeed = (self.splineLocConfidence * self.meanFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.medianFleetSpeedMPS ) / 100
+    # if confidence over 60%, then weight between bottom speed and top speed
+    # if less than 40% then use map data
+    if self.splineLocConfidence > 60:
+      self.mapBasedSuggestedSpeed = (self.splineLocConfidence * self.topQrtlFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.bottomQrtlFleetSpeedMPS ) / 100
+    else:
+      self.mapBasedSuggestedSpeed = self.baseMapSpeedLimitMPS
+    if self.rampType > 0:
+      #we are on a ramp, use the spline info if available
+      if self.splineBasedSuggestedSpeed > 0:
+        self.maxdrivespeed = self.splineBasedSuggestedSpeed
+      else:
+        self.maxdrivespeed = self.mapBasedSuggestedSpeed
+    else:
+      #we are on a normal road, use max of the two
+      self.maxdrivespeed = max(self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed)
+
   def update_ui_buttons(self,id,btn_status):
     # we only focus on id=3, which is for visiond
     if (id == 3) and (self.cstm_btns.btns[id].btn_status > 0) and (self.last_visiond != self.cstm_btns.btns[id].btn_label2):
@@ -509,14 +538,17 @@ class CarState(object):
 
     if (self.hasTeslaIcIntegration):
       self.apEnabled = (cp.vl["MCU_chassisControl"]["MCU_latControlEnable"] == 1)
-      self.apFollowDistance =  1 + (3 - cp.vl["MCU_chassisControl"]["MCU_fcwSensitivity"]) * 0.5
+      self.apFollowDistance =  1 + cp.vl["MCU_chassisControl"]["MCU_fcwSensitivity"] * 0.5
+      self.keepEonOff = cp.vl["MCU_chassisControl"]["MCU_ldwEnable"] == 1
+      self.alcaEnabled = cp.vl["MCU_chassisControl"]["MCU_pedalSafetyEnable"] == 1
+      self.mapAwareSpeed = cp.vl["MCU_chassisControl"]["MCU_aebEnable"] == 1
 
     usu = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffsetUnits"]
     if usu == 1:
       self.userSpeedLimitOffsetKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffset"]
     else:
       self.userSpeedLimitOffsetKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffset"] * CV.MPH_TO_KPH
-    msu = cp.vl['MCU_gpsVehicleSpeed']["MCU_speedLimitUnits"]
+    msu = cp.vl['MCU_gpsVehicleSpeed']["MCU_mapSpeedLimitUnits"]
     if msu == 1:
       self.userSpeedLimitKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_mppSpeedLimit"]
     else:
@@ -533,26 +565,15 @@ class CarState(object):
       self.meanFleetSplineAccelMPS2  = cp.vl["UI_driverAssistRoadSign"]["UI_meanFleetSplineAccelMPS2"]
       self.medianFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_medianFleetSpeedMPS"]
       self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
-      # if one of them is zero, select max of the two
-      if self.meanFleetSplineSpeedMPS == 0 or self.medianFleetSpeedMPS == 0:
-        self.splineBasedSuggestedSpeed = max(self.meanFleetSplineSpeedMPS,self.medianFleetSpeedMPS)
-      else:
-        self.splineBasedSuggestedSpeed = (self.splineLocConfidence * self.meanFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.medianFleetSpeedMPS ) / 100
+      self.rampType = cp.vl["UI_driverAssistRoadSign"]["UI_rampType"]
+      
     if rdSignMsg == 3:
       self.topQrtlFleetSplineSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_topQrtlFleetSpeedMPS"]
       self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
       self.baseMapSpeedLimitMPS = cp.vl["UI_driverAssistRoadSign"]["UI_baseMapSpeedLimitMPS"]
       self.bottomQrtlFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_bottomQrtlFleetSpeedMPS"]
-      # if confidence over 60%, then weight between bottom speed and top speed
-      # if less than 40% then use map data
-      if self.splineLocConfidence > 60:
-        self.mapBasedSuggestedSpeed = (self.splineLocConfidence * self.topQrtlFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.bottomQrtlFleetSpeedMPS ) / 100
-      else:
-        self.mapBasedSuggestedSpeed = self.baseMapSpeedLimitMPS
-    if self.mapBasedSuggestedSpeed > 0 and self.splineBasedSuggestedSpeed > 0:
-      self.maxdrivespeed = min(self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed)
-    else:
-      self.maxdrivespeed = max(self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed)
+    
+    self.compute_speed()
 
     # 2 = temporary 3= TBD 4 = temporary, hit a bump 5 (permanent) 6 = temporary 7 (permanent)
     # TODO: Use values from DBC to parse this field

@@ -279,10 +279,10 @@ static void set_brightness(UIState *s, int brightness) {
 static void set_awake(UIState *s, bool awake) {
   if (awake) {
     // 30 second timeout at 30 fps
-    if (s->b.tri_state_switch != 3) {
-      s->awake_timeout = 30*30;
-    } else {
+    if ((s->b.tri_state_switch == 3) || (s->b.keepEonOff)) {
       s->awake_timeout = 3*30;
+    } else {
+      s->awake_timeout = 30*30;
     }
   }
   if (s->awake != awake) {
@@ -1677,7 +1677,7 @@ static void ui_update(UIState *s) {
         polls[3].revents || polls[4].revents || polls[6].revents ||
         polls[7].revents || polls[8].revents) {
       // awake on any (old) activity if tri-state in 1 or 2 position
-      if(s->b.tri_state_switch != 3) {
+      if((s->b.tri_state_switch != 3) && (!s->b.keepEonOff)){
         set_awake(s, true);
       } 
     }

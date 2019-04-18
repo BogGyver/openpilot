@@ -8,7 +8,8 @@ import subprocess
 import sys
 import time
 import zmq
-  
+from selfdrive.car.tesla.movingaverage import MovingAverage
+ 
 
 class ACCState(object):
   # Possible states of the ACC system, following the DI_cruiseState naming
@@ -53,26 +54,6 @@ class ACCMode(object):
 def _current_time_millis():
   return int(round(time.time() * 1000))
 
-def max_v_by_speed_limit(acc_set_speed_kph ,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset,CS):
-  # if more than 10 kph / 2.78 ms, consider we have speed limit
-  if speed_limit_kph > 10:
-    if set_speed_limit_active:
-      v_speedlimit = speed_limit_kph + speed_limit_offset
-      sl1 = min(acc_set_speed_kph,v_speedlimit)
-      if CS.maxdrivespeed > 0 and CS.useTeslaMapData:
-        return min(sl1, CS.maxdrivespeed * CV.MS_TO_KPH)
-      else:
-        return sl1
-    elif CS.maxdrivespeed > 0  and CS.useTeslaMapData:
-      return min(acc_set_speed_kph, CS.maxdrivespeed * CV.MS_TO_KPH)
-    else:
-      return acc_set_speed_kph
-  elif CS.maxdrivespeed > 0  and CS.useTeslaMapData:
-    return min(acc_set_speed_kph, CS.maxdrivespeed * CV.MS_TO_KPH)
-  else:
-    return acc_set_speed_kph
-
-
 
 class ACCController(object):
   
@@ -96,12 +77,16 @@ class ACCController(object):
     self.prev_cruise_buttons = CruiseButtons.IDLE
     self.prev_pcm_acc_status = 0
     self.acc_speed_kph = 0.
+    self.speed_limit_kph = 0.
+    self.prev_speed_limit_kph = 0.
     self.user_has_braked = False
     self.has_gone_below_min_speed = False
     self.fast_decel_time = 0
     self.lead_last_seen_time_ms = 0
     # BB speed for testing
     self.new_speed = 0
+    self.average_speed_over_x_suggestions = 20 #2 seconds.... 10x a second
+    self.maxsuggestedspeed_avg = MovingAverage(self.average_speed_over_x_suggestions)
 
   # Updates the internal state of this controller based on user input,
   # specifically the steering wheel mounted cruise control stalk, and OpenPilot
@@ -129,7 +114,7 @@ class ACCController(object):
         # A double pull enables ACC. updating the max ACC speed if necessary.
         self.enable_adaptive_cruise = True
         # Increase ACC speed to match current, if applicable.
-        self.acc_speed_kph = max(CS.v_ego_raw * CV.MS_TO_KPH, self.acc_speed_kph)
+        self.acc_speed_kph = max(CS.v_ego_raw * CV.MS_TO_KPH, self.speed_limit_kph)
         self.user_has_braked = False
         self.has_gone_below_min_speed = False
       else:
@@ -195,11 +180,30 @@ class ACCController(object):
     self.acc_speed_kph = min(self.acc_speed_kph, 170)
     self.acc_speed_kph = max(self.acc_speed_kph, 0)
 
+  def max_v_by_speed_limit(self,acc_set_speed_ms ,speed_limit_ms, CS):
+    # if more than 10 kph / 2.78 ms, consider we have speed limit
+    if (CS.maxdrivespeed > 0)  and CS.useTeslaMapData and (CS.mapAwareSpeed or (CS.baseMapSpeedLimitMPS <2.7)):
+      #do we know the based speed limit?
+      sl1 = 0.
+      if CS.baseMapSpeedLimitMPS >= 2.7:
+        #computer adjusted maxdrive based on set speed
+        sl1 = min (speed_limit_ms *  CS.maxdrivespeed / CS.baseMapSpeedLimitMPS, speed_limit_ms)
+        sl1 = self.maxsuggestedspeed_avg.add(sl1)
+      else:
+        sl1 = self.maxsuggestedspeed_avg.add(CS.maxdrivespeed)
+      return min(acc_set_speed_ms, sl1)
+    else:
+      return acc_set_speed_ms
     
   # Decide which cruise control buttons to simluate to get the car to the
   # desired speed.
   def update_acc(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset):
     # Adaptive cruise control
+    self.prev_speed_limit_kph = self.speed_limit_kph
+    if speed_limit_valid and set_speed_limit_active and (speed_limit_kph >= 10):
+      self.speed_limit_kph = speed_limit_kph +  speed_limit_offset
+      if not (int(self.prev_speed_limit_kph) == int(self.speed_limit_kph)):
+        self.acc_speed_kph = self.speed_limit_kph
     current_time_ms = _current_time_millis()
     if CruiseButtons.should_be_throttled(CS.cruise_buttons):
       self.human_cruise_action_time = current_time_ms
@@ -257,7 +261,7 @@ class ACCController(object):
     # Relative velocity between the lead car and our set cruise speed.
     future_vrel_kph = lead_speed_kph - CS.v_cruise_actual
     # How much we can accelerate without exceeding the max allowed speed.
-    max_acc_speed_kph = max_v_by_speed_limit(self.acc_speed_kph, speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset,CS)
+    max_acc_speed_kph = self.max_v_by_speed_limit(self.acc_speed_kph * CV.KPH_TO_MS, self.speed_limit_kph * CV.KPH_TO_MS, CS) * CV.MS_TO_KPH
     available_speed_kph = max_acc_speed_kph - CS.v_cruise_actual
     half_press_kph, full_press_kph = self._get_cc_units_kph(CS.imperial_speed_units)
     # button to issue

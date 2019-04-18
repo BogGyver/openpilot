@@ -61,4 +61,5 @@ typedef struct BBUIState {
     int batteryPercent;
     bool chargingEnabled;
     uint16_t fanSpeed;
+    bool keepEonOff;
 } BBUIState;

@@ -1133,7 +1133,14 @@ void bb_ui_read_triState_switch( UIState *s) {
     if (strcmp(s->b.btns[2].btn_label2,"GYRO")==0) {
       s->b.tri_state_switch = 4;
     }
-    
+    int i = bb_get_button_status(s,"dsp");
+    if (i==9) {
+      s->b.keepEonOff = true;
+      s->awake_timeout = min(s->awake_timeout,3*30);
+    } else {
+      s->b.keepEonOff = false;
+      s->awake_timeout = min(s->awake_timeout,30*30);
+    }
   }
 }
 

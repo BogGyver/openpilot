@@ -114,7 +114,7 @@ int DAS_acc_state = 0x00;
 int DAS_jerk_min = 0x000;
 int DAS_jerk_max = 0x0F;
 int DAS_gas_to_resume = 0;
-int DAS_apUnavailable = 0;
+int DAS_206_apUnavailable = 0;
 //fake DAS for DAS_status and DAS_status2
 int DAS_op_status = 1;
 int DAS_op_status_last_received = 1;
@@ -131,6 +131,7 @@ int tLeadDx = 0;
 int tLeadDy = 0;
 int rLine = 0;
 int lLine = 0;
+int lWidth = 29;
 int curvC0 = 0x64;
 int curvC1 = 0x7F;
 int curvC2 = 0x7F;
@@ -175,11 +176,19 @@ uint32_t DAS_diStateL =0x00;
 uint32_t DAS_diStateH = 0x00;
 
 //fake DAS - warning messages
-int DAS_noSeatbelt = 0x00;
+int DAS_211_accNoSeatBelt = 0x00;
 int DAS_canErrors = 0x00;
-int DAS_plannerErrors = 0x00;
+int DAS_202_noisyEnvironment = 0x00;
 int DAS_doorOpen = 0x00;
 int DAS_notInDrive = 0x00;
+int DAS_222_accCameraBlind = 0x00;
+int DAS_219_lcTempUnavailableSpeed = 0x00;
+int DAS_220_lcTempUnavailableRoad = 0x00;
+int DAS_207_lkasUnavailable = 0x00;
+int DAS_208_rackDetected = 0x00;
+int DAS_025_steeringOverride = 0x00;
+int DAS_221_lcAborting = 0x00;
+
 
 static int add_tesla_crc(uint32_t MLB, uint32_t MHB , int msg_len) {
   //"""Calculate CRC8 using 1D poly, FF start, FF end"""
@@ -292,7 +301,7 @@ static void reset_DAS_data() {
   DAS_jerk_min = 0x000;
   DAS_jerk_max = 0x0F;
   DAS_gas_to_resume = 0;
-  DAS_apUnavailable = 0;
+  DAS_206_apUnavailable = 0;
   DAS_op_status = 1; //unavailable
   DAS_alca_state = 0x05;
   DAS_hands_on_state = 0;
@@ -318,6 +327,18 @@ static void reset_DAS_data() {
   DAS_pedalPressed = 0;
   DAS_diStateL =0x00;
   DAS_diStateH = 0x00;
+  DAS_211_accNoSeatBelt = 0x00;
+  DAS_canErrors = 0x00;
+  DAS_202_noisyEnvironment = 0x00;
+  DAS_doorOpen = 0x00;
+  DAS_notInDrive = 0x00;
+  DAS_222_accCameraBlind = 0x00;
+  DAS_219_lcTempUnavailableSpeed = 0x00;
+  DAS_220_lcTempUnavailableRoad = 0x00;
+  DAS_207_lkasUnavailable = 0x00;
+  DAS_208_rackDetected = 0x00;
+  DAS_025_steeringOverride = 0x00;
+  DAS_221_lcAborting = 0x00;
 }
 
 
@@ -577,7 +598,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     //send DAS_lanes - 0x239
     //for now fixed 0x33,0xC8,0xF0,0x7F,0x70,0x70,0x33,(idx << 4)+0x0F
     int fuse = 2;
-    MLB = 0x00000030 + (rLine << 1) + lLine + (laneRange << 8) + (curvC0 << 16) + (curvC1  << 24);
+    MLB = (lWidth << 4) + (rLine << 1) + lLine + (laneRange << 8) + (curvC0 << 16) + (curvC1  << 24);
     MHB = 0x0F000000 + (DAS_lanes_idx << 28) + curvC2 + (curvC3 << 8) + ((((rLine * fuse) << 2) + (lLine * fuse)) << 16);
     send_fake_message(RIR,RDTR,8,0x239,0,MLB,MHB);
     DAS_lanes_idx ++;
@@ -771,7 +792,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
   }
   if (fake_DAS_counter % 100 == 45) {
     //send DAS_warningMatrix0 - 0x329
-    MLB = 0x00 + bitShift(DAS_canErrors,4,7);
+    MLB = 0x00 + bitShift(DAS_canErrors,4,7) + bitShift(DAS_025_steeringOverride,4,1);
     MHB = 0x00 + bitShift(DAS_notInDrive,2,2);
     send_fake_message(RIR,RDTR,8,0x329,0,MLB,MHB);
     DAS_warningMatrix0_idx ++;
@@ -797,9 +818,11 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     if ((DAS_cc_state == 2) && (DAS_pedalPressed > 10)) {
       ovr = 1;
     }
-    MLB = 0x00 + bitShift(DAS_gas_to_resume,1,2) +  bitShift(DAS_apUnavailable,2,6)  + bitShift(ovr,3,8) +
-         bitShift(lcAborting,2,1) + bitShift(lcUnavailableSpeed,4,3) + bitShift(DAS_noSeatbelt,3,3) + bitShift(DAS_plannerErrors,4,6) +
-         bitShift(stopSignWarning,1,4) + bitShift(stopLightWarning,1,5);
+
+    MLB = 0x00 + bitShift(DAS_gas_to_resume,1,2) +  bitShift(DAS_206_apUnavailable,2,6)  + bitShift(ovr,3,8) +
+         bitShift(lcAborting,2,1) + bitShift(lcUnavailableSpeed,4,3) + bitShift(DAS_211_accNoSeatBelt,3,3) + bitShift(DAS_202_noisyEnvironment,4,6) +
+         bitShift(stopSignWarning,1,4) + bitShift(stopLightWarning,1,5) + bitShift(DAS_207_lkasUnavailable,2,7) + bitShift(DAS_219_lcTempUnavailableSpeed,4,3) +
+         bitShift(DAS_220_lcTempUnavailableRoad,4,4) + bitShift(DAS_221_lcAborting,4,5) + bitShift(DAS_222_accCameraBlind,4,6) + bitShift(DAS_208_rackDetected,2,8);
     MHB = 0x00;
     send_fake_message(RIR,RDTR,8,0x349,0,MLB,MHB);
     DAS_warningMatrix3_idx ++;
@@ -1271,8 +1294,9 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
   if (addr == 0x557) {
     tLeadDx = (to_send->RDLR & 0xFF);
     tLeadDy = ((to_send->RDLR >> 8) & 0xFF);
-    rLine = ((to_send->RDLR >> 16) & 0x0F);
-    lLine = ((to_send->RDLR >> 20) & 0x0F);
+    rLine = ((to_send->RDLR >> 16) & 0x01);
+    lLine = ((to_send->RDLR >> 17) & 0x01);
+    lWidth = ((to_send->RDLR >> 20) & 0x0F);
     curvC0 = ((to_send->RDLR >> 24) & 0xFF);
     curvC1 = (to_send->RDHR & 0xFF);
     curvC2 = ((to_send->RDHR >> 8) & 0xFF);
@@ -1286,15 +1310,22 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
   if (addr == 0x554) {
     int b0 = (to_send->RDLR & 0xFF); 
     int b1 = ((to_send->RDLR >> 8) & 0xFF);
-    DAS_noSeatbelt = ((b0 >> 4) & 0x01);
+    DAS_211_accNoSeatBelt = ((b0 >> 4) & 0x01);
     DAS_canErrors = ((b0 >> 3) & 0x01);
-    DAS_plannerErrors = ((b0 >> 2) & 0x01);
+    DAS_202_noisyEnvironment = ((b0 >> 2) & 0x01);
     DAS_doorOpen = ((b0 >> 1) & 0x01);
     DAS_notInDrive = ((b0 >> 0) & 0x01);
     enable_das_emulation = ((b0 >> 5) & 0x01);
     enable_radar_emulation = ((b0 >> 6) & 0x01);
     stopLightWarning = ((b0 >> 7) & 0x01);
     stopSignWarning = ((b1 >> 0) & 0x01);
+    DAS_222_accCameraBlind = ((b1 >> 1) & 0x01); //we will not override the one set in 0x553
+    DAS_219_lcTempUnavailableSpeed = ((b1 >> 2) & 0x01);
+    DAS_220_lcTempUnavailableRoad = ((b1 >> 3) & 0x01);
+    DAS_221_lcAborting = ((b1 >> 4) & 0x01);
+    DAS_207_lkasUnavailable = ((b1 >> 5) & 0x01);
+    DAS_208_rackDetected = ((b1 >> 6) & 0x01);
+    DAS_025_steeringOverride = ((b1 >> 7) & 0x01);
     return false;
   }
 
@@ -1313,7 +1344,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_acc_speed_limit_mph = b4;
     DAS_longC_enabled = ((b0 & 0x80) >> 7);
     DAS_gas_to_resume = ((b0 & 0x40) >> 6);
-    DAS_apUnavailable = ((b0 & 0x20) >> 5);
+    DAS_206_apUnavailable = ((b0 & 0x20) >> 5);
     DAS_collision_warning = ((b0 & 0x10) >> 4);
     DAS_op_status = (b0 & 0x0F);
     DAS_turn_signal_request = ((b2 & 0xC0) >> 6);

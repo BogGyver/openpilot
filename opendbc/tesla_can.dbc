@@ -280,14 +280,16 @@ BO_ 643 BODY_R1: 8 GTW
  SG_ VTA_Alm_Actv : 13|1@0+ (1,0) [0|1] ""  NEO
  SG_ WprOutsdPkPosn : 29|1@0+ (1,0) [0|1] ""  NEO
 
-BO_ 760 MCU_gpsVehicleSpeed: 8 MCU
- SG_ MCU_gpsHDOP : 0|8@1+ (0.1,0) [0|25.5] "1"  NEO
- SG_ MCU_gpsVehicleHeading : 8|16@1+ (0.00781,0) [0|511.82835] "deg"  NEO
- SG_ MCU_gpsVehicleSpeed : 24|16@1+ (0.00391,0) [0|256.24185] "km/hr"  NEO
- SG_ MCU_mppSpeedLimit : 51|5@1+ (5,0) [0|155] "kph/mph" NEO
- SG_ MCU_speedLimitUnits : 41|1@1+ (1,0) [-1|2] ""  NEO
- SG_ MCU_userSpeedOffset : 42|6@1+ (1,-30) [-30|33] "kph/mph" NEO
- SG_ MCU_userSpeedOffsetUnits : 40|1@1+ (1,0) [-1|2] ""  NEO
+BO_ 760 MCU_gpsVehicleSpeed: 8 GTW
+ SG_ MCU_gpsHDOP : 0|8@1+ (0.1,0) [0|25.5] "1" DAS
+ SG_ MCU_gpsVehicleHeading : 8|16@1+ (0.0078125,0) [0|511.9921875] "deg" DAS
+ SG_ MCU_gpsVehicleSpeed : 24|16@1+ (0.00390625,0) [0|250.996] "km/hr" DAS
+ SG_ MCU_userSpeedOffset : 40|6@1+ (1,-30) [-30|33] "kph/mph" DAS
+ SG_ MCU_mapSpeedLimitUnits : 46|1@1+ (1,0) [0|1] "" DAS
+ SG_ MCU_userSpeedOffsetUnits : 47|1@1+ (1,0) [0|1] "" DAS
+ SG_ MCU_mppSpeedLimit : 48|5@1+ (5,0) [0|155] "kph/mph" DAS
+ SG_ MCU_gpsNmeaMIA : 53|1@1+ (1,0) [0|0] "" DAS
+ SG_ MCU_gpsAntennaDisconnected : 54|1@1+ (1,0) [0|0] "" DAS
 
 BO_ 536 MCU_chassisControl: 8 GTW
  SG_ MCU_dasDebugEnable : 0|1@1+ (1,0) [0|0] "" NEO
