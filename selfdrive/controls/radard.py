@@ -13,7 +13,7 @@ from selfdrive.controls.lib.radar_helpers import Track, Cluster, fcluster, \
                                                  RDR_TO_LDR, NO_FUSION_SCORE
 from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.swaglog import cloudlog
-from cereal import car
+from cereal import car,ui
 from common.params import Params
 from common.realtime import set_realtime_priority, Ratekeeper
 from common.kalman.ekf import EKF, SimpleSensor
@@ -67,6 +67,7 @@ def radard_thread(gctx=None):
   poller = zmq.Poller()
   model = messaging.sub_sock(context, service_list['model'].port, conflate=True, poller=poller)
   live100 = messaging.sub_sock(context, service_list['live100'].port, conflate=True, poller=poller)
+  
 
   MP = ModelParser()
   RI = RadarInterface(CP)
@@ -77,7 +78,9 @@ def radard_thread(gctx=None):
   # *** publish live20 and liveTracks
   live20 = messaging.pub_sock(context, service_list['live20'].port)
   liveTracks = messaging.pub_sock(context, service_list['liveTracks'].port)
-
+  icCarLR = None
+  if RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE:
+    icCarLR = messaging.pub_sock(context, service_list['uiIcCarLR'].port)
   path_x = np.arange(0.0, 140.0, 0.1)    # 140 meters is max
 
   # Time-alignment
@@ -293,6 +296,34 @@ def radard_thread(gctx=None):
                         if c.is_potential_lead2(ll_lead_clusters)]
       ll_lead2_clusters.sort(key=lambda x: x.dRel)
       ll_lead2_len = len(ll_lead2_clusters)
+      # publish data
+      datll = ui.ICCarsLR.new_message()
+      datll.side = 1 # 2-Right, 1-Left
+      if ll_lead_len > 0:
+        datll.v1Type = ll_lead_clusters[0].oClass
+        datll.v1Dx = float(ll_lead_clusters[0].dRel)
+        datll.v1Vrel = float(ll_lead_clusters[0].vRel)
+        datll.v1Dy = float(ll_lead_clusters[0].yRel)
+        datll.v1Id = datll.side * 10 + 1
+        if ll_lead2_len > 0:
+          datll.v2Type = ll_lead_clusters[0].oClass
+          datll.v2Dx = float(ll_lead_clusters[0].dRel)
+          datll.v2Vrel = float(ll_lead_clusters[0].vRel)
+          datll.v2Dy = float(ll_lead_clusters[0].yRel)
+          datll.v2Id = datll.side * 10 + 2
+        else:
+          datll.v2Type = 0
+          datll.v2Dx = float(0.)
+          datll.v2Vrel = float(0.)
+          datll.v2Dy = float(0.)
+          datll.v2Id = 0
+      else:
+        datll.v1Type = 0
+        datll.v1Dx = float(0.)
+        datll.v1Vrel = float(0.)
+        datll.v1Dy = float(0.)
+        datll.v1Id = 0
+      icCarLR.send(datll.to_bytes())
     #RIGHT LANE
     if RI.TRACK_RIGHT_LANE:
       rl_track_pts = np.array([tracks[iden].get_key_for_cluster_dy(MP.lane_width) for iden in idens])
@@ -322,13 +353,39 @@ def radard_thread(gctx=None):
                       if c.is_potential_lead_dy(v_ego,MP.lane_width)]
       rl_lead_clusters.sort(key=lambda x: x.dRel)
       rl_lead_len = len(rl_lead_clusters)
-
       # *** extract the second lead from the whole set of leads ***
       rl_lead2_clusters = [c for c in rl_lead_clusters
                         if c.is_potential_lead2(rl_lead_clusters)]
       rl_lead2_clusters.sort(key=lambda x: x.dRel)
       rl_lead2_len = len(rl_lead2_clusters)
-
+      # publish data
+      datrl = ui.ICCarsLR.new_message()
+      datrl.side = 2 # 2-Right, 1-Left
+      if rl_lead_len > 0:
+        datrl.v1Type = rl_lead_clusters[0].oClass
+        datrl.v1Dx = float(rl_lead_clusters[0].dRel)
+        datrl.v1Vrel = float(rl_lead_clusters[0].vRel)
+        datrl.v1Dy = float(rl_lead_clusters[0].yRel)
+        datrl.v1Id = datrl.side * 10 + 1
+        if rl_lead2_len > 0:
+          datrl.v2Type = rl_lead_clusters[0].oClass
+          datrl.v2Dx = float(rl_lead_clusters[0].dRel)
+          datrl.v2Vrel = float(rl_lead_clusters[0].vRel)
+          datrl.v2Dy = float(rl_lead_clusters[0].yRel)
+          datrl.v2Id = datrl.side * 10 + 2
+        else:
+          datrl.v2Type = 0
+          datrl.v2Dx = float(0.)
+          datrl.v2Vrel = float(0.)
+          datrl.v2Dy = float(0.)
+          datrl.v2Id = 0
+      else:
+        datrl.v1Type = 0
+        datrl.v1Dx = float(0.)
+        datrl.v1Vrel = float(0.)
+        datrl.v1Dy = float(0.)
+        datrl.v1Id = 0
+      icCarLR.send(datrl.to_bytes())
     # *** publish live20 ***
     dat = messaging.new_message()
     dat.init('live20')

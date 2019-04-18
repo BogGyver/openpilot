@@ -63,4 +63,18 @@ struct UIGyroInfo {
     gyroYaw @8 :Float32;
 }
 
+struct ICCarsLR {
+    v1Type @0 :UInt8;
+    v1Dx @1 :Float32;
+    v1Vrel @2 :Float32;
+    v1Dy @3 :Float32;
+    v1Id @4 :UInt8;
+    v2Type @5 :UInt8;
+    v2Dx @6 :Float32;
+    v2Vrel @7 :Float32;
+    v2Dy @8 :Float32;
+    v2Id @9 :UInt8;
+    side @10 :UInt8;
+}
+
 

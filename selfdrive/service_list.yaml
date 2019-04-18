@@ -88,6 +88,7 @@ uiButtonStatus: [8204, true]
 uiPlaySound: [8205, true]
 uiUpdate: [8206, true]
 uiGyroInfo: [8207, true]
+uiIcCarLR: [8208, true]
 
 
 # 8080 is reserved for slave testing daemon

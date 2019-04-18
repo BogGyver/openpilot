@@ -1765,7 +1765,6 @@ static int tesla_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd)
     } else {
       return -1;
     }
-    return 0; // Chassis CAN
   }
   return -1;
 }

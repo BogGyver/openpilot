@@ -110,6 +110,7 @@ class CarController(object):
     self.trafficevents = messaging.sub_sock(self.context, service_list['trafficEvents'].port, conflate=True, poller=self.poller)
     self.pathPlan = messaging.sub_sock(self.context, service_list['pathPlan'].port, conflate=True, poller=self.poller)
     self.live20 = messaging.sub_sock(self.context, service_list['live20'].port, conflate=True, poller=self.poller)
+    self.icCarLR = messaging.sub_sock(self.context, service_list['uiIcCarLR'].port, conflate=True, poller=self.poller)
     self.gpsLocationExternal = None 
     self.speedlimit_ms = 0.
     self.speedlimit_valid = False
@@ -529,6 +530,13 @@ class CarController(object):
             self.curv1 = self.curv1Matrix.add(0.)
             self.curv2 = self.curv2Matrix.add(0.)
             self.curv3 = self.curv3Matrix.add(0.)
+        if socket is self.icCarLR:
+          icCarLR_list = messaging.recv_sock(socket)
+          if icCarLR_list is not None:
+            for icCarLR_msg in icCarLR_list:
+              can_sends.append(teslacan.create_DAS_LR_object_msg(icCarLR_msg.side,icCarLR_msg.v1Type,icCarLR_msg.v1Id,
+                icCarLR_msg.v1Dx,icCarLR_msg.v1Dy,icCarLR_msg.v1Vrel,icCarLR_msg.v2Type,
+                icCarLR_msg.v2Id,icCarLR_msg.v2Dx,icCarLR_msg.v2Dy,icCarLR_msg.v2Vrel))
         if socket is self.trafficevents:
           self.reset_traffic_events()
           tr_ev_list = messaging.recv_sock(socket)
