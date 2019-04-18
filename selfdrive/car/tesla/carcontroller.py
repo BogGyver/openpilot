@@ -4,7 +4,7 @@ import subprocess
 from  threading import Thread
 import traceback
 import shlex
-from cereal import log
+from cereal import log,ui
 from common.params import Params
 from collections import namedtuple
 from selfdrive.boardd.boardd import can_list_to_can_capnp
@@ -531,12 +531,15 @@ class CarController(object):
             self.curv2 = self.curv2Matrix.add(0.)
             self.curv3 = self.curv3Matrix.add(0.)
         if socket is self.icCarLR:
-          icCarLR_list = messaging.recv_sock(socket)
-          if icCarLR_list is not None:
-            for icCarLR_msg in icCarLR_list:
-              can_sends.append(teslacan.create_DAS_LR_object_msg(icCarLR_msg.side,icCarLR_msg.v1Type,icCarLR_msg.v1Id,
+          icCarLR_msg = ui.ICCarsLR.from_bytes(socket.recv())
+          if icCarLR_msg is not None:
+            #for icCarLR_msg in icCarLR_list:
+            can_sends.append(teslacan.create_DAS_LR_object_msg(1,icCarLR_msg.v1Type,icCarLR_msg.v1Id,
                 icCarLR_msg.v1Dx,icCarLR_msg.v1Dy,icCarLR_msg.v1Vrel,icCarLR_msg.v2Type,
                 icCarLR_msg.v2Id,icCarLR_msg.v2Dx,icCarLR_msg.v2Dy,icCarLR_msg.v2Vrel))
+            can_sends.append(teslacan.create_DAS_LR_object_msg(2,icCarLR_msg.v3Type,icCarLR_msg.v3Id,
+                icCarLR_msg.v3Dx,icCarLR_msg.v3Dy,icCarLR_msg.v3Vrel,icCarLR_msg.v4Type,
+                icCarLR_msg.v4Id,icCarLR_msg.v4Dx,icCarLR_msg.v4Dy,icCarLR_msg.v4Vrel))
         if socket is self.trafficevents:
           self.reset_traffic_events()
           tr_ev_list = messaging.recv_sock(socket)

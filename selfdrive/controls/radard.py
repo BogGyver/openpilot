@@ -75,6 +75,9 @@ def radard_thread(gctx=None):
   last_md_ts = 0
   last_l100_ts = 0
 
+  #used to track cars
+  datrl_id = 0
+
   # *** publish live20 and liveTracks
   live20 = messaging.pub_sock(context, service_list['live20'].port)
   liveTracks = messaging.pub_sock(context, service_list['liveTracks'].port)
@@ -261,6 +264,28 @@ def radard_thread(gctx=None):
     #################################################################
     #BB For Tesla integration we will also track Left and Right lanes
     #################################################################
+    if RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE:
+      datrl = ui.ICCarsLR.new_message()
+      datrl.v1Type = int(0)
+      datrl.v1Dx = float(0.)
+      datrl.v1Vrel = float(0.)
+      datrl.v1Dy = float(0.)
+      datrl.v1Id = int(0)
+      datrl.v2Type = int(0) 
+      datrl.v2Dx = float(0.)
+      datrl.v2Vrel = float(0.)
+      datrl.v2Dy = float(0.)
+      datrl.v2Id = int(0)
+      datrl.v3Type = int(0)
+      datrl.v3Dx = float(0.)
+      datrl.v3Vrel = float(0.)
+      datrl.v3Dy = float(0.)
+      datrl.v3Id = int(0)
+      datrl.v4Type = int(0) 
+      datrl.v4Dx = float(0.)
+      datrl.v4Vrel = float(0.)
+      datrl.v4Dy = float(0.)
+      datrl.v4Id = int(0)
     #LEFT LANE
     if RI.TRACK_LEFT_LANE:
       ll_track_pts = np.array([tracks[iden].get_key_for_cluster_dy(-MP.lane_width) for iden in idens])
@@ -297,33 +322,22 @@ def radard_thread(gctx=None):
       ll_lead2_clusters.sort(key=lambda x: x.dRel)
       ll_lead2_len = len(ll_lead2_clusters)
       # publish data
-      datll = ui.ICCarsLR.new_message()
-      datll.side = 1 # 2-Right, 1-Left
       if ll_lead_len > 0:
-        datll.v1Type = ll_lead_clusters[0].oClass
-        datll.v1Dx = float(ll_lead_clusters[0].dRel)
-        datll.v1Vrel = float(ll_lead_clusters[0].vRel)
-        datll.v1Dy = float(ll_lead_clusters[0].yRel)
-        datll.v1Id = datll.side * 10 + 1
+        datrl_id +=1
+        datrl_id = datrl_id %50
+        datrl.v1Type = int(ll_lead_clusters[0].oClass)
+        datrl.v1Dx = float(ll_lead_clusters[0].dRel)
+        datrl.v1Vrel = float(ll_lead_clusters[0].vRel)
+        datrl.v1Dy = float(ll_lead_clusters[0].yRel + MP.lane_width)
+        datrl.v1Id = int(datrl_id)
         if ll_lead2_len > 0:
-          datll.v2Type = ll_lead_clusters[0].oClass
-          datll.v2Dx = float(ll_lead_clusters[0].dRel)
-          datll.v2Vrel = float(ll_lead_clusters[0].vRel)
-          datll.v2Dy = float(ll_lead_clusters[0].yRel)
-          datll.v2Id = datll.side * 10 + 2
-        else:
-          datll.v2Type = 0
-          datll.v2Dx = float(0.)
-          datll.v2Vrel = float(0.)
-          datll.v2Dy = float(0.)
-          datll.v2Id = 0
-      else:
-        datll.v1Type = 0
-        datll.v1Dx = float(0.)
-        datll.v1Vrel = float(0.)
-        datll.v1Dy = float(0.)
-        datll.v1Id = 0
-      icCarLR.send(datll.to_bytes())
+          datrl_id +=1
+          datrl_id = datrl_id %50
+          datrl.v2Type = int(ll_lead_clusters[0].oClass)
+          datrl.v2Dx = float(ll_lead_clusters[0].dRel)
+          datrl.v2Vrel = float(ll_lead_clusters[0].vRel)
+          datrl.v2Dy = float(ll_lead_clusters[0].yRel + MP.lane_width)
+          datrl.v2Id = int(datrl_id)
     #RIGHT LANE
     if RI.TRACK_RIGHT_LANE:
       rl_track_pts = np.array([tracks[iden].get_key_for_cluster_dy(MP.lane_width) for iden in idens])
@@ -359,33 +373,24 @@ def radard_thread(gctx=None):
       rl_lead2_clusters.sort(key=lambda x: x.dRel)
       rl_lead2_len = len(rl_lead2_clusters)
       # publish data
-      datrl = ui.ICCarsLR.new_message()
-      datrl.side = 2 # 2-Right, 1-Left
       if rl_lead_len > 0:
-        datrl.v1Type = rl_lead_clusters[0].oClass
-        datrl.v1Dx = float(rl_lead_clusters[0].dRel)
-        datrl.v1Vrel = float(rl_lead_clusters[0].vRel)
-        datrl.v1Dy = float(rl_lead_clusters[0].yRel)
-        datrl.v1Id = datrl.side * 10 + 1
+        datrl_id +=1
+        datrl_id = datrl_id %50
+        datrl.v3Type = int(rl_lead_clusters[0].oClass) 
+        datrl.v3Dx = float(rl_lead_clusters[0].dRel)
+        datrl.v3Vrel = float(rl_lead_clusters[0].vRel)
+        datrl.v3Dy = float(rl_lead_clusters[0].yRel - MP.lane_width)
+        datrl.v3Id = int(datrl_id)
         if rl_lead2_len > 0:
-          datrl.v2Type = rl_lead_clusters[0].oClass
-          datrl.v2Dx = float(rl_lead_clusters[0].dRel)
-          datrl.v2Vrel = float(rl_lead_clusters[0].vRel)
-          datrl.v2Dy = float(rl_lead_clusters[0].yRel)
-          datrl.v2Id = datrl.side * 10 + 2
-        else:
-          datrl.v2Type = 0
-          datrl.v2Dx = float(0.)
-          datrl.v2Vrel = float(0.)
-          datrl.v2Dy = float(0.)
-          datrl.v2Id = 0
-      else:
-        datrl.v1Type = 0
-        datrl.v1Dx = float(0.)
-        datrl.v1Vrel = float(0.)
-        datrl.v1Dy = float(0.)
-        datrl.v1Id = 0
-      icCarLR.send(datrl.to_bytes())
+          datrl_id +=1
+          datrl_id = datrl_id %50
+          datrl.v4Type = int(rl_lead_clusters[0].oClass)
+          datrl.v4Dx = float(rl_lead_clusters[0].dRel)
+          datrl.v4Vrel = float(rl_lead_clusters[0].vRel)
+          datrl.v4Dy = float(rl_lead_clusters[0].yRel - MP.lane_width)
+          datrl.v4Id = int(datrl_id)
+    if RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE:
+      icCarLR.send(datrl.to_bytes())      
     # *** publish live20 ***
     dat = messaging.new_message()
     dat.init('live20')

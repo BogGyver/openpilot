@@ -98,9 +98,10 @@ class RadarInterface(object):
 
         # radar point only valid if it's a valid measurement and score is above 50
         # bosch radar data needs to match Index and Index2 for validity
+        # also for now ignore construction elements
         if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
             (cpt['Index'] == self.rcp.vl[ii+1]['Index2']) and (self.valid_cnt[ii] > 0) and \
-            (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) :
+            (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and (self.rcp.vl[ii+1]['Class'] < 4):
           if ii not in self.pts and ( cpt['Tracked']):
             self.pts[ii] = car.RadarState.RadarPoint.new_message()
             self.pts[ii].trackId = self.track_id
