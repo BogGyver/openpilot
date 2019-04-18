@@ -113,8 +113,8 @@ def radard_thread(gctx=None):
     ar_pts = {}
     for pt in rr.points:
       track_id += 1
-      track_id = track_id % 60
-      ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured, pt.aRel, pt.yvRel, pt.objectClass, pt.length, track_id + 1]
+      track_id = track_id % 62
+      ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured, pt.aRel, pt.yvRel, pt.objectClass, pt.length, pt.trackId]
 
     # receive the live100s
     l100 = None
@@ -288,6 +288,7 @@ def radard_thread(gctx=None):
       datrl.v4Vrel = float(0.)
       datrl.v4Dy = float(0.)
       datrl.v4Id = int(0)
+      lane_offset = 0. #MP.lane_width
     #LEFT LANE
     if RI.TRACK_LEFT_LANE:
       ll_track_pts = np.array([tracks[iden].get_key_for_cluster_dy(-MP.lane_width) for iden in idens])
@@ -328,13 +329,13 @@ def radard_thread(gctx=None):
         datrl.v1Type = int(ll_lead_clusters[0].oClass)
         datrl.v1Dx = float(ll_lead_clusters[0].dRel)
         datrl.v1Vrel = float(ll_lead_clusters[0].vRel)
-        datrl.v1Dy = float(-ll_lead_clusters[0].yRel)
+        datrl.v1Dy = float(-ll_lead_clusters[0].yRel - lane_offset)
         datrl.v1Id = int(ll_lead_clusters[0].track_id)
         if ll_lead2_len > 0:
           datrl.v2Type = int(ll_lead2_clusters[0].oClass)
           datrl.v2Dx = float(ll_lead2_clusters[0].dRel)
           datrl.v2Vrel = float(ll_lead2_clusters[0].vRel)
-          datrl.v2Dy = float(-ll_lead2_clusters[0].yRel)
+          datrl.v2Dy = float(-ll_lead2_clusters[0].yRel - lane_offset) 
           datrl.v2Id = int(ll_lead2_clusters[0].track_id)
     #RIGHT LANE
     if RI.TRACK_RIGHT_LANE:
@@ -375,13 +376,13 @@ def radard_thread(gctx=None):
         datrl.v3Type = int(rl_lead_clusters[0].oClass) 
         datrl.v3Dx = float(rl_lead_clusters[0].dRel)
         datrl.v3Vrel = float(rl_lead_clusters[0].vRel)
-        datrl.v3Dy = float(-rl_lead_clusters[0].yRel)
+        datrl.v3Dy = float(-rl_lead_clusters[0].yRel+ lane_offset)
         datrl.v3Id = int(rl_lead_clusters[0].track_id)
         if rl_lead2_len > 0:
           datrl.v4Type = int(rl_lead2_clusters[0].oClass)
           datrl.v4Dx = float(rl_lead2_clusters[0].dRel)
           datrl.v4Vrel = float(rl_lead2_clusters[0].vRel)
-          datrl.v4Dy = float(-rl_lead2_clusters[0].yRel)
+          datrl.v4Dy = float(-rl_lead2_clusters[0].yRel + lane_offset)
           datrl.v4Id = int(rl_lead2_clusters[0].track_id)
     if RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE:
       icCarLR.send(datrl.to_bytes())      

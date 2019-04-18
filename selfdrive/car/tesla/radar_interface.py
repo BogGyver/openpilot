@@ -14,8 +14,8 @@ from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 BOSCH_MAX_DIST = 150. #max distance for radar
 RADAR_A_MSGS = list(range(0x310, 0x36F , 3))
 RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
-OBJECT_MIN_PROBABILITY = 20.
-CLASS_MIN_PROBABILITY = 20.
+OBJECT_MIN_PROBABILITY = 60.
+CLASS_MIN_PROBABILITY = 50.
 
 
 # Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
@@ -101,10 +101,10 @@ class RadarInterface(object):
         # also for now ignore construction elements
         if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
             (cpt['Index'] == self.rcp.vl[ii+1]['Index2']) and (self.valid_cnt[ii] > 0) and \
-            (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and (self.rcp.vl[ii+1]['Class'] < 4):
+            (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and (self.rcp.vl[ii+1]['Class'] < 4): # and ((self.rcp.vl[ii+1]['MovingState']<3) or (self.rcp.vl[ii+1]['Class'] > 0)):
           if ii not in self.pts and ( cpt['Tracked']):
             self.pts[ii] = car.RadarState.RadarPoint.new_message()
-            self.pts[ii].trackId = self.track_id
+            self.pts[ii].trackId = int((ii - 0x310)/3) 
             self.track_id += 1
           if ii in self.pts:
             self.pts[ii].dRel = cpt['LongDist']  # from front of car

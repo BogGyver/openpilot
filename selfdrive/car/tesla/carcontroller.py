@@ -465,17 +465,15 @@ class CarController(object):
             if CS.useTeslaRadar:
               self.leadDx = lead_1.dRel
               self.leadDy = self.curv0-lead_1.yRel
-              self.leadClass = lead_1.oClass + 1
+              self.leadClass = lead_1.oClass 
               self.leadId = lead_1.trackId
               self.leadVx = lead_1.vRel
             else:
               self.leadDx = self.leadDxMatrix.add(lead_1.dRel)
               self.leadDy = self.leadDyMatrix.add(self.curv0-lead_1.yRel)
-              self.leadClass = 1
+              self.leadClass = 2
               self.leadId = 0
               self.leadVx = 0xF
-            if self.leadClass ==4:
-              self.leadClass = 5
           else:
             if CS.useTeslaRadar:
               self.leadDx = 0.
@@ -492,7 +490,7 @@ class CarController(object):
           if lead_2.dRel:
               self.lead2Dx = lead_2.dRel
               self.lead2Dy = self.curv0-lead_2.yRel
-              self.lead2Class = lead_2.oClass + 1
+              self.lead2Class = lead_2.oClass 
               self.lead2Id = lead_2.trackId
               self.lead2Vx = lead_2.vRel
           else:
@@ -501,8 +499,6 @@ class CarController(object):
               self.lead2Class = 0
               self.lead2Id = 0
               self.lead2Vx = 0xF
-          if self.leadClass == 4:
-              self.leadClass = 5
           can_sends.append(teslacan.create_DAS_LR_object_msg(0,self.leadClass, self.leadId,
                 self.leadDx,self.leadDy,self.leadVx,self.lead2Class,
                 self.lead2Id,self.lead2Dx,self.lead2Dy,self.lead2Vx))

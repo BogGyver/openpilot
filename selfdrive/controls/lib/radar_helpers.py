@@ -232,7 +232,7 @@ class Cluster(object):
   
   @property
   def track_id(self):
-    return any([t.track_id for t in self.tracks])
+    return mean([t.track_id for t in self.tracks])
 
   def toLive20(self):
     return {
@@ -313,7 +313,7 @@ class Cluster(object):
     # consider only cut-ins
     d_path = clip(d_path + lat_corr, min(0., d_path), max(0.,d_path))
 
-    return abs(d_path) < 1.5 and not self.stationary and not self.oncoming
+    return abs(d_path) < abs(dy/2.)  and not self.stationary #and not self.oncoming
 
   
 

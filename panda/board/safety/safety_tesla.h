@@ -115,6 +115,14 @@ int DAS_jerk_min = 0x000;
 int DAS_jerk_max = 0x0F;
 int DAS_gas_to_resume = 0;
 int DAS_206_apUnavailable = 0;
+
+//fake DAS objects
+int DAS_LEAD_OBJECT_MLB = 0xFFFFFF00;
+int DAS_LEAD_OBJECT_MHB = 0x03FFFF83;
+int DAS_LEFT_OBJECT_MLB = 0xFFFFFF01;
+int DAS_LEFT_OBJECT_MHB = 0x03FFFF83;
+int DAS_RIGHT_OBJECT_MLB = 0xFFFFFF02;
+int DAS_RIGHT_OBJECT_MHB = 0x03FFFF83;
 //fake DAS for DAS_status and DAS_status2
 int DAS_op_status = 1;
 int DAS_op_status_last_received = 1;
@@ -419,26 +427,17 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     //send DAS_object - 0x309
     //fix - 0x81,0xC0,0xF8,0xF3,0x43,0x7F,0xFD,0xF1
     //when idx==0 is lead vehicle
-    int should_send = 1;
     if (DAS_object_idx == 0) {
-      if (tLeadDx ==0 ) {
-        MLB = 0xFFFFFF00;
-        MHB = 0x03FFFF83;
-      } else {
-        MLB = 0x30080080 + (tLeadDx << 8) + (tLeadDy << 20) + (tLeadClass << 3);
-        MHB = 0x03FFFF80; 
-      }
-      should_send = 0;
+      MLB = DAS_LEAD_OBJECT_MLB;
+      MHB = DAS_LEAD_OBJECT_MLB;
     }
     if (DAS_object_idx == 1) {
-      MLB = 0xFFFFFF01;
-      MHB = 0x03FFFF83;
-      should_send = 0;
+      MLB = DAS_LEFT_OBJECT_MLB;
+      MHB = DAS_LEFT_OBJECT_MHB;
     }
     if (DAS_object_idx == 2) {
-      MLB = 0xFFFFFF02;
-      MHB = 0x03FFFF83;
-      should_send = 0;
+      MLB = DAS_RIGHT_OBJECT_MLB;
+      MHB = DAS_RIGHT_OBJECT_MHB;
     }
     if (DAS_object_idx == 3) {
       MLB = 0xFFFFFF03;
@@ -458,9 +457,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
       MLB = 0xFFFFFF05;
       MHB = 0xFFFFFFFF;
     }
-    if (should_send == 1) {
-      send_fake_message(RIR,RDTR,8,0x309,0,MLB,MHB);
-    }
+    send_fake_message(RIR,RDTR,8,0x309,0,MLB,MHB);
     DAS_object_idx++;
     DAS_object_idx = DAS_object_idx % 6;
   }
@@ -1341,6 +1338,36 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     int signType = ((streetSignObject_b0 >> 6) & 0x03) + ((streetSignObject_b1 << 2) & 0xFF);
     if (signType < 0xFF) {
        streetSignObject_active = 1;
+    }
+    return false;
+  }
+
+  //capture message for DAS objects
+  if (addr == 0x559) {
+    int lane =  (to_send->RDLR & 0x03);
+    if (lane == 0) {
+      DAS_LEAD_OBJECT_MLB = to_send->RDLR;
+      DAS_LEAD_OBJECT_MHB = to_send->RDHR;
+      if(((to_send->RDLR >> 8) & 0xFF) == 0)  {
+        DAS_LEAD_OBJECT_MLB = 0xFFFFFF00;
+        DAS_LEAD_OBJECT_MHB = 0x03FFFF83;
+      }
+    }
+    if (lane == 1) {
+      DAS_LEFT_OBJECT_MLB = to_send->RDLR;
+      DAS_LEFT_OBJECT_MHB = to_send->RDHR;
+      if(((to_send->RDLR >> 8) & 0xFF) == 0)  {
+        DAS_LEFT_OBJECT_MLB = 0xFFFFFF01;
+        DAS_LEFT_OBJECT_MHB = 0x03FFFF83;
+      }
+    }
+    if (lane == 2) {
+      DAS_RIGHT_OBJECT_MLB = to_send->RDLR;
+      DAS_RIGHT_OBJECT_MHB = to_send->RDHR;
+      if(((to_send->RDLR >> 8) & 0xFF) == 0)  {
+        DAS_RIGHT_OBJECT_MLB = 0xFFFFFF02;
+        DAS_RIGHT_OBJECT_MHB = 0x03FFFF83;
+      }
     }
     return false;
   }

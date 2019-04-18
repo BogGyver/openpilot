@@ -66,7 +66,7 @@ def create_fake_IC_msg(useAnalogWhenNoEon):
   return [msg_id, 0, msg.raw, 0]
 
 def create_DAS_LR_object_msg(lane,v1Class,v1Id,v1Dx,v1Dy,v1V,v2Class,v2Id,v2Dx,v2Dy,v2V):
-  msg_id = 0x309
+  msg_id = 0x559
   msg_len = 8
   msg = create_string_buffer(msg_len)
   if (v1Dx > 0) and (v1Id > 0):
