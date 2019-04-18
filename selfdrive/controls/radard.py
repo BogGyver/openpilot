@@ -76,7 +76,7 @@ def radard_thread(gctx=None):
   last_l100_ts = 0
 
   #used to track cars
-  datrl_id = 0
+  track_id = 0
 
   # *** publish live20 and liveTracks
   live20 = messaging.pub_sock(context, service_list['live20'].port)
@@ -112,7 +112,9 @@ def radard_thread(gctx=None):
 
     ar_pts = {}
     for pt in rr.points:
-      ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured, pt.aRel, pt.yvRel, pt.objectClass, pt.length]
+      track_id += 1
+      track_id = track_id % 60
+      ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured, pt.aRel, pt.yvRel, pt.objectClass, pt.length, track_id + 1]
 
     # receive the live100s
     l100 = None
@@ -201,7 +203,7 @@ def radard_thread(gctx=None):
       # create the track if it doesn't exist or it's a new track
       if ids not in tracks:
         tracks[ids] = Track()
-      tracks[ids].update(rpt[0], rpt[1], rpt[2], rpt[3], rpt[4],rpt[5],rpt[6],rpt[7],d_path, v_ego_t_aligned, steer_override)
+      tracks[ids].update(rpt[0], rpt[1], rpt[2], rpt[3], rpt[4],rpt[5],rpt[6],rpt[7],rpt[8],d_path, v_ego_t_aligned, steer_override)
 
     # allow the vision model to remove the stationary flag if distance and rel speed roughly match
     if VISION_POINT in ar_pts:
@@ -323,21 +325,17 @@ def radard_thread(gctx=None):
       ll_lead2_len = len(ll_lead2_clusters)
       # publish data
       if ll_lead_len > 0:
-        datrl_id +=1
-        datrl_id = datrl_id %50
         datrl.v1Type = int(ll_lead_clusters[0].oClass)
         datrl.v1Dx = float(ll_lead_clusters[0].dRel)
         datrl.v1Vrel = float(ll_lead_clusters[0].vRel)
-        datrl.v1Dy = float(ll_lead_clusters[0].yRel + MP.lane_width)
-        datrl.v1Id = int(datrl_id)
+        datrl.v1Dy = float(-ll_lead_clusters[0].yRel)
+        datrl.v1Id = int(ll_lead_clusters[0].track_id)
         if ll_lead2_len > 0:
-          datrl_id +=1
-          datrl_id = datrl_id %50
-          datrl.v2Type = int(ll_lead_clusters[0].oClass)
-          datrl.v2Dx = float(ll_lead_clusters[0].dRel)
-          datrl.v2Vrel = float(ll_lead_clusters[0].vRel)
-          datrl.v2Dy = float(ll_lead_clusters[0].yRel + MP.lane_width)
-          datrl.v2Id = int(datrl_id)
+          datrl.v2Type = int(ll_lead2_clusters[0].oClass)
+          datrl.v2Dx = float(ll_lead2_clusters[0].dRel)
+          datrl.v2Vrel = float(ll_lead2_clusters[0].vRel)
+          datrl.v2Dy = float(-ll_lead2_clusters[0].yRel)
+          datrl.v2Id = int(ll_lead2_clusters[0].track_id)
     #RIGHT LANE
     if RI.TRACK_RIGHT_LANE:
       rl_track_pts = np.array([tracks[iden].get_key_for_cluster_dy(MP.lane_width) for iden in idens])
@@ -374,21 +372,17 @@ def radard_thread(gctx=None):
       rl_lead2_len = len(rl_lead2_clusters)
       # publish data
       if rl_lead_len > 0:
-        datrl_id +=1
-        datrl_id = datrl_id %50
         datrl.v3Type = int(rl_lead_clusters[0].oClass) 
         datrl.v3Dx = float(rl_lead_clusters[0].dRel)
         datrl.v3Vrel = float(rl_lead_clusters[0].vRel)
-        datrl.v3Dy = float(rl_lead_clusters[0].yRel - MP.lane_width)
-        datrl.v3Id = int(datrl_id)
+        datrl.v3Dy = float(-rl_lead_clusters[0].yRel)
+        datrl.v3Id = int(rl_lead_clusters[0].track_id)
         if rl_lead2_len > 0:
-          datrl_id +=1
-          datrl_id = datrl_id %50
-          datrl.v4Type = int(rl_lead_clusters[0].oClass)
-          datrl.v4Dx = float(rl_lead_clusters[0].dRel)
-          datrl.v4Vrel = float(rl_lead_clusters[0].vRel)
-          datrl.v4Dy = float(rl_lead_clusters[0].yRel - MP.lane_width)
-          datrl.v4Id = int(datrl_id)
+          datrl.v4Type = int(rl_lead2_clusters[0].oClass)
+          datrl.v4Dx = float(rl_lead2_clusters[0].dRel)
+          datrl.v4Vrel = float(rl_lead2_clusters[0].vRel)
+          datrl.v4Dy = float(-rl_lead2_clusters[0].yRel)
+          datrl.v4Id = int(rl_lead2_clusters[0].track_id)
     if RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE:
       icCarLR.send(datrl.to_bytes())      
     # *** publish live20 ***

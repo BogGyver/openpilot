@@ -154,6 +154,13 @@ class CarController(object):
     self.leadDx = 0.
     self.leadDy = 0.
     self.leadClass = 0
+    self.leadVx = 0.
+    self.leadId = 0
+    self.lead2Dx = 0.
+    self.lead2Dy = 0.
+    self.lead2Class = 0
+    self.lead2Vx = 0.
+    self.lead2Id = 0
     self.lLine = 0
     self.rLine = 0
     self.curv0 = 0. 
@@ -451,25 +458,54 @@ class CarController(object):
             self.speed_limit_for_cc = self.speedlimit_ms * CV.MS_TO_KPH
         #to show lead car on IC
         if socket is self.live20:
-          lead_1 = messaging.recv_one(socket).live20.leadOne
+          leads = messaging.recv_one(socket).live20
+          lead_1 = leads.leadOne
+          lead_2 = leads.leadOne
           if lead_1.dRel:
             if CS.useTeslaRadar:
               self.leadDx = lead_1.dRel
               self.leadDy = self.curv0-lead_1.yRel
-              self.leadClass = lead_1.oClass
+              self.leadClass = lead_1.oClass + 1
+              self.leadId = lead_1.trackId
+              self.leadVx = lead_1.vRel
             else:
               self.leadDx = self.leadDxMatrix.add(lead_1.dRel)
               self.leadDy = self.leadDyMatrix.add(self.curv0-lead_1.yRel)
               self.leadClass = 1
+              self.leadId = 0
+              self.leadVx = 0xF
+            if self.leadClass ==4:
+              self.leadClass = 5
           else:
             if CS.useTeslaRadar:
               self.leadDx = 0.
               self.leadDy = 0.
               self.leadClass = 0
+              self.leadId = 0
+              self.leadVx = 0xF
             else:
               self.leadDx = self.leadDxMatrix.dele()
               self.leadDy = self.leadDyMatrix.dele()
               self.leadClass = 0
+              self.leadId = 0
+              self.leadVx = 0xF
+          if lead_2.dRel:
+              self.lead2Dx = lead_2.dRel
+              self.lead2Dy = self.curv0-lead_2.yRel
+              self.lead2Class = lead_2.oClass + 1
+              self.lead2Id = lead_2.trackId
+              self.lead2Vx = lead_2.vRel
+          else:
+              self.lead2Dx = 0.
+              self.lead2Dy = 0.
+              self.lead2Class = 0
+              self.lead2Id = 0
+              self.lead2Vx = 0xF
+          if self.leadClass == 4:
+              self.leadClass = 5
+          can_sends.append(teslacan.create_DAS_LR_object_msg(0,self.leadClass, self.leadId,
+                self.leadDx,self.leadDy,self.leadVx,self.lead2Class,
+                self.lead2Id,self.lead2Dx,self.lead2Dy,self.lead2Vx))
         #to show curvature and lanes on IC
         if socket is self.pathPlan:
           pp = messaging.recv_one(socket).pathPlan

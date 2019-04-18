@@ -14,7 +14,7 @@ from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 BOSCH_MAX_DIST = 150. #max distance for radar
 RADAR_A_MSGS = list(range(0x310, 0x36F , 3))
 RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
-OBJECT_MIN_PROBABILITY = 50.
+OBJECT_MIN_PROBABILITY = 20.
 CLASS_MIN_PROBABILITY = 20.
 
 

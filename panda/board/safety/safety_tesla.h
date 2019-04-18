@@ -419,6 +419,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     //send DAS_object - 0x309
     //fix - 0x81,0xC0,0xF8,0xF3,0x43,0x7F,0xFD,0xF1
     //when idx==0 is lead vehicle
+    int should_send = 1;
     if (DAS_object_idx == 0) {
       if (tLeadDx ==0 ) {
         MLB = 0xFFFFFF00;
@@ -427,14 +428,17 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
         MLB = 0x30080080 + (tLeadDx << 8) + (tLeadDy << 20) + (tLeadClass << 3);
         MHB = 0x03FFFF80; 
       }
+      should_send = 0;
     }
     if (DAS_object_idx == 1) {
       MLB = 0xFFFFFF01;
       MHB = 0x03FFFF83;
+      should_send = 0;
     }
     if (DAS_object_idx == 2) {
       MLB = 0xFFFFFF02;
       MHB = 0x03FFFF83;
+      should_send = 0;
     }
     if (DAS_object_idx == 3) {
       MLB = 0xFFFFFF03;
@@ -454,7 +458,9 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
       MLB = 0xFFFFFF05;
       MHB = 0xFFFFFFFF;
     }
-    send_fake_message(RIR,RDTR,8,0x309,0,MLB,MHB);
+    if (should_send == 1) {
+      send_fake_message(RIR,RDTR,8,0x309,0,MLB,MHB);
+    }
     DAS_object_idx++;
     DAS_object_idx = DAS_object_idx % 6;
   }

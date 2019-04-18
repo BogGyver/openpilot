@@ -42,7 +42,7 @@ class Track(object):
     self.stationary = True
     self.initted = False
 
-  def update(self, d_rel, y_rel, v_rel,measured, a_rel, vy_rel, oClass, length, d_path, v_ego_t_aligned, steer_override):
+  def update(self, d_rel, y_rel, v_rel,measured, a_rel, vy_rel, oClass, length, track_id,d_path, v_ego_t_aligned, steer_override):
     if self.initted:
       # pylint: disable=access-member-before-definition
       self.dPathPrev = self.dPath
@@ -58,6 +58,7 @@ class Track(object):
     self.oClass = oClass # object class
     self.length = length #length
     self.measured = measured   # measured or estimate
+    self.track_id = track_id
 
     # compute distance to path
     self.dPath = d_path
@@ -228,6 +229,10 @@ class Cluster(object):
   @property
   def length(self):
     return max([t.length for t in self.tracks])
+  
+  @property
+  def track_id(self):
+    return any([t.track_id for t in self.tracks])
 
   def toLive20(self):
     return {
@@ -245,6 +250,7 @@ class Cluster(object):
       "aLeadTau": float(self.aLeadTau),
       "oClass": int(self.oClass),
       "length": float(self.length),
+      "trackId": int(self.track_id),
     }
 
   def __str__(self):
