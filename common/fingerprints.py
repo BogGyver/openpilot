@@ -11,7 +11,7 @@ def get_fingerprint_list():
     try:
       car_name = car_folder.split('/')[-1]
       values = __import__('selfdrive.car.%s.values' % car_name, fromlist=['FINGERPRINTS'])
-      if hasattr(values, 'FINGERPRINTS') or (car_name == "tesla"):
+      if hasattr(values, 'FINGERPRINTS'):
         car_fingerprints = values.FINGERPRINTS
       else:
         continue
