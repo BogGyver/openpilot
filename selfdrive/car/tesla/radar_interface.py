@@ -48,7 +48,7 @@ def _create_radard_can_parser():
 
 
 class RadarInterface(object):
-  def __init__(self, CP):
+  def __init__(self):
     # radar
     self.pts = {}
     self.delay = 0.1
@@ -100,7 +100,7 @@ class RadarInterface(object):
         # bosch radar data needs to match Index and Index2 for validity
         # also for now ignore construction elements
         if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
-            (cpt['Index'] == self.rcp.vl[ii+1]['Index2']) and (self.valid_cnt[ii] > 0) and \
+            (cpt['Index'] == self.rcp.vl[ii+1]['Index2']) and (self.valid_cnt[ii] > 10) and \
             (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and (self.rcp.vl[ii+1]['Class'] < 4): # and ((self.rcp.vl[ii+1]['MovingState']<3) or (self.rcp.vl[ii+1]['Class'] > 0)):
           if ii not in self.pts and ( cpt['Tracked']):
             self.pts[ii] = car.RadarState.RadarPoint.new_message()

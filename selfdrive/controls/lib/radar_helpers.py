@@ -72,6 +72,9 @@ class Track(object):
       self.cnt = 1
       self.vision_cnt = 0
       self.vision = False
+      #self.aRel = 0.      # nidec gives no information about this
+      #self.vLat = 0.
+      self.track_id = track_id
       self.kf = KF1D([[self.vLead], [0.0]], _VLEAD_A, _VLEAD_C, _VLEAD_K)
     else:
       # estimate acceleration

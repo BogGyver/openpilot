@@ -70,13 +70,10 @@ def radard_thread(gctx=None):
   
 
   MP = ModelParser()
-  RI = RadarInterface(CP)
+  RI = RadarInterface()
 
   last_md_ts = 0
   last_l100_ts = 0
-
-  #used to track cars
-  track_id = 0
 
   # *** publish live20 and liveTracks
   live20 = messaging.pub_sock(context, service_list['live20'].port)
@@ -112,8 +109,6 @@ def radard_thread(gctx=None):
 
     ar_pts = {}
     for pt in rr.points:
-      track_id += 1
-      track_id = track_id % 62
       ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured, pt.aRel, pt.yvRel, pt.objectClass, pt.length, pt.trackId]
 
     # receive the live100s
@@ -161,7 +156,7 @@ def radard_thread(gctx=None):
         ekfv.state[SPEEDV] = 0.
 
       ar_pts[VISION_POINT] = (float(ekfv.state[XV]), np.polyval(MP.d_poly, float(ekfv.state[XV])),
-                              float(ekfv.state[SPEEDV]), False)
+                              float(ekfv.state[SPEEDV]), False, 0.,0.,0,0.,0)
     else:
       ekfv.state[XV] = MP.lead_dist
       ekfv.covar = (np.diag([MP.lead_var, ekfv.var_init]))
