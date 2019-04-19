@@ -53,8 +53,8 @@ def radard_thread(gctx=None):
   # wait for stats about the car to come in from controls
   cloudlog.info("radard is waiting for CarParams")
   CP = car.CarParams.from_bytes(Params().get("CarParams", block=True))
-  useTeslaRadar = CarSettings().get_value("useTeslaRadar")
-  mocked = (CP.carName == "mock") or ((CP.carName == "tesla") and not useTeslaRadar)
+  use_tesla_radar = CarSettings().get_value("useTeslaRadar")
+  mocked = (CP.carName == "mock") or ((CP.carName == "tesla") and not use_tesla_radar)
   VM = VehicleModel(CP)
   cloudlog.info("radard got CarParams")
   
@@ -82,7 +82,7 @@ def radard_thread(gctx=None):
   live20 = messaging.pub_sock(context, service_list['live20'].port)
   liveTracks = messaging.pub_sock(context, service_list['liveTracks'].port)
   icCarLR = None
-  if RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE:
+  if (RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE) and use_tesla_radar:
     icCarLR = messaging.pub_sock(context, service_list['uiIcCarLR'].port)
   path_x = np.arange(0.0, 140.0, 0.1)    # 140 meters is max
 
@@ -266,7 +266,7 @@ def radard_thread(gctx=None):
     #################################################################
     #BB For Tesla integration we will also track Left and Right lanes
     #################################################################
-    if RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE:
+    if (RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE) and use_tesla_radar:
       datrl = ui.ICCarsLR.new_message()
       datrl.v1Type = int(0)
       datrl.v1Dx = float(0.)
@@ -290,7 +290,7 @@ def radard_thread(gctx=None):
       datrl.v4Id = int(0)
       lane_offset = 0. #MP.lane_width
     #LEFT LANE
-    if RI.TRACK_LEFT_LANE:
+    if RI.TRACK_LEFT_LANE and use_tesla_radar:
       ll_track_pts = np.array([tracks[iden].get_key_for_cluster_dy(-MP.lane_width) for iden in idens])
       # If we have multiple points, cluster them
       if len(ll_track_pts) > 1:
@@ -338,7 +338,7 @@ def radard_thread(gctx=None):
           datrl.v2Dy = float(-ll_lead2_clusters[0].yRel - lane_offset) 
           datrl.v2Id = int(ll_lead2_clusters[0].track_id)
     #RIGHT LANE
-    if RI.TRACK_RIGHT_LANE:
+    if RI.TRACK_RIGHT_LANE and use_tesla_radar:
       rl_track_pts = np.array([tracks[iden].get_key_for_cluster_dy(MP.lane_width) for iden in idens])
       # If we have multiple points, cluster them
       if len(rl_track_pts) > 1:
@@ -384,7 +384,7 @@ def radard_thread(gctx=None):
           datrl.v4Vrel = float(rl_lead2_clusters[0].vRel)
           datrl.v4Dy = float(-rl_lead2_clusters[0].yRel + lane_offset)
           datrl.v4Id = int(rl_lead2_clusters[0].track_id)
-    if RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE:
+    if (RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE) and use_tesla_radar:
       icCarLR.send(datrl.to_bytes())      
     # *** publish live20 ***
     dat = messaging.new_message()
