@@ -460,8 +460,8 @@ class CarController(object):
         if socket is self.live20:
           leads = messaging.recv_one(socket).live20
           lead_1 = leads.leadOne
-          lead_2 = leads.leadOne
-          if lead_1.dRel:
+          lead_2 = leads.leadTwo
+          if lead_1.status:
             if CS.useTeslaRadar:
               self.leadDx = lead_1.dRel
               self.leadDy = self.curv0-lead_1.yRel
@@ -483,7 +483,7 @@ class CarController(object):
             self.leadClass = 0
             self.leadId = 0
             self.leadVx = 0xF
-          if lead_2.dRel:
+          if lead_2.status:
             self.lead2Dx = lead_2.dRel
             self.lead2Dy = self.curv0-lead_2.yRel
             self.lead2Class = lead_2.oClass 
