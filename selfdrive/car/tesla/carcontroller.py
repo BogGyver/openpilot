@@ -492,11 +492,11 @@ class CarController(object):
             if (self.lead2Id < 0) or (self.lead2Id == 63):
               self.leadId = 62
           else:
-              self.lead2Dx = 0.
-              self.lead2Dy = 0.
-              self.lead2Class = 0
-              self.lead2Id = 0
-              self.lead2Vx = 0xF
+            self.lead2Dx = 0.
+            self.lead2Dy = 0.
+            self.lead2Class = 0
+            self.lead2Id = 0
+            self.lead2Vx = 0xF
           can_sends.append(teslacan.create_DAS_LR_object_msg(0,self.leadClass, self.leadId,
                 self.leadDx,self.leadDy,self.leadVx,self.lead2Class,
                 self.lead2Id,self.lead2Dx,self.lead2Dy,self.lead2Vx))
