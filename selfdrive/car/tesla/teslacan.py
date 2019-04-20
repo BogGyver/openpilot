@@ -69,26 +69,48 @@ def create_DAS_LR_object_msg(lane,v1Class,v1Id,v1Dx,v1Dy,v1V,v2Class,v2Id,v2Dx,v
   msg_id = 0x559
   msg_len = 8
   msg = create_string_buffer(msg_len)
+  important1 = 0
+  important2 = 0
   if (v1Dx > 0) and (v1Id >= 0):
+    important1 = 1
     v1Class += 1
     if v1Class == 4:
       v1Class = 5
+    #for now force car
+    v1Class = 2
   if (v2Dx > 0) and (v2Id >= 0):
+    important2 = 1
     v2Class += 1
     if v2Class == 4:
       v2Class = 5
-  v1x = int(clip(v1Dx,0,127)/0.5) & 0xFF
-  v1y = int((clip(v1Dy,-22.,22.) + 22.05)/0.35) & 0x7F
-  v1v = 0x0F
-  if v1V > 0:
-    v1v = int((clip(v1V,-30,26) + 30)/4) & 0x0F
-  v2x = int(clip(v2Dx,0,127)/0.5) & 0xFF
-  v2y = int((clip(v2Dy,-22.,22.) + 22.05)/0.35) & 0x7F
-  v2v = 0x0F
-  if v2V > 0:
-    v2v = int((clip(v2V,-30,26) + 30)/4) & 0x0F
-  struct.pack_into('BBBBBBBB', msg, 0,lane + (v1Class << 3),v1x, v1v + ((v1y << 4) & 0xF0),
-    ((v1y >> 4) & 0x07) + ((v1Id << 3) & 0xF8), ((v1Id >> 5) & 0x03) + (v2Class >> 2) + ((v2x << 7) & 0x80),
+    #for now force car
+    v2Class = 2
+  if (v1Dx > 0):
+    v1x = int(clip(v1Dx,0,127)/0.5) & 0xFF
+    v1y = int((clip(v1Dy,-22.,22.) + 22.05)/0.35) & 0x7F
+    v1v = 0x0F
+    if v1Dx > 0:
+      v1v = int((clip(v1V,-30,26) + 30)/4) & 0x0F
+  else:
+    v1x = 0xFF
+    v1y = 0x7F
+    v1v = 0x0F
+    important1 = 0
+    v1Class = 0
+  if (v2Dx > 0):
+    v2x = int(clip(v2Dx,0,127)/0.5) & 0xFF
+    v2y = int((clip(v2Dy,-22.,22.) + 22.05)/0.35) & 0x7F
+    v2v = 0x0F
+    if v2Dx > 0:
+      v2v = int((clip(v2V,-30,26) + 30)/4) & 0x0F
+  else:
+    v2x = 0xFF
+    v2y = 0x7F
+    v2v = 0x0F
+    important2 = 0
+    v2Class = 0
+  struct.pack_into('BBBBBBBB', msg, 0,lane + (v1Class << 3) + (important1 << 7),v1x, v1v + ((v1y << 4) & 0xF0),
+    ((v1y >> 4) & 0x07) + ((v1Id << 3) & 0xF8), ((v1Id >> 5) & 0x03) + (v2Class << 2) +(important2 << 6) + ((v2x << 7) & 0x80),
     ((v2x >> 1) & 0x7F) + ((v2v << 7) & 0x80), ((v2v >> 1) & 0x07) + ((v2y << 3) & 0xF8),
     ((v2y >> 5) & 0x03) + ((v2Id << 2) & 0xFC))
   return [msg_id, 0, msg.raw, 0]

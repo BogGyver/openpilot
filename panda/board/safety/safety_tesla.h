@@ -429,7 +429,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     //when idx==0 is lead vehicle
     if (DAS_object_idx == 0) {
       MLB = DAS_LEAD_OBJECT_MLB;
-      MHB = DAS_LEAD_OBJECT_MLB;
+      MHB = DAS_LEAD_OBJECT_MHB;
     }
     if (DAS_object_idx == 1) {
       MLB = DAS_LEFT_OBJECT_MLB;
@@ -441,7 +441,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     }
     if (DAS_object_idx == 3) {
       MLB = 0xFFFFFF03;
-      MHB = 0x02040003;
+      MHB = 0x00000003;
     }
     //when idx == 4 we send street sign if it is valid
     if (DAS_object_idx == 4) {
