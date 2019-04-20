@@ -468,8 +468,10 @@ class CarController(object):
             else:
               self.leadDx = self.leadDxMatrix.add(lead_1.dRel)
               self.leadDy = self.leadDyMatrix.add(self.curv0-lead_1.yRel)
-            self.leadClass = lead_1.oClass 
             self.leadId = lead_1.trackId
+            if (self.leadId < 0) or (self.leadId == 63):
+              self.leadId = 61
+            self.leadClass = lead_1.oClass 
             self.leadVx = lead_1.vRel
           else:
             if CS.useTeslaRadar:
@@ -482,11 +484,13 @@ class CarController(object):
             self.leadId = 0
             self.leadVx = 0xF
           if lead_2.dRel:
-              self.lead2Dx = lead_2.dRel
-              self.lead2Dy = self.curv0-lead_2.yRel
-              self.lead2Class = lead_2.oClass 
-              self.lead2Id = lead_2.trackId
-              self.lead2Vx = lead_2.vRel
+            self.lead2Dx = lead_2.dRel
+            self.lead2Dy = self.curv0-lead_2.yRel
+            self.lead2Class = lead_2.oClass 
+            self.lead2Id = lead_2.trackId
+            self.lead2Vx = lead_2.vRel
+            if (self.lead2Id < 0) or (self.lead2Id == 63):
+              self.leadId = 62
           else:
               self.lead2Dx = 0.
               self.lead2Dy = 0.
