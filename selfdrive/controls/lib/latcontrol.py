@@ -57,9 +57,11 @@ class LatControl(object):
     self.rough_steers_rate = 0.0
     self.prev_angle_steers = 0.0
     self.calculate_rate = True
+    self.angle_steers_des = 0.
 
   def reset(self):
     self.pid.reset()
+
 
   def update(self, active, v_ego, angle_steers, angle_rate, angle_offset, steer_override, CP, VM, path_plan):
 
@@ -84,10 +86,11 @@ class LatControl(object):
 
     cur_time = sec_since_boot()
     self.angle_steers_des_time = cur_time
+
     if v_ego < 0.3 or not active:
       output_steer = 0.0
-      self.feed_forward = 0.0
       self.pid.reset()
+
       self.angle_steers_des = angle_steers
     else:
       # Interpolate desired angle between MPC updates
@@ -102,12 +105,14 @@ class LatControl(object):
       # Determine projected desired angle that is within the acceleration limit (prevent the steering wheel from jerking)
       projected_angle_steers_des = self.angle_steers_des + self.projection_factor * restricted_steer_rate
 
+
       # Determine future angle steers using accellerated steer rate
       projected_angle_steers = float(angle_steers) + self.projection_factor * float(accelerated_angle_rate)
 
       steers_max = get_steer_max(CP, v_ego)
       self.pid.pos_limit = steers_max
       self.pid.neg_limit = -steers_max
+
       deadzone = 0.0
 
       if CP.steerControlType == car.CarParams.SteerControlType.torque:
@@ -132,6 +137,7 @@ class LatControl(object):
 
     self.prev_angle_rate = angle_rate
     self.prev_angle_steers = angle_steers
+
 
     # return MPC angle in the last position (for ALCA) and either torque or 
     # adjusted angle in the first position
