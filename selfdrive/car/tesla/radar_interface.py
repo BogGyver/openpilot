@@ -58,7 +58,6 @@ class RadarInterface(object):
     if self.useTeslaRadar:
       self.pts = {}
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
-      self.track_id = 0
       self.delay = 0.05  # Delay of radar
       self.rcp = _create_radard_can_parser()
       context = zmq.Context()
@@ -105,7 +104,6 @@ class RadarInterface(object):
           if ii not in self.pts and ( cpt['Tracked']):
             self.pts[ii] = car.RadarState.RadarPoint.new_message()
             self.pts[ii].trackId = int((ii - 0x310)/3) 
-            self.track_id += 1
           if ii in self.pts:
             self.pts[ii].dRel = cpt['LongDist']  # from front of car
             self.pts[ii].yRel = cpt['LatDist']  # in car frame's y axis, left is positive

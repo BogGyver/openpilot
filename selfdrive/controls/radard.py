@@ -109,7 +109,7 @@ def radard_thread(gctx=None):
 
     ar_pts = {}
     for pt in rr.points:
-      ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured, pt.aRel, pt.yvRel, pt.objectClass, pt.length, pt.trackId]
+      ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured, pt.aRel, pt.yvRel, pt.objectClass, pt.length, pt.trackId+2]
 
     # receive the live100s
     l100 = None
@@ -156,7 +156,7 @@ def radard_thread(gctx=None):
         ekfv.state[SPEEDV] = 0.
 
       ar_pts[VISION_POINT] = (float(ekfv.state[XV]), np.polyval(MP.d_poly, float(ekfv.state[XV])),
-                              float(ekfv.state[SPEEDV]), False, 0.,0.,0,0.,0)
+                              float(ekfv.state[SPEEDV]), False, 0.,0.,0,0.,1)
     else:
       ekfv.state[XV] = MP.lead_dist
       ekfv.covar = (np.diag([MP.lead_var, ekfv.var_init]))
