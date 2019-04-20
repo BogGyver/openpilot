@@ -69,11 +69,11 @@ def create_DAS_LR_object_msg(lane,v1Class,v1Id,v1Dx,v1Dy,v1V,v2Class,v2Id,v2Dx,v
   msg_id = 0x559
   msg_len = 8
   msg = create_string_buffer(msg_len)
-  if (v1Dx > 0) and (v1Id > 0):
+  if (v1Dx > 0) and (v1Id >= 0):
     v1Class += 1
     if v1Class == 4:
       v1Class = 5
-  if (v2Dx > 0) and (v2Id > 0):
+  if (v2Dx > 0) and (v2Id >= 0):
     v2Class += 1
     if v2Class == 4:
       v2Class = 5
