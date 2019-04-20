@@ -61,42 +61,45 @@ class PathPlanner(object):
     self.angle_steers_des_prev = 0.0
     self.angle_steers_des_time = 0.0
 
-  def update(self, CP, VM, CS, md, live100):
+  def update(self, CP, VM, CS, md, live100, live_parameters):
     v_ego = CS.carState.vEgo
     angle_steers = CS.carState.steeringAngle
     angle_rate = CS.carState.steeringRate
     active = live100.live100.active
-    angle_offset = live100.live100.angleOffset
+
+    angle_offset_bias = live100.live100.angleModelBias + live_parameters.liveParameters.angleOffsetAverage
+
     self.MP.update(v_ego, md)
 
     # Run MPC
     cur_time = sec_since_boot()
-    self.angle_steers_des_prev = np.interp(cur_time, self.mpc_times, self.mpc_angles)
+    self.angle_steers_des_prev = self.angle_steers_des_mpc
+    VM.update_params(live_parameters.liveParameters.stiffnessFactor, live_parameters.liveParameters.steerRatio)
     curvature_factor = VM.curvature_factor(v_ego)
 
     l_poly = libmpc_py.ffi.new("double[4]", list(self.MP.l_poly))
     r_poly = libmpc_py.ffi.new("double[4]", list(self.MP.r_poly))
     p_poly = libmpc_py.ffi.new("double[4]", list(self.MP.p_poly))
 
-    # Determine future angle steers using steer rate
-    projected_angle_steers = float(angle_steers) + CP.steerActuatorDelay * float(angle_rate)
 
     # account for actuation delay
     self.cur_state = calc_states_after_delay(self.cur_state, v_ego, projected_angle_steers, curvature_factor, CP.steerRatio, CP.steerActuatorDelay + _DT_MPC, CP.eonToFront)
 
     # reset to current steer angle if not active or overriding
     if active:
-      self.cur_state[0].delta = math.radians(self.angle_steers_des_prev - angle_offset) / CP.steerRatio
+      delta_desired = self.mpc_solution[0].delta[1]
+      rate_desired = math.degrees(self.mpc_solution[0].rate[0] * VM.sR)
     else:
-      self.cur_state[0].delta = math.radians(angle_steers - angle_offset) / CP.steerRatio
+      delta_desired = math.radians(angle_steers - angle_offset_bias) / VM.sR
+      rate_desired = 0.0
 
     v_ego_mpc = max(v_ego, 5.0)  # avoid mpc roughness due to low speed
     self.libmpc.run_mpc(self.cur_state, self.mpc_solution,
                         l_poly, r_poly, p_poly,
                         self.MP.l_prob, self.MP.r_prob, self.MP.p_prob, curvature_factor, v_ego_mpc, self.MP.lane_width)
 
-    cur_time = sec_since_boot()
-    self.angle_steers_des_prev = np.interp(cur_time, self.mpc_times, self.mpc_angles)
+    self.angle_steers_des_mpc = float(math.degrees(delta_desired * VM.sR) + angle_offset_bias)
+
 
     #  Check for infeasable MPC solution
     mpc_nans = np.any(np.isnan(list(self.mpc_solution[0].delta)))
@@ -112,7 +115,7 @@ class PathPlanner(object):
       self.angle_steers_des_mpc = self.mpc_angles[1]
     else:
       self.libmpc.init(MPC_COST_LAT.PATH, MPC_COST_LAT.LANE, MPC_COST_LAT.HEADING, CP.steerRateCost)
-      self.cur_state[0].delta = math.radians(angle_steers) / CP.steerRatio
+      self.cur_state[0].delta = math.radians(angle_steers) / VM.sR
 
       if cur_time > self.last_cloudlog_t + 5.0:
         self.last_cloudlog_t = cur_time
@@ -138,7 +141,6 @@ class PathPlanner(object):
     plan_send.pathPlan.angleSteers = float(self.angle_steers_des_mpc)
     plan_send.pathPlan.mpcAngles = map(float, self.mpc_angles)
     plan_send.pathPlan.mpcTimes = map(float, self.mpc_times)
-    plan_send.pathPlan.valid = bool(plan_valid)
     plan_send.pathPlan.pPoly = map(float, p_poly)
     lld = 0.
     rld = 0.
@@ -147,6 +149,10 @@ class PathPlanner(object):
     if md.model.rightLane.std > 0:
       rld = math.sqrt(2)/md.model.rightLane.std
     plan_send.pathPlan.viewRange = float(max(lld,rld))
+    plan_send.pathPlan.rateSteers = float(rate_desired)
+    plan_send.pathPlan.angleOffset = float(live_parameters.liveParameters.angleOffsetAverage)
+    plan_send.pathPlan.valid = bool(plan_valid)
+    plan_send.pathPlan.paramsValid = bool(live_parameters.liveParameters.valid)
 
     self.plan.send(plan_send.to_bytes())
 
