@@ -529,7 +529,7 @@ class CarController(object):
                 self.curv0 = self.ALCA.laneChange_direction * self.laneWidth - self.curv0
               self.curv0 = clip(self.curv0, -3.5, 3.5)
             else:
-              if (not CS.blinker_on):
+              if (not CS.blinker_on) and (CS.v_ego > 15.6) and (not CS.steer_override):
                 if pp.lProb > LDW_LANE_PROBAB:
                   lLaneC0 = -pp.lPoly[3]
                   if abs(lLaneC0) < LDW_WARNING_2:
