@@ -83,7 +83,7 @@ class PathPlanner(object):
 
 
     # account for actuation delay
-    self.cur_state = calc_states_after_delay(self.cur_state, v_ego, projected_angle_steers, curvature_factor, CP.steerRatio, CP.steerActuatorDelay + _DT_MPC, CP.eonToFront)
+    self.cur_state = calc_states_after_delay(self.cur_state, v_ego, angle_steers, curvature_factor, CP.steerRatio, CP.steerActuatorDelay + _DT_MPC, CP.eonToFront)
 
     # reset to current steer angle if not active or overriding
     if active:
@@ -103,17 +103,7 @@ class PathPlanner(object):
 
     #  Check for infeasable MPC solution
     mpc_nans = np.any(np.isnan(list(self.mpc_solution[0].delta)))
-    if not mpc_nans:
-      self.mpc_angles = [self.angle_steers_des_prev,
-                        float(math.degrees(self.mpc_solution[0].delta[1] * CP.steerRatio) + angle_offset),
-                        float(math.degrees(self.mpc_solution[0].delta[2] * CP.steerRatio) + angle_offset)]
-
-      self.mpc_times = [cur_time,
-                        cur_time + _DT_MPC,
-                        cur_time + _DT_MPC + _DT_MPC]
-
-      self.angle_steers_des_mpc = self.mpc_angles[1]
-    else:
+    if mpc_nans:
       self.libmpc.init(MPC_COST_LAT.PATH, MPC_COST_LAT.LANE, MPC_COST_LAT.HEADING, CP.steerRateCost)
       self.cur_state[0].delta = math.radians(angle_steers) / VM.sR
 

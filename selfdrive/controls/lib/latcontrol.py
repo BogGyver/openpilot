@@ -59,10 +59,11 @@ class LatControl(object):
     self.calculate_rate = True
 
   def reset(self):
-    self.pid.reset()
+    self.pid.reset() #angle_rate, angle_offset,
 
-  def update(self, active, v_ego, angle_steers, angle_rate, angle_offset, steer_override, CP, VM, path_plan):
-
+  def update(self, active, v_ego, angle_steers,  steer_override, CP, VM, path_plan):
+    angle_rate = 0.0
+    angle_offset = 0.0
     if angle_rate == 0.0 and self.calculate_rate:
       if angle_steers != self.prev_angle_steers:
         self.steer_counter_prev = self.steer_counter
@@ -91,7 +92,7 @@ class LatControl(object):
       self.angle_steers_des = angle_steers
     else:
       # Interpolate desired angle between MPC updates
-      self.angle_steers_des = np.interp(cur_time, path_plan.mpcTimes, path_plan.mpcAngles)
+      self.angle_steers_des = path_plan.angleSteers #np.interp(cur_time, path_plan.mpcTimes, path_plan.mpcAngles)
       self.angle_steers_des_time = cur_time
 
       # Determine the target steer rate for desired angle, but prevent the acceleration limit from being exceeded
