@@ -116,7 +116,7 @@ def _isotp_thread(panda, bus, tx_addr, tx_queue, rx_queue):
       for rx_addr, rx_ts, rx_data, rx_bus in messages:
         if rx_bus != bus or rx_addr != filter_addr or len(rx_data) == 0:
           continue
-
+        rx_data = bytearray(rx_data)
         if (DEBUG): print("R: {} {}".format(hex(rx_addr), hexlify(rx_data)))
         if rx_data[0] >> 4 == 0x0:
           # single rx_frame
@@ -693,9 +693,9 @@ def request_transfer_exit(address):
   _uds_request(address, SERVICE_TYPE.REQUEST_TRANSFER_EXIT, subfunction=None)
 
 if __name__ == "__main__":
-  from panda import Panda
+  from panda.python import Panda
   panda = Panda()
-  bus = 0 
+  bus = 1 
   tx_addr = 0x641 # tesla bosch radar RCM addr 0x18da30f1 # EPS
   tx_queue = Queue()
   rx_queue = Queue()

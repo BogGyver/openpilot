@@ -116,7 +116,7 @@ def _isotp_thread(panda, bus, tx_addr, tx_queue, rx_queue):
       for rx_addr, rx_ts, rx_data, rx_bus in messages:
         if rx_bus != bus or rx_addr != filter_addr or len(rx_data) == 0:
           continue
-
+        rx_data = bytearray(rx_data)
         if (DEBUG): print("R: {} {}".format(hex(rx_addr), hexlify(rx_data)))
         if rx_data[0] >> 4 == 0x0:
           # single rx_frame
@@ -760,7 +760,8 @@ if __name__ == "__main__":
       #for i in range(0,0x7F):
       #  TESLA_ACCESS_LEVEL = i*2 + 1
         try:
-          seed = security_access(tx_addr, TESLA_ACCESS_LEVEL)
+          seedh = security_access(tx_addr, TESLA_ACCESS_LEVEL)
+          seed = struct.unpack('>L',seedh)[0]
         except NegativeResponseError as e:
           if e.error_code == 0x37:
             print("sleep ... (required time delay not expired)")
@@ -768,15 +769,15 @@ if __name__ == "__main__":
             continue
             raise
         break
-  print("seed: {}".format(hexlify(seed)))
+  print("seed: {}".format(hexlify(seedh)))
   print("security access: send key ...")
   key = tesla_radar_security_access_algorithm(seed)
+  key = struct.pack('!L',key)
   print("key: {}".format(hexlify(key)))
-  #key = struct.pack("!H", key)
   security_access(tx_addr, TESLA_ACCESS_LEVEL + 1 , key)
 
-  print("programming session ...")
-  diagnostic_session_control(tx_addr, SESSION_TYPE.PROGRAMMING)
+  #print("programming session ...")
+  #diagnostic_session_control(tx_addr, SESSION_TYPE.PROGRAMMING)
 
   print("write data by id: set VIN ...")
   write_data_by_identifier(tx_addr, DATA_IDENTIFIER_TYPE.VIN, '5YJSA1S13EFP52303')
