@@ -44,7 +44,7 @@ def _create_radard_can_parser():
 
   checks = zip(RADAR_A_MSGS + RADAR_B_MSGS, [20]*(msg_a_n + msg_b_n))
 
-  return CANParser(os.path.splitext(dbc_f)[0], signals, checks, 1)
+  return CANParser(os.path.splitext(dbc_f)[0], signals, checks, 2)
 
 def _create_nidec_can_parser():
   dbc_f = 'acura_ilx_2016_nidec.dbc'
@@ -90,7 +90,7 @@ class RadarInterface(object):
   def update(self):
 
     ret = car.RadarState.new_message()
-    if self.radar_off_can:
+    if self.radar_off_can and (not self.useTeslaRadar):
       time.sleep(0.05)
       return ret
 
