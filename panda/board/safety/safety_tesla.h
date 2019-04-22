@@ -1341,7 +1341,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     int radarVin_b5 = ((to_send->RDHR >> 8) & 0xFF);
     int radarVin_b6 = ((to_send->RDHR >> 16) & 0xFF);
     int radarVin_b7 = ((to_send->RDHR >> 24) & 0xFF);
-    if (id == 1) {
+    if (id == 0) {
       tesla_radar_should_send = radarVin_b2;
       tesla_radar_trigger_message_id = (radarVin_b3 << 8) + radarVin_b4;
       tesla_radar_can = radarVin_b1;
@@ -1350,7 +1350,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
       radar_VIN[2] = radarVin_b7;
       tesla_radar_vin_complete = tesla_radar_vin_complete | 1;
     }
-    if (id == 2) {
+    if (id == 1) {
       radar_VIN[3] = radarVin_b1;
       radar_VIN[4] = radarVin_b2;
       radar_VIN[5] = radarVin_b3;
@@ -1360,7 +1360,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
       radar_VIN[9] = radarVin_b7;
       tesla_radar_vin_complete = tesla_radar_vin_complete | 2;
     }
-    if (id == 3) {
+    if (id == 2) {
       radar_VIN[10] = radarVin_b1;
       radar_VIN[11] = radarVin_b2;
       radar_VIN[12] = radarVin_b3;
