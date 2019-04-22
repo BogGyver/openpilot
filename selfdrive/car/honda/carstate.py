@@ -3,6 +3,7 @@ from common.kalman.simple_kalman import KF1D
 from selfdrive.can.parser import CANParser, CANDefine
 from selfdrive.config import Conversions as CV
 from selfdrive.car.honda.values import CAR, DBC, STEER_THRESHOLD, SPEED_FACTOR, HONDA_BOSCH
+from selfdrive.car.honda.readconfig import read_config_file
 
 def parse_gear_shifter(gear, vals):
 
@@ -185,6 +186,15 @@ class CarState(object):
     self.right_blinker_on = 0
 
     self.stopped = 0
+
+    ### START OF MAIN CONFIG OPTIONS ###
+    ### Do NOT modify here, modify in /data/honda_openpilot.cfg and reboot
+    self.useTeslaRadar = False
+    self.radarVIN = "                 "
+    self.radarOffset = 0
+    #read config file
+    read_config_file(self)
+    ### END OF MAIN CONFIG OPTIONS ###
 
     # vEgo kalman filter
     dt = 0.01

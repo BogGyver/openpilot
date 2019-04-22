@@ -245,6 +245,7 @@ class CarState(object):
     self.useWithoutHarness = False
     self.radarVIN = "                 "
     self.enableLdw = True
+    self.radarOffset = 0.
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
