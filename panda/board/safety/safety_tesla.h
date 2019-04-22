@@ -61,7 +61,10 @@ int high_beam_lever_state = 0;
 int tesla_radar_status = 0; //0-not present, 1-initializing, 2-active
 uint32_t tesla_last_radar_signal = 0;
 const int TESLA_RADAR_TIMEOUT = 1000000; // 1 second between real time checks
-char radar_VIN[] = "5YJSA1H27FF087536"; //leave empty if your radar VIN matches the car VIN
+char radar_VIN[] = "                 "; //leave empty if your radar VIN matches the car VIN
+int tesla_radar_vin_complete = 0;
+int tesla_radar_can = 1;
+int tesla_radar_trigger_message_id = 0; //not used by tesla, to showcase for other cars
 
 //EPB enable counter
 int EPB_epasControl_idx = 0;
@@ -177,7 +180,7 @@ int DAS_inDrive = 0;
 int DAS_inDrive_prev = 0;
 int DAS_ignitionOn = 0;
 int DAS_present = 0;
-int DAS_useTeslaRadar = 0;
+int tesla_radar_should_send = 0;
 int DAS_noEpasHarness = 0;
 
 //fake DAS - last stalk data used to cancel
@@ -1105,7 +1108,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     } else {
       DAS_ignitionOn = 0;
     }
-    if ((DAS_ignitionOn * DAS_present * DAS_useTeslaRadar ) == 1) {
+    if ((DAS_ignitionOn * DAS_present * tesla_radar_should_send ) == 1) {
       set_uja1023_output_bits(1 << 7);
     } else {
       clear_uja1023_output_bits(1 << 7);
@@ -1328,6 +1331,47 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
 
   addr = to_send->RIR >> 21;
 
+  //capture message for radarVIN and settings
+  if (addr == 0x560) {
+    int id = (to_send->RDLR & 0xFF);
+    int radarVin_b1 = ((to_send->RDLR >> 8) & 0xFF);
+    int radarVin_b2 = ((to_send->RDLR >> 16) & 0xFF);
+    int radarVin_b3 = ((to_send->RDLR >> 24) & 0xFF);
+    int radarVin_b4 = (to_send->RDHR & 0xFF);
+    int radarVin_b5 = ((to_send->RDHR >> 8) & 0xFF);
+    int radarVin_b6 = ((to_send->RDHR >> 16) & 0xFF);
+    int radarVin_b7 = ((to_send->RDHR >> 24) & 0xFF);
+    if (id == 1) {
+      tesla_radar_should_send = radarVin_b2;
+      tesla_radar_trigger_message_id = (radarVin_b3 << 8) + radarVin_b4;
+      tesla_radar_can = radarVin_b1;
+      radar_VIN[0] = radarVin_b5;
+      radar_VIN[1] = radarVin_b6;
+      radar_VIN[2] = radarVin_b7;
+      tesla_radar_vin_complete = tesla_radar_vin_complete | 1;
+    }
+    if (id == 2) {
+      radar_VIN[3] = radarVin_b1;
+      radar_VIN[4] = radarVin_b2;
+      radar_VIN[5] = radarVin_b3;
+      radar_VIN[6] = radarVin_b4;
+      radar_VIN[7] = radarVin_b5;
+      radar_VIN[8] = radarVin_b6;
+      radar_VIN[9] = radarVin_b7;
+      tesla_radar_vin_complete = tesla_radar_vin_complete | 2;
+    }
+    if (id == 3) {
+      radar_VIN[10] = radarVin_b1;
+      radar_VIN[11] = radarVin_b2;
+      radar_VIN[12] = radarVin_b3;
+      radar_VIN[13] = radarVin_b4;
+      radar_VIN[14] = radarVin_b5;
+      radar_VIN[15] = radarVin_b6;
+      radar_VIN[16] = radarVin_b7;
+      tesla_radar_vin_complete = tesla_radar_vin_complete | 4;
+    }
+    return false;
+  }
   //capture message for fake DAS street sign object
   if (addr == 0x556) {
     streetSignObject_b0 = (to_send->RDLR & 0xFF);
@@ -1426,7 +1470,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_208_rackDetected = ((b1 >> 6) & 0x01);
     DAS_025_steeringOverride = ((b1 >> 7) & 0x01);
     DAS_ldwStatus = (b2 & 0x07);
-    DAS_useTeslaRadar = ((b2 >> 3) & 0x01);
+    //FLAG NOT USED = ((b2 >> 3) & 0x01);
     DAS_noEpasHarness = ((b2 >> 4) & 0x01);
     return false;
   }
@@ -1518,7 +1562,7 @@ static int tesla_ign_hook()
 }
 
 static void tesla_fwd_to_radar_as_is(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
-  if (enable_radar_emulation == 0) {
+  if ((enable_radar_emulation == 0) || (tesla_radar_vin_complete !=7) || (tesla_radar_should_send==0)) {
     return;
   }
   CAN_FIFOMailBox_TypeDef to_send;
@@ -1535,7 +1579,7 @@ static uint32_t radar_VIN_char(int pos, int shift) {
 
 
 static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
-  if (enable_radar_emulation == 0) {
+  if ((enable_radar_emulation == 0) || (tesla_radar_vin_complete !=7) || (tesla_radar_should_send==0)) {
     return;
   }
   int32_t addr = to_fwd->RIR >> 21;
@@ -1728,18 +1772,18 @@ static int tesla_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd)
     if ((tesla_radar_status > 0 ) && (enable_radar_emulation == 1) && ((addr == 0x20A ) || (addr == 0x118 ) || (addr == 0x108 ) ||  
     (addr == 0x115 ) ||  (addr == 0x148 ) || (addr == 0x145)))
     {
-      tesla_fwd_to_radar_modded(1, to_fwd);
+      tesla_fwd_to_radar_modded(tesla_radar_can, to_fwd);
     }
 
     //check all messages we need to also send to radar, moddified, all the time
     if  (((addr == 0xE ) || (addr == 0x308 ) || (addr == 0x45 ) || (addr == 0x398 ) ||
     (addr == 0x405 ) ||  (addr == 0x30A)) && (enable_radar_emulation == 1))  {
-      tesla_fwd_to_radar_modded(1, to_fwd);
+      tesla_fwd_to_radar_modded(tesla_radar_can, to_fwd);
     }
 
     //forward to radar unmodded the UDS messages 0x641
     if  (addr == 0x641 ) {
-      tesla_fwd_to_radar_as_is(1, to_fwd);
+      tesla_fwd_to_radar_as_is(tesla_radar_can, to_fwd);
     }
 
     // change inhibit of GTW_epasControl
@@ -1769,8 +1813,8 @@ static int tesla_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd)
     }
   }
 
-  if (bus_num == 1) {
-    //send radar 0x531 and 0x651 from CAN1 to CAN0
+  if (bus_num == tesla_radar_can) {
+    //send radar 0x531 and 0x651 from Radar CAN to CAN0
     if ((addr == 0x531) || (addr == 0x651)){ 
       return 0;
     }

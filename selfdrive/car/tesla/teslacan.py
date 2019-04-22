@@ -65,6 +65,18 @@ def create_fake_IC_msg(useAnalogWhenNoEon):
   struct.pack_into('BBBBBBBB', msg, 0, 0xFF,0xFF,0x01,0x02,0x03,0x04,0xFF,useAnalog)
   return [msg_id, 0, msg.raw, 0]
 
+def create_radar_VIN_msg(id,radarVIN,radarCAN,radarTriggerMessage,useRadar):
+  msg_id = 0x560
+  msg_len = 8
+  msg = create_string_buffer(msg_len)
+  if id == 0:
+    struct.pack_into('BBBBBBBB', msg, 0, id,radarCAN,useRadar,((radarTriggerMessage >> 8) & 0xFF),(radarTriggerMessage & 0xFF),ord(radarVIN[0]),ord(radarVIN[1]),ord(radarVIN[2]))
+  if id == 1:
+    struct.pack_into('BBBBBBBB', msg, 0, id,ord(radarVIN[3]),ord(radarVIN[4]),ord(radarVIN[5]),ord(radarVIN[6]),ord(radarVIN[7]),ord(radarVIN[8]),ord(radarVIN[9]))
+  if id == 2:
+    struct.pack_into('BBBBBBBB', msg, 0, id,ord(radarVIN[10]),ord(radarVIN[11]),ord(radarVIN[12]),ord(radarVIN[13]),ord(radarVIN[14]),ord(radarVIN[15]),ord(radarVIN[16]))
+  return [msg_id, 0, msg.raw, 0]
+
 def create_DAS_LR_object_msg(lane,v1Class,v1Id,v1Dx,v1Dy,v1V,v2Class,v2Id,v2Dx,v2Dy,v2V):
   msg_id = 0x559
   msg_len = 8
@@ -178,7 +190,7 @@ def create_fake_DAS_warning(DAS_211_accNoSeatBelt, DAS_canErrors, \
             DAS_202_noisyEnvironment, DAS_doorOpen, DAS_notInDrive, enableDasEmulation, enableRadarEmulation, \
             stopSignWarning, stopLightWarning, \
             DAS_222_accCameraBlind, DAS_219_lcTempUnavailableSpeed, DAS_220_lcTempUnavailableRoad, DAS_221_lcAborting, \
-            DAS_207_lkasUnavailable,DAS_208_rackDetected, DAS_025_steeringOverride, ldwStatus,useTeslaRadar,useWithoutHarness):
+            DAS_207_lkasUnavailable,DAS_208_rackDetected, DAS_025_steeringOverride, ldwStatus,FLAG_notUsed,useWithoutHarness):
   msg_id = 0x554
   msg_len = 3
   fd = 0
@@ -189,13 +201,11 @@ def create_fake_DAS_warning(DAS_211_accNoSeatBelt, DAS_canErrors, \
     rd = 1
   utr = 0
   wh = 0
-  if useTeslaRadar:
-    utr = 1
   if useWithoutHarness:
     wh = 1
   warn1 = (stopLightWarning<< 7) + (rd << 6) + (fd << 5) + (DAS_211_accNoSeatBelt << 4) + (DAS_canErrors << 3) + (DAS_202_noisyEnvironment << 2) + (DAS_doorOpen << 1) + DAS_notInDrive
   warn2 = stopSignWarning + (DAS_222_accCameraBlind << 1) + (DAS_219_lcTempUnavailableSpeed << 2) + (DAS_220_lcTempUnavailableRoad << 3) + (DAS_221_lcAborting << 4) + (DAS_207_lkasUnavailable << 5) + (DAS_208_rackDetected << 6) + (DAS_025_steeringOverride << 7)
-  warn3 = ldwStatus + (utr << 3) + (wh << 4)
+  warn3 = ldwStatus + (FLAG_notUsed << 3) + (wh << 4)
   msg = create_string_buffer(msg_len)
   struct.pack_into('BBB',msg ,0 , warn1,warn2,warn3)
   return [msg_id,0,msg.raw,0]

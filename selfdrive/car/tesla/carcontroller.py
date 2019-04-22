@@ -202,6 +202,8 @@ class CarController(object):
     self.ldwStatus = 0
     self.prev_ldwStatus = 0
 
+    self.radarVin_idx = 0
+
   def reset_traffic_events(self):
     self.stopSign_visible = False
     self.stopSign_distance = 1000.
@@ -417,6 +419,15 @@ class CarController(object):
     # Send CAN commands.
     can_sends = []
 
+    #if using radar, we need to send the VIN
+    if CS.useTeslaRadar and (frame % 100 == 0):
+      useRadar=0
+      if CS.useTeslaRadar:
+        useRadar=1
+      can_sends.append(teslacan.create_radar_VIN_msg(self.radarVin_idx+1,CS.radarVIN,1,0x108,useRadar))
+      self.radarVin_idx += 1
+      self.radarVin_idx = self.radarVin_idx  % 3
+
     #First we emulate DAS.
     # DAS_longC_enabled (1),DAS_speed_override (1),DAS_apUnavailable (1), DAS_collision_warning (1),  DAS_op_status (4)
     # DAS_speed_kph(8), 
@@ -529,7 +540,7 @@ class CarController(object):
                 self.curv0 = self.ALCA.laneChange_direction * self.laneWidth - self.curv0
               self.curv0 = clip(self.curv0, -3.5, 3.5)
             else:
-              if (not CS.blinker_on) and (CS.v_ego > 15.6) and (not CS.steer_override):
+              if CS.enableLdw and (not CS.blinker_on) and (CS.v_ego > 15.6) and (not CS.steer_override):
                 if pp.lProb > LDW_LANE_PROBAB:
                   lLaneC0 = -pp.lPoly[3]
                   if abs(lLaneC0) < LDW_WARNING_2:
@@ -756,7 +767,7 @@ class CarController(object):
             self.DAS_202_noisyEnvironment, CS.DAS_doorOpen, CS.DAS_notInDrive, CS.enableDasEmulation, CS.enableRadarEmulation, \
             self.stopSignWarning, self.stopLightWarning, \
             self.DAS_222_accCameraBlind, self.DAS_219_lcTempUnavailableSpeed, self.DAS_220_lcTempUnavailableRoad, self.DAS_221_lcAborting, \
-            self.DAS_207_lkasUnavailable,self.DAS_208_rackDetected, self.DAS_025_steeringOverride,self.ldwStatus,CS.useTeslaRadar,CS.useWithoutHarness))
+            self.DAS_207_lkasUnavailable,self.DAS_208_rackDetected, self.DAS_025_steeringOverride,self.ldwStatus,0,CS.useWithoutHarness))
       self.stopLightWarning_last = self.stopLightWarning
       self.stopSignWarning_last = self.stopSignWarning
       self.warningNeeded = 0

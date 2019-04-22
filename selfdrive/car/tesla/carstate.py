@@ -243,6 +243,8 @@ class CarState(object):
     self.useAnalogWhenNoEon = False
     self.useTeslaRadar = False
     self.useWithoutHarness = False
+    self.radarVIN = "                 "
+    self.enableLdw = True
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

@@ -199,6 +199,22 @@ def read_config_file(CS):
       file_changed = True
     config.set('OP_CONFIG', 'use_without_harness', CS.useWithoutHarness)
 
+    #radar_vin -> CS.radarVIN
+    try:
+      CS.radarVIN = configr.get('OP_CONFIG','radar_vin')
+    except:
+      CS.radarVIN = "                 "
+      file_changed = True
+    config.set('OP_CONFIG', 'radar_vin', CS.radarVIN)
+
+    #enable_ldw = CS.enableLdw
+    try:
+      CS.enableLdw = configr.getboolean('OP_CONFIG','enable_ldw')
+    except:
+      CS.enableLdw = True
+      file_changed = True
+    config.set('OP_CONFIG', 'enable_ldw', CS.enableLdw)
+
     #do_auto_update -> CS.doAutoUpdate
     try:
       CS.doAutoUpdate = configr.getboolean('OP_CONFIG','do_auto_update')
@@ -239,6 +255,8 @@ class CarSettings(object):
     self.useAnalogWhenNoEon = False
     self.useTeslaRadar = False
     self.useWithoutHarness = False
+    self.radarVIN = "                 "
+    self.enableLdw = True
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
