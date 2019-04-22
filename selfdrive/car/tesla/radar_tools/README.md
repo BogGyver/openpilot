@@ -4,4 +4,4 @@ To do so just run the command below in your bash session before running any othe
 
 ```export PYTHONPATH="/data/openpilot/"```
 
-Also, please make sure at least boardd is not running (I recommend killing the whole OP by doing a ```tmux a``` and then ```Ctrl + C```, wait for ```keyboard interup``` and then a ```Ctrl + C``` again).
+Also, please make sure at least boardd is not running (I recommend killing the whole OP by doing a ```tmux a``` and then press ```Ctrl + C``` once, wait for ```KeyboardInterrupt``` to appear and then press ```Ctrl + C``` again).
