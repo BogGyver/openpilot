@@ -99,7 +99,7 @@ def create_DAS_LR_object_msg(lane,v1Class,v1Id,v1Dx,v1Dy,v1V,v2Class,v2Id,v2Dx,v
     v2Class = 2
   if (v1Dx > 0):
     v1x = int(clip(v1Dx,0,127)/0.5/2.0) & 0xFF
-    v1y = int((clip(v1Dy,-22.,22.)/2.0 + 22.05)/0.35) & 0x7F
+    v1y = int((clip(v1Dy,-22.,22.) + 22.05)/0.35) & 0x7F
     v1v = 0x0F
     if v1Dx > 0:
       v1v = int((clip(v1V,-30,26) + 30)/4) & 0x0F
@@ -111,7 +111,7 @@ def create_DAS_LR_object_msg(lane,v1Class,v1Id,v1Dx,v1Dy,v1V,v2Class,v2Id,v2Dx,v
     v1Class = 0
   if (v2Dx > 0):
     v2x = int(clip(v2Dx,0,127)/0.5/2.0) & 0xFF
-    v2y = int((clip(v2Dy,-22.,22.)/2.0 + 22.05)/0.35) & 0x7F
+    v2y = int((clip(v2Dy,-22.,22.) + 22.05)/0.35) & 0x7F
     v2v = 0x0F
     if v2Dx > 0:
       v2v = int((clip(v2V,-30,26) + 30)/4) & 0x0F
