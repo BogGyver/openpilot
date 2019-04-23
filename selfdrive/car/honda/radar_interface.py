@@ -60,7 +60,7 @@ def _create_nidec_can_parser():
 
 
 class RadarInterface(object):
-  def __init__(self):
+  def __init__(self,CP):
     # radar
     self.pts = {}
     self.delay = 0.1
@@ -135,26 +135,12 @@ class RadarInterface(object):
               self.pts[ii].yRel = cpt['LatDist']  - self.radarOffset # in car frame's y axis, left is positive
               self.pts[ii].vRel = cpt['LongSpeed']
               self.pts[ii].aRel = cpt['LongAccel']
-              self.pts[ii].yvRel = self.rcp.vl[ii+1]['LatSpeed']
+              #self.pts[ii].yvRel = self.rcp.vl[ii+1]['LatSpeed']
               self.pts[ii].measured = bool(cpt['Meas'])
-              self.pts[ii].dz = self.rcp.vl[ii+1]['dZ']
-              self.pts[ii].movingState = self.rcp.vl[ii+1]['MovingState']
-              self.pts[ii].length = self.rcp.vl[ii+1]['Length']
-              self.pts[ii].obstacleProb = cpt['ProbObstacle']
-              if self.rcp.vl[ii+1]['Class'] >= CLASS_MIN_PROBABILITY:
-                self.pts[ii].objectClass = self.rcp.vl[ii+1]['Class']
-                # for now we will use class 0- unknown stuff to show trucks
-                # we will base that on being a class 1 and length of 2 (hoping they meant width not length, but as germans could not decide)
-                # 0-unknown 1-four wheel vehicle 2-two wheel vehicle 3-pedestrian 4-construction element
-                # going to 0-unknown 1-truck 2-car 3/4-motorcycle/bicycle 5 pedestrian - we have two bits so
-                if self.pts[ii].objectClass == 0:
-                  self.pts[ii].objectClass = 1
-                if (self.pts[ii].objectClass == 1) and ((self.pts[ii].length >= 1.8) or (1.6 < self.pts[ii].dz < 4.5)):
-                  self.pts[ii].objectClass = 0
-                if self.pts[ii].objectClass == 4:
-                  self.pts[ii].objectClass = 1
-              else:
-                self.pts[ii].objectClass = 1
+              #self.pts[ii].dz = self.rcp.vl[ii+1]['dZ']
+              #self.pts[ii].movingState = self.rcp.vl[ii+1]['MovingState']
+              #self.pts[ii].length = self.rcp.vl[ii+1]['Length']
+              #self.pts[ii].obstacleProb = cpt['ProbObstacle']
           else:
             if ii in self.pts:
               del self.pts[ii]
@@ -206,8 +192,8 @@ if __name__ == "__main__":
   class CarParams:
     radarOffCan = False
 
-
-  RI = RadarInterface()
+  CP = CarParams()
+  RI = RadarInterface(CP)
   while 1:
     ret = RI.update()
     print(chr(27) + "[2J")

@@ -117,7 +117,7 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
     //send 119
     MLB = 0x11F41FFF;
     MHB = 0x00000080 + tesla_radar_x119_id;
-    int cksm = add_tesla_cksm2(MLB, MHB, 0x17, 5);
+    cksm = add_tesla_cksm2(MLB, MHB, 0x17, 5);
     MHB = MHB + (cksm << 8);
     tesla_radar_x119_id++;
     tesla_radar_x119_id = tesla_radar_x119_id % 16;
@@ -125,7 +125,7 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
     //send 109
     MLB = 0x80000000 + (tesla_radar_x109_id << 13);
     MHB = 0x00; 
-    int cksm = add_tesla_cksm2(MLB, MHB, 0x7, 7);
+    cksm = add_tesla_cksm2(MLB, MHB, 0x7, 7);
     MHB = MHB + (cksm << 24);
     tesla_radar_x109_id++;
     tesla_radar_x109_id = tesla_radar_x109_id % 8;
@@ -135,7 +135,7 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
         //send 159
         MLB = 0x0B4FFFFB + (tesla_radar_x159_id << 28);
         MHB = 0x000000FF;
-        int cksm = add_tesla_cksm2(MLB, MHB, 0xB2, 5);
+        cksm = add_tesla_cksm2(MLB, MHB, 0xB2, 5);
         MHB = MHB +(cksm << 8);
         tesla_radar_x159_id++;
         tesla_radar_x159_id = tesla_radar_x159_id % 16;
@@ -143,7 +143,7 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
         //send 149
         MLB = 0x6A022600;
         MHB = 0x000F04AA + (tesla_radar_x149_id << 20);
-        int cksm = add_tesla_cksm2(MLB, MHB, 0x46, 7);
+        cksm = add_tesla_cksm2(MLB, MHB, 0x46, 7);
         MHB = MHB +(cksm << 24);
         tesla_radar_x149_id++;
         tesla_radar_x149_id = tesla_radar_x149_id % 16;
@@ -151,7 +151,7 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
         //send 129
         MLB = 0x20000000; 
         MHB = 0x00 + (tesla_radar_x129_id << 4);
-        int cksm = add_tesla_cksm2(MLB, MHB, 0x16, 5);
+        cksm = add_tesla_cksm2(MLB, MHB, 0x16, 5);
         MHB = MHB +(cksm << 8);
         tesla_radar_x129_id++;
         tesla_radar_x129_id = tesla_radar_x129_id % 16;
@@ -159,7 +159,7 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
         //send 1A9
         MLB = 0x000C0000 + (tesla_radar_x1A9_id << 28);
         MHB = 0x00;
-        int cksm = add_tesla_cksm2(MLB, MHB, 0x38, 4);
+        cksm = add_tesla_cksm2(MLB, MHB, 0x38, 4);
         MHB = MHB +(cksm << 8);
         tesla_radar_x1A9_id++;
         tesla_radar_x1A9_id = tesla_radar_x1A9_id % 16;
@@ -175,7 +175,7 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
         MLB = 0x00000000; 
         MHB = 0x00000000;
         MHB = MHB + (tesla_radar_x219_id << 20);
-        int crc = add_tesla_crc(MLB, MHB,7);
+        crc = add_tesla_crc(MLB, MHB,7);
         MHB = MHB +(crc << 24);
         tesla_radar_x219_id++;
         tesla_radar_x219_id = tesla_radar_x219_id % 16;

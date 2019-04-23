@@ -5,9 +5,29 @@ from selfdrive.controls.lib.drive_helpers import rate_limit
 from common.numpy_fast import clip
 from selfdrive.car import create_gas_command
 from selfdrive.car.honda import hondacan
-from selfdrive.car.honda.values import AH, CruiseButtons, CAR
+from selfdrive.car.honda.values import AH, CruiseButtons, CAR, HONDA_BOSCH
 from selfdrive.can.packer import CANPacker
-from selfdrive.car.modules.ALCA_module import ALCAController
+
+# Accel limits
+ACCEL_HYST_GAP = 0.02 # don't change accel command for small oscilalitons within this value
+ACCEL_MAX = 800.
+ACCEL_MIN = -1599.
+ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
+
+def accel_hysteresis(accel, accel_steady, enabled):
+
+  # for small accel oscillations within ACCEL_HYST_GAP, don't change the accel command
+  if not enabled:
+    # send 0 when disabled, otherwise acc faults
+    accel_steady = 0.
+  elif accel > accel_steady + ACCEL_HYST_GAP:
+    accel_steady = accel - ACCEL_HYST_GAP
+  elif accel < accel_steady - ACCEL_HYST_GAP:
+    accel_steady = accel + ACCEL_HYST_GAP
+  accel = accel_steady
+
+  return accel, accel_steady
+
 
 def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
   # hyst params
@@ -77,6 +97,7 @@ HUDData = namedtuple("HUDData",
 
 class CarController(object):
   def __init__(self, dbc_name, enable_camera=True):
+    self.accel_steady = 0.
     self.braking = False
     self.brake_steady = 0.
     self.brake_last = 0.
@@ -85,7 +106,7 @@ class CarController(object):
     self.enable_camera = enable_camera
     self.packer = CANPacker(dbc_name)
     self.new_radar_config = False
-    self.ALCA = ALCAController(self,True,False)  # Enabled  True and SteerByAngle only False
+
   def update(self, sendcan, enabled, CS, frame, actuators, \
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
              hud_v_cruise, hud_show_lanes, hud_show_car, \
@@ -122,7 +143,7 @@ class CarController(object):
       hud_car = 0
 
     # For lateral control-only, send chimes as a beep since we don't send 0x1fa
-    if CS.CP.radarOffCan:
+    if not CS.CP.openpilotLongitudinalControl:
       snd_beep = snd_beep if snd_beep != 0 else snd_chime
 
     #print chime, alert_id, hud_alert
@@ -139,52 +160,42 @@ class CarController(object):
       STEER_MAX = 0xF00
     elif CS.CP.carFingerprint in (CAR.CRV, CAR.ACURA_RDX):
       STEER_MAX = 0x3e8  # CR-V only uses 12-bits and requires a lower value (max value from energee)
-    elif CS.CP.carFingerprint in (CAR.ODYSSEY_CHN):
-      STEER_MAX = 0x7FFF
     else:
       STEER_MAX = 0x1000
 
-    #update custom UI buttons and alerts
-    CS.UE.update_custom_ui()
-    if (frame % 1000 == 0):
-      CS.cstm_btns.send_button_info()
-      CS.UE.uiSetCarEvent(CS.cstm_btns.car_folder,CS.cstm_btns.car_name)
-
-    # Get the angle from ALCA.
-    alca_enabled = False
-    alca_steer = 0.
-    alca_angle = 0.
-    turn_signal_needed = 0
-    # Update ALCA status and custom button every 0.1 sec.
-    if self.ALCA.pid == None:
-      self.ALCA.set_pid(CS)
-    if (frame % 10 == 0):
-      self.ALCA.update_status(CS.cstm_btns.get_button_status("alca") > 0)
-    # steer torque
-    alca_angle, alca_steer, alca_enabled, turn_signal_needed = self.ALCA.update(enabled, CS, frame, actuators)
-
+    # gas and brake
+    apply_accel = actuators.gas - actuators.brake
+    apply_accel, self.accel_steady = accel_hysteresis(apply_accel, self.accel_steady, enabled)
+    apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
 
     # steer torque is converted back to CAN reference (positive when steering right)
     apply_gas = clip(actuators.gas, 0., 1.)
     apply_brake = int(clip(self.brake_last * BRAKE_MAX, 0, BRAKE_MAX - 1))
-    apply_steer = int(clip(-alca_steer * STEER_MAX, -STEER_MAX, STEER_MAX))
+    apply_steer = int(clip(-actuators.steer * STEER_MAX, -STEER_MAX, STEER_MAX))
 
     lkas_active = enabled and not CS.steer_not_allowed
 
     # Send CAN commands.
     can_sends = []
+    self.radarVin_idx = 0
+
+    #if using radar, we need to send the VIN
+    if CS.useTeslaRadar and (frame % 100 == 0):
+      can_sends.append(hondacan.create_radar_VIN_msg(self.radarVin_idx,CS.radarVIN,2,0x1d6,CS.useTeslaRadar))
+      self.radarVin_idx += 1
+      self.radarVin_idx = self.radarVin_idx  % 3
 
     # Send steering command.
     idx = frame % 4
     can_sends.append(hondacan.create_steering_control(self.packer, apply_steer,
-      lkas_active, CS.CP.carFingerprint, idx))
+      lkas_active, CS.CP.carFingerprint, CS.CP.openpilotLongitudinalControl, idx))
 
     # Send dashboard UI commands.
     if (frame % 10) == 0:
       idx = (frame/10) % 4
-      can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, idx))
+      can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.CP.openpilotLongitudinalControl, idx))
 
-    if CS.CP.radarOffCan:
+    if not CS.CP.openpilotLongitudinalControl:
       # If using stock ACC, spam cancel command to kill gas when OP disengages.
       if pcm_cancel_cmd:
         can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, idx))
@@ -195,10 +206,14 @@ class CarController(object):
       # Send gas and brake commands.
       if (frame % 2) == 0:
         idx = frame / 2
-        pump_on, self.last_pump_ts = brake_pump_hysteresys(apply_brake, self.apply_brake_last, self.last_pump_ts)
-        can_sends.append(hondacan.create_brake_command(self.packer, apply_brake, pump_on,
-          pcm_override, pcm_cancel_cmd, hud.chime, hud.fcw, idx))
-        self.apply_brake_last = apply_brake
+
+        if CS.CP.carFingerprint in HONDA_BOSCH:
+          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, idx))
+        else:
+          pump_on, self.last_pump_ts = brake_pump_hysteresys(apply_brake, self.apply_brake_last, self.last_pump_ts)
+          can_sends.append(hondacan.create_brake_command(self.packer, apply_brake, pump_on,
+            pcm_override, pcm_cancel_cmd, hud.chime, hud.fcw, idx))
+          self.apply_brake_last = apply_brake
 
         if CS.CP.enableGasInterceptor:
           # send exactly zero if apply_gas is zero. Interceptor will send the max between read value and apply_gas.
