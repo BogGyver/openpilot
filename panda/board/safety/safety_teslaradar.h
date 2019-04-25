@@ -135,7 +135,7 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
         //send 159
         MLB = 0x004FFFFB ;
         MHB = 0x000000FF + (tesla_radar_x159_id << 12);
-        cksm = add_tesla_cksm2(MLB, MHB, 0xB2, 7);
+        cksm = add_tesla_cksm2(MLB, MHB, 0xC, 7);
         MLB = MLB +(cksm << 24);
         tesla_radar_x159_id++;
         tesla_radar_x159_id = tesla_radar_x159_id % 16;
