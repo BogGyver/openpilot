@@ -342,7 +342,7 @@ def radard_thread(gctx=None):
       # publish data
       if ll_lead_len > 0:
         datrl.v1Type = int(ll_lead_clusters[0].oClass)
-        if datrl.v1Type == 1 and ll_lead_truck:
+        if datrl.v1Type == 1 and ll_lead1_truck:
             datrl.v1Type = 0
         datrl.v1Dx = float(ll_lead_clusters[0].dRel)
         datrl.v1Vrel = float(ll_lead_clusters[0].vRel)
@@ -385,7 +385,7 @@ def radard_thread(gctx=None):
                       if c.is_potential_lead_dy(v_ego,MP.lane_width)]
       rl_lead_clusters.sort(key=lambda x: x.dRel)
       rl_lead_len = len(rl_lead_clusters)
-      rl_lead_truck = (len([c for c in rl_lead_clusters
+      rl_lead1_truck = (len([c for c in rl_lead_clusters
                       if c.is_truck(rl_lead_clusters)]) > 0)
       # *** extract the second lead from the whole set of leads ***
       rl_lead2_clusters = [c for c in rl_lead_clusters
@@ -397,7 +397,7 @@ def radard_thread(gctx=None):
       # publish data
       if rl_lead_len > 0:
         datrl.v3Type = int(rl_lead_clusters[0].oClass) 
-        if datrl.v3Type == 1 and rl_lead_truck:
+        if datrl.v3Type == 1 and rl_lead1_truck:
           datrl.v3Type = 0
         datrl.v3Dx = float(rl_lead_clusters[0].dRel)
         datrl.v3Vrel = float(rl_lead_clusters[0].vRel)
