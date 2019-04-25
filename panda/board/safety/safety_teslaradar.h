@@ -134,7 +134,7 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
     if (tesla_radar_counter % 2 ==0) {
         //send 159
         MLB = 0x004FFFFB ;
-        MHB = 0x000000FF + (tesla_radar_x159_id << 12);
+        MHB = 0x000007FF + (tesla_radar_x159_id << 12);
         cksm = add_tesla_cksm2(MLB, MHB, 0xC, 7);
         MLB = MLB +(cksm << 24);
         tesla_radar_x159_id++;
@@ -160,7 +160,7 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
         MLB = 0x000C0000 + (tesla_radar_x1A9_id << 28);
         MHB = 0x00;
         cksm = add_tesla_cksm2(MLB, MHB, 0x38, 4);
-        MHB = MHB +(cksm << 8);
+        MHB = MHB + cksm;
         tesla_radar_x1A9_id++;
         tesla_radar_x1A9_id = tesla_radar_x1A9_id % 16;
         send_fake_message(RIR,RDTR,5,0x1A9,tesla_radar_can,MLB,MHB);
@@ -184,7 +184,6 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
     //send all messages at 4Hz
     if (tesla_radar_counter % 25 ==0) {
         //send 2B9
-        tesla_radar_x2B9_id = 0;
         int rec = 0x10 + tesla_radar_x2B9_id;
         if (rec == 0x10) {
             MLB = 0x00000000 | rec;
