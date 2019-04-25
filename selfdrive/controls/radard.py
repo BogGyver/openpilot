@@ -401,6 +401,10 @@ def radard_thread(gctx=None):
     dat.live20.radarErrors = list(rr.errors)
     dat.live20.l100MonoTime = last_l100_ts
     if lead_len > 0:
+      #if lead2_len > 0:
+      #if lead2_clusters[0].dRel - lead_clusters[0].dRel < 9:
+      #  lead_clusters[0].oClass = 0
+      #  lead2_len = 0
       dat.live20.leadOne = lead_clusters[0].toLive20()
       if lead2_len > 0:
         dat.live20.leadTwo = lead2_clusters[0].toLive20()

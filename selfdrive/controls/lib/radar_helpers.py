@@ -318,6 +318,9 @@ class Cluster(object):
 
     return abs(d_path) < abs(dy/2.)  and not self.stationary #and not self.oncoming
 
+  def update_class(self,oClass):
+    self.oClass = oClass
+    return
   
 
   def is_potential_lead2(self, lead_clusters):
@@ -325,7 +328,10 @@ class Cluster(object):
       lead_cluster = lead_clusters[0]
       # check if the new lead is too close and roughly at the same speed of the first lead:
       # it might just be the second axle of the same vehicle
-      return (self.dRel - lead_cluster.dRel) > 8. or abs(self.vRel - lead_cluster.vRel) > 1.
+      if (self.dRel - lead_cluster.dRel < 1.5) and (abs(self.yRel - lead_cluster.yRel) < 0.5) and (abs(self.vRel - lead_cluster.vRel) < 0.2):
+        #looks like dual axle, mark as truck
+        lead_cluster.update_class(0)
+      return ((self.dRel - lead_cluster.dRel > 8.) and (lead_cluster.oClass > 0))  or ((self.dRel - lead_cluster.dRel > 15.) and (lead_cluster.oClass == 0)) or abs(self.vRel - lead_cluster.vRel) > 1.
     else:
       return False
 
