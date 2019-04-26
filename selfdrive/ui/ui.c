@@ -55,6 +55,8 @@
 #define UI_BUF_COUNT 4
 //#define DEBUG_TURN
 
+//#define DEBUG_FPS
+
 const int vwp_w = 1920;
 const int vwp_h = 1080;
 const int nav_w = 640;
@@ -70,7 +72,11 @@ const int header_h = 420;
 const int footer_h = 280;
 const int footer_y = vwp_h-bdr_s-footer_h;
 
-const int UI_FREQ = 60;   // Hz
+const int UI_FREQ = 30;   // Hz
+
+const int MODEL_PATH_MAX_VERTICES_CNT = 98;
+const int MODEL_LANE_PATH_CNT = 3;
+const int TRACK_POINTS_MAX_CNT = 50 * 2;
 
 const uint8_t bg_colors[][4] = {
   [STATUS_STOPPED] = {0x07, 0x23, 0x39, 0xff},
@@ -164,6 +170,21 @@ typedef struct UIScene {
   bool is_playing_alert;
 } UIScene;
 
+typedef struct {
+  float x, y;
+}vertex_data;
+
+typedef struct {
+  vertex_data v[MODEL_PATH_MAX_VERTICES_CNT];
+  int cnt;
+} model_path_vertices_data;
+
+typedef struct {
+  vertex_data v[TRACK_POINTS_MAX_CNT];
+  int cnt;
+} track_vertices_data;
+
+
 typedef struct UIState {
   //BB define BBUIState
   BBUIState b;
@@ -221,7 +242,11 @@ typedef struct UIState {
 
   GLuint frame_program;
   GLuint frame_texs[UI_BUF_COUNT];
+  EGLImageKHR khr[UI_BUF_COUNT];
+  void *priv_hnds[UI_BUF_COUNT];
   GLuint frame_front_texs[UI_BUF_COUNT];
+  EGLImageKHR khr_front[UI_BUF_COUNT];
+  void *priv_hnds_front[UI_BUF_COUNT];
 
   GLint frame_pos_loc, frame_texcoord_loc;
   GLint frame_texture_loc, frame_transform_loc;
@@ -260,6 +285,20 @@ typedef struct UIState {
   bool alert_blinked;
 
   float light_sensor;
+
+  int touch_fd;
+
+  // Hints for re-calculations and redrawing
+  bool model_changed;
+  bool livempc_or_live20_changed;
+
+  GLuint frame_vao[2], frame_vbo[2], frame_ibo[2];
+  mat4 rear_frame_mat, front_frame_mat;
+
+  model_path_vertices_data model_path_vertices[MODEL_LANE_PATH_CNT * 2];
+
+  track_vertices_data track_vertices[2];
+
 } UIState;
 
 
@@ -553,6 +592,58 @@ static void ui_init(UIState *s) {
       free(value);
     }
   }
+  for(int i = 0; i < 2; i++) {
+    float x1, x2, y1, y2;
+    if (i == 1) {
+      // flip horizontally so it looks like a mirror
+      x1 = 0.0;
+      x2 = 1.0;
+      y1 = 1.0;
+      y2 = 0.0;
+    } else {
+      x1 = 1.0;
+      x2 = 0.0;
+      y1 = 1.0;
+      y2 = 0.0;
+    }
+    const uint8_t frame_indicies[] = {0, 1, 2, 0, 2, 3};
+    const float frame_coords[4][4] = {
+      {-1.0, -1.0, x2, y1}, //bl
+      {-1.0,  1.0, x2, y2}, //tl
+      { 1.0,  1.0, x1, y2}, //tr
+      { 1.0, -1.0, x1, y1}, //br
+    };
+
+    glGenVertexArrays(1,&s->frame_vao[i]);
+    glBindVertexArray(s->frame_vao[i]);
+    glGenBuffers(1, &s->frame_vbo[i]);
+    glBindBuffer(GL_ARRAY_BUFFER, s->frame_vbo[i]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(frame_coords), frame_coords, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(s->frame_pos_loc);
+    glVertexAttribPointer(s->frame_pos_loc, 2, GL_FLOAT, GL_FALSE,
+                          sizeof(frame_coords[0]), (const void *)0);
+    glEnableVertexAttribArray(s->frame_texcoord_loc);
+    glVertexAttribPointer(s->frame_texcoord_loc, 2, GL_FLOAT, GL_FALSE,
+                          sizeof(frame_coords[0]), (const void *)(sizeof(float) * 2));
+    glGenBuffers(1, &s->frame_ibo[i]);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s->frame_ibo[i]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(frame_indicies), frame_indicies, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER,0);
+    glBindVertexArray(0);
+  }
+
+  s->model_changed = false;
+  s->livempc_or_live20_changed = false;
+
+  s->front_frame_mat = matmul(device_transform, full_to_wide_frame_transform);
+  s->rear_frame_mat = matmul(device_transform, frame_transform);
+
+  for(int i = 0;i < UI_BUF_COUNT; i++) {
+    s->khr[i] = NULL;
+    s->priv_hnds[i] = NULL;
+    s->khr_front[i] = NULL;
+    s->priv_hnds_front[i] = NULL;
+  }
 }
 
 static void ui_init_vision(UIState *s, const VisionStreamBufs back_bufs,
@@ -727,8 +818,7 @@ static void draw_chevron(UIState *s, float x_in, float y_in, float sz,
   nvgRestore(s->vg);
 }
 
-static void ui_draw_lane_line(UIState *s, const float *points, float off,
-                      NVGcolor color, bool is_ghost) {
+static void ui_draw_lane_line(UIState *s, const model_path_vertices_data *pvd, NVGcolor color) {
   const UIScene *scene = &s->scene;
 
   nvgSave(s->vg);
@@ -739,35 +829,16 @@ static void ui_draw_lane_line(UIState *s, const float *points, float off,
   nvgBeginPath(s->vg);
 
   bool started = false;
-  for (int i=0; i<49; i++) {
-    float px = (float)i;
-    float py = points[i] - off;
-    vec4 p_car_space = (vec4){{px, py, 0., 1.}};
-    vec3 p_full_frame = car_space_to_full_frame(s, p_car_space);
-    float x = p_full_frame.v[0];
-    float y = p_full_frame.v[1];
-    if (x < 0 || y < 0.) {
+  for (int i=0; i<pvd->cnt; i++) {
+    if (pvd->v[i].x < 0 || pvd->v[i].y < 0.) {
       continue;
     }
     if (!started) {
-      nvgMoveTo(s->vg, x, y);
+      nvgMoveTo(s->vg, pvd->v[i].x, pvd->v[i].y);
       started = true;
     } else {
-      nvgLineTo(s->vg, x, y);
+      nvgLineTo(s->vg, pvd->v[i].x, pvd->v[i].y);
     }
-  }
-
-  for (int i=49; i>0; i--) {
-    float px = (float)i;
-    float py = is_ghost?(points[i]-off):(points[i]+off);
-    vec4 p_car_space = (vec4){{px, py, 0., 1.}};
-    vec3 p_full_frame = car_space_to_full_frame(s, p_car_space);
-    float x = p_full_frame.v[0];
-    float y = p_full_frame.v[1];
-    if (x < 0 || y < 0.) {
-      continue;
-    }
-    nvgLineTo(s->vg, x, y);
   }
 
   nvgClosePath(s->vg);
@@ -776,38 +847,18 @@ static void ui_draw_lane_line(UIState *s, const float *points, float off,
   nvgRestore(s->vg);
 }
 
-static void ui_draw_lane(UIState *s, const PathData path, NVGcolor color) {
-  //BB added to make the line blue
-  if (s->b.tri_state_switch >= 2) {
-    color = nvgRGBA(66, 220, 244,250);
-  }
-  //BB end  
-  ui_draw_lane_line(s, path.points, 0.025*path.prob, color, false);
-  float var = min(path.std, 0.7);
-  color.a /= 4;
-  ui_draw_lane_line(s, path.points, -var, color, true);
-  ui_draw_lane_line(s, path.points, var, color, true);
-}
-
-static void ui_draw_track(UIState *s, bool is_mpc) {
+static void update_track_data(UIState *s, bool is_mpc, track_vertices_data *pvd) {
   const UIScene *scene = &s->scene;
   const PathData path = scene->model.path;
   const float *mpc_x_coords = &scene->mpc_x[0];
   const float *mpc_y_coords = &scene->mpc_y[0];
-
-  nvgSave(s->vg);
-  nvgTranslate(s->vg, 240.0f, 0.0); // rgb-box space
-  nvgTranslate(s->vg, -1440.0f / 2, -1080.0f / 2); // zoom 2x
-  nvgScale(s->vg, 2.0, 2.0);
-  nvgScale(s->vg, 1440.0f / s->rgb_width, 1080.0f / s->rgb_height);
-  nvgBeginPath(s->vg);
 
   bool started = false;
   float off = is_mpc?0.3:0.5;
   float lead_d = scene->lead_d_rel*2.;
   float path_height = is_mpc?(lead_d>5.)?min(lead_d, 25.)-min(lead_d*0.35, 10.):20.
                             :(lead_d>0.)?min(lead_d, 50.)-min(lead_d*0.35, 10.):49.;
-
+  pvd->cnt = 0;
   // left side up
   for (int i=0; i<=path_height; i++) {
     float px, py, mpx;
@@ -822,18 +873,12 @@ static void ui_draw_track(UIState *s, bool is_mpc) {
 
     vec4 p_car_space = (vec4){{px, py, 0., 1.}};
     vec3 p_full_frame = car_space_to_full_frame(s, p_car_space);
-    float x = p_full_frame.v[0];
-    float y = p_full_frame.v[1];
-    if (x < 0 || y < 0) {
+    if (p_full_frame.v[0] < 0. || p_full_frame.v[1] < 0.) {
       continue;
     }
-
-    if (!started) {
-      nvgMoveTo(s->vg, x, y);
-      started = true;
-    } else {
-      nvgLineTo(s->vg, x, y);
-    }
+    pvd->v[pvd->cnt].x = p_full_frame.v[0];
+    pvd->v[pvd->cnt].y = p_full_frame.v[1];
+    pvd->cnt += 1;
   }
 
   // right side down
@@ -850,13 +895,54 @@ static void ui_draw_track(UIState *s, bool is_mpc) {
 
     vec4 p_car_space = (vec4){{px, py, 0., 1.}};
     vec3 p_full_frame = car_space_to_full_frame(s, p_car_space);
-    float x = p_full_frame.v[0];
-    float y = p_full_frame.v[1];
-    if (x < 0 || y < 0.) {
+    pvd->v[pvd->cnt].x = p_full_frame.v[0];
+    pvd->v[pvd->cnt].y = p_full_frame.v[1];
+    pvd->cnt += 1;
+  }
+}
+
+static void update_all_track_data(UIState *s) {
+  const UIScene *scene = &s->scene;
+  // Draw vision path
+  update_track_data(s, false, &s->track_vertices[0]);
+
+  if (scene->engaged) {
+    // Draw MPC path when engaged
+    update_track_data(s, true, &s->track_vertices[1]);
+  }
+}
+
+
+static void ui_draw_track(UIState *s, bool is_mpc, track_vertices_data *pvd) {
+const UIScene *scene = &s->scene;
+  const PathData path = scene->model.path;
+  const float *mpc_x_coords = &scene->mpc_x[0];
+  const float *mpc_y_coords = &scene->mpc_y[0];
+
+  nvgSave(s->vg);
+  nvgTranslate(s->vg, 240.0f, 0.0); // rgb-box space
+  nvgTranslate(s->vg, -1440.0f / 2, -1080.0f / 2); // zoom 2x
+  nvgScale(s->vg, 2.0, 2.0);
+  nvgScale(s->vg, 1440.0f / s->rgb_width, 1080.0f / s->rgb_height);
+  nvgBeginPath(s->vg);
+
+  bool started = false;
+  float off = is_mpc?0.3:0.5;
+  float lead_d = scene->lead_d_rel*2.;
+  float path_height = is_mpc?(lead_d>5.)?min(lead_d, 25.)-min(lead_d*0.35, 10.):20.
+                            :(lead_d>0.)?min(lead_d, 50.)-min(lead_d*0.35, 10.):49.;
+  int vi = 0;
+  for(int i = 0;i < pvd->cnt;i++) {
+    if (pvd->v[i].x < 0 || pvd->v[i].y < 0) {
       continue;
     }
 
-    nvgLineTo(s->vg, x, y);
+    if (!started) {
+      nvgMoveTo(s->vg, pvd->v[i].x, pvd->v[i].y);
+      started = true;
+    } else {
+      nvgLineTo(s->vg, pvd->v[i].x, pvd->v[i].y);
+    }
   }
 
   nvgClosePath(s->vg);
@@ -893,33 +979,17 @@ static void draw_frame(UIState *s) {
 
   float x1, x2, y1, y2;
   if (s->scene.frontview) {
-    // flip horizontally so it looks like a mirror
-    x1 = 0.0;
-    x2 = 1.0;
-    y1 = 1.0;
-    y2 = 0.0;
+    glBindVertexArray(s->frame_vao[1]);
   } else {
-    x1 = 1.0;
-    x2 = 0.0;
-    y1 = 1.0;
-    y2 = 0.0;
+    glBindVertexArray(s->frame_vao[0]);
   }
 
-  mat4 out_mat;
+  mat4 *out_mat;
   if (s->scene.frontview || s->scene.fullview) {
-    out_mat = matmul(device_transform, full_to_wide_frame_transform);
+    out_mat = &s->front_frame_mat;
   } else {
-    out_mat = matmul(device_transform, frame_transform);
+    out_mat = &s->rear_frame_mat;
   }
-
-  const uint8_t frame_indicies[] = {0, 1, 2, 0, 2, 3};
-  const float frame_coords[4][4] = {
-    {-1.0, -1.0, x2, y1}, //bl
-    {-1.0,  1.0, x2, y2}, //tl
-    { 1.0,  1.0, x1, y2}, //tr
-    { 1.0, -1.0, x1, y1}, //br
-  };
-
   glActiveTexture(GL_TEXTURE0);
   //BB added to suppress video printing
   if ((s->b.tri_state_switch == 1) || (s->b.tri_state_switch == 4)) {
@@ -932,20 +1002,59 @@ static void draw_frame(UIState *s) {
   //BB end  
 
   glUseProgram(s->frame_program);
-
   glUniform1i(s->frame_texture_loc, 0);
-  glUniformMatrix4fv(s->frame_transform_loc, 1, GL_TRUE, out_mat.v);
-
-  glEnableVertexAttribArray(s->frame_pos_loc);
-  glVertexAttribPointer(s->frame_pos_loc, 2, GL_FLOAT, GL_FALSE,
-                        sizeof(frame_coords[0]), frame_coords);
-
-  glEnableVertexAttribArray(s->frame_texcoord_loc);
-  glVertexAttribPointer(s->frame_texcoord_loc, 2, GL_FLOAT, GL_FALSE,
-                        sizeof(frame_coords[0]), &frame_coords[0][2]);
+  glUniformMatrix4fv(s->frame_transform_loc, 1, GL_TRUE, out_mat->v);
 
   assert(glGetError() == GL_NO_ERROR);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &frame_indicies[0]);
+  glEnableVertexAttribArray(0);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const void*)0);
+  glDisableVertexAttribArray(0);
+  glBindVertexArray(0);
+}
+
+static inline bool valid_frame_pt(UIState *s, float x, float y) {
+  return x >= 0 && x <= s->rgb_width && y >= 0 && y <= s->rgb_height;
+
+}
+static void update_lane_line_data(UIState *s, const float *points, float off, bool is_ghost, model_path_vertices_data *pvd) {
+  pvd->cnt = 0;
+  for (int i = 0; i < MODEL_PATH_MAX_VERTICES_CNT / 2; i++) {
+    float px = (float)i;
+    float py = points[i] - off;
+    const vec4 p_car_space = (vec4){{px, py, 0., 1.}};
+    const vec3 p_full_frame = car_space_to_full_frame(s, p_car_space);
+    if(!valid_frame_pt(s, p_full_frame.v[0], p_full_frame.v[1]))
+      continue;
+    pvd->v[pvd->cnt].x = p_full_frame.v[0];
+    pvd->v[pvd->cnt].y = p_full_frame.v[1];
+    pvd->cnt += 1;
+  }
+  for (int i = MODEL_PATH_MAX_VERTICES_CNT / 2; i > 0; i--) {
+    float px = (float)i;
+    float py = is_ghost?(points[i]-off):(points[i]+off);
+    const vec4 p_car_space = (vec4){{px, py, 0., 1.}};
+    const vec3 p_full_frame = car_space_to_full_frame(s, p_car_space);
+    if(!valid_frame_pt(s, p_full_frame.v[0], p_full_frame.v[1]))
+      continue;
+    pvd->v[pvd->cnt].x = p_full_frame.v[0];
+    pvd->v[pvd->cnt].y = p_full_frame.v[1];
+    pvd->cnt += 1;
+  }
+}
+
+static void update_all_lane_lines_data(UIState *s, const PathData path, model_path_vertices_data *pstart) {
+  update_lane_line_data(s, path.points, 0.025*path.prob, false, pstart);
+  float var = min(path.std, 0.7);
+  update_lane_line_data(s, path.points, -var, true, pstart + 1);
+  update_lane_line_data(s, path.points, var, true, pstart + 2);
+}
+
+static void ui_draw_lane(UIState *s, const PathData *path, model_path_vertices_data *pstart, NVGcolor color) {
+  ui_draw_lane_line(s, pstart, color);
+  float var = min(path->std, 0.7);
+  color.a /= 4;
+  ui_draw_lane_line(s, pstart + 1, color);
+  ui_draw_lane_line(s, pstart + 2, color);
 }
 
 static void ui_draw_vision_lanes(UIState *s) {
@@ -958,22 +1067,33 @@ static void ui_draw_vision_lanes(UIState *s) {
   if (s->b.tri_state_switch == 2) {
     bb_draw_lane_fill(s);
   }
+  model_path_vertices_data *pvd = &s->model_path_vertices[0];
+  if(s->model_changed) {
+    update_all_lane_lines_data(s, scene->model.left_lane, pvd);
+    update_all_lane_lines_data(s, scene->model.right_lane, pvd + MODEL_LANE_PATH_CNT);
+    s->model_changed = false;
+  }
   // Draw left lane edge
   ui_draw_lane(
-      s, scene->model.left_lane,
+      s, &scene->model.left_lane,
+      pvd,
       nvgRGBAf(1.0, 1.0, 1.0, scene->model.left_lane.prob));
 
   // Draw right lane edge
   ui_draw_lane(
-      s, scene->model.right_lane,
+      s, &scene->model.right_lane,
+      pvd + MODEL_LANE_PATH_CNT,
       nvgRGBAf(1.0, 1.0, 1.0, scene->model.right_lane.prob));
 
+  if(s->livempc_or_live20_changed) {
+    update_all_track_data(s);
+    s->livempc_or_live20_changed = false;
+  }
   // Draw vision path
-  ui_draw_track(s, false);
-
+  ui_draw_track(s, false, &s->track_vertices[0]);
   if (scene->engaged) {
     // Draw MPC path when engaged
-    ui_draw_track(s, true);
+    ui_draw_track(s, true, &s->track_vertices[1]);
   }
 }
 
@@ -1450,14 +1570,14 @@ static void ui_draw_vision(UIState *s) {
   glEnable(GL_SCISSOR_TEST);
   glViewport(ui_viz_rx+ui_viz_ro, s->fb_h-(box_y+box_h), viz_w, box_h);
   glScissor(ui_viz_rx, s->fb_h-(box_y+box_h), ui_viz_rw, box_h);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   draw_frame(s);
   glViewport(0, 0, s->fb_w, s->fb_h);
   glDisable(GL_SCISSOR_TEST);
 
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glClear(GL_STENCIL_BUFFER_BIT);
-
+ 
   nvgBeginFrame(s->vg, s->fb_w, s->fb_h, 1.0f);
   nvgSave(s->vg);
 
@@ -1510,8 +1630,6 @@ static void ui_draw(UIState *s) {
     nvgEndFrame(s->vg);
     glDisable(GL_BLEND);
   }
-
-  assert(glGetError() == GL_NO_ERROR);
 }
 
 static PathData read_path(cereal_ModelData_PathData_ptr pathp) {
@@ -1574,7 +1692,10 @@ static void ui_update(UIState *s) {
     // do this here for now in lieu of a run_on_main_thread event
 
     for (int i=0; i<UI_BUF_COUNT; i++) {
-      glDeleteTextures(1, &s->frame_texs[i]);
+      if(s->khr[i] != NULL) {
+        visionimg_destroy_gl(s->khr[i], s->priv_hnds[i]);
+        glDeleteTextures(1, &s->frame_texs[i]);
+      }
 
       VisionImg img = {
         .fd = s->bufs[i].fd,
@@ -1585,7 +1706,7 @@ static void ui_update(UIState *s) {
         .bpp = 3,
         .size = s->rgb_buf_len,
       };
-      s->frame_texs[i] = visionimg_to_gl(&img);
+      s->frame_texs[i] = visionimg_to_gl(&img, &s->khr[i], &s->priv_hnds[i]);
 
       glBindTexture(GL_TEXTURE_2D, s->frame_texs[i]);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1598,7 +1719,10 @@ static void ui_update(UIState *s) {
     }
 
     for (int i=0; i<UI_BUF_COUNT; i++) {
-      glDeleteTextures(1, &s->frame_front_texs[i]);
+      if(s->khr_front[i] != NULL) {
+        visionimg_destroy_gl(s->khr_front[i], s->priv_hnds_front[i]);
+        glDeleteTextures(1, &s->frame_front_texs[i]);
+      }
 
       VisionImg img = {
         .fd = s->front_bufs[i].fd,
@@ -1609,7 +1733,7 @@ static void ui_update(UIState *s) {
         .bpp = 3,
         .size = s->rgb_front_buf_len,
       };
-      s->frame_front_texs[i] = visionimg_to_gl(&img);
+      s->frame_front_texs[i] = visionimg_to_gl(&img, &s->khr_front[i], &s->priv_hnds_front[i]);
 
       glBindTexture(GL_TEXTURE_2D, s->frame_front_texs[i]);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1634,9 +1758,67 @@ static void ui_update(UIState *s) {
     s->alert_blinked = false;
   }
 
-  // poll for events
-  while (true) {
-    zmq_pollitem_t polls[10] = {{0}};
+  zmq_pollitem_t polls[9] = {{0}};
+  // Wait for next rgb image from visiond
+  while(true) {
+    assert(s->ipc_fd >= 0);
+    polls[0].fd = s->ipc_fd;
+    polls[0].events = ZMQ_POLLIN;
+    int ret = zmq_poll(polls, 1, 1000);
+    if (ret < 0) {
+      LOGW("poll failed (%d)", ret);
+      close(s->ipc_fd);
+      s->ipc_fd = -1;
+      s->vision_connected = false;
+      return;
+    } else if (ret == 0)
+      continue;
+    // vision ipc event
+    VisionPacket rp;
+    err = vipc_recv(s->ipc_fd, &rp);
+    if (err <= 0) {
+      LOGW("vision disconnected");
+      close(s->ipc_fd);
+      s->ipc_fd = -1;
+      s->vision_connected = false;
+      return;
+    }
+    if (rp.type == VIPC_STREAM_ACQUIRE) {
+      bool front = rp.d.stream_acq.type == VISION_STREAM_RGB_FRONT;
+      int idx = rp.d.stream_acq.idx;
+
+      int release_idx;
+      if (front) {
+        release_idx = s->cur_vision_front_idx;
+      } else {
+        release_idx = s->cur_vision_idx;
+      }
+      if (release_idx >= 0) {
+        VisionPacket rep = {
+          .type = VIPC_STREAM_RELEASE,
+          .d = { .stream_rel = {
+            .type = rp.d.stream_acq.type,
+            .idx = release_idx,
+          }},
+        };
+        vipc_send(s->ipc_fd, &rep);
+      }
+
+      if (front) {
+        assert(idx < UI_BUF_COUNT);
+        s->cur_vision_front_idx = idx;
+      } else {
+        assert(idx < UI_BUF_COUNT);
+        s->cur_vision_idx = idx;
+        // printf("v %d\n", ((uint8_t*)s->bufs[idx].addr)[0]);
+      }
+    } else {
+      assert(false);
+    }
+    break;
+  }
+  // peek and consume all events in the zmq queue, then return.
+  while(true) {
     polls[0].socket = s->live100_sock_raw;
     polls[0].events = ZMQ_POLLIN;
     polls[1].socket = s->livecalibration_sock_raw;
@@ -1655,22 +1837,14 @@ static void ui_update(UIState *s) {
     polls[7].events = ZMQ_POLLIN;
     polls[8].socket = s->plus_sock_raw; // plus_sock should be last
     polls[8].events = ZMQ_POLLIN;
-
     int num_polls = 9;
-    if (s->vision_connected) {
-      assert(s->ipc_fd >= 0);
-      polls[9].fd = s->ipc_fd;
-      polls[9].events = ZMQ_POLLIN;
-      num_polls++;
-    }
-
     int ret = zmq_poll(polls, num_polls, 0);
     if (ret < 0) {
       LOGW("poll failed (%d)", ret);
-      break;
+      return;
     }
     if (ret == 0) {
-      break;
+      return;
     }
 
     if (polls[0].revents || polls[1].revents || polls[2].revents ||
@@ -1682,52 +1856,8 @@ static void ui_update(UIState *s) {
       } 
     }
 
-    if (s->vision_connected && polls[9].revents) {
-      // vision ipc event
-      VisionPacket rp;
-      err = vipc_recv(s->ipc_fd, &rp);
-      if (err <= 0) {
-        LOGW("vision disconnected");
-        close(s->ipc_fd);
-        s->ipc_fd = -1;
-        s->vision_connected = false;
-        continue;
-      }
-      if (rp.type == VIPC_STREAM_ACQUIRE) {
-        bool front = rp.d.stream_acq.type == VISION_STREAM_RGB_FRONT;
-        int idx = rp.d.stream_acq.idx;
-
-        int release_idx;
-        if (front) {
-          release_idx = s->cur_vision_front_idx;
-        } else {
-          release_idx = s->cur_vision_idx;
-        }
-        if (release_idx >= 0) {
-          VisionPacket rep = {
-            .type = VIPC_STREAM_RELEASE,
-            .d = { .stream_rel = {
-              .type = rp.d.stream_acq.type,
-              .idx = release_idx,
-            }},
-          };
-          vipc_send(s->ipc_fd, &rep);
-        }
-
-        if (front) {
-          assert(idx < UI_BUF_COUNT);
-          s->cur_vision_front_idx = idx;
-        } else {
-          assert(idx < UI_BUF_COUNT);
-          s->cur_vision_idx = idx;
-          // printf("v %d\n", ((uint8_t*)s->bufs[idx].addr)[0]);
-        }
-      } else {
-        assert(false);
-      }
-    } else if (polls[8].revents) {
+    if (polls[8].revents) {
       // plus socket
-
       zmq_msg_t msg;
       err = zmq_msg_init(&msg);
       assert(err == 0);
@@ -1750,7 +1880,7 @@ static void ui_update(UIState *s) {
         }
       }
       if (which == NULL) {
-        continue;
+        return;
       }
 
       zmq_msg_t msg;
@@ -1766,7 +1896,7 @@ static void ui_update(UIState *s) {
       eventp.p = capn_getp(capn_root(&ctx), 0, 1);
       struct cereal_Event eventd;
       cereal_read_Event(&eventd, eventp);
-
+      double t = millis_since_boot();
       if (eventd.which == cereal_Event_live100) {
         struct cereal_Live100Data datad;
         cereal_read_Live100Data(&datad, eventd.live100);
@@ -1883,6 +2013,7 @@ static void ui_update(UIState *s) {
         s->scene.lead_d_rel = leaddatad.dRel;
         s->scene.lead_y_rel = leaddatad.yRel;
         s->scene.lead_v_rel = leaddatad.vRel;
+        s->livempc_or_live20_changed = true;
       } else if (eventd.which == cereal_Event_liveCalibration) {
         s->scene.world_objects_visible = true;
         struct cereal_LiveCalibrationData datad;
@@ -1905,6 +2036,7 @@ static void ui_update(UIState *s) {
       } else if (eventd.which == cereal_Event_model) {
         s->scene.model_ts = eventd.logMonoTime;
         s->scene.model = read_model(eventd.model);
+        s->model_changed = true;
       } else if (eventd.which == cereal_Event_liveMpc) {
         struct cereal_LiveMpcData datad;
         cereal_read_LiveMpcData(&datad, eventd.liveMpc);
@@ -1922,6 +2054,7 @@ static void ui_update(UIState *s) {
         for (int i = 0; i < 50; i++){
           s->scene.mpc_y[i] = capn_to_f32(capn_get32(y_list, i));
         }
+        s->livempc_or_live20_changed = true;
       } else if (eventd.which == cereal_Event_thermal) {
         struct cereal_ThermalData datad;
         cereal_read_ThermalData(&datad, eventd.thermal);
@@ -1982,7 +2115,6 @@ static void ui_update(UIState *s) {
       zmq_msg_close(&msg);
     }
   }
-
 }
 
 static int vision_subscribe(int fd, VisionPacket *rp, int type) {
@@ -2180,6 +2312,7 @@ int main() {
 
   TouchState touch = {0};
   touch_init(&touch);
+  s->touch_fd = touch.fd;
 
   char* error = NULL;
   ui_sound_init(&error);
@@ -2199,9 +2332,18 @@ int main() {
   float smooth_brightness = BRIGHTNESS_B;
 
   set_volume(s, 0);
-
+#ifdef DEBUG_FPS
+  vipc_t1 = millis_since_boot();
+  double t1 = millis_since_boot();
+  int draws = 0, old_draws = 0;
+#endif //DEBUG_FPS
   while (!do_exit) {
     bool should_swap = false;
+    if (!s->vision_connected) {
+      // Delay a while to avoid 9% cpu usage while car is not started and user is keeping touching on the screen.
+      // Don't hold the lock while sleeping, so that vision_connect_thread have chances to get the lock.
+      usleep(30 * 1000);
+    }
     pthread_mutex_lock(&s->lock);
 
     if (EON) {
@@ -2216,33 +2358,51 @@ int main() {
       set_brightness(s, NEO_BRIGHTNESS);
     }
 
-    ui_update(s);
-
-    // awake on any touch
+    int touched = 0;
     int touch_x = -1, touch_y = -1;
-    int touched = touch_poll(&touch, &touch_x, &touch_y, s->awake ? 20 : 500);
     int dc_touch_x = -1, dc_touch_y = -1;
-    s->b.touch_timeout = max(s->b.touch_timeout -1,0);
-    
+    if (!s->vision_connected) {
+      // Car is not started, keep in idle state and awake on touch events
+      zmq_pollitem_t polls[1] = {{0}};
+      polls[0].fd = s->touch_fd;
+      polls[0].events = ZMQ_POLLIN;
+      int ret = zmq_poll(polls, 1, 0);
+      if (ret < 0)
+        LOGW("poll failed (%d)", ret);
+      else if (ret > 0) {
+        // awake on any touch
+        touched = touch_read(&touch, &touch_x, &touch_y);
+        s->b.touch_timeout = max(s->b.touch_timeout -1,0);
+        
+      }
+    } else {
+      // Car started, fetch a new rgb image from ipc and peek for zmq events.
+      ui_update(s);
+      if(!s->vision_connected) {
+        // Visiond process is just stopped, force a redraw to make screen blank again.
+        ui_draw(s);
+        glFinish();
+        should_swap = true;
+      }
+    }
     if (touched == 1) {
-      // touch event will still happen :(
       set_awake(s, true);
       s->b.touch_last = true;
       s->b.touch_last_x = touch_x;
       s->b.touch_last_y = touch_y;
       s->b.touch_timeout = touch_timeout;
       s->b.touch_last_width = s->scene.ui_viz_rw;
-    } 
-      //BB check touch
-      if ((s->b.touch_last) && (s->b.touch_last_width != s->scene.ui_viz_rw)) {
-        bb_handle_ui_touch(s,s->b.touch_last_x,s->b.touch_last_y);
-        dc_touch_x = s->b.touch_last_x;
-        dc_touch_y = s->b.touch_last_y;
-        s->b.touch_last = false;
-        s->b.touch_last_x = 0;
-        s->b.touch_last_y = 0;
-        s->b.touch_last_width=s->scene.ui_viz_rw;
-      }
+    }
+    //BB check touch
+    if ((s->b.touch_last) && (s->b.touch_last_width != s->scene.ui_viz_rw)) {
+      bb_handle_ui_touch(s,s->b.touch_last_x,s->b.touch_last_y);
+      dc_touch_x = s->b.touch_last_x;
+      dc_touch_y = s->b.touch_last_y;
+      s->b.touch_last = false;
+      s->b.touch_last_x = 0;
+      s->b.touch_last_y = 0;
+      s->b.touch_last_width=s->scene.ui_viz_rw;
+    }
     
     //s->b.touch_last_width = s->scene.ui_viz_rw;
     //BB Update our cereal polls
@@ -2256,11 +2416,21 @@ int main() {
       set_awake(s, false);
     }
 
-    if (s->awake) {
+    if (s->awake && s->vision_connected) {
       dashcam(s, dc_touch_x, dc_touch_y);
       ui_draw(s);
       glFinish();
       should_swap = true;
+#ifdef DEBUG_FPS
+      draws++;
+      double t2 = millis_since_boot();
+      const double interval = 30.;
+      if(t2 - t1 >= interval * 1000.) {
+        printf("ui draw fps: %.2f\n",((double)(draws - old_draws)) / interval) ;
+        t1 = t2;
+        old_draws = draws;
+      }
+#endif
     }
 
     if (s->volume_timeout > 0) {

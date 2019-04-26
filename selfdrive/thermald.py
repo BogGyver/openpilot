@@ -15,7 +15,7 @@ from common.filter_simple import FirstOrderFilter
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 
 ThermalStatus = log.ThermalData.ThermalStatus
-CURRENT_TAU = 2.   # 2s time constant
+CURRENT_TAU = 15.   # 15s time constant
 
 
 def read_tz(x):
@@ -48,7 +48,7 @@ def setup_eon_fan():
     bus.write_byte_data(0x21, 0x02, 0x2)   # needed?
     bus.write_byte_data(0x21, 0x04, 0x4)   # manual override source
   except IOError:
-    print "LEON detected"
+    print("LEON detected")
     #os.system("echo 1 > /sys/devices/soc/6a00000.ssusb/power_supply/usb/usb_otg")
     LEON = True
   bus.close()
@@ -314,7 +314,7 @@ def thermald_thread():
 
     msg.thermal.chargingDisabled = charger_off #charging_disabled
     #BB added "and not charging_disabled" below so we don't show red LED when not charging
-    msg.thermal.chargingError = (current_filter.x > 1.0) and not charging_disabled   # if current is > 1A out, then charger might be off
+    msg.thermal.chargingError = (current_filter.x > 0.) and not charging_disabled   # if current is > 1A out, then charger might be off
     msg.thermal.started = started_ts is not None
     msg.thermal.startedTs = int(1e9*(started_ts or 0))
 
