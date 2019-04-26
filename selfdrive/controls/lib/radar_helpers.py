@@ -323,7 +323,7 @@ class Cluster(object):
       lead_cluster = lead_clusters[0]
       # check if the new lead is too close and roughly at the same speed of the first lead:
       # it might just be the second axle of the same vehicle
-      return (self.dRel - lead_cluster.dRel < 1.5) and (self.dRel - lead_cluster.dRel > 0.5) and (abs(self.yRel - lead_cluster.yRel) < 0.5) and (abs(self.vRel - lead_cluster.vRel) < 0.2)
+      return (self.dRel - lead_cluster.dRel < 4.5) and (self.dRel - lead_cluster.dRel > 0.5) and (abs(self.yRel - lead_cluster.yRel) < 1.) and (abs(self.vRel - lead_cluster.vRel) < 0.2)
     else:
       return False
 
