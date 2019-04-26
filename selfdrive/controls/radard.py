@@ -263,12 +263,16 @@ def radard_thread(gctx=None):
                      if c.is_potential_lead(v_ego)]
     lead_clusters.sort(key=lambda x: x.dRel)
     lead_len = len(lead_clusters)
+    lead1_truck = (len([c for c in lead_clusters
+                      if c.is_truck(lead_clusters)]) > 0)
 
     # *** extract the second lead from the whole set of leads ***
     lead2_clusters = [c for c in lead_clusters
                       if c.is_potential_lead2(lead_clusters)]
     lead2_clusters.sort(key=lambda x: x.dRel)
     lead2_len = len(lead2_clusters)
+    lead2_truck = (len([c for c in lead_clusters
+                      if c.is_truck(lead2_clusters)]) > 0)
 
     #################################################################
     #BB For Tesla integration we will also track Left and Right lanes
@@ -325,21 +329,29 @@ def radard_thread(gctx=None):
                       if c.is_potential_lead_dy(v_ego,-MP.lane_width)]
       ll_lead_clusters.sort(key=lambda x: x.dRel)
       ll_lead_len = len(ll_lead_clusters)
+      ll_lead1_truck = (len([c for c in ll_lead_clusters
+                      if c.is_truck(ll_lead_clusters)]) > 0)
 
       # *** extract the second lead from the whole set of leads ***
       ll_lead2_clusters = [c for c in ll_lead_clusters
                         if c.is_potential_lead2(ll_lead_clusters)]
       ll_lead2_clusters.sort(key=lambda x: x.dRel)
       ll_lead2_len = len(ll_lead2_clusters)
+      ll_lead2_truck = (len([c for c in ll_lead_clusters
+                      if c.is_truck(ll_lead2_clusters)]) > 0)
       # publish data
       if ll_lead_len > 0:
         datrl.v1Type = int(ll_lead_clusters[0].oClass)
+        if datrl.v1Type == 1 and ll_lead1_truck:
+            datrl.v1Type = 0
         datrl.v1Dx = float(ll_lead_clusters[0].dRel)
         datrl.v1Vrel = float(ll_lead_clusters[0].vRel)
         datrl.v1Dy = float(-ll_lead_clusters[0].yRel - lane_offset)
         datrl.v1Id = int(ll_lead_clusters[0].track_id)
         if ll_lead2_len > 0:
           datrl.v2Type = int(ll_lead2_clusters[0].oClass)
+          if datrl.v2Type == 1 and ll_lead2_truck:
+            datrl.v2Type = 0
           datrl.v2Dx = float(ll_lead2_clusters[0].dRel)
           datrl.v2Vrel = float(ll_lead2_clusters[0].vRel)
           datrl.v2Dy = float(-ll_lead2_clusters[0].yRel - lane_offset) 
@@ -373,20 +385,28 @@ def radard_thread(gctx=None):
                       if c.is_potential_lead_dy(v_ego,MP.lane_width)]
       rl_lead_clusters.sort(key=lambda x: x.dRel)
       rl_lead_len = len(rl_lead_clusters)
+      rl_lead1_truck = (len([c for c in rl_lead_clusters
+                      if c.is_truck(rl_lead_clusters)]) > 0)
       # *** extract the second lead from the whole set of leads ***
       rl_lead2_clusters = [c for c in rl_lead_clusters
                         if c.is_potential_lead2(rl_lead_clusters)]
       rl_lead2_clusters.sort(key=lambda x: x.dRel)
       rl_lead2_len = len(rl_lead2_clusters)
+      rl_lead2_truck = (len([c for c in rl_lead_clusters
+                      if c.is_truck(rl_lead2_clusters)]) > 0)
       # publish data
       if rl_lead_len > 0:
         datrl.v3Type = int(rl_lead_clusters[0].oClass) 
+        if datrl.v3Type == 1 and rl_lead1_truck:
+          datrl.v3Type = 0
         datrl.v3Dx = float(rl_lead_clusters[0].dRel)
         datrl.v3Vrel = float(rl_lead_clusters[0].vRel)
         datrl.v3Dy = float(-rl_lead_clusters[0].yRel+ lane_offset)
         datrl.v3Id = int(rl_lead_clusters[0].track_id)
         if rl_lead2_len > 0:
           datrl.v4Type = int(rl_lead2_clusters[0].oClass)
+          if datrl.v4Type == 1 and rl_lead2_truck:
+            datrl.v4Type = 0
           datrl.v4Dx = float(rl_lead2_clusters[0].dRel)
           datrl.v4Vrel = float(rl_lead2_clusters[0].vRel)
           datrl.v4Dy = float(-rl_lead2_clusters[0].yRel + lane_offset)
@@ -402,8 +422,12 @@ def radard_thread(gctx=None):
     dat.live20.l100MonoTime = last_l100_ts
     if lead_len > 0:
       dat.live20.leadOne = lead_clusters[0].toLive20()
+      if lead1_truck:
+        dat.live20.leadOne.oClass = 0
       if lead2_len > 0:
         dat.live20.leadTwo = lead2_clusters[0].toLive20()
+        if lead2_truck:
+          dat.live20.leadTwo.oClass = 0
       else:
         dat.live20.leadTwo.status = False
     else:

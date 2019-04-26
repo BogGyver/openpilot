@@ -1,12 +1,12 @@
 int tesla_radar_status = 0; //0-not present, 1-initializing, 2-active
 uint32_t tesla_last_radar_signal = 0;
 const int TESLA_RADAR_TIMEOUT = 1000000; // 1 second between real time checks
-char radar_VIN[] = "5YJSA1H27FF087536"; //leave empty if your radar VIN matches the car VIN
+char radar_VIN[] = "                 "; //leave empty if your radar VIN matches the car VIN
 int tesla_radar_can = 1; // 0, 1 or 2 set from EON via fake message
 int tesla_radar_vin_complete = 0; //set to 7 when complete vin is received
 int tesla_radar_should_send = 0; //set to 1 from EON via fake message when we want to use it
 int tesla_radar_counter = 0; //counter to determine when to send messages
-int tesla_radar_trigger_message_id = 0; //id of the message at 100Hz to trigger the radar data
+uint32_t tesla_radar_trigger_message_id = 0x17c; //id of the message
 int actual_speed_kph = 0; //use the rx_hook to set this to the car speed in kph; used by radar
 int tesla_radar_config_message_id = 0x560; //message used to send VIN to Panda
 
@@ -83,11 +83,11 @@ static void send_fake_message(uint32_t RIR, uint32_t RDTR,int msg_len, int msg_a
   to_send.RDLR = data_lo;
   to_send.RDHR = data_hi;
   can_send(&to_send, bus_num);
-}
+} 
 
 static uint32_t radar_VIN_char(int pos, int shift) {
   return (((int)radar_VIN[pos]) << (shift * 8));
-}
+} 
 
 static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
     //if we did not receive the VIN or no request to activate radar, then return
@@ -133,10 +133,10 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
     //send all messages at 50Hz
     if (tesla_radar_counter % 2 ==0) {
         //send 159
-        MLB = 0x0B4FFFFB + (tesla_radar_x159_id << 28);
-        MHB = 0x000000FF;
-        cksm = add_tesla_cksm2(MLB, MHB, 0xB2, 5);
-        MHB = MHB +(cksm << 8);
+        MLB = 0x004FFFFB ;
+        MHB = 0x000007FF + (tesla_radar_x159_id << 12);
+        cksm = add_tesla_cksm2(MLB, MHB, 0xC, 7);
+        MLB = MLB +(cksm << 24);
         tesla_radar_x159_id++;
         tesla_radar_x159_id = tesla_radar_x159_id % 16;
         send_fake_message(RIR,RDTR,8,0x159,tesla_radar_can,MLB,MHB);
@@ -160,7 +160,7 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
         MLB = 0x000C0000 + (tesla_radar_x1A9_id << 28);
         MHB = 0x00;
         cksm = add_tesla_cksm2(MLB, MHB, 0x38, 4);
-        MHB = MHB +(cksm << 8);
+        MHB = MHB + cksm;
         tesla_radar_x1A9_id++;
         tesla_radar_x1A9_id = tesla_radar_x1A9_id % 16;
         send_fake_message(RIR,RDTR,5,0x1A9,tesla_radar_can,MLB,MHB);
@@ -184,7 +184,6 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
     //send all messages at 4Hz
     if (tesla_radar_counter % 25 ==0) {
         //send 2B9
-        tesla_radar_x2B9_id = 0;
         int rec = 0x10 + tesla_radar_x2B9_id;
         if (rec == 0x10) {
             MLB = 0x00000000 | rec;
@@ -244,6 +243,7 @@ static void teslaradar_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     return;
   }
 
+  /*
   //looking for radar messages;
   if ((addr == 0x300) && (bus_number ==tesla_radar_can)) 
   {
@@ -265,7 +265,7 @@ static void teslaradar_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   }
 
   //0x631 is sent by radar to initiate the sync
-  if ((addr == 0x631) && (bus_number == 1))
+  if ((addr == 0x631) && (bus_number == tesla_radar_can))
   {
     uint32_t ts = TIM2->CNT;
     uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_last_radar_signal);
@@ -283,4 +283,5 @@ static void teslaradar_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     }
     return;
   }
+  */
 }
