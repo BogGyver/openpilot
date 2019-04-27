@@ -65,6 +65,8 @@ char radar_VIN[] = "                 "; //leave empty if your radar VIN matches 
 int tesla_radar_vin_complete = 0;
 int tesla_radar_can = 1;
 int tesla_radar_trigger_message_id = 0; //not used by tesla, to showcase for other cars
+int radarPosition = 0; //0 nosecone, 1 facelift
+int radarEpasType = 0; //0/1 bosch, 2-4 mando
 
 //EPB enable counter
 int EPB_epasControl_idx = 0;
@@ -1345,7 +1347,9 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     int radarVin_b6 = ((to_send->RDHR >> 16) & 0xFF);
     int radarVin_b7 = ((to_send->RDHR >> 24) & 0xFF);
     if (id == 0) {
-      tesla_radar_should_send = radarVin_b2;
+      tesla_radar_should_send = (radarVin_b2 & 0x01);
+      radarPosition =  ((radarVin_b2 >> 1) & 0x03);
+      radarEpasType = ((radarVin_b2 >> 3) & 0x07);
       tesla_radar_trigger_message_id = (radarVin_b3 << 8) + radarVin_b4;
       tesla_radar_can = radarVin_b1;
       radar_VIN[0] = radarVin_b5;
@@ -1634,8 +1638,8 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
     to_send.RDLR = to_send.RDLR & 0xFFFFF33F;
     to_send.RDLR = to_send.RDLR | 0x440;
     // change the autopilot to 1
-    to_send.RDHR = to_fwd->RDHR & 0xCFFFFFFF;
-    to_send.RDHR = to_send.RDHR | 0x10000000;
+    to_send.RDHR = to_fwd->RDHR & 0xCFFF0F0F;
+    to_send.RDHR = to_send.RDHR | 0x10000000 | (radarPosition << 4) | (radarEpasType << 12);
     
     if ((sizeof(radar_VIN) >= 4) && ((int)(radar_VIN[7]) == 0x32)) {
         //also change to AWD if needed (most likely) if manual VIN and if position 8 of VIN is a 2 (dual motor)

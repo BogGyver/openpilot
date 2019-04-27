@@ -246,6 +246,8 @@ class CarState(object):
     self.radarVIN = "                 "
     self.enableLdw = True
     self.radarOffset = 0.
+    self.radarPosition = 0
+    self.radarEpasType = 0
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

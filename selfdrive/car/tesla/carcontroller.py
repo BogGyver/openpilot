@@ -424,7 +424,7 @@ class CarController(object):
       useRadar=0
       if CS.useTeslaRadar:
         useRadar=1
-      can_sends.append(teslacan.create_radar_VIN_msg(self.radarVin_idx,CS.radarVIN,1,0x108,useRadar))
+      can_sends.append(teslacan.create_radar_VIN_msg(self.radarVin_idx,CS.radarVIN,1,0x108,useRadar,CS.radarPosition,CS.radarEpasType))
       self.radarVin_idx += 1
       self.radarVin_idx = self.radarVin_idx  % 3
 

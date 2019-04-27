@@ -223,6 +223,22 @@ def read_config_file(CS):
       file_changed = True
     config.set('OP_CONFIG', 'radar_offset', CS.radarOffset)
 
+    #radar_epas_type -> CS.radarEpasType
+    try:
+      CS.radarEpasType = configr.getint('OP_CONFIG','radar_epas_type')
+    except:
+      CS.radarEpasType = 0.
+      file_changed = True
+    config.set('OP_CONFIG', 'radar_epas_type', CS.radarEpasType)
+    
+    #radar_position -> CS.radarPosition
+    try:
+      CS.radarPosition = configr.getint('OP_CONFIG','radar_position')
+    except:
+      CS.radarPosition = 0
+      file_changed = True
+    config.set('OP_CONFIG', 'radar_position', CS.radarPosition)
+
     #do_auto_update -> CS.doAutoUpdate
     try:
       CS.doAutoUpdate = configr.getboolean('OP_CONFIG','do_auto_update')
@@ -265,7 +281,9 @@ class CarSettings(object):
     self.useWithoutHarness = False
     self.radarVIN = "                 "
     self.enableLdw = True
-    self.radarOffset = 0
+    self.radarOffset = 0.
+    self.radarPosition = 0
+    self.radarEpasType = 0
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
