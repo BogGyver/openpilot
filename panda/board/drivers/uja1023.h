@@ -33,7 +33,7 @@ LIN_FRAME_t assign_id_frame, io_cfg_1_frame, io_cfg_2_frame, io_cfg_3_frame, io_
 int initial_loop_num = 0;
 
 
-void TIM5_IRQHandler(void) {
+void UJA_TIM5_IRQHandler(void) {
   if (TIM5->SR & TIM_SR_UIF) {
     if (lin_send_timer == 0) {
       //send every 1s

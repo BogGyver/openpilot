@@ -14,24 +14,29 @@ volatile int on_cycles = 25;
 volatile int timeout_cycles = LLINE_TIMEOUT_CYCLES;
 
 void TIM5_IRQHandler(void) {
-  if (TIM5->SR & TIM_SR_UIF) {
-    on_cycles--;
-    timeout_cycles--;
-    if (timeout_cycles == 0) {
-      turn_on_relay = 0;
-    }
-    if (on_cycles > 0) {
-      if (turn_on_relay) {
-        set_gpio_output(GPIOC, 10, 0);
+  if (relay_control == 0) {
+    UJA_TIM5_IRQHandler();
+  }
+  else {
+    if (TIM5->SR & TIM_SR_UIF) {
+      on_cycles--;
+      timeout_cycles--;
+      if (timeout_cycles == 0) {
+        turn_on_relay = 0;
+      }
+      if (on_cycles > 0) {
+        if (turn_on_relay) {
+          set_gpio_output(GPIOC, 10, 0);
+        }
+      }
+      else {
+        set_gpio_output(GPIOC, 10, 1);
+        on_cycles = 25;
       }
     }
-    else {
-      set_gpio_output(GPIOC, 10, 1);
-      on_cycles = 25;
-    }
+    TIM5->ARR = 160-1;
+    TIM5->SR = 0;
   }
-  TIM5->ARR = 160-1;
-  TIM5->SR = 0;
 }
 
 void lline_relay_init (void) {
