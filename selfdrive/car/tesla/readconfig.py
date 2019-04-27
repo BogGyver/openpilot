@@ -227,7 +227,7 @@ def read_config_file(CS):
     try:
       CS.radarEpasType = configr.getint('OP_CONFIG','radar_epas_type')
     except:
-      CS.radarEpasType = 0.
+      CS.radarEpasType = 0
       file_changed = True
     config.set('OP_CONFIG', 'radar_epas_type', CS.radarEpasType)
     
