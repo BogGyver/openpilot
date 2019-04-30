@@ -2376,7 +2376,7 @@ int main() {
       }
     } else {
       // Car started, fetch a new rgb image from ipc and peek for zmq events.
-      touched = touch_poll(&touch, &touch_x, &touch_y, s->awake ? 20 : 500);
+      touched = touch_poll(&touch, &touch_x, &touch_y, s->awake ? 2 : 500);
       //touched = touch_read(&touch, &touch_x, &touch_y);
       ui_update(s);
       if(!s->vision_connected) {
