@@ -2,13 +2,15 @@ int tesla_radar_status = 0; //0-not present, 1-initializing, 2-active
 uint32_t tesla_last_radar_signal = 0;
 const int TESLA_RADAR_TIMEOUT = 1000000; // 1 second between real time checks
 char radar_VIN[] = "                 "; //leave empty if your radar VIN matches the car VIN
-int tesla_radar_can = 1; // 0, 1 or 2 set from EON via fake message
+uint8_t tesla_radar_can = 2; // 0, 1 or 2 set from EON via fake message
 int tesla_radar_vin_complete = 0; //set to 7 when complete vin is received
 int tesla_radar_should_send = 0; //set to 1 from EON via fake message when we want to use it
 int tesla_radar_counter = 0; //counter to determine when to send messages
 uint32_t tesla_radar_trigger_message_id = 0x17c; //id of the message
 int actual_speed_kph = 0; //use the rx_hook to set this to the car speed in kph; used by radar
 int tesla_radar_config_message_id = 0x560; //message used to send VIN to Panda
+int radarPosition = 0;
+int radarEpasType = 0;
 
 //message IDs and counters
 int tesla_radar_x2B9_id = 0;
@@ -75,7 +77,7 @@ static int add_tesla_cksm2(uint32_t dl, uint32_t dh, int msg_id, int msg_len) {
   return add_tesla_cksm(&to_check,msg_id,msg_len);
 }
 
-static void send_fake_message(uint32_t RIR, uint32_t RDTR,int msg_len, int msg_addr, int bus_num, uint32_t data_lo, uint32_t data_hi) {
+static void send_fake_message(uint32_t RIR, uint32_t RDTR,int msg_len, int msg_addr, uint8_t bus_num, uint32_t data_lo, uint32_t data_hi) {
   CAN_FIFOMailBox_TypeDef to_send;
   uint32_t addr_mask = 0x001FFFFF;
   to_send.RIR = (msg_addr << 21) + (addr_mask & (RIR | 1));
@@ -205,7 +207,7 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
     if (tesla_radar_counter ==0) {
         //send 2A9
         MLB = 0x41431642;
-        MHB = 0x10020000;
+        MHB = 0x10020000 | (radarPosition << 4) | (radarEpasType << 12);
         if ((sizeof(radar_VIN) >= 4) && ((int)(radar_VIN[7]) == 0x32)) {
             //also change to AWD if needed (most likely) if manual VIN and if position 8 of VIN is a 2 (dual motor)
             MLB = MLB | 0x08;
@@ -222,7 +224,7 @@ static void activate_tesla_radar(uint32_t RIR, uint32_t RDTR) {
 
 static void teslaradar_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
 {
-   int bus_number = (to_push->RDTR >> 4) & 0xFF;
+  uint8_t bus_number = (to_push->RDTR >> 4) & 0xFF;
   uint32_t addr;
 
   if (to_push->RIR & 4)
@@ -243,7 +245,7 @@ static void teslaradar_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     return;
   }
 
-  /*
+  
   //looking for radar messages;
   if ((addr == 0x300) && (bus_number ==tesla_radar_can)) 
   {
@@ -283,5 +285,5 @@ static void teslaradar_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     }
     return;
   }
-  */
+  
 }
