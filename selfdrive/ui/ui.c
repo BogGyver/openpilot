@@ -2361,6 +2361,7 @@ int main() {
     int touched = 0;
     int touch_x = -1, touch_y = -1;
     int dc_touch_x = -1, dc_touch_y = -1;
+    s->b.touch_timeout = max(s->b.touch_timeout -1,0);
     if (!s->vision_connected) {
       // Car is not started, keep in idle state and awake on touch events
       zmq_pollitem_t polls[1] = {{0}};
@@ -2372,11 +2373,11 @@ int main() {
       else if (ret > 0) {
         // awake on any touch
         touched = touch_read(&touch, &touch_x, &touch_y);
-        s->b.touch_timeout = max(s->b.touch_timeout -1,0);
-        
       }
     } else {
       // Car started, fetch a new rgb image from ipc and peek for zmq events.
+      touched = touch_poll(&touch, &touch_x, &touch_y, s->awake ? 20 : 500);
+      //touched = touch_read(&touch, &touch_x, &touch_y);
       ui_update(s);
       if(!s->vision_connected) {
         // Visiond process is just stopped, force a redraw to make screen blank again.

@@ -148,6 +148,9 @@ def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, coll
 def create_fake_DAS_obj_lane_msg(leadDx,leadDy,leadClass,rLine,lLine,curv0,curv1,curv2,curv3,laneRange,laneWidth):
   msg_id = 0x557
   msg_len = 8
+  f = 1
+  f2 = f * f
+  f3 = f2 * f
   if (leadDx > 127):
     leadDx = 127
   if (leadDx < 0 ):
@@ -159,9 +162,9 @@ def create_fake_DAS_obj_lane_msg(leadDx,leadDy,leadClass,rLine,lLine,curv0,curv1
   tLeadDx = int(leadDx / 0.5)
   tLeadDy = int((22.5 + leadDy) / 0.35)
   tCurv0 = (int((curv0 + 3.5)/0.035)) & 0xFF
-  tCurv1 = (int((curv1 + 0.2)/0.0016)) & 0xFF
-  tCurv2 = (int((curv2  + 0.0025)/0.00002)) & 0xFF
-  tCurv3 = (int((curv3 + 0.00003)/0.00000024)) & 0xFF
+  tCurv1 = (int((curv1*f + 0.2)/0.0016)) & 0xFF
+  tCurv2 = (int((curv2*f2  + 0.0025)/0.00002)) & 0xFF
+  tCurv3 = (int((curv3*f3 + 0.00003)/0.00000024)) & 0xFF
   lWidth = (int((laneWidth - 2.0)/0.3125)) & 0x0F
   msg = create_string_buffer(msg_len)
   struct.pack_into('BBBBBBBB',msg ,0 , tLeadDx,tLeadDy,(lWidth << 4) + (lLine << 2) + rLine, tCurv0,tCurv1,tCurv2,tCurv3,((leadClass & 0x03) << 6) + int(laneRange/4))

@@ -168,7 +168,7 @@ def radard_thread(gctx=None):
         ekfv.state[SPEEDV] = 0.
 
       ar_pts[VISION_POINT] = (float(ekfv.state[XV]), np.polyval(MP.d_poly, float(ekfv.state[XV])),
-                              float(ekfv.state[SPEEDV]), False, 0.,0.,0,0.,1)
+                              float(ekfv.state[SPEEDV]), False, 0.,0.,1,0.,1)
     else:
       ekfv.state[XV] = MP.lead_dist
       ekfv.covar = (np.diag([MP.lead_var, ekfv.var_init]))
