@@ -201,6 +201,7 @@ def read_config_file(CS):
       file_changed = True
     config.set('OP_CONFIG', 'use_analog_when_no_eon', CS.useAnalogWhenNoEon)
     
+    #use_tesla_radar - Set this setting to True if you have a Tesla Bosch Radar installed (works in conjunction with enable_radar_emulation)
     #use_tesla_radar -> CS.useTeslaRadar
     try:
       CS.useTeslaRadar = configr.getboolean('OP_CONFIG','use_tesla_radar')
@@ -209,6 +210,7 @@ def read_config_file(CS):
       file_changed = True
     config.set('OP_CONFIG', 'use_tesla_radar', CS.useTeslaRadar)
 
+    #use_without_harness - Not used at the moment; should be False
     #use_without_harness = CS.useWithoutHarness
     try:
       CS.useWithoutHarness = configr.getboolean('OP_CONFIG','use_without_harness')
@@ -217,6 +219,7 @@ def read_config_file(CS):
       file_changed = True
     config.set('OP_CONFIG', 'use_without_harness', CS.useWithoutHarness)
 
+    #radar_vin - If you used an aftermarket Tesla Bosch Radar that already has a coded VIN, you will have to enter that VIN value here
     #radar_vin -> CS.radarVIN
     try:
       CS.radarVIN = configr.get('OP_CONFIG','radar_vin')
@@ -225,6 +228,7 @@ def read_config_file(CS):
       file_changed = True
     config.set('OP_CONFIG', 'radar_vin', CS.radarVIN)
 
+    #enable_ldw - Enable the Lane Departure Warning (LDW) feature; this feature warns the driver is the car gets too close to one of the lines when driving above 45 MPH (72 km/h) without touching the steering wheel and when the turn signal is off
     #enable_ldw = CS.enableLdw
     try:
       CS.enableLdw = configr.getboolean('OP_CONFIG','enable_ldw')
@@ -233,6 +237,7 @@ def read_config_file(CS):
       file_changed = True
     config.set('OP_CONFIG', 'enable_ldw', CS.enableLdw)
 
+    #radar_offset - If your Tesla Bosch Radar is not centered on the car, this value will allow to enter a correction offset
     #radar_offset -> CS.radarOffset
     try:
       CS.radarOffset = configr.getfloat('OP_CONFIG','radar_offset')
@@ -241,6 +246,7 @@ def read_config_file(CS):
       file_changed = True
     config.set('OP_CONFIG', 'radar_offset', CS.radarOffset)
 
+    #radar_epas_type - Depending on the source of your Tesla Bosch Radar (older or newer Model S or Model X), this setting has to match what the radar was programmed to recognize as EPAS; values are between 0 and 4; finding the right one is trial and error
     #radar_epas_type -> CS.radarEpasType
     try:
       CS.radarEpasType = configr.getint('OP_CONFIG','radar_epas_type')
@@ -249,6 +255,7 @@ def read_config_file(CS):
       file_changed = True
     config.set('OP_CONFIG', 'radar_epas_type', CS.radarEpasType)
     
+    #radar_position - Depending on the source of your Tesla Bosch Radar (older or newer Model S or Model X), this setting has to match what the radar was programmed to have a position (Model S, Model S facelift, Model X); values are between 0 and 3; finding the right one is trial and error
     #radar_position -> CS.radarPosition
     try:
       CS.radarPosition = configr.getint('OP_CONFIG','radar_position')
