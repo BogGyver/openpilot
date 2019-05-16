@@ -4,6 +4,7 @@ default_config_file_path = '/data/bb_openpilot.cfg'
 config_file_r = 'r'
 config_file_w = 'wb'
 
+### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
 def read_config_file(CS, config_path):
     file_changed = False
     configr = ConfigParser.ConfigParser()
@@ -280,40 +281,7 @@ def read_config_file(CS, config_path):
 
 class CarSettings(object):
   def __init__(self, optional_config_file_path = default_config_file_path):
-    ### START OF MAIN CONFIG OPTIONS ###
-    ### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
-    self.forcePedalOverCC = True
-    self.enableHSO = True 
-    self.enableALCA = True
-    self.enableDasEmulation = True
-    self.enableRadarEmulation = True
-    self.enableSpeedVariableDesAngle = False
-    self.enableRollAngleCorrection = False
-    self.enableFeedForwardAngleCorrection = True
-    self.enableDriverMonitor = True
-    self.enableShowCar = True
-    self.enableShowLogo = True
-    self.hasNoctuaFan = False
-    self.limitBatteryMinMax = False
-    self.limitBattery_Min = 60
-    self.limitBattery_Max = 70
-    self.doAutoUpdate = True
-    self.blockUploadWhileTethering = False
-    self.tetherIP = "127.0.0."
-    self.useTeslaGPS = False
-    self.useTeslaMapData = False
-    self.hasTeslaIcIntegration = False
-    self.useAnalogWhenNoEon = False
-    self.useTeslaRadar = False
-    self.useWithoutHarness = False
-    self.radarVIN = "                 "
-    self.enableLdw = True
-    self.radarOffset = 0.
-    self.radarPosition = 0
-    self.radarEpasType = 0
-    #read config file
     read_config_file(self, config_path = optional_config_file_path)
-    ### END OF MAIN CONFIG OPTIONS ###
 
   def get_value(self,name_of_variable):
     return_val = None
