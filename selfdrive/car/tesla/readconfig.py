@@ -1,12 +1,13 @@
 import ConfigParser
 
-config_path = '/data/bb_openpilot.cfg'
+default_config_file_path = '/data/bb_openpilot.cfg'
 config_file_r = 'r'
 config_file_w = 'wb'
 
-def read_config_file(CS):
+def read_config_file(CS, config_path):
     file_changed = False
     configr = ConfigParser.ConfigParser()
+
     try:
       configr.read(config_path)
     except:
@@ -278,7 +279,7 @@ def read_config_file(CS):
         config.write(configfile)
 
 class CarSettings(object):
-  def __init__(self):
+  def __init__(self, optional_config_file_path = default_config_file_path):
     ### START OF MAIN CONFIG OPTIONS ###
     ### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
     self.forcePedalOverCC = True
@@ -311,7 +312,7 @@ class CarSettings(object):
     self.radarPosition = 0
     self.radarEpasType = 0
     #read config file
-    read_config_file(self)
+    read_config_file(self, config_path = optional_config_file_path)
     ### END OF MAIN CONFIG OPTIONS ###
 
   def get_value(self,name_of_variable):
