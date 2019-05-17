@@ -223,10 +223,14 @@ def read_config_file(CS, config_path = default_config_file_path):
 
     #radar_vin - If you used an aftermarket Tesla Bosch Radar that already has a coded VIN, you will have to enter that VIN value here
     #radar_vin -> CS.radarVIN
+    default_radar_vin = '"                 "'
     try:
       CS.radarVIN = configr.get('OP_CONFIG','radar_vin')
+      if CS.radarVIN == '':
+        CS.radarVIN = default_radar_vin
+        file_changed = True
     except:
-      CS.radarVIN = "                 "
+      CS.radarVIN = default_radar_vin
       file_changed = True
     config.set('OP_CONFIG', 'radar_vin', CS.radarVIN)
 
@@ -278,6 +282,9 @@ def read_config_file(CS, config_path = default_config_file_path):
     if file_changed:
       with open(config_path, config_file_w) as configfile:
         config.write(configfile)
+
+    # Remove double quotes from VIN (they are required for empty case)
+    CS.radarVIN = CS.radarVIN.replace('"', '')
 
 class CarSettings(object):
   def __init__(self, optional_config_file_path = default_config_file_path):
