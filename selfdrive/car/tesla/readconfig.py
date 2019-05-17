@@ -1,306 +1,343 @@
 import ConfigParser
 
 default_config_file_path = '/data/bb_openpilot.cfg'
-config_file_r = 'r'
-config_file_w = 'wb'
 
-### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
-def read_config_file(CS, config_path = default_config_file_path):
-    file_changed = False
-    configr = ConfigParser.ConfigParser()
+class ConfigFile(object):
+  config_file_r = 'r'
+  config_file_w = 'wb'
 
-    try:
-      configr.read(config_path)
-    except:
-      file_changed = True
-      print "no config file, creating with defaults..."
-    config = ConfigParser.RawConfigParser(allow_no_value=True)
-    config.add_section('OP_CONFIG')
-    
-    config.set('OP_CONFIG', '#force_pedal_over_cc - Forces the use of Tesla Pedal over ACC completely disabling the Tesla CC.')
-    #force_pedal_over_cc -> CS.forcePedalOverCC
-    try:
-      CS.forcePedalOverCC = configr.getboolean('OP_CONFIG','force_pedal_over_cc')
-    except:
-      CS.forcePedalOverCC = False
-      file_changed = True
-    config.set('OP_CONFIG', 'force_pedal_over_cc', CS.forcePedalOverCC)
-    
-    config.set('OP_CONFIG', '#enable_hso - Enables Human Steering Override (HSO) feature which allows you to take control of the steering wheel and correct the course of the car without disengaging OpenPilot lane keep assis (LKS, lateral control)')
-    #enable_hso -> CS.enableHSO
-    try:
-      CS.enableHSO = configr.getboolean('OP_CONFIG','enable_hso')
-    except:
-      CS.enableHSO = True
-      file_changed = True
-    config.set('OP_CONFIG', 'enable_hso', CS.enableHSO)
+  ### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
+  def read(self, into, config_path):
+      configr = ConfigParser.ConfigParser()
+      file_changed = False
 
-    config.set('OP_CONFIG', '#enable_alca - Enables the Adaptive Lane Change Assist (ALCA) feature which will automatically change lanes when driving above 18 MPH (29 km/h) by just pushing 1/2 way on your turn signal stalk; turn signal will remain on for the duration of lane change')
-    #enable_alca -> CS.enableALCA
-    try:
-      CS.enableALCA = configr.getboolean('OP_CONFIG','enable_alca')
-    except:
-      CS.enableALCA = True
-      file_changed = True
-    config.set('OP_CONFIG', 'enable_alca', CS.enableALCA)
+      try:
+        configr.read(config_path)
+        fd = open(config_path, "r")
+        self.current_file_contents = fd.read()
+        fd.close()
+      except:
+        self.current_file_contents = ""
+        print("no config file, creating with defaults...")
 
-    config.set('OP_CONFIG', '#enable_das_emulation - The secret sauce of IC/CID integration; this feature makes the Panda generate all the CAN messages needed for IC/CID integration that mimics the AP interface')
-    #enable_das_emulation -> CS.enableDasEmulation
-    try:
-      CS.enableDasEmulation = configr.getboolean('OP_CONFIG','enable_das_emulation')
-    except:
-      CS.enableDasEmulation = False
-      file_changed = True
-    config.set('OP_CONFIG', 'enable_das_emulation', CS.enableDasEmulation)
+      main_section = 'OP_CONFIG'
+      config = ConfigParser.RawConfigParser(allow_no_value=True)
+      config.add_section(main_section)
 
-    config.set('OP_CONFIG', '#enable_radar_emulation - The secret sauce to make the Tesla Radar work; this feature make the Panda generate all the CAN messages needed by the Tesla Bosch Radar to operate')
-    #enable_radar_emulation -> CS.enableRadarEmulation
-    try:
-      CS.enableRadarEmulation = configr.getboolean('OP_CONFIG','enable_radar_emulation')
-    except:
-      CS.enableRadarEmulation = False
-      file_changed = True
-    config.set('OP_CONFIG', 'enable_radar_emulation', CS.enableRadarEmulation)
+      #force_pedal_over_cc -> forcePedalOverCC
+      into.forcePedalOverCC, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'force_pedal_over_cc', type = bool,
+        default_value = False,
+        comment = 'Forces the use of Tesla Pedal over ACC completely disabling the Tesla CC'
+      )
+      file_changed |= didUpdate
+      
+      #enable_hso -> enableHSO
+      into.enableHSO, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'enable_hso', type = bool,
+        default_value = True,
+        comment = 'Enables Human Steering Override (HSO) feature which allows you to take control of the steering wheel and correct the course of the car without disengaging OpenPilot lane keep assis (LKS, lateral control)'
+      )
+      file_changed |= didUpdate
 
-    #enable_speed_variable_angle -> CS.enableSpeedVariableDesAngle
-    try:
-      CS.enableSpeedVariableDesAngle = configr.getboolean('OP_CONFIG','enable_speed_variable_angle')
-    except:
-      CS.enableSpeedVariableDesAngle = True
-      file_changed = True
-    config.set('OP_CONFIG', 'enable_speed_variable_angle', CS.enableSpeedVariableDesAngle)
+      #enable_das_emulation -> enableDasEmulation
+      into.enableALCA, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'enable_alca', type = bool,
+        default_value = True,
+        comment = 'Enables the Adaptive Lane Change Assist (ALCA) feature which will automatically change lanes when driving above 18 MPH (29 km/h) by just pushing 1/2 way on your turn signal stalk; turn signal will remain on for the duration of lane change'
+      )
+      file_changed |= didUpdate
 
-    #enable_roll_angle_correction -> CS.enableRollAngleCorrection
-    try:
-      CS.enableRollAngleCorrection = configr.getboolean('OP_CONFIG','enable_roll_angle_correction')
-    except:
-      CS.enableRollAngleCorrection = False
-      file_changed = True
-    config.set('OP_CONFIG', 'enable_roll_angle_correction', CS.enableRollAngleCorrection)
+      #enable_das_emulation -> enableDasEmulation
+      into.enableDasEmulation, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'enable_das_emulation', type = bool,
+        default_value = False,
+        comment = 'The secret sauce of IC/CID integration; this feature makes the Panda generate all the CAN messages needed for IC/CID integration that mimiinto the AP interface'
+      )
+      file_changed |= didUpdate
 
-    #enable_feed_forward_angle_correction -> CS.enableFeedForwardAngleCorrection
-    try:
-      CS.enableFeedForwardAngleCorrection = configr.getboolean('OP_CONFIG','enable_feed_forward_angle_correction')
-    except:
-      CS.enableFeedForwardAngleCorrection = True
-      file_changed = True
-    config.set('OP_CONFIG', 'enable_feed_forward_angle_correction', CS.enableFeedForwardAngleCorrection)
+      #enable_radar_emulation -> enableRadarEmulation
+      into.enableRadarEmulation, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'enable_radar_emulation', type = bool,
+        default_value = False,
+        comment = 'The secret sauce to make the Tesla Radar work; this feature make the Panda generate all the CAN messages needed by the Tesla Bosch Radar to operate'
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#enable_driver_monitor - When turned off, the OpenPilot is tricked into thinking you have the hands on the sterring wheel all the time')
-    #enable_driver_monitor -> CS.enableDriverMonitor
-    try:
-      CS.enableDriverMonitor = configr.getboolean('OP_CONFIG','enable_driver_monitor')
-    except:
-      CS.enableDriverMonitor = True
-      file_changed = True
-    config.set('OP_CONFIG', 'enable_driver_monitor', CS.enableDriverMonitor)
+      #enable_roll_angle_correction -> enableRollAngleCorrection
+      into.enableSpeedVariableDesAngle, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'enable_speed_variable_angle', type = bool,
+        default_value = True,
+        comment = ''
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#enable_show_car - Shows a Tesla car in the limitted UI mode instead of the triangle that identifies the lead car; this is only used if you do not have IC/CID integration')
-    #enable_show_car -> CS.enableShowCar
-    try:
-      CS.enableShowCar = configr.getboolean('OP_CONFIG','enable_show_car')
-    except:
-      CS.enableShowCar = True
-      file_changed = True
-    config.set('OP_CONFIG', 'enable_show_car', CS.enableShowCar)
+      #enable_roll_angle_correction -> enableRollAngleCorrection
+      into.enableRollAngleCorrection, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'enable_roll_angle_correction', type = bool,
+        default_value = False,
+        comment = ''
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#enable_show_logo - Shows a Tesla red logo on the EON screen when OP is not enabled')
-    #enable_show_logo -> CS.enableShowLogo
-    try:
-      CS.enableShowLogo = configr.getboolean('OP_CONFIG','enable_show_logo')
-    except:
-      CS.enableShowLogo = True
-      file_changed = True
-    config.set('OP_CONFIG', 'enable_show_logo', CS.enableShowLogo)
+      #enable_feed_forward_angle_correction -> enableFeedForwardAngleCorrection
+      into.enableFeedForwardAngleCorrection, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'enable_feed_forward_angle_correction', type = bool,
+        default_value = True,
+        comment = ''
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#has_noctua_fan - Enables control of Noctua fan (at higher RPMS) when you have a Noctua fan installed')
-    #has_noctua_fan -> CS.hasNoctuaFan
-    try:
-      CS.hasNoctuaFan = configr.getboolean('OP_CONFIG','has_noctua_fan')
-    except:
-      CS.hasNoctuaFan = False
-      file_changed = True
-    config.set('OP_CONFIG', 'has_noctua_fan', CS.hasNoctuaFan)
+      #enable_driver_monitor -> enableDriverMonitor
+      into.enableDriverMonitor, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'enable_driver_monitor', type = bool,
+        default_value = True,
+        comment = 'When turned off, the OpenPilot is tricked into thinking you have the hands on the sterring wheel all the time'
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#limit_battery_minmax - Enables battery charging limits; the battery will start charging when battery percentage is below limit_battery_min and will stop charging when battery % is above limit_battery_max')
-    #limit_battery_minmax -> CS.limitBatteryMinMax
-    try:
-      CS.limitBatteryMinMax = configr.getboolean('OP_CONFIG','limit_battery_minmax')
-    except:
-      CS.limitBatteryMinMax = True
-      file_changed = True
-    config.set('OP_CONFIG', 'limit_battery_minmax', CS.limitBatteryMinMax)
+      #enable_show_car -> enableShowCar
+      into.enableShowCar, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'enable_show_car', type = bool,
+        default_value = True,
+        comment = 'Shows a Tesla car in the limitted UI mode instead of the triangle that identifies the lead car; this is only used if you do not have IC/CID integration'
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#limit_battery_min - See limit_battery_minmax')
-    #limit_battery_min -> CS.limitBattery_Min
-    try:
-      CS.limitBattery_Min = configr.getint('OP_CONFIG','limit_battery_min')
-    except:
-      CS.limitBattery_Min = 60
-      file_changed = True
-    config.set('OP_CONFIG', 'limit_battery_min', CS.limitBattery_Min)
+      #enable_show_logo -> enableShowLogo
+      into.enableShowLogo, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'enable_show_logo', type = bool,
+        default_value = True,
+        comment = 'Shows a Tesla red logo on the EON screen when OP is not enabled'
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#limit_battery_max - See limit_battery_minmax')
-    #limit_battery_max -> CS.limitBattery_Max
-    try:
-      CS.limitBattery_Max = configr.getint('OP_CONFIG','limit_battery_max')
-    except:
-      CS.limitBattery_Max = 80
-      file_changed = True
-    config.set('OP_CONFIG', 'limit_battery_max', CS.limitBattery_Max)
+      #has_noctua_fan -> hasNoctuaFan
+      into.hasNoctuaFan, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'has_noctua_fan', type = bool,
+        default_value = False,
+        comment = 'Enables control of Noctua fan (at higher RPMS) when you have a Noctua fan installed'
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#block_upload_while_tethering - This setting will block uploading OP videos to Comma when you are tethering through the phone. You should set the tether_ip to the first 3 values that your phone provides as IP when you tether. This is phone/carrier specific. For example iPhone give addresses like 172.20.10.x so you would enter 172.20.10.')
-    #block_upload_while_tethering -> CS.blockUploadWhileTethering
-    try:
-      CS.blockUploadWhileTethering = configr.getboolean('OP_CONFIG','block_upload_while_tethering')
-    except:
-      CS.blockUploadWhileTethering = False
-      file_changed = True
-    config.set('OP_CONFIG', 'block_upload_while_tethering', CS.blockUploadWhileTethering)
+      #limit_battery_minmax -> limitBatteryMinMax
+      into.limitBatteryMinMax, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'limit_battery_minmax', type = bool,
+        default_value = True,
+        comment = 'Enables battery charging limits; the battery will start charging when battery percentage is below limit_battery_min and will stop charging when battery percentage is above limit_battery_max'
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#tether_ip - See block_upload_while_tethering')
-    #tether_ip -> CS.tetherIP
-    try:
-      CS.tetherIP = configr.get('OP_CONFIG','tether_ip')
-    except:
-      CS.tetherIP = "127.0.0."
-      file_changed = True
-    config.set('OP_CONFIG', 'tether_ip', CS.tetherIP)
+      #limit_battery_min -> limitBattery_Min
+      into.limitBattery_Min, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'limit_battery_min', type = int,
+        default_value = 60,
+        comment = 'See limit_battery_minmax'
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#use_tesla_gps - This setting makes OP to use Tesla GPS data instead of the GPS that comes with the gray panda; both GPS systems use Ublox and both are very close in accuracy; this also allows one to use a White Panda and still have map integration')
-    #use_tesla_gps -> CS.useTeslaGPS
-    try:
-      CS.useTeslaGPS = configr.getboolean('OP_CONFIG','use_tesla_gps')
-    except:
-      CS.useTeslaGPS = False
-      file_changed = True
-    config.set('OP_CONFIG', 'use_tesla_gps', CS.useTeslaGPS)
+      #limitBattery_Max -> limitBattery_Max
+      into.limitBattery_Max, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'limit_battery_max', type = int,
+        default_value = 80,
+        comment = 'See limit_battery_minmax'
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#use_tesla_map_data - This setting (which requires root) allows OP to use Tesla navigation map data (under development)')
-    #use_tesla_map_data -> CS.useTeslaMapData
-    try:
-      CS.useTeslaMapData = configr.getboolean('OP_CONFIG','use_tesla_map_data')
-    except:
-      CS.useTeslaMapData = False
-      file_changed = True
-    config.set('OP_CONFIG', 'use_tesla_map_data', CS.useTeslaMapData)
+      #block_upload_while_tethering -> blockUploadWhileTethering
+      into.blockUploadWhileTethering, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'block_upload_while_tethering', type = bool,
+        default_value = False,
+        comment = 'This setting will block uploading OP videos to Comma when you are tethering through the phone. You should set the tether_ip to the first 3 values that your phone provides as IP when you tether. This is phone/carrier specific. For example iPhone give addresses like 172.20.10.x so you would enter 172.20.10.'
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#has_tesla_ic_integration - This setting (in conjunction with enable_radar_emulation) help create the IC integration')
-    #has_tesla_IC_integration -> CS.hasTeslaIcIntegration
-    try:
-      CS.hasTeslaIcIntegration = configr.getboolean('OP_CONFIG','has_tesla_ic_integration')
-    except:
-      CS.hasTeslaIcIntegration = False
-      file_changed = True
-    config.set('OP_CONFIG', 'has_tesla_ic_integration', CS.hasTeslaIcIntegration)
+      #tether_ip -> tetherIP
+      into.tetherIP, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'tether_ip', type = str,
+        default_value = "127.0.0.",
+        comment = 'See block_upload_while_tethering'
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#use_analog_when_no_eon - Not used at the moment; should be False')
-    #use_analog_when_no_eon -> CS.useAnalogWhenNoEon
-    try:
-      CS.useAnalogWhenNoEon = configr.getboolean('OP_CONFIG','use_analog_when_no_eon')
-    except:
-      CS.useAnalogWhenNoEon = False
-      file_changed = True
-    config.set('OP_CONFIG', 'use_analog_when_no_eon', CS.useAnalogWhenNoEon)
-    
-    config.set('OP_CONFIG', '#use_tesla_radar - Set this setting to True if you have a Tesla Bosch Radar installed (works in conjunction with enable_radar_emulation)')
-    #use_tesla_radar -> CS.useTeslaRadar
-    try:
-      CS.useTeslaRadar = configr.getboolean('OP_CONFIG','use_tesla_radar')
-    except:
-      CS.useTeslaRadar = False
-      file_changed = True
-    config.set('OP_CONFIG', 'use_tesla_radar', CS.useTeslaRadar)
+      #use_tesla_gps -> useTeslaGPS
+      into.useTeslaGPS, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'use_tesla_gps', type = bool,
+        default_value = False,
+        comment = 'This setting makes OP to use Tesla GPS data instead of the GPS that comes with the gray panda; both GPS systems use Ublox and both are very close in accuracy; this also allows one to use a White Panda and still have map integration'
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#use_without_harness - Not used at the moment; should be False')
-    #use_without_harness = CS.useWithoutHarness
-    try:
-      CS.useWithoutHarness = configr.getboolean('OP_CONFIG','use_without_harness')
-    except:
-      CS.useWithoutHarness = False
-      file_changed = True
-    config.set('OP_CONFIG', 'use_without_harness', CS.useWithoutHarness)
+      #use_tesla_map_data -> useTeslaMapData
+      into.useTeslaMapData, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'use_tesla_map_data', type = bool,
+        default_value = False,
+        comment = 'This setting (which requires root) allows OP to use Tesla navigation map data (under development)'
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#radar_vin - If you used an aftermarket Tesla Bosch Radar that already has a coded VIN, you will have to enter that VIN value here')
-    #radar_vin -> CS.radarVIN
-    default_radar_vin = '"                 "'
-    try:
-      CS.radarVIN = configr.get('OP_CONFIG','radar_vin')
-      if CS.radarVIN == '':
-        CS.radarVIN = default_radar_vin
+      #use_analog_when_no_eon -> useAnalogWhenNoEon
+      into.hasTeslaIcIntegration, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'has_tesla_ic_integration', type = bool,
+        default_value = False,
+        comment = 'This setting (in conjunction with enable_radar_emulation) help create the IC integration'
+      )
+      file_changed |= didUpdate
+
+      #use_analog_when_no_eon -> useAnalogWhenNoEon
+      into.useAnalogWhenNoEon, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'use_analog_when_no_eon', type = bool,
+        default_value = False,
+        comment = 'Not used at the moment; should be False'
+      )
+      file_changed |= didUpdate
+      
+      #use_tesla_radar -> useTeslaRadar
+      into.useTeslaRadar, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'use_tesla_radar', type = bool,
+        default_value = False,
+        comment = 'Set this setting to True if you have a Tesla Bosch Radar installed (works in conjunction with enable_radar_emulation)'
+      )
+      file_changed |= didUpdate
+
+      #use_without_harness = useWithoutHarness
+      into.useWithoutHarness, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'use_without_harness', type = bool,
+        default_value = False,
+        comment = 'Not used at the moment; should be False'
+      )
+      file_changed |= didUpdate
+
+      #radar_vin -> into.radarVIN
+      default_radar_vin = '"                 "'
+      into.radarVIN, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'radar_vin', type = str,
+        default_value = default_radar_vin,
+        comment = 'If you used an aftermarket Tesla Bosch Radar that already has a coded VIN, you will have to enter that VIN value here'
+      )
+      file_changed |= didUpdate
+      if into.radarVIN == '':
+        into.radarVIN = default_radar_vin
         file_changed = True
-    except:
-      CS.radarVIN = default_radar_vin
-      file_changed = True
-    config.set('OP_CONFIG', 'radar_vin', CS.radarVIN)
 
-    config.set('OP_CONFIG', '#enable_ldw - Enable the Lane Departure Warning (LDW) feature; this feature warns the driver is the car gets too close to one of the lines when driving above 45 MPH (72 km/h) without touching the steering wheel and when the turn signal is off')
-    #enable_ldw = CS.enableLdw
-    try:
-      CS.enableLdw = configr.getboolean('OP_CONFIG','enable_ldw')
-    except:
-      CS.enableLdw = True
-      file_changed = True
-    config.set('OP_CONFIG', 'enable_ldw', CS.enableLdw)
+      #enable_ldw = enableLdw
+      into.enableLdw, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'enable_ldw', type = bool,
+        default_value = True,
+        comment = 'Enable the Lane Departure Warning (LDW) feature; this feature warns the driver is the car gets too close to one of the lines when driving above 45 MPH (72 km/h) without touching the steering wheel and when the turn signal is off'
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#radar_offset - If your Tesla Bosch Radar is not centered on the car, this value will allow to enter a correction offset')
-    #radar_offset -> CS.radarOffset
-    try:
-      CS.radarOffset = configr.getfloat('OP_CONFIG','radar_offset')
-    except:
-      CS.radarOffset = 0.
-      file_changed = True
-    config.set('OP_CONFIG', 'radar_offset', CS.radarOffset)
+      #radar_offset -> radarOffset
+      into.radarOffset, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'radar_offset', type = float,
+        default_value = 0,
+        comment = 'If your Tesla Bosch Radar is not centered on the car, this value will allow to enter a correction offset'
+      )
+      file_changed |= didUpdate
 
-    config.set('OP_CONFIG', '#radar_epas_type - Depending on the source of your Tesla Bosch Radar (older or newer Model S or Model X), this setting has to match what the radar was programmed to recognize as EPAS; values are between 0 and 4; finding the right one is trial and error')
-    #radar_epas_type -> CS.radarEpasType
-    try:
-      CS.radarEpasType = configr.getint('OP_CONFIG','radar_epas_type')
-    except:
-      CS.radarEpasType = 0
-      file_changed = True
-    config.set('OP_CONFIG', 'radar_epas_type', CS.radarEpasType)
-    
-    config.set('OP_CONFIG', '#radar_position - Depending on the source of your Tesla Bosch Radar (older or newer Model S or Model X), this setting has to match what the radar was programmed to have a position (Model S, Model S facelift, Model X); values are between 0 and 3; finding the right one is trial and error')
-    #radar_position -> CS.radarPosition
-    try:
-      CS.radarPosition = configr.getint('OP_CONFIG','radar_position')
-    except:
-      CS.radarPosition = 0
-      file_changed = True
-    config.set('OP_CONFIG', 'radar_position', CS.radarPosition)
+      #radar_epas_type -> radarEpasType
+      into.radarEpasType, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'radar_epas_type', type = int,
+        default_value = 0,
+        comment = 'Depending on the source of your Tesla Bosch Radar (older or newer Model S or Model X), this setting has to match what the radar was programmed to recognize as EPAS; values are between 0 and 4; finding the right one is trial and error'
+      )
+      file_changed |= didUpdate
 
-    #do_auto_update -> CS.doAutoUpdate
-    CS.doAutoUpdate = read_bool_config_entry(
-      config, configr,
-      section = 'OP_CONFIG',
-      entry = 'do_auto_update',
-      default_value = True,
-      comment = 'Set this setting to False if you do not want OP to autoupdate every time you reboot and there is a change on the repo'
-    )
+      #radar_position -> radarPosition
+      into.radarPosition, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'radar_position', type = int,
+        default_value = 0,
+        comment = 'Depending on the source of your Tesla Bosch Radar (older or newer Model S or Model X), this setting has to match what the radar was programmed to have a position (Model S, Model S facelift, Model X); values are between 0 and 3; finding the right one is trial and error'
+      )
+      file_changed |= didUpdate
 
-    with open(config_path, config_file_w) as configfile:
-      config.write(configfile)
+      #do_auto_update -> doAutoUpdate
+      into.doAutoUpdate, didUpdate = self.read_config_entry(
+        config, configr, section = main_section,
+        entry = 'do_auto_update', type = bool,
+        default_value = True,
+        comment = 'Set this setting to False if you do not want OP to autoupdate every time you reboot and there is a change on the repo'
+      )
+      file_changed |= didUpdate
 
-def read_bool_config_entry(config, configr, section, entry, default_value, comment):
-    config.set(section, "# " + entry + " - " + comment + " (Default: " + (str(default_value)).capitalize() + ")")
-    result = None
-    try:
-      result = configr.getboolean(section, entry)
-    except:
-      result = default_value
-    config.set(section, entry, result)
-    return result
+      if file_changed:
+        did_write = True
+        with open(config_path, self.config_file_w) as configfile:
+          config.write(configfile)
+      else:
+        did_write = False
 
-    # Remove double quotes from VIN (they are required for empty case)
-    CS.radarVIN = CS.radarVIN.replace('"', '')
+      # Remove double quotes from VIN (they are required for empty case)
+      into.radarVIN = into.radarVIN.replace('"', '')
+      return did_write
+
+  def read_config_entry(self, config, configr, section, entry, type, default_value, comment):
+      updated = self.update_comment(config, section, entry, default_value, comment)
+      result = None
+      try:
+        if type == bool:
+          result = configr.getboolean(section, entry)
+        elif type == int:
+          result = configr.getint(section, entry)
+        elif type == float:
+          result = configr.getfloat(section, entry)
+        else:
+          result = configr.get(section, entry)
+      except:
+        result = default_value
+        updated = True
+      config.set(section, entry, result)
+      return result, updated
+
+  def update_comment(self, config, section, entry, default_value, comment):
+      new_comment = ("# " + entry + ": " + comment + " (Default: " + str(default_value) + ")").lower()
+      if self.current_file_contents.find(new_comment) == -1:
+        config.set(section, new_comment)
+        updated = True
+      else:
+        updated = False
+      return updated
 
 class CarSettings(object):
   def __init__(self, optional_config_file_path = default_config_file_path):
-    read_config_file(self, config_path = optional_config_file_path)
+    config_file = ConfigFile()
+    self.did_write_file = config_file.read(self, config_path = optional_config_file_path)
 
-  def get_value(self,name_of_variable):
+  def get_value(self, name_of_variable):
     return_val = None
-    exec("%s = self.%s" % ('return_val',name_of_variable))
+    exec("%s = self.%s" % ('return_val', name_of_variable))
     return return_val
-    
+
+# Legacy support
+def read_config_file(into, config_path = default_config_file_path):
+  config_file = ConfigFile()
+  config_file.read(into, config_path)
