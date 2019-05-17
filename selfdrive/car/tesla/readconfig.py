@@ -5,7 +5,7 @@ config_file_r = 'r'
 config_file_w = 'wb'
 
 ### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
-def read_config_file(CS, config_path):
+def read_config_file(CS, config_path = default_config_file_path):
     file_changed = False
     configr = ConfigParser.ConfigParser()
 

@@ -34,7 +34,8 @@ class MyTest(unittest.TestCase):
         os.remove(config_file_path)
 
     #def test_readconfig_no_arguments(self):
-    #    cs = readconfig.CarSettings()
+    #    cs1 = readconfig.CarSettings()
+    #    cs2 = read_config_file()
 
     def check_defaults(self, cs):
         self.assertEqual(cs.forcePedalOverCC, False)
