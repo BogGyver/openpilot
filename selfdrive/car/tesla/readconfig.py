@@ -225,8 +225,11 @@ def read_config_file(CS, config_path):
     #radar_vin -> CS.radarVIN
     try:
       CS.radarVIN = configr.get('OP_CONFIG','radar_vin')
+      if CS.radarVIN == '':
+        CS.radarVIN = '"                 "'
+        file_changed = True
     except:
-      CS.radarVIN = "                 "
+      CS.radarVIN = '"                 "'
       file_changed = True
     config.set('OP_CONFIG', 'radar_vin', CS.radarVIN)
 
@@ -278,6 +281,9 @@ def read_config_file(CS, config_path):
     if file_changed:
       with open(config_path, config_file_w) as configfile:
         config.write(configfile)
+
+    # Update for radar VIN
+    CS.radarVIN = CS.radarVIN.replace('"', '')
 
 class CarSettings(object):
   def __init__(self, optional_config_file_path = default_config_file_path):
