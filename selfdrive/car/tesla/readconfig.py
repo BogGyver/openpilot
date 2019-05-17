@@ -14,7 +14,7 @@ def read_config_file(CS, config_path = default_config_file_path):
     except:
       file_changed = True
       print "no config file, creating with defaults..."
-    config = ConfigParser.RawConfigParser()
+    config = ConfigParser.RawConfigParser(allow_no_value=True)
     config.add_section('OP_CONFIG')
     
     config.set('OP_CONFIG', '#force_pedal_over_cc - Forces the use of Tesla Pedal over ACC completely disabling the Tesla CC.')
@@ -270,18 +270,27 @@ def read_config_file(CS, config_path = default_config_file_path):
       file_changed = True
     config.set('OP_CONFIG', 'radar_position', CS.radarPosition)
 
-    config.set('OP_CONFIG', '#do_auto_update - Set this setting to False if you do not want OP to autoupdate every time you reboot and there is a change on the repo')
     #do_auto_update -> CS.doAutoUpdate
-    try:
-      CS.doAutoUpdate = configr.getboolean('OP_CONFIG','do_auto_update')
-    except:
-      CS.doAutoUpdate = True
-      file_changed = True
-    config.set('OP_CONFIG', 'do_auto_update', CS.doAutoUpdate)
+    CS.doAutoUpdate = read_bool_config_entry(
+      config, configr,
+      section = 'OP_CONFIG',
+      entry = 'do_auto_update',
+      default_value = True,
+      comment = 'Set this setting to False if you do not want OP to autoupdate every time you reboot and there is a change on the repo'
+    )
 
-    if file_changed:
-      with open(config_path, config_file_w) as configfile:
-        config.write(configfile)
+    with open(config_path, config_file_w) as configfile:
+      config.write(configfile)
+
+def read_bool_config_entry(config, configr, section, entry, default_value, comment):
+    config.set(section, "# " + entry + " - " + comment + " (Default: " + (str(default_value)).capitalize() + ")")
+    result = None
+    try:
+      result = configr.getboolean(section, entry)
+    except:
+      result = default_value
+    config.set(section, entry, result)
+    return result
 
     # Remove double quotes from VIN (they are required for empty case)
     CS.radarVIN = CS.radarVIN.replace('"', '')

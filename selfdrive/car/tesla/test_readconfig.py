@@ -60,6 +60,18 @@ class MyTest(unittest.TestCase):
         self.assertEqual(cs.radarVIN, "12345678901234567")
         os.remove(config_file_path)
 
+    def test_comments(self):
+        expected_comment = "# do_auto_update - set this setting to false if you do not want op to autoupdate every time you reboot and there is a change on the repo (default: true)"
+        config_file_path = "./test_config_file2.cfg"
+        self.create_empty_config_file(config_file_path, test_parameter_string = "force_pedal_over_cc = True")
+        cs = readconfig.CarSettings(optional_config_file_path = config_file_path)
+        # Should still be true, even though the defaut is False
+        fd = open(config_file_path, "r")
+        contents = fd.read()
+        fd.close()
+        self.assertNotEqual(contents.find(expected_comment), -1)
+        os.remove(config_file_path)
+
     # Make sure existing calls to CarSettings. read_config_file 
     # continue to work with no changes
     def test_readconfig_no_arguments(self):
@@ -117,7 +129,7 @@ class MyTest(unittest.TestCase):
     def delete_test_config_file(self):
         if os.path.exists(self.test_config_file):
             os.remove(self.test_config_file)
-
+        
     def create_empty_config_file(self, file_name, test_parameter_string = ""):
         if os.path.exists(file_name):
             os.remove(file_name)
