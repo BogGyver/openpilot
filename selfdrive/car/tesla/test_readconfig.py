@@ -60,9 +60,26 @@ class MyTest(unittest.TestCase):
         self.assertEqual(cs.radarVIN, "12345678901234567")
         os.remove(config_file_path)
 
-    #def test_readconfig_no_arguments(self):
-    #    cs1 = readconfig.CarSettings()
-    #    cs2 = read_config_file()
+    # Make sure existing calls to CarSettings. read_config_file 
+    # continue to work with no changes
+    def test_readconfig_no_arguments(self):
+        config_file_path = "./test_config_file2.cfg"
+        self.create_empty_config_file(config_file_path, test_parameter_string = "force_pedal_over_cc = True")
+        cs = readconfig.CarSettings(optional_config_file_path = config_file_path)
+        try:
+            cs1 = readconfig.CarSettings()
+        except IOError:
+            pass # IOError is expected if running pytest outside of EON environment
+        try:
+            cs2 = readconfig.read_config_file(cs)
+        except IOError:
+            pass # IOError is expected if running pytest outside of EON environment
+        # Make sure calling read_config_files directly works as expected
+        readconfig.read_config_file(cs, config_path = config_file_path)
+        self.assertEqual(cs.forcePedalOverCC, True)
+        readconfig.read_config_file(cs, config_path = self.test_config_file)
+        self.assertEqual(cs.forcePedalOverCC, False)
+        os.remove(config_file_path)
 
     def check_defaults(self, cs):
         self.assertEqual(cs.forcePedalOverCC, False)
