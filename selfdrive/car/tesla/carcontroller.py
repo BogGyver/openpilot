@@ -170,9 +170,9 @@ class CarController(object):
     self.visionCurvC0 = 0.
     self.laneRange = 50  #max is 160m but OP has issues with precision beyond 50
     self.useZeroC0 = False
-    self.useMap = False
+    self.useMap = True
     self.clipC0 = False
-    self.useMapOnly = False
+    self.useMapOnly = True
     self.laneWidth = 0.
 
     self.stopSign_visible = False
@@ -637,22 +637,22 @@ class CarController(object):
     #  self.curv3 = 0.
     #  self.laneRange = 0
     
-    if (CS.csaRoadCurvRange > 20) and self.useMap and not self.useMapOnly:
-      self.curv2 += -CS.csaRoadCurvC2
-      self.curv3 += -CS.csaRoadCurvC3
-      if self.laneRange > 0:
-        self.laneRange = min(self.laneRange,CS.csaRoadCurvRange)
-      else:
-        self.laneRange = CS.csaRoadCurvRange
-    elif (CS.csaOfframpCurvRange > 20) and self.useMap and not self.useMapOnly:
-      self.curv2 = -CS.csaOfframpCurvC2
-      self.curv3 = -CS.csaOfframpCurvC3
+    if (CS.csaRoadCurvRange > 2.) and self.useMap and not self.useMapOnly:
+      self.curv2 = -CS.csaRoadCurvC2
+      self.curv3 = -CS.csaRoadCurvC3
+      #if self.laneRange > 0:
+      #  self.laneRange = min(self.laneRange,CS.csaRoadCurvRange)
+      #else:
+      self.laneRange = CS.csaRoadCurvRange
+    elif (CS.csaOfframpCurvRange > 2.) and self.useMap and not self.useMapOnly:
+      #self.curv2 = -CS.csaOfframpCurvC2
+      #self.curv3 = -CS.csaOfframpCurvC3
       #self.curv0 = 0.
       #self.curv1 = 0.
-      if self.laneRange > 0:
-        self.laneRange = min(self.laneRange,CS.csaOfframpCurvRange)
-      else:
-        self.laneRange = CS.csaOfframpCurvRange
+      #if self.laneRange > 0:
+      #  self.laneRange = min(self.laneRange,CS.csaOfframpCurvRange)
+      #else:
+      self.laneRange = CS.csaOfframpCurvRange
     else:
       self.laneRange = 50
     self.laneRange = int(clip(self.laneRange,0,159))

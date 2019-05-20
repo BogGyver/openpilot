@@ -4,7 +4,8 @@ import os
 from panda import ensure_st_up_to_date
 
 def main(gctx=None):
-  ensure_st_up_to_date()
+  #BB stop autoflashing of panda on reboot
+  #ensure_st_up_to_date()
 
   os.chdir("boardd")
   os.execvp("./boardd", ["./boardd"])
