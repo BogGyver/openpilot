@@ -3,7 +3,7 @@ import os
 import readconfig
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 
-class TestCarSettings(object):
+class CarSettingsTestClass(object):
   def __init__(self):
     pass
 
@@ -86,7 +86,7 @@ class ReadConfigTests(unittest.TestCase):
         os.remove(config_file_path)
 
     def test_comment_update(self):
-        config_file_path = "./test_config_file2.cfg"
+        config_file_path = "./test_config_file3.cfg"
         old_comment = "# do_auto_update - old description (default: true)"
         old_entry = "do_auto_update = False"
         self.create_empty_config_file(config_file_path, test_parameter_string = "[OP_CONFIG]\n" + old_comment + "\n" + old_entry)
@@ -98,12 +98,28 @@ class ReadConfigTests(unittest.TestCase):
         fd = open(config_file_path, "r")
         contents = fd.read()
         fd.close()
-        self.assertNotEqual(contents.find(expected_comment), -1)
+        self.assertTrue(contents.find(expected_comment) != -1)
         # File should have changed (to update comment)
         self.assertEqual(cs.did_write_file, True)
         # Next time we read, file shouldn't change anymore:
         cs = readconfig.CarSettings(optional_config_file_path = config_file_path)
         self.assertEqual(cs.did_write_file, False)
+        # Now remove a config option to cause an update:
+        fd = open(config_file_path, "r")
+        contents = fd.read()
+        fd.close()
+        new_contents = contents.replace("limit_battery_max = 80", "")
+        os.remove(config_file_path)
+        fd = open(config_file_path, "wb")
+        fd.write(new_contents)
+        fd.close()
+        cs = readconfig.CarSettings(optional_config_file_path = config_file_path)
+        another_comment = '# radar_vin: if you used an aftermarket tesla bosch radar that already has a coded vin, you will have to enter that vin value here (default: "                 ")'
+        # Make sure other comments were written:
+        fd = open(config_file_path, "r")
+        contents = fd.read()
+        fd.close()
+        self.assertTrue(contents.find(another_comment) != -1)
         os.remove(config_file_path)
 
     def test_float_parsing(self):
@@ -119,7 +135,7 @@ class ReadConfigTests(unittest.TestCase):
         config_file_path = "./test_config_file2.cfg"
         self.create_empty_config_file(config_file_path, test_parameter_string = "force_pedal_over_cc = True")
         #cs = readconfig.CarSettings(optional_config_file_path = config_file_path)
-        cs = TestCarSettings()
+        cs = CarSettingsTestClass()
         try:
             read_config_file(cs)
         except IOError:
