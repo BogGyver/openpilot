@@ -2309,7 +2309,7 @@ int main() {
   err = pthread_create(&bg_thread_handle, NULL,
                        bg_thread, s);
   assert(err == 0);
-
+  s->b.touch_last_width = s->scene.ui_viz_rw;
   TouchState touch = {0};
   touch_init(&touch);
   s->touch_fd = touch.fd;
@@ -2392,17 +2392,16 @@ int main() {
       s->b.touch_last_x = touch_x;
       s->b.touch_last_y = touch_y;
       s->b.touch_timeout = touch_timeout;
-      s->b.touch_last_width = s->scene.ui_viz_rw;
     }
     //BB check touch
     if ((s->b.touch_last) && (s->b.touch_last_width != s->scene.ui_viz_rw)) {
+      s->b.touch_last_width=s->scene.ui_viz_rw;
       bb_handle_ui_touch(s,s->b.touch_last_x,s->b.touch_last_y);
       dc_touch_x = s->b.touch_last_x;
       dc_touch_y = s->b.touch_last_y;
       s->b.touch_last = false;
       s->b.touch_last_x = 0;
       s->b.touch_last_y = 0;
-      s->b.touch_last_width=s->scene.ui_viz_rw;
     }
     
     //s->b.touch_last_width = s->scene.ui_viz_rw;
