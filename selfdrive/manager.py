@@ -86,6 +86,7 @@ from selfdrive.loggerd.config import ROOT
 
 # comment out anything you don't want to run
 managed_processes = {
+  "tinklad":  "selfdrive.tinklad.tinklad",
   "thermald": "selfdrive.thermald",
   "uploader": "selfdrive.loggerd.uploader",
   "controlsd": "selfdrive.controls.controlsd",
@@ -107,7 +108,7 @@ managed_processes = {
   "sensord": ("selfdrive/sensord", ["./sensord"]),
   "gpsd": ("selfdrive/sensord", ["./gpsd"]),
   #"updated": "selfdrive.updated",
-  "athena": "selfdrive.athena.athenad",
+  "athena": "selfdrive.athena.athenad"
 }
 android_packages = ("ai.comma.plus.offroad", "ai.comma.plus.frame")
 
@@ -122,6 +123,7 @@ unkillable_processes = ['visiond']
 interrupt_processes = []
 
 persistent_processes = [
+  'tinklad',
   'thermald',
   'logmessaged',
   'logcatd',
