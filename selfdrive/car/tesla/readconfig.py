@@ -15,6 +15,15 @@ def read_config_file(CS):
     config = ConfigParser.RawConfigParser()
     config.add_section('OP_CONFIG')
     
+    #user_handle - Username at tinkla.com, for dashboard data and support. If you don\'t have a username, ask for one on Discord, or just enter your Discord handle here.
+    #user_handle -> userHandle
+    try:
+      CS.userHandle = configr.get('OP_CONFIG','user_handle')
+    except:
+      CS.userHandle = "your_tinkla_username"
+      file_changed = True
+    config.set('OP_CONFIG', 'user_handle', CS.userHandle)
+
     #force_pedal_over_cc - Forces the use of Tesla Pedal over ACC completely disabling the Tesla CC.
     #force_pedal_over_cc -> CS.forcePedalOverCC
     try:
@@ -218,6 +227,7 @@ class CarSettings(object):
   def __init__(self):
     ### START OF MAIN CONFIG OPTIONS ###
     ### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
+    self.userHandle = "your_tinkla_username"
     self.forcePedalOverCC = True
     self.enableHSO = True 
     self.enableALCA = True
