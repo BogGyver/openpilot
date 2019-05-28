@@ -5,6 +5,8 @@ import fcntl
 import errno
 import signal
 import subprocess
+from selfdrive.tinklad.tinkla_interface import TinklaClient
+from cereal import tinkla
 
 from common.basedir import BASEDIR
 sys.path.append(os.path.join(BASEDIR, "pyextra"))
@@ -306,6 +308,19 @@ def system(cmd):
       output=e.output[-1024:],
       returncode=e.returncode)
 
+def sendUserInfoToTinkla():
+  params = Params()
+  gitRemote = params.get("GitRemote")
+  gitBranch = params.get("GitBranch")
+  dongleId = params.get("DongleId")
+  info = tinkla.Interface.UserInfo.new_message(
+      timestamp="",
+      openPilotId=dongleId,
+      userNickname="",
+      gitRemote=gitRemote,
+      gitBranch=gitBranch
+  )
+  tinklaClient.setUserInfo(info)
 
 def manager_thread():
   # now loop
@@ -330,6 +345,11 @@ def manager_thread():
 
   params = Params()
   logger_dead = False
+
+  # Tinkla interface
+  global tinklaClient
+  tinklaClient = TinklaClient()
+  sendUserInfoToTinkla()
 
   while 1:
     # get health of board, log this in "thermal"
