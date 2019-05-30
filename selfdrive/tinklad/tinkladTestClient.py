@@ -1,0 +1,39 @@
+#!/usr/bin/env python2.7
+
+import capnp
+from cereal import tinkla
+from tinkla_interface import TinklaClient
+import time
+
+class TinklaTestClient():
+
+    def __init__(self):
+        #self.start_server()
+        self.tinklaClient = TinklaClient()
+
+        info = tinkla.Interface.UserInfo.new_message(
+            openPilotId="test_openpilotId",
+            userNickname="test_usernick",
+            gitBranch="test_gitbranch"
+        )
+        start_time = time.time()
+        self.tinklaClient.setUserInfo(info)
+        elapsed_time_us = (time.time() - start_time) * 1000 * 1000
+        print("Info Time Elapsed = %d" % (elapsed_time_us))
+
+        event = tinkla.Interface.UserEvent.new_message(
+            openPilotId="test_openpilotId",
+            source="unittest",
+            category="userAction",
+            name="pull_stalk",
+        )
+        event.value.textValue="up"
+        start_time = time.time()
+        self.tinklaClient.logUserEvent(event)
+        elapsed_time_us = (time.time() - start_time) * 1000 * 1000
+        print("Event Time Elapsed = %d" % (elapsed_time_us))
+
+if __name__ == "__main__":
+    TinklaTestClient()
+    #time.sleep(3)
+    

@@ -5,6 +5,8 @@ import fcntl
 import errno
 import signal
 import subprocess
+from selfdrive.tinklad.tinkla_interface import TinklaClient
+from cereal import tinkla
 
 from common.basedir import BASEDIR
 sys.path.append(os.path.join(BASEDIR, "pyextra"))
@@ -86,6 +88,7 @@ from selfdrive.loggerd.config import ROOT
 
 # comment out anything you don't want to run
 managed_processes = {
+  "tinklad":  "selfdrive.tinklad.tinklad",
   "thermald": "selfdrive.thermald",
   "uploader": "selfdrive.loggerd.uploader",
   "controlsd": "selfdrive.controls.controlsd",
@@ -107,7 +110,7 @@ managed_processes = {
   "sensord": ("selfdrive/sensord", ["./sensord"]),
   "gpsd": ("selfdrive/sensord", ["./gpsd"]),
   #"updated": "selfdrive.updated",
-  "athena": "selfdrive.athena.athenad",
+  "athena": "selfdrive.athena.athenad"
 }
 android_packages = ("ai.comma.plus.offroad", "ai.comma.plus.frame")
 
@@ -122,6 +125,7 @@ unkillable_processes = ['visiond']
 interrupt_processes = []
 
 persistent_processes = [
+  'tinklad',
   'thermald',
   'logmessaged',
   'logcatd',
@@ -304,6 +308,19 @@ def system(cmd):
       output=e.output[-1024:],
       returncode=e.returncode)
 
+def sendUserInfoToTinkla():
+  params = Params()
+  gitRemote = params.get("GitRemote")
+  gitBranch = params.get("GitBranch")
+  dongleId = params.get("DongleId")
+  info = tinkla.Interface.UserInfo.new_message(
+      timestamp="",
+      openPilotId=dongleId,
+      userNickname="",
+      gitRemote=gitRemote,
+      gitBranch=gitBranch
+  )
+  tinklaClient.setUserInfo(info)
 
 def manager_thread():
   # now loop
@@ -328,6 +345,11 @@ def manager_thread():
 
   params = Params()
   logger_dead = False
+
+  # Tinkla interface
+  global tinklaClient
+  tinklaClient = TinklaClient()
+  sendUserInfoToTinkla()
 
   while 1:
     # get health of board, log this in "thermal"
