@@ -8,7 +8,7 @@ from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.drive_helpers import create_event, EventTypes as ET, get_events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.car.tesla.carstate import CarState, get_can_parser, get_epas_parser, get_pedal_parser
-from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR
+from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR,DBC
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V_FOLLOWING
 
 try:
