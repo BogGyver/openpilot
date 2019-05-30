@@ -248,6 +248,7 @@ class CarState(object):
     self.radarOffset = 0.
     self.radarPosition = 0
     self.radarEpasType = 0
+    self.fix1916 = False
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
@@ -642,7 +643,13 @@ class CarState(object):
     self.brake_hold = 0  # TODO
 
     self.main_on = 1 #cp.vl["SCM_BUTTONS"]['MAIN_ON']
-    self.cruise_speed_offset = calc_cruise_offset(cp.vl["DI_state"]['DI_cruiseSet'], self.v_ego)
+    self.imperial_speed_units = cp.vl["DI_state"]['DI_speedUnits'] == 0
+    self.DI_cruiseSet = cp.vl["DI_state"]['DI_cruiseSet']
+    if fix1916:
+      self.DI_cruiseSet = ((self.DI_cruiseSet * 2 ) & 0xFF)
+    if self.imperial_speed_units:
+      self.DI_cruiseSet = self.DI_cruiseSet * CV.MPH_TO_KPH
+    self.cruise_speed_offset = calc_cruise_offset(self.DI_cruiseSet*CV.KPH_TO_MS, self.v_ego)
     self.gear_shifter = parse_gear_shifter(can_gear_shifter, self.CP.carFingerprint)
 
     self.pedal_gas = 0. # cp.vl["DI_torque1"]['DI_pedalPos'] / 102 #BB: to make it between 0..1
@@ -661,7 +668,7 @@ class CarState(object):
     self.standstill = cp.vl["DI_torque2"]['DI_vehicleSpeed'] == 0
     self.torqueMotor = cp.vl["DI_torque1"]['DI_torqueMotor']
     self.pcm_acc_status = cp.vl["DI_state"]['DI_cruiseState']
-    self.imperial_speed_units = cp.vl["DI_state"]['DI_speedUnits'] == 0
+    
     self.regenLight = cp.vl["DI_state"]['DI_regenLight'] == 1
     
     self.prev_pedal_interceptor_available = self.pedal_interceptor_available
@@ -680,10 +687,7 @@ class CarState(object):
     if self.pedal_interceptor_available != self.prev_pedal_interceptor_available:
         self.config_ui_buttons(self.pedal_interceptor_available)
 
-    if self.imperial_speed_units:
-      self.v_cruise_actual = (cp.vl["DI_state"]['DI_cruiseSet'])*CV.MPH_TO_KPH # Reported in MPH, expected in KPH??
-    else:
-      self.v_cruise_actual = cp.vl["DI_state"]['DI_cruiseSet']
+    self.v_cruise_actual = self.DI_cruiseSet
     self.hud_lead = 0 #JCT
     self.cruise_speed_offset = calc_cruise_offset(self.v_cruise_pcm, self.v_ego)
 

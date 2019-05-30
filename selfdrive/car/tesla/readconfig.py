@@ -280,6 +280,15 @@ class ConfigFile(object):
       )
       file_changed |= didUpdate
 
+      #fix_1916 -> fix1916
+      into.fix1916, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = main_section,
+        entry = 'fix_1916', type = bool,
+        default_value = False,
+        comment = 'Set this value to True if you are running Tesla software v2019.16 and above. This fixes the DI_state can message change for DI_cruiseSet which changed from 9 bits to 8 bits'
+      )
+      file_changed |= didUpdate
+
       #do_auto_update -> doAutoUpdate
       into.doAutoUpdate, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = main_section,
