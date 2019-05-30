@@ -18,7 +18,7 @@ class HSOController(object):
           #if steering but not by ALCA
           if (CS.right_blinker_on or CS.left_blinker_on) and (self.CC.ALCA.laneChange_enabled <= 1):
             self.frame_humanSteered = frame
-          if (CS.steer_override > 0): 
+          if (CS.steer_override > 0) and (frame - self.frame_humanSteered > 50): 
             self.frame_humanSteered = frame
           else:
             if (frame - self.frame_humanSteered < 50): # Need more human testing of handoff timing
