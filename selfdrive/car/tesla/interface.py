@@ -43,7 +43,7 @@ class CarInterface(object):
     self.CS = CarState(CP)
     self.VM = VehicleModel(CP)
     mydbc = DBC[CP.carFingerprint]['pt']
-    if candidate == CAR.MODELS and CS.fix1916:
+    if CP.carFingerprint == CAR.MODELS and self.CS.fix1916:
       mydbc = mydbc + "1916"
     self.cp = get_can_parser(CP,mydbc)
     self.epas_cp = None
