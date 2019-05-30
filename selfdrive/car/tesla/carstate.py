@@ -645,7 +645,7 @@ class CarState(object):
     self.main_on = 1 #cp.vl["SCM_BUTTONS"]['MAIN_ON']
     self.imperial_speed_units = cp.vl["DI_state"]['DI_speedUnits'] == 0
     self.DI_cruiseSet = cp.vl["DI_state"]['DI_cruiseSet']
-    if fix1916:
+    if self.fix1916:
       self.DI_cruiseSet = ((self.DI_cruiseSet * 2 ) & 0xFF)
     if self.imperial_speed_units:
       self.DI_cruiseSet = self.DI_cruiseSet * CV.MPH_TO_KPH
