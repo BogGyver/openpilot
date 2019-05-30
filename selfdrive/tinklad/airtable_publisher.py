@@ -22,6 +22,13 @@ class AirtableEventKeys():
     name = "name"
     value = "value"
 
+# This needs to match tinkla.capnp
+class TinklaEventValueTypes():
+    boolValue = 'boolValue'
+    textValue = 'textValue'
+    intValue = 'intValue'
+    floatValue = 'floatValue'
+
 class Publisher():
     openPilotId = None
     latest_info_dict = None # current info published
@@ -99,12 +106,14 @@ class Publisher():
 
     def __generate_airtable_user_event_dict(self, event):
         value = event.value.which()
-        if value == "boolValue":
+        if value == self.eventValueTypes.boolValue:
             value = event.value.boolValue
-        elif value == "textValue":
+        elif value == self.eventValueTypes.textValue:
             value = event.value.textValue
-        elif value == "intValue":
+        elif value == self.eventValueTypes.intValue:
             value = event.value.intValue
+        elif value == self.eventValueTypes.floatValue:
+            value = event.value.floatValue
         openPilotId = self.openPilotId if (self.openPilotId != None) else ""
         dict = event.to_dict()
         dict[self.eventKeys.value] = value
@@ -138,6 +147,7 @@ class Publisher():
             return False
 
     def __init__(self):
+        self.eventValueTypes = TinklaEventValueTypes()
         self.userKeys = AirtableUsersKeys()
         self.eventKeys = AirtableEventKeys()
         self.at = Airtable(AIRTABLE_BASE_ID, AIRTABLE_API_KEY)
