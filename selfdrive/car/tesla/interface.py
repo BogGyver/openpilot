@@ -8,7 +8,7 @@ from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.drive_helpers import create_event, EventTypes as ET, get_events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.car.tesla.carstate import CarState, get_can_parser, get_epas_parser
-from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR
+from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR,DBC
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V_FOLLOWING
 
 try:
@@ -37,12 +37,15 @@ class CarInterface(object):
     self.brake_pressed_prev = False
     self.can_invalid_count = 0
 
-    self.cp = get_can_parser(CP)
     self.epas_cp = get_epas_parser(CP)
 
     # *** init the major players ***
     self.CS = CarState(CP)
     self.VM = VehicleModel(CP)
+    mydbc = DBC[CP.carFingerprint]['pt']
+    if CP.carFingerprint == CAR.MODELS and self.CS.fix1916:
+      mydbc = mydbc + "1916"
+    self.cp = get_can_parser(CP,mydbc)
 
     # sending if read only is False
     if sendcan is not None:
@@ -327,7 +330,7 @@ class CarInterface(object):
       if self.CC.opState == 1:
         self.CC.opState = 0
     if ret.seatbeltUnlatched:
-      events.append(create_event('seatbeltNotLatched', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
+      events.append(create_event('seatbeltNotLatched', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
       if c.enabled:
         self.CC.DAS_211_accNoSeatBelt = 1
         self.CC.warningCounter = 300
@@ -339,7 +342,7 @@ class CarInterface(object):
       if self.CC.opState == 1:
           self.CC.opState = 2
     if not self.CS.main_on:
-      events.append(create_event('wrongCarMode', [ET.NO_ENTRY, ET.USER_DISABLE]))
+      events.append(create_event('wrongCarMode', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
       if self.CC.opState == 1:
           self.CC.opState = 0
     if ret.gearShifter == 'reverse':

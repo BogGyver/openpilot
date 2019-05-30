@@ -209,6 +209,15 @@ def read_config_file(CS):
       CS.useAnalogWhenNoEon = False
       file_changed = True
     config.set('OP_CONFIG', 'use_analog_when_no_eon', CS.useAnalogWhenNoEon)
+
+    #fix_1916 - Set this value to True if you are running Tesla software v2019.16 and above. This fixes the DI_state can message change for DI_cruiseSet which changed from 9 bits to 8 bits
+    #fix_1916 -> fix1916
+    try:
+      CS.fix1916 = configr.getboolean('OP_CONFIG','fix_1916')
+    except:
+      CS.fix1916 = False
+      file_changed = True
+    config.set('OP_CONFIG', 'fix_1916', CS.fix1916)
     
     #do_auto_update - Set this setting to False if you do not want OP to autoupdate every time you reboot and there is a change on the repo
     #do_auto_update -> CS.doAutoUpdate
