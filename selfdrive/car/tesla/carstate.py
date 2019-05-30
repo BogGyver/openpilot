@@ -195,9 +195,9 @@ def get_pedal_can_signals(CP):
   checks = []
   return signals, checks
   
-def get_can_parser(CP):
+def get_can_parser(CP,mydbc):
   signals, checks = get_can_signals(CP)
-  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 0)
+  return CANParser(mydbc, signals, checks, 0)
 
 def get_epas_parser(CP,epascan):
   signals, checks = get_epas_can_signals(CP)
@@ -645,8 +645,6 @@ class CarState(object):
     self.main_on = 1 #cp.vl["SCM_BUTTONS"]['MAIN_ON']
     self.imperial_speed_units = cp.vl["DI_state"]['DI_speedUnits'] == 0
     self.DI_cruiseSet = cp.vl["DI_state"]['DI_cruiseSet']
-    if self.fix1916:
-      self.DI_cruiseSet = ((self.DI_cruiseSet * 2 ) & 0xFF)
     if self.imperial_speed_units:
       self.DI_cruiseSet = self.DI_cruiseSet * CV.MPH_TO_KPH
     self.cruise_speed_offset = calc_cruise_offset(self.DI_cruiseSet*CV.KPH_TO_MS, self.v_ego)

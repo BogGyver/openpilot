@@ -42,8 +42,10 @@ class CarInterface(object):
     # *** init the major players ***
     self.CS = CarState(CP)
     self.VM = VehicleModel(CP)
-
-    self.cp = get_can_parser(CP)
+    mydbc = DBC[CP.carFingerprint]['pt']
+    if candidate == CAR.MODELS and CS.fix1916:
+      mydbc = mydbc + "1916"
+    self.cp = get_can_parser(CP,mydbc)
     self.epas_cp = None
     if self.CS.useWithoutHarness:
       self.epas_cp = get_epas_parser(CP,0)
@@ -335,7 +337,7 @@ class CarInterface(object):
       if self.CC.opState == 1:
         self.CC.opState = 0
     if ret.seatbeltUnlatched:
-      events.append(create_event('seatbeltNotLatched', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
+      events.append(create_event('seatbeltNotLatched', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
       if c.enabled:
         self.CC.DAS_211_accNoSeatBelt = 1
         self.CC.warningCounter = 300
@@ -347,7 +349,7 @@ class CarInterface(object):
       if self.CC.opState == 1:
           self.CC.opState = 2
     if not self.CS.main_on:
-      events.append(create_event('wrongCarMode', [ET.NO_ENTRY, ET.USER_DISABLE]))
+      events.append(create_event('wrongCarMode', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
       if self.CC.opState == 1:
           self.CC.opState = 0
     if ret.gearShifter == 'reverse':
