@@ -10,7 +10,7 @@ LOG_PREFIX = "tinklad.airtable_publisher: "
 class AirtableUsersKeys():
     openPilotId = "openPilotId"
     timestamp = "timestamp"
-    userNickname = "userNickname"
+    userHandle = "userHandle"
     gitRemote = "gitRemote"
     gitBranch = "gitBranch"
 

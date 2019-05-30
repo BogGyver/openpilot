@@ -18,9 +18,10 @@ struct Interface {
         openPilotId @0 :Text;
         reserved @1 :Text;
 
-        userNickname @2 :Text;
+        userHandle @2 :Text;
         gitRemote @3 :Text;
         gitBranch @4 :Text;
+        gitHash @5 :Text;
     }
 
     struct UserEvent {
