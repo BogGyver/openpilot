@@ -51,7 +51,10 @@ class TinklaServer():
     def setUserInfo(self, info, **kwargs):
         print(LOG_PREFIX + "Sending info to publisher: %s" % (info.to_dict()))
         self.info = info
-        self.publisher.send_info(info)
+        try:
+            self.publisher.send_info(info)
+        except Exception as error:
+            print(LOG_PREFIX + "Error attempting to publish user info (%s)" % (error))
 
     def logUserEvent(self, event, **kwargs):
         self.cache.push(event)
