@@ -148,6 +148,7 @@ class ReadConfigTests(unittest.TestCase):
         os.remove(config_file_path)
 
     def check_defaults(self, cs):
+        self.assertEqual(cs.userHandle, 'your_tinkla_username')
         self.assertEqual(cs.forcePedalOverCC, False)
         self.assertEqual(cs.enableHSO, True)
         self.assertEqual(cs.enableALCA, True)

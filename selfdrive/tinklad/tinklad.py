@@ -11,6 +11,12 @@ from airtable_publisher import Publisher
 
 LOG_PREFIX = "tinklad: "
 
+# This needs to match tinkla.capnp message keys
+class TinklaInterfaceMessageKeys():
+    userInfo = 'userInfo'
+    userEvent = 'userEvent'
+
+
 class Cache():
     def push(self, event):
         self.task_queue._put(event)
@@ -45,7 +51,10 @@ class TinklaServer():
     def setUserInfo(self, info, **kwargs):
         print(LOG_PREFIX + "Sending info to publisher: %s" % (info.to_dict()))
         self.info = info
-        self.publisher.send_info(info)
+        try:
+            self.publisher.send_info(info)
+        except Exception as error:
+            print(LOG_PREFIX + "Error attempting to publish user info (%s)" % (error))
 
     def logUserEvent(self, event, **kwargs):
         self.cache.push(event)
@@ -75,20 +84,22 @@ class TinklaServer():
         # set persitent cache for bad network / offline
         self.cache = Cache()
         self.publish_pending_events()
+        messageKeys = TinklaInterfaceMessageKeys()
 
         # Start server:
         ctx = zmq.Context()
         sock = ctx.socket(zmq.PULL)
         sock.bind("ipc:///tmp/tinklad")
         context = zmq.Context()
+        
         while True:
             bytes = ''.join(sock.recv_multipart())
             tinklaInterface = cereal.tinkla.Interface.from_bytes(bytes)
             messageType = tinklaInterface.message.which()
-            if messageType == 'userInfo':
+            if messageType == messageKeys.userInfo:
                 info = tinklaInterface.message.userInfo
                 self.setUserInfo(info)
-            elif messageType == 'userEvent':
+            elif messageType == messageKeys.userEvent:
                 event = tinklaInterface.message.userEvent
                 self.logUserEvent(event)
 

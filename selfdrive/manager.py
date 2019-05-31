@@ -7,6 +7,7 @@ import signal
 import subprocess
 from selfdrive.tinklad.tinkla_interface import TinklaClient
 from cereal import tinkla
+from selfdrive.car.tesla.readconfig import CarSettings
 
 from common.basedir import BASEDIR
 sys.path.append(os.path.join(BASEDIR, "pyextra"))
@@ -308,17 +309,19 @@ def system(cmd):
       output=e.output[-1024:],
       returncode=e.returncode)
 
-def sendUserInfoToTinkla():
-  params = Params()
+def sendUserInfoToTinkla(params):
+  carSettings = CarSettings()
   gitRemote = params.get("GitRemote")
   gitBranch = params.get("GitBranch")
+  gitHash = params.get("GitCommit")
   dongleId = params.get("DongleId")
+  userHandle = carSettings.userHandle
   info = tinkla.Interface.UserInfo.new_message(
-      timestamp="",
       openPilotId=dongleId,
-      userNickname="",
+      userHandle=userHandle,
       gitRemote=gitRemote,
-      gitBranch=gitBranch
+      gitBranch=gitBranch,
+      gitHash=gitHash
   )
   tinklaClient.setUserInfo(info)
 
@@ -349,7 +352,7 @@ def manager_thread():
   # Tinkla interface
   global tinklaClient
   tinklaClient = TinklaClient()
-  sendUserInfoToTinkla()
+  sendUserInfoToTinkla(params)
 
   while 1:
     # get health of board, log this in "thermal"

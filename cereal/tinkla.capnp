@@ -16,11 +16,12 @@ struct Interface {
 
     struct UserInfo {
         openPilotId @0 :Text;
-        timestamp @1 :Text; # ISO8601
+        reserved @1 :Text;
 
-        userNickname @2 :Text;
+        userHandle @2 :Text;
         gitRemote @3 :Text;
         gitBranch @4 :Text;
+        gitHash @5 :Text;
     }
 
     struct UserEvent {
@@ -35,6 +36,7 @@ struct Interface {
             boolValue @5 :Bool;
             textValue @6 :Text;
             intValue @7 :Int64;
+            floatValue @8 :Float64;
         }
 
         enum Category {

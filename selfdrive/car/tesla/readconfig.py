@@ -24,6 +24,15 @@ class ConfigFile(object):
       config = ConfigParser.RawConfigParser(allow_no_value=True)
       config.add_section(main_section)
 
+      #user_handle -> userHandle
+      into.userHandle, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = main_section,
+        entry = 'user_handle', type = str,
+        default_value = 'your_tinkla_username',
+        comment = 'Username at tinkla.com, for dashboard data and support. If you don\'t have a username, ask for one on Discord, or just enter your Discord handle here.'
+      )
+      file_changed |= didUpdate
+
       #force_pedal_over_cc -> forcePedalOverCC
       into.forcePedalOverCC, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = main_section,
