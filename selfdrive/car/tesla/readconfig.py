@@ -346,6 +346,39 @@ class ConfigFile(object):
       return updated
 
 class CarSettings(object):
+
+  userHandle = None
+  forcePedalOverCC = None
+  enableHSO = None
+  enableALCA = None
+  enableDasEmulation = None
+  enableRadarEmulation = None
+  enableSpeedVariableDesAngle = None
+  enableRollAngleCorrection = None
+  enableFeedForwardAngleCorrection = None
+  enableDriverMonitor = None
+  enableShowCar = None
+  enableShowLogo = None
+  hasNoctuaFan = None
+  limitBatteryMinMax = None
+  limitBattery_Min = None
+  limitBattery_Max = None
+  blockUploadWhileTethering = None
+  tetherIP = None
+  useTeslaGPS = None
+  useTeslaMapData = None
+  hasTeslaIcIntegration = None
+  useAnalogWhenNoEon = None
+  useTeslaRadar = None
+  useWithoutHarness = None
+  radarVIN = None
+  enableLdw = None
+  radarOffset = None
+  radarEpasType = None
+  radarPosition = None
+  fix1916 = None
+  doAutoUpdate = None
+
   def __init__(self, optional_config_file_path = default_config_file_path):
     config_file = ConfigFile()
     self.did_write_file = config_file.read(self, config_path = optional_config_file_path)

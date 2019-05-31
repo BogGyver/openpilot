@@ -44,11 +44,11 @@ class CarInterface(object):
     self.CS = CarState(CP)
     self.VM = VehicleModel(CP)
     mydbc = DBC[CP.carFingerprint]['pt']
-    if CP.carFingerprint == CAR.MODELS and self.CS.fix1916:
+    if CP.carFingerprint == CAR.MODELS and self.CS.carSettings.fix1916:
       mydbc = mydbc + "1916"
     self.cp = get_can_parser(CP,mydbc)
     self.epas_cp = None
-    if self.CS.useWithoutHarness:
+    if self.CS.carSettings.useWithoutHarness:
       self.epas_cp = get_epas_parser(CP,0)
     else:
       self.epas_cp = get_epas_parser(CP,2)
@@ -266,7 +266,7 @@ class CarInterface(object):
     ret.gearShifter = self.CS.gear_shifter
 
     ret.steeringTorque = self.CS.steer_torque_driver
-    ret.steeringPressed = self.CS.steer_override or not self.CS.enableDriverMonitor
+    ret.steeringPressed = self.CS.steer_override or not self.CS.carSettings.enableDriverMonitor
 
     # cruise state
     ret.cruiseState.enabled = True #self.CS.pcm_acc_status != 0
@@ -342,10 +342,10 @@ class CarInterface(object):
     else:
       self.can_invalid_count = 0
     if self.CS.steer_error:
-      if not self.CS.enableHSO:
+      if not self.CS.carSettings.enableHSO:
         events.append(create_event('steerUnavailable', [ET.NO_ENTRY, ET.WARNING]))
     elif self.CS.steer_warning:
-      if not self.CS.enableHSO:
+      if not self.CS.carSettings.enableHSO:
          events.append(create_event('steerTempUnavailable', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
          if self.CC.opState == 1:
           self.CC.opState = 2

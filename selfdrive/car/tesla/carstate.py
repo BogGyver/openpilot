@@ -9,7 +9,7 @@ from selfdrive.car.modules.UIBT_module import UIButtons, UIButton
 import numpy as np
 from ctypes import create_string_buffer
 from selfdrive.car.modules.UIEV_module import UIEvents
-from selfdrive.car.tesla.readconfig import read_config_file
+from selfdrive.car.tesla.readconfig import CarSettings
 import os
 import subprocess
 import sys
@@ -221,41 +221,8 @@ class CarState(object):
                       ["msg",                 "MSG",                      [""]],
                       ["sound",               "SND",                      [""]]]
     
-    ### START OF MAIN CONFIG OPTIONS ###
-    ### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
-    self.forcePedalOverCC = True
-    self.enableHSO = True 
-    self.enableALCA = True
-    self.enableDasEmulation = True
-    self.enableRadarEmulation = True
-    self.enableSpeedVariableDesAngle = False
-    self.enableRollAngleCorrection = False
-    self.enableFeedForwardAngleCorrection = True
-    self.enableDriverMonitor = True
-    self.enableShowCar = True
-    self.enableShowLogo = True
-    self.hasNoctuaFan = False
-    self.limitBatteryMinMax = False
-    self.limitBattery_Min = 60
-    self.limitBattery_Max = 70
-    self.doAutoUpdate = True
-    self.blockUploadWhileTethering = False
-    self.tetherIP = "127.0.0."
-    self.useTeslaGPS = False
-    self.useTeslaMapData = False
-    self.hasTeslaIcIntegration = False
-    self.useAnalogWhenNoEon = False
-    self.useTeslaRadar = False
-    self.useWithoutHarness = False
-    self.radarVIN = "                 "
-    self.enableLdw = True
-    self.radarOffset = 0.
-    self.radarPosition = 0
-    self.radarEpasType = 0
-    self.fix1916 = False
     #read config file
-    read_config_file(self)
-    ### END OF MAIN CONFIG OPTIONS ###
+    self.carSettings = CarSettings()
 
     self.apEnabled = True
     self.apFollowDistance =  2.5 #time in seconds to follow
@@ -431,7 +398,7 @@ class CarState(object):
     self.torqueLevel = 0.
 
     #BB variable for custom buttons
-    self.cstm_btns = UIButtons(self,"Tesla Model S","tesla", self.enableShowLogo, self.enableShowCar)
+    self.cstm_btns = UIButtons(self,"Tesla Model S","tesla", self.carSettings.enableShowLogo, self.carSettings.enableShowCar)
 
     #BB custom message counter
     self.custom_alert_counter = -1 #set to 100 for 1 second display; carcontroller will take down to zero
@@ -571,7 +538,7 @@ class CarState(object):
     self.gpsHeading = cp.vl['MCU_gpsVehicleSpeed']["MCU_gpsVehicleHeading"]
     self.gpsVehicleSpeed = cp.vl['MCU_gpsVehicleSpeed']["MCU_gpsVehicleSpeed"] * CV.KPH_TO_MS
 
-    if (self.hasTeslaIcIntegration):
+    if (self.carSettings.hasTeslaIcIntegration):
       self.apEnabled = (cp.vl["MCU_chassisControl"]["MCU_latControlEnable"] == 1)
       self.apFollowDistance =  1 + cp.vl["MCU_chassisControl"]["MCU_fcwSensitivity"] * 0.5
       self.keepEonOff = cp.vl["MCU_chassisControl"]["MCU_ldwEnable"] == 1
@@ -698,7 +665,7 @@ class CarState(object):
       self.pedal_interceptor_missed_counter += 1
     pedal_interceptor_present = pedal_interceptor_present and (self.pedal_interceptor_missed_counter < 10)
     # Mark pedal unavailable while traditional cruise is on.
-    self.pedal_interceptor_available = pedal_interceptor_present and (self.forcePedalOverCC or not bool(self.pcm_acc_status))
+    self.pedal_interceptor_available = pedal_interceptor_present and (self.carSettings.forcePedalOverCC or not bool(self.pcm_acc_status))
     if self.pedal_interceptor_available != self.prev_pedal_interceptor_available:
         self.config_ui_buttons(self.pedal_interceptor_available)
 
