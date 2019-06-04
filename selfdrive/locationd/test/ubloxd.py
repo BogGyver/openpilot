@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 import serial
-import ublox
+from selfdrive.locationd.test import ublox
 import time
 import datetime
 import struct
@@ -11,7 +11,7 @@ from common import realtime
 import zmq
 import selfdrive.messaging as messaging
 from selfdrive.services import service_list
-from ephemeris import EphemerisData, GET_FIELD_U
+from selfdrive.locationd.test.ephemeris import EphemerisData, GET_FIELD_U
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 
 panda = os.getenv("PANDA") is not None   # panda directly connected
