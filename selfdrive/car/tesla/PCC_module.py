@@ -7,6 +7,7 @@ from selfdrive.car.tesla.values import AH,CruiseState, CruiseButtons, CAR
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.speed_smoother import speed_smoother
+from selfdrive.controls.lib.planner import limit_accel_in_turns, calc_cruise_accel_limits
 from common.realtime import sec_since_boot
 import selfdrive.messaging as messaging
 import os
@@ -47,23 +48,7 @@ MIN_CAN_SPEED = 0.3  #TODO: parametrize this in car interface
 # Pull the cruise stalk twice in this many ms for a 'double pull'
 STALK_DOUBLE_PULL_MS = 750
 
-# Map of speed to max allowed decel.
-# Make sure these accelerations are smaller than mpc limits.
-_A_CRUISE_MIN = OrderedDict([
-  # (speed in m/s, allowed deceleration)
-  (0.0, 2),
-  (40., 2)])
-
-# Map of speed to max allowed acceleration.
-# Need higher accel at very low speed for stop and go.
-# make sure these accelerations are smaller than mpc limits.
-_A_CRUISE_MAX = OrderedDict([
-  # (speed in m/s, allowed acceleration)
-  (0.0, 0.50),
-  (5.0, 0.30),
-  (10., 0.22),
-  (20., 0.17),
-  (40., 0.14)])
+#
   
 # Lookup table for turns
 _A_TOTAL_MAX = OrderedDict([
@@ -107,30 +92,6 @@ class PCCModes(object):
 def tesla_compute_gb(accel, speed):
   return float(accel)  / 3.
 
-def calc_cruise_accel_limits(CS, lead):
-  a_cruise_min = _interp_map(CS.v_ego, _A_CRUISE_MIN)
-  a_cruise_max = _interp_map(CS.v_ego, _A_CRUISE_MAX)
-    
-  a_while_turning_max = max_accel_in_turns(CS.v_ego, CS.angle_steers, CS.CP)
-  a_cruise_max = min(a_cruise_max, a_while_turning_max)
-  # Reduce accel if lead car is close
-  a_cruise_max *= _accel_limit_multiplier(CS.v_ego, lead)
-  # Reduce decel if lead car is distant
-  a_cruise_min *= _decel_limit_multiplier(CS.v_ego, lead, CS)
-  
-  return float(a_cruise_min), float(a_cruise_max)
-
-
-def max_accel_in_turns(v_ego, angle_steers, CP):
-  """
-  This function returns a limited long acceleration allowed, depending on the existing lateral acceleration
-  this should avoid accelerating when losing the target in turns
-  """
-
-  a_total_max = _interp_map(v_ego, _A_TOTAL_MAX)
-  a_y = v_ego**2 * angle_steers * CV.DEG_TO_RAD / (CP.steerRatio * CP.wheelbase)
-  a_x_allowed = math.sqrt(max(a_total_max**2 - a_y**2, 0.))
-  return a_x_allowed
   
 def max_v_in_mapped_curve_ms(map_data, pedal_set_speed_kph):
   """Use HD map data to limit speed in sharper turns."""
@@ -268,7 +229,7 @@ class PCCController(object):
         idx = self.pedal_idx
         self.pedal_idx = (self.pedal_idx + 1) % 16
         can_sends.append(teslacan.create_pedal_command_msg(0, 0, idx))
-        sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan').to_bytes())
+        sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan'))
         CS.UE.custom_alert_message(3, "Pedal Interceptor Off (state %s)" % self.pedal_interceptor_state, 150, 3)
       else:
         CS.UE.custom_alert_message(3, "Pedal Interceptor On", 150, 3)
@@ -387,7 +348,12 @@ class PCCController(object):
       self.l100_ts = l20.live20.l100MonoTime
       
 
-    brake_max, accel_max = calc_cruise_accel_limits(CS, self.lead_1)
+    v_ego = CS.v_ego
+    following = self.lead_1.status and self.lead_1.dRel < 45.0 and self.lead_1.vLeadK > v_ego and self.lead_1.aLeadK > 0.0
+    accel_limits = [float(x) for x in calc_cruise_accel_limits(v_ego, following)]
+    jerk_limits = [min(-0.1, accel_limits[0]), max(0.1, accel_limits[1])]  # TODO: make a separate lookup for jerk tuning
+    accel_limits = limit_accel_in_turns(v_ego, CS.angle_steers, accel_limits, CS.CP)
+
     output_gb = 0
     ####################################################################
     # this mode (Follow) uses the Follow logic created by JJ for ACC
@@ -412,8 +378,8 @@ class PCCController(object):
         jerk_min, jerk_max = _jerk_limits(CS.v_ego, self.lead_1, self.v_pid * CV.MS_TO_KPH, self.lead_last_seen_time_ms, CS)
         self.v_cruise, self.a_cruise = speed_smoother(self.v_acc_start, self.a_acc_start,
                                                       self.v_pid,
-                                                      accel_max, brake_max,
-                                                      jerk_max, jerk_min,
+                                                      accel_limits[1], accel_limits[0],
+                                                      jerk_limits[1], jerk_limits[0],
                                                       _DT_MPC)
         
         # cruise speed can't be negative even is user is distracted
@@ -484,9 +450,9 @@ class PCCController(object):
 
     self.last_output_gb = output_gb
     # accel and brake
-    apply_accel = clip(output_gb, 0., accel_max)
+    apply_accel = clip(output_gb, 0., accel_limits[1])
     MPC_BRAKE_MULTIPLIER = 6.
-    apply_brake = -clip(output_gb * MPC_BRAKE_MULTIPLIER, -brake_max, 0.)
+    apply_brake = -clip(output_gb * MPC_BRAKE_MULTIPLIER, -accel_limits[0], 0.)
 
     # if speed is over 5mpg, the "zero" is at PedalForZeroTorque; otherwise it is zero
     pedal_zero = 0.

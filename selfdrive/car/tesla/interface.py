@@ -103,6 +103,7 @@ class CarInterface(object):
     ret.carFingerprint = candidate
 
     ret.safetyModel = car.CarParams.SafetyModels.tesla
+    ret.safetyParam = 1
 
     ret.enableCamera = True
     ret.enableGasInterceptor = False #keep this False for now
@@ -120,7 +121,7 @@ class CarInterface(object):
     tireStiffnessFront_models = 85400
     tireStiffnessRear_models = 90000
     # will create Kp and Ki for 0, 20, 40, 60 mph
-    ret.steerKiBP, ret.steerKpBP = [[0., 8.94, 17.88, 26.82 ], [0., 8.94, 17.88, 26.82]]
+    ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0., 8.94, 17.88, 26.82 ], [0., 8.94, 17.88, 26.82]]
     if candidate == CAR.MODELS:
       stop_and_go = True
       ret.mass = mass_models
@@ -128,8 +129,8 @@ class CarInterface(object):
       ret.centerToFront = centerToFront_models
       ret.steerRatio = 15.75
       # Kp and Ki for the lateral control for 0, 20, 40, 60 mph
-      ret.steerKpV, ret.steerKiV = [[1.20, 0.80, 0.60, 0.30], [0.16, 0.12, 0.08, 0.04]]
-      ret.steerKf = 0.00006 # Initial test value TODO: investigate FF steer control for Model S?
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[1.20, 0.80, 0.60, 0.30], [0.16, 0.12, 0.08, 0.04]]
+      ret.lateralTuning.pid.kf = 0.00006 # Initial test value TODO: investigate FF steer control for Model S?
       ret.steerActuatorDelay = 0.09
 
       ret.steerReactance = 1.0
@@ -138,10 +139,10 @@ class CarInterface(object):
       ret.eonToFront = 0.7
       
       # Kp and Ki for the longitudinal control
-      ret.longitudinalKpBP = [0., 5., 35.]
-      ret.longitudinalKpV = [0.6, 0.6, 0.6]
-      ret.longitudinalKiBP = [0., 5., 35.]
-      ret.longitudinalKiV = [0.18,0.18,0.18]
+      ret.longitudinalTuning.kpBP = [0., 5., 35.]
+      ret.longitudinalTuning.kpV = [0.6, 0.6, 0.6]
+      ret.longitudinalTuning.kiBP = [0., 5., 35.]
+      ret.longitudinalTuning.kiV = [0.18,0.18,0.18]
       
 
     else:
@@ -180,8 +181,8 @@ class CarInterface(object):
     ret.brakeMaxBP = [0., 20.]  # m/s
     ret.brakeMaxV = [1., 1.]   # max brake allowed - BB: since we are using regen, make this even
 
-    ret.longPidDeadzoneBP = [0., 9.] #BB: added from Toyota to start pedal work; need to tune
-    ret.longPidDeadzoneV = [0., 0.] #BB: added from Toyota to start pedal work; need to tune; changed to 0 for now
+    ret.longitudinalTuning.deadzoneBP = [0., 9.] #BB: added from Toyota to start pedal work; need to tune
+    ret.longitudinalTuning.deadzoneV = [0., 0.] #BB: added from Toyota to start pedal work; need to tune; changed to 0 for now
 
     ret.stoppingControl = True
     ret.openpilotLongitudinalControl = True

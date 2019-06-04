@@ -177,9 +177,9 @@ class ALCAController(object):
 
   def set_pid(self,CS):
     self.laneChange_steerr = CS.CP.steerRatio
-    self.pid = PIController((CS.CP.steerKpBP, CS.CP.steerKpV),
-                            (CS.CP.steerKiBP, CS.CP.steerKiV),
-                            k_f=CS.CP.steerKf, pos_limit=1.0)
+    self.pid = PIController((CS.CP.lateralTuning.pid.kpBP, CS.CP.lateralTuning.pid.kpV),
+                            (CS.CP.lateralTuning.pid.kiBP, CS.CP.lateralTuning.pid.kiV),
+                            k_f=CS.CP.lateralTuning.pid.kf, pos_limit=1.0)
 
   def update_angle(self,enabled,CS,frame,actuators,visionCurvC0):
     self.prev_visionCurvC0 = self.visionCurvC0

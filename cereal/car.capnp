@@ -377,56 +377,19 @@ struct CarParams {
     hondaBosch @5;
     ford @6;
     cadillac @7;
-    hyundai @8;
+    tesla @8;
     chrysler @9;
-    tesla @10;
+    hyundai @10;
     subaru @11;
   }
 
-  # things about the car in the manual
-  mass @7 :Float32;             # [kg] running weight
-  wheelbase @8 :Float32;        # [m] distance from rear to front axle
-  centerToFront @9 :Float32;   # [m] GC distance to front axle
-  steerRatio @10 :Float32;       # [] ratio between front wheels and steering wheel angles
-  steerRatioRear @11 :Float32;  # [] rear steering ratio wrt front steering (usually 0)
-  eonToFront  @54  :Float32;    # [m] distance from EON to front wheels
-
-  # things we can derive
-  rotationalInertia @12 :Float32;    # [kg*m2] body rotational inertia
-  tireStiffnessFront @13 :Float32;   # [N/rad] front tire coeff of stiff
-  tireStiffnessRear @14 :Float32;    # [N/rad] rear tire coeff of stiff
-
+  syncID @38  :Int16;  # SyncID is optional
   # Kp and Ki for the lateral control
-  steerKpBP @42 :List(Float32);
-  steerKpV @43 :List(Float32);
-  steerKiBP @44 :List(Float32);
-  steerKiV @45 :List(Float32);
-  steerKpDEPRECATED @15 :Float32;
-  steerKiDEPRECATED @16 :Float32;
-  steerKf @25 :Float32;
-  steerReactance @51 :Float32;
-  steerInductance @52 :Float32;
-  steerResistance @53 :Float32;
-
-  # Kp and Ki for the longitudinal control
-  longitudinalKpBP @36 :List(Float32);
-  longitudinalKpV @37 :List(Float32);
-  longitudinalKiBP @38 :List(Float32);
-  longitudinalKiV @39 :List(Float32);
-
-  steerLimitAlert @29 :Bool;
-
-  vEgoStopping @30 :Float32; # Speed at which the car goes into stopping state
-  directAccelControl @31 :Bool; # Does the car have direct accel control or just gas/brake
-  stoppingControl @34 :Bool; # Does the car allows full control even at lows speeds when stopping
-  startAccel @35 :Float32; # Required acceleraton to overcome creep braking
-  steerRateCost @40 :Float32; # Lateral MPC cost on steering rate
-  steerControlType @46 :SteerControlType;
-  radarOffCan @47 :Bool; # True when radar objects aren't visible on CAN
-  syncID @55  :Int16;  # SyncID is optional
-
-  steerActuatorDelay @48 :Float32; # Steering wheel actuator delay in seconds
-  openpilotLongitudinalControl @50 :Bool; # is openpilot doing the longitudinal control?
+  steerReactance @39 :Float32;
+  steerInductance @40 :Float32;
+  steerResistance @41 :Float32;
+  eonToFront  @42  :Float32;    # [m] distance from EON to front wheels
+  
 
   enum SteerControlType {
     torque @0;

@@ -796,5 +796,5 @@ class CarController(object):
       can_sends.append(teslacan.create_pedal_command_msg(apply_accel, int(accel_needed), accel_idx))
     self.last_angle = apply_angle
     self.last_accel = apply_accel
-    sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan').to_bytes())
+    sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan'))
 

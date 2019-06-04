@@ -39,7 +39,6 @@
 #define SAFETY_HONDA_BOSCH 4
 #define SAFETY_FORD 5
 #define SAFETY_CADILLAC 6
-#define SAFETY_TESLA 8
 #define SAFETY_HYUNDAI 7
 #define SAFETY_TESLA 8
 #define SAFETY_CHRYSLER 9
@@ -128,6 +127,7 @@ void *safety_setter_thread(void *s) {
     break;
   case (int)cereal::CarParams::SafetyModels::TESLA:
     safety_setting = SAFETY_TESLA;
+    LOGW("Setting model to TESLA");
     break;
   case (int)cereal::CarParams::SafetyModels::HYUNDAI:
     safety_setting = SAFETY_HYUNDAI;
@@ -137,9 +137,14 @@ void *safety_setter_thread(void *s) {
     break;
   case (int)cereal::CarParams::SafetyModels::SUBARU:
     safety_setting = SAFETY_SUBARU;
+    LOGW("found a subaru!");
     break;
   default:
-    LOGE("unknown safety model: %d", safety_model);
+    LOGW("unknown safety model: %d", safety_model);
+    safety_setting = SAFETY_TESLA;
+    safety_param = 1;
+    LOGW("Unknown so force TESLA! (8,1)");
+    break;
   }
 
   pthread_mutex_lock(&usb_lock);

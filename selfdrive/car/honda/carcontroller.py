@@ -192,13 +192,8 @@ class CarController(object):
 
     # Send dashboard UI commands.
     if (frame % 10) == 0:
-<<<<<<< HEAD
       idx = (frame/10) % 4
       can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.CP.openpilotLongitudinalControl, idx))
-=======
-      idx = (frame//10) % 4
-      can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, idx))
->>>>>>> 65e1342e41d2cdc21e4651a7d18610863e1fb0b3
 
     if not CS.CP.openpilotLongitudinalControl:
       # If using stock ACC, spam cancel command to kill gas when OP disengages.
@@ -210,23 +205,11 @@ class CarController(object):
     else:
       # Send gas and brake commands.
       if (frame % 2) == 0:
-<<<<<<< HEAD
-        idx = frame / 2
-
-        if CS.CP.carFingerprint in HONDA_BOSCH:
-          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, idx))
-        else:
-          pump_on, self.last_pump_ts = brake_pump_hysteresys(apply_brake, self.apply_brake_last, self.last_pump_ts)
-          can_sends.append(hondacan.create_brake_command(self.packer, apply_brake, pump_on,
-            pcm_override, pcm_cancel_cmd, hud.chime, hud.fcw, idx))
-          self.apply_brake_last = apply_brake
-=======
         idx = frame // 2
         pump_on, self.last_pump_ts = brake_pump_hysteresis(apply_brake, self.apply_brake_last, self.last_pump_ts)
         can_sends.append(hondacan.create_brake_command(self.packer, apply_brake, pump_on,
           pcm_override, pcm_cancel_cmd, hud.chime, hud.fcw, idx))
         self.apply_brake_last = apply_brake
->>>>>>> 65e1342e41d2cdc21e4651a7d18610863e1fb0b3
 
         if CS.CP.enableGasInterceptor:
           # send exactly zero if apply_gas is zero. Interceptor will send the max between read value and apply_gas.

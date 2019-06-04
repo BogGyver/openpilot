@@ -64,8 +64,8 @@ _MAX_SPEED_ERROR_V = [1.5, .8]  # max positive v_pid error VS actual speed; this
 class LongControl(object):
   def __init__(self, CP, compute_gb):
     self.long_control_state = LongCtrlState.off  # initialized to off
-    self.pid = PIController((CP.longitudinalKpBP, CP.longitudinalKpV),
-                            (CP.longitudinalKiBP, CP.longitudinalKiV),
+    self.pid = PIController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
+                            (CP.longitudinalTuning.kiBP, CP.longitudinalTuning.kiV),
                             rate=100.0,
                             sat_limit=0.8,
                             convert=compute_gb)
@@ -102,7 +102,7 @@ class LongControl(object):
       self.v_pid = v_target
       self.pid.pos_limit = gas_max
       self.pid.neg_limit = - brake_max
-      deadzone = interp(v_ego_pid, CP.longPidDeadzoneBP, CP.longPidDeadzoneV)
+      deadzone = interp(v_ego_pid, CP.longitudinalTuning.deadzoneBP, CP.longitudinalTuning.deadzoneV)
       output_gb = self.pid.update(self.v_pid, v_ego_pid, speed=v_ego_pid, deadzone=deadzone, feedforward=a_target, freeze_integrator=prevent_overshoot)
       if prevent_overshoot:
         output_gb = min(output_gb, 0.0)

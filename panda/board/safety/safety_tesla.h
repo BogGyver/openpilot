@@ -362,6 +362,13 @@ static void reset_DAS_data() {
   DAS_208_rackDetected = 0x00;
   DAS_025_steeringOverride = 0x00;
   DAS_221_lcAborting = 0x00;
+  //reset fake DAS objects
+  DAS_LEAD_OBJECT_MLB = 0xFFFFFF00;
+  DAS_LEAD_OBJECT_MHB = 0x03FFFF83;
+  DAS_LEFT_OBJECT_MLB = 0xFFFFFF01;
+  DAS_LEFT_OBJECT_MHB = 0x03FFFF83;
+  DAS_RIGHT_OBJECT_MLB = 0xFFFFFF02;
+  DAS_RIGHT_OBJECT_MHB = 0x03FFFF83;
 }
 
 
