@@ -452,7 +452,7 @@ class PCCController(object):
     # accel and brake
     apply_accel = clip(output_gb, 0., accel_limits[1])
     MPC_BRAKE_MULTIPLIER = 6.
-    apply_brake = -clip(output_gb * MPC_BRAKE_MULTIPLIER, -accel_limits[0], 0.)
+    apply_brake = -clip(output_gb * MPC_BRAKE_MULTIPLIER, accel_limits[0], 0.)
 
     # if speed is over 5mpg, the "zero" is at PedalForZeroTorque; otherwise it is zero
     pedal_zero = 0.

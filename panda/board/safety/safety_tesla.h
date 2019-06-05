@@ -1141,6 +1141,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     int drive_state = (to_push->RDLR >> 12) & 0x7; //DI_gear : 12|3@1+
     int brake_pressed = (to_push->RDLR & 0x8000) >> 15;
     int tesla_speed_mph = ((((((to_push->RDLR >> 24) & 0x0F) << 8) + (( to_push->RDLR >> 16) & 0xFF)) * 0.05 -25));
+
     //for fake messages for radar we need also in kph
     //actual_speed_kph = (int)(tesla_speed_mph * 1.609);
     

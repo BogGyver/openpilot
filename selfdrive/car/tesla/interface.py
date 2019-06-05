@@ -10,6 +10,7 @@ from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.car.tesla.carstate import CarState, get_can_parser, get_epas_parser, get_pedal_parser
 from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR,DBC
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V_FOLLOWING
+from common.params import read_db
 
 try:
   from selfdrive.car.tesla.carcontroller import CarController
@@ -102,6 +103,10 @@ class CarInterface(object):
     ret.carName = "tesla"
     ret.carFingerprint = candidate
 
+    teslaModel = read_db('/data/params','TeslaModel')
+    if teslaModel == None:
+      teslaModel = "S"
+
     ret.safetyModel = car.CarParams.SafetyModels.tesla
     ret.safetyParam = 1
 
@@ -139,10 +144,32 @@ class CarInterface(object):
       ret.eonToFront = 0.7
       
       # Kp and Ki for the longitudinal control
-      ret.longitudinalTuning.kpBP = [0., 5., 35.]
-      ret.longitudinalTuning.kpV = [0.6, 0.6, 0.6]
-      ret.longitudinalTuning.kiBP = [0., 5., 35.]
-      ret.longitudinalTuning.kiV = [0.18,0.18,0.18]
+      if teslaModel == "S":
+        ret.longitudinalTuning.kpBP = [0., 5., 35.]
+        ret.longitudinalTuning.kpV = [0.4, 0.4, 0.5]
+        ret.longitudinalTuning.kiBP = [0., 5., 35.]
+        ret.longitudinalTuning.kiV = [0.13,0.15,0.16]
+      elif teslaModel == "SP":
+        ret.longitudinalTuning.kpBP = [0., 5., 35.]
+        ret.longitudinalTuning.kpV = [0.40, 0.45, 0.5]
+        ret.longitudinalTuning.kiBP = [0., 5., 35.]
+        ret.longitudinalTuning.kiV = [0.13,0.15,0.16]
+      elif teslaModel == "SD":
+        ret.longitudinalTuning.kpBP = [0., 5., 35.]
+        ret.longitudinalTuning.kpV = [0.6, 0.6, 0.6]
+        ret.longitudinalTuning.kiBP = [0., 5., 35.]
+        ret.longitudinalTuning.kiV = [0.18,0.18,0.18]
+      elif teslaModel == "SPD":
+        ret.longitudinalTuning.kpBP = [0., 5., 35.]
+        ret.longitudinalTuning.kpV = [0.40, 0.45, 0.5]
+        ret.longitudinalTuning.kiBP = [0., 5., 35.]
+        ret.longitudinalTuning.kiV = [0.13,0.15,0.16]
+      else:
+        #use S numbers if we can't match anything
+        ret.longitudinalTuning.kpBP = [0., 5., 35.]
+        ret.longitudinalTuning.kpV = [0.6, 0.6, 0.6]
+        ret.longitudinalTuning.kiBP = [0., 5., 35.]
+        ret.longitudinalTuning.kiV = [0.18,0.18,0.18]
       
 
     else:
