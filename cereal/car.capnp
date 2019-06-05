@@ -377,9 +377,9 @@ struct CarParams {
     hondaBosch @5;
     ford @6;
     cadillac @7;
-    tesla @8;
+    tesla @10;
     chrysler @9;
-    hyundai @10;
+    hyundai @8;
     subaru @11;
   }
 
