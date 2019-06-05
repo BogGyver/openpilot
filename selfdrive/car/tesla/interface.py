@@ -146,9 +146,9 @@ class CarInterface(object):
       # Kp and Ki for the longitudinal control
       if teslaModel == "S":
         ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.6, 0.6, 0.6]
+        ret.longitudinalTuning.kpV = [0.4, 0.4, 0.5]
         ret.longitudinalTuning.kiBP = [0., 5., 35.]
-        ret.longitudinalTuning.kiV = [0.18,0.18,0.18]
+        ret.longitudinalTuning.kiV = [0.13,0.15,0.16]
       elif teslaModel == "SP":
         ret.longitudinalTuning.kpBP = [0., 5., 35.]
         ret.longitudinalTuning.kpV = [0.40, 0.45, 0.5]
