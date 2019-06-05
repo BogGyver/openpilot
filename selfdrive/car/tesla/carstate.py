@@ -13,6 +13,7 @@ from selfdrive.car.tesla.readconfig import read_config_file
 import os
 import subprocess
 import sys
+from common.params import write_db
  
 def parse_gear_shifter(can_gear_shifter, car_fingerprint):
 
@@ -113,6 +114,9 @@ def get_can_signals(CP):
       ("CRC_STW_ACTN_RQ", "STW_ACTN_RQ", 0),
       ("DI_regenLight", "DI_state",0),
       ("GTW_dasHw", "GTW_carConfig",0),
+      ("GTW_fourWheelDrive", "GTW_carConfig",0),
+      ("GTW_performanceConfig", "GTW_carConfig",0),
+
       ("SDM_bcklDrivStatus", "SDM1", 0),
 
       ("UI_csaOfframpCurvC3", "UI_csaOfframpCurvature", 0),
@@ -258,6 +262,10 @@ class CarState(object):
     self.keepEonOff = False
     self.alcaEnabled = True
     self.mapAwareSpeed = False
+
+    # Tesla Model
+    self.teslaModel = "S"
+    self.teslaModelDetected = 0
 
     # for map integration
     self.csaRoadCurvC3 = 0.
@@ -528,6 +536,15 @@ class CarState(object):
                                cp.vl["GTW_carState"]['DOOR_STATE_RL'], cp.vl["GTW_carState"]['DOOR_STATE_RR']])  #JCT
     self.seatbelt = cp.vl["SDM1"]['SDM_bcklDrivStatus']
     #self.seatbelt = cp.vl["SDM1"]['SDM_bcklDrivStatus'] and cp.vl["GTW_status"]['GTW_driverPresent']
+    if self.real_carConfig:
+      self.teslaModel = "S"
+      if (cp.vl["GTW_carConfig"]['GTW_performanceConfig'] > 1):
+        self.teslaModel = self.teslaModel + "P"
+      if (cp.vl["GTW_carConfig"]['GTW_fourWheelDrive'] == 1):
+        self.teslaModel = self.teslaModel + "D"
+      if self.teslaModelDetected == 0:
+        write_db('/data/params','TeslaModel',self.teslaModel)
+        self.teslaModelDetected = 1
 
     #Nav Map Data
     self.csaRoadCurvC3 = cp.vl['UI_csaRoadCurvature']["UI_csaRoadCurvC3"]
