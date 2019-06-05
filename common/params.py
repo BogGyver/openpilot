@@ -51,7 +51,7 @@ class UnknownKeyName(Exception):
 keys = {
   "AccessToken": TxType.PERSISTENT,
   "CalibrationParams": TxType.PERSISTENT,
-  "CarParams": TxType.CLEAR_ON_CAR_START,
+  "CarParams": TxType.CLEAR_ON_MANAGER_START,
   "CompletedTrainingVersion": TxType.PERSISTENT,
   "ControlsParams": TxType.PERSISTENT,
   "DoUninstall": TxType.CLEAR_ON_MANAGER_START,
