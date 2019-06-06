@@ -15,6 +15,15 @@ def read_config_file(CS):
     config = ConfigParser.RawConfigParser()
     config.add_section('OP_CONFIG')
     
+    #user_handle - Username at tinkla.com, for dashboard data and support. If you don\'t have a username, ask for one on Discord, or just enter your Discord handle here.
+    #user_handle -> userHandle
+    try:
+      CS.userHandle = configr.get('OP_CONFIG','user_handle')
+    except:
+      CS.userHandle = "your_tinkla_username"
+      file_changed = True
+    config.set('OP_CONFIG', 'user_handle', CS.userHandle)
+
     #force_pedal_over_cc - Forces the use of Tesla Pedal over ACC completely disabling the Tesla CC.
     #force_pedal_over_cc -> CS.forcePedalOverCC
     try:
@@ -200,6 +209,15 @@ def read_config_file(CS):
       CS.useAnalogWhenNoEon = False
       file_changed = True
     config.set('OP_CONFIG', 'use_analog_when_no_eon', CS.useAnalogWhenNoEon)
+
+    #fix_1916 - Set this value to True if you are running Tesla software v2019.16 and above. This fixes the DI_state can message change for DI_cruiseSet which changed from 9 bits to 8 bits
+    #fix_1916 -> fix1916
+    try:
+      CS.fix1916 = configr.getboolean('OP_CONFIG','fix_1916')
+    except:
+      CS.fix1916 = False
+      file_changed = True
+    config.set('OP_CONFIG', 'fix_1916', CS.fix1916)
     
     #do_auto_update - Set this setting to False if you do not want OP to autoupdate every time you reboot and there is a change on the repo
     #do_auto_update -> CS.doAutoUpdate
@@ -218,6 +236,7 @@ class CarSettings(object):
   def __init__(self):
     ### START OF MAIN CONFIG OPTIONS ###
     ### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
+    self.userHandle = "your_tinkla_username"
     self.forcePedalOverCC = True
     self.enableHSO = True 
     self.enableALCA = True

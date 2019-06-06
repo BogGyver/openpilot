@@ -5,6 +5,9 @@ import fcntl
 import errno
 import signal
 import subprocess
+from selfdrive.tinklad.tinkla_interface import TinklaClient
+from cereal import tinkla
+from selfdrive.car.tesla.readconfig import CarSettings
 
 from common.basedir import BASEDIR
 sys.path.append(os.path.join(BASEDIR, "pyextra"))
@@ -86,6 +89,7 @@ from selfdrive.loggerd.config import ROOT
 
 # comment out anything you don't want to run
 managed_processes = {
+  "tinklad":  "selfdrive.tinklad.tinklad",
   "thermald": "selfdrive.thermald",
   "uploader": "selfdrive.loggerd.uploader",
   "controlsd": "selfdrive.controls.controlsd",
@@ -120,6 +124,7 @@ unkillable_processes = ['visiond']
 interrupt_processes = []
 
 persistent_processes = [
+  'tinklad',
   'thermald',
   'logmessaged',
   'logcatd',
@@ -300,6 +305,21 @@ def system(cmd):
       output=e.output[-1024:],
       returncode=e.returncode)
 
+def sendUserInfoToTinkla(params):
+  carSettings = CarSettings()
+  gitRemote = params.get("GitRemote")
+  gitBranch = params.get("GitBranch")
+  gitHash = params.get("GitCommit")
+  dongleId = params.get("DongleId")
+  userHandle = carSettings.userHandle
+  info = tinkla.Interface.UserInfo.new_message(
+      openPilotId=dongleId,
+      userHandle=userHandle,
+      gitRemote=gitRemote,
+      gitBranch=gitBranch,
+      gitHash=gitHash
+  )
+  tinklaClient.setUserInfo(info)
 
 def manager_thread():
   # now loop
@@ -324,6 +344,11 @@ def manager_thread():
 
   params = Params()
   logger_dead = False
+
+  # Tinkla interface
+  global tinklaClient
+  tinklaClient = TinklaClient()
+  sendUserInfoToTinkla(params)
 
   while 1:
     # get health of board, log this in "thermal"
