@@ -1111,8 +1111,6 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   if ((addr == 0x348)  && (bus_number == 0))
   {
     // GTW_status
-    //BB moving this to 118 to test
-    /*
     int drive_rail_on = (to_push->RDLR & 0x0001);
     tesla_ignition_started = drive_rail_on == 1;
     if (drive_rail_on == 1) {
@@ -1125,7 +1123,6 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     } else {
       clear_uja1023_output_bits(1 << 7);
     }
-    */
     //ALSO use this for radar timeout, this message is always on
     uint32_t ts = TIM2->CNT;
     uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_last_radar_signal);
@@ -1145,19 +1142,6 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     int brake_pressed = (to_push->RDLR & 0x8000) >> 15;
     int tesla_speed_mph = ((((((to_push->RDLR >> 24) & 0x0F) << 8) + (( to_push->RDLR >> 16) & 0xFF)) * 0.05 -25));
 
-    //BB moved from rail into get
-    if ((drive_state == 7) || (drive_state == 0)) {
-      DAS_ignitionOn = 0;
-      tesla_ignition_started=0;
-    } else {
-      DAS_ignitionOn = 1;
-      tesla_ignition_started=1;
-    }
-    if ((DAS_ignitionOn * DAS_present * tesla_radar_should_send ) == 1) {
-      set_uja1023_output_bits(1 << 7);
-    } else {
-      clear_uja1023_output_bits(1 << 7);
-    }
     //for fake messages for radar we need also in kph
     //actual_speed_kph = (int)(tesla_speed_mph * 1.609);
     
