@@ -772,9 +772,6 @@ class CarController(object):
       self.stopSignWarning_last = self.stopSignWarning
       self.warningNeeded = 0
     # end of DAS emulation """
-    if frame % 100 == 0: # and CS.hasTeslaIcIntegration:
-        #IF WE HAVE spamIC RUNNING, send a message every second to say we are still awake
-        can_sends.append(teslacan.create_fake_IC_msg(CS.useAnalogWhenNoEon))
     idx = frame % 16
     cruise_btn = None
     if self.ACC.enable_adaptive_cruise and not CS.pedal_interceptor_available:
