@@ -192,7 +192,6 @@ class ReadConfigTests(unittest.TestCase):
     self.assertEqual(cs.useTeslaGPS, False)
     self.assertEqual(cs.useTeslaMapData, False)
     self.assertEqual(cs.hasTeslaIcIntegration, False)
-    self.assertEqual(cs.useAnalogWhenNoEon, False)
     self.assertEqual(cs.useTeslaRadar, False)
     self.assertEqual(cs.useWithoutHarness, False)
     self.assertEqual(cs.radarVIN, "                 ")

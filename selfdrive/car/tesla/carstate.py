@@ -241,7 +241,6 @@ class CarState(object):
     self.useTeslaGPS = False
     self.useTeslaMapData = False
     self.hasTeslaIcIntegration = False
-    self.useAnalogWhenNoEon = False
     self.useTeslaRadar = False
     self.useWithoutHarness = False
     self.radarVIN = "                 "

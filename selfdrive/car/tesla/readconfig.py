@@ -213,7 +213,7 @@ class ConfigFile(object):
       )
       file_changed |= didUpdate
 
-      #use_analog_when_no_eon -> useAnalogWhenNoEon
+      #has_tesla_ic_integration -> hasTeslaIcIntegration
       into.hasTeslaIcIntegration, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = main_section,
         entry = 'has_tesla_ic_integration', entry_type = bool,
@@ -222,15 +222,6 @@ class ConfigFile(object):
       )
       file_changed |= didUpdate
 
-      #use_analog_when_no_eon -> useAnalogWhenNoEon
-      into.useAnalogWhenNoEon, didUpdate = self.read_config_entry(
-        config, configr, prev_file_contents, section = main_section,
-        entry = 'use_analog_when_no_eon', type = bool,
-        default_value = False,
-        comment = 'Not used at the moment; should be False'
-      )
-      file_changed |= didUpdate
-      
       #use_tesla_radar -> useTeslaRadar
       into.useTeslaRadar, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = main_section,
@@ -375,7 +366,6 @@ class CarSettings(object):
   useTeslaGPS = None
   useTeslaMapData = None
   hasTeslaIcIntegration = None
-  useAnalogWhenNoEon = None
   useTeslaRadar = None
   useWithoutHarness = None
   radarVIN = None
