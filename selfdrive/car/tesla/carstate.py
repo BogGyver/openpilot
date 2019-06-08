@@ -538,7 +538,7 @@ class CarState(object):
     #self.seatbelt = cp.vl["SDM1"]['SDM_bcklDrivStatus'] and cp.vl["GTW_status"]['GTW_driverPresent']
     if self.real_carConfig:
       self.teslaModel = "S"
-      if (cp.vl["GTW_carConfig"]['GTW_performanceConfig'] > 1):
+      if (cp.vl["GTW_carConfig"]['GTW_performanceConfig'] >= 1):
         self.teslaModel = self.teslaModel + "P"
       if (cp.vl["GTW_carConfig"]['GTW_fourWheelDrive'] == 1):
         self.teslaModel = self.teslaModel + "D"
