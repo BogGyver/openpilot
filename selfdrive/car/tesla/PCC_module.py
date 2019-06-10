@@ -1,5 +1,5 @@
 from selfdrive.car.tesla import teslacan
-from selfdrive.car.tesla.longcontrol_tesla import LongControl, LongCtrlState, STARTING_TARGET_SPEED
+from selfdrive.controls.lib.longcontrol import LongControl, LongCtrlState, STARTING_TARGET_SPEED
 from selfdrive.car.tesla import teslacan
 from common.numpy_fast import clip, interp
 from selfdrive.services import service_list
@@ -7,7 +7,7 @@ from selfdrive.car.tesla.values import AH,CruiseState, CruiseButtons, CAR
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.speed_smoother import speed_smoother
-from selfdrive.controls.lib.planner import limit_accel_in_turns, calc_cruise_accel_limits
+from selfdrive.controls.lib.planner import limit_accel_in_turns, calc_cruise_accel_limits, _DT_MPC
 from common.realtime import sec_since_boot
 import selfdrive.messaging as messaging
 import os
@@ -22,7 +22,6 @@ from selfdrive.car.tesla.movingaverage import MovingAverage
 
 
 _DT = 0.05    # 20Hz in our case, since we don't want to process more than once the same live20 message
-_DT_MPC = 0.05  # 20Hz
 
 # TODO: these should end up in values.py at some point, probably variable by trim
 # Accel limits
@@ -34,7 +33,7 @@ PEDAL_MAX_UP = MAX_PEDAL_VALUE * _DT / 4
 PEDAL_MAX_DOWN = MAX_PEDAL_VALUE * _DT / 0.4
 
 # min safe distance in meters. Roughly 2 car lengths.
-MIN_SAFE_DIST_M = 10.
+MIN_SAFE_DIST_M = 2.
 
 #BBTODO: move the vehicle variables; maybe make them speed variable
 TORQUE_LEVEL_ACC = 0.
@@ -47,14 +46,6 @@ MIN_CAN_SPEED = 0.3  #TODO: parametrize this in car interface
 
 # Pull the cruise stalk twice in this many ms for a 'double pull'
 STALK_DOUBLE_PULL_MS = 750
-
-#
-  
-# Lookup table for turns
-_A_TOTAL_MAX = OrderedDict([
-  (0.0, 2.5),
-  (20., 2.5),
-  (40., 2.5)])
 
 class Mode(object):
   label = None
@@ -131,6 +122,8 @@ class PCCController(object):
   def __init__(self,carcontroller):
     self.CC = carcontroller
     self.human_cruise_action_time = 0
+    self.pedal_state = False
+    self.prev_pedal_state = False
     self.automated_cruise_action_time = 0
     self.last_angle = 0.
     context = zmq.Context()
@@ -351,6 +344,8 @@ class PCCController(object):
     v_ego = CS.v_ego
     following = self.lead_1.status and self.lead_1.dRel < 45.0 and self.lead_1.vLeadK > v_ego and self.lead_1.aLeadK > 0.0
     accel_limits = [float(x) for x in calc_cruise_accel_limits(v_ego, following)]
+    accel_limits[1] *= _accel_limit_multiplier(CS.v_ego, self.lead_1)
+    accel_limits[0] *= _decel_limit_multiplier(CS.v_ego, self.lead_1, CS)
     jerk_limits = [min(-0.1, accel_limits[0]), max(0.1, accel_limits[1])]  # TODO: make a separate lookup for jerk tuning
     accel_limits = limit_accel_in_turns(v_ego, CS.angle_steers, accel_limits, CS.CP)
 
@@ -394,7 +389,7 @@ class PCCController(object):
         self.acc_start_time = cur_time
 
         # Interpolation of trajectory
-        dt = min(cur_time - self.acc_start_time, _DT_MPC + _DT) + _DT  # no greater than dt mpc + dt, to prevent too high extraps
+        dt = 0.05 #BB- Changed in planner.py min(cur_time - self.acc_start_time, _DT_MPC + _DT) + _DT  # no greater than dt mpc + dt, to prevent too high extraps
         self.a_acc_sol = self.a_acc_start + (dt / _DT_MPC) * (self.a_acc - self.a_acc_start)
         self.v_acc_sol = self.v_acc_start + dt * (self.a_acc_sol + self.a_acc_start) / 2.0
 
@@ -402,13 +397,21 @@ class PCCController(object):
         # it's all about testing now.
         vTarget = clip(self.v_acc_sol, 0, self.v_pid)
         self.vTargetFuture = clip(self.v_acc_future, 0, self.v_pid)
-
-        t_go, t_brake = self.LoC.update(self.enable_pedal_cruise, CS.v_ego, CS.brake_pressed != 0, CS.standstill, False, 
-                  self.v_pid , vTarget, self.vTargetFuture, self.a_acc_sol, CS.CP, None)
+        # determine if pedal is pressed by human
+        self.prev_pedal_state = self.pedal_state
+        if CS.pedal_interceptor_value > 10:
+          self.pedal_state = True
+        else:
+           self.pedal_state = False
+        #reset PID if we just lifted foot of accelerator
+        if (not self.pedal_state) and self.prev_pedal_state:
+          self.LoC.reset(v_pid=CS.v_ego)
+        t_go, t_brake = self.LoC.update(self.enable_pedal_cruise and (not self.pedal_state) , CS.v_ego, CS.brake_pressed != 0, CS.standstill, False, 
+                    self.v_pid , vTarget, self.vTargetFuture, self.a_acc_sol, CS.CP)
         output_gb = t_go - t_brake
         #print "Output GB Follow:", output_gb
       else:
-        self.LoC.reset(CS.v_ego)
+        self.LoC.reset(v_pid=CS.v_ego)
         #print "PID reset"
         output_gb = 0.
         starting = self.LoC.long_control_state == LongCtrlState.starting
@@ -615,22 +618,23 @@ def _accel_limit_multiplier(v_ego, lead):
     accel_multipliers = OrderedDict([
       # (distance in m, acceleration fraction)
       (0.6 * safe_dist_m, 0.0),
-      (1.0 * safe_dist_m, 0.4),
-      (3.0 * safe_dist_m, 1.0)])
+      (1.0 * safe_dist_m, 0.3),
+      (3.0 * safe_dist_m, 0.4)])
     return _interp_map(lead.dRel, accel_multipliers)
   else:
-    return 1.0
+    return 0.4
 
 def _decel_limit_multiplier(v_ego, lead, CS):
   if _is_present(lead):
     decel_map = OrderedDict([
       # (sec to collision, decel)
       (2, 1.0),
-      (4, 0.4),
+      (4, 0.5),
       (8, 0.1)])
     return _interp_map(_sec_til_collision(lead, CS), decel_map)
   else:
-    return 1.0
+    #BB: if we don't have a lead, don't do full regen to slow down smoother
+    return 0.1
     
 def _jerk_limits(v_ego, lead, max_speed_kph, lead_last_seen_time_ms, CS):
   # Allow higher accel jerk at low speed, to get started

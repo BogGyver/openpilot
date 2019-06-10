@@ -204,6 +204,7 @@ class ACCController(object):
       self.speed_limit_kph = speed_limit_kph +  speed_limit_offset
       if not (int(self.prev_speed_limit_kph) == int(self.speed_limit_kph)):
         self.acc_speed_kph = self.speed_limit_kph
+        self.maxsuggestedspeed_avg.reset()
     current_time_ms = _current_time_millis()
     if CruiseButtons.should_be_throttled(CS.cruise_buttons):
       self.human_cruise_action_time = current_time_ms
@@ -261,7 +262,7 @@ class ACCController(object):
     # Relative velocity between the lead car and our set cruise speed.
     future_vrel_kph = lead_speed_kph - CS.v_cruise_actual
     # How much we can accelerate without exceeding the max allowed speed.
-    max_acc_speed_kph = self.max_v_by_speed_limit(self.acc_speed_kph * CV.KPH_TO_MS, self.speed_limit_kph * CV.KPH_TO_MS, CS) * CV.MS_TO_KPH
+    max_acc_speed_kph = self.max_v_by_speed_limit(CS.v_cruise_actual * CV.KPH_TO_MS, self.acc_speed_kph, CS) * CV.MS_TO_KPH
     available_speed_kph = max_acc_speed_kph - CS.v_cruise_actual
     half_press_kph, full_press_kph = self._get_cc_units_kph(CS.imperial_speed_units)
     # button to issue
