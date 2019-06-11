@@ -350,7 +350,7 @@ class PCCController(object):
     accel_limits = [float(x) for x in calc_cruise_accel_limits(v_ego, following)]
     accel_limits[1] *= _accel_limit_multiplier(CS.v_ego, self.lead_1)
     accel_limits[0] *= _decel_limit_multiplier(CS.v_ego, self.lead_1, CS)
-    jerk_limits = [min(-0.1, accel_limits[0]), max(0.1, accel_limits[1]/5.)]  # TODO: make a separate lookup for jerk tuning
+    jerk_limits = [min(-0.1, accel_limits[0]/2.), max(0.1, accel_limits[1]/3.)]  # TODO: make a separate lookup for jerk tuning
     #accel_limits = limit_accel_in_turns(v_ego, CS.angle_steers, accel_limits, CS.CP)
 
     output_gb = 0
