@@ -7,7 +7,7 @@ from selfdrive.car.tesla.values import AH,CruiseState, CruiseButtons, CAR
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.speed_smoother import speed_smoother
-from selfdrive.controls.lib.planner import limit_accel_in_turns, calc_cruise_accel_limits, _DT_MPC
+from selfdrive.controls.lib.planner import limit_accel_in_turns, calc_cruise_accel_limits, _DT_MPC, NO_CURVATURE_SPEED
 from common.realtime import sec_since_boot
 import selfdrive.messaging as messaging
 import os
@@ -22,6 +22,7 @@ from selfdrive.car.tesla.movingaverage import MovingAverage
 
 
 _DT = 0.05    # 20Hz in our case, since we don't want to process more than once the same live20 message
+
 
 # TODO: these should end up in values.py at some point, probably variable by trim
 # Accel limits
@@ -309,7 +310,9 @@ class PCCController(object):
     cur_time = sec_since_boot()
     FOLLOW_TIME_S = CS.apFollowDistance
     idx = self.pedal_idx
+
     self.prev_speed_limit_kph = self.speed_limit_kph
+
     if speed_limit_valid and set_speed_limit_active and (speed_limit_ms > 2.7):
       self.speed_limit_kph = (speed_limit_ms +  speed_limit_offset) * CV.MS_TO_KPH
       if not (int(self.prev_speed_limit_kph) == int(self.speed_limit_kph)):
@@ -317,6 +320,7 @@ class PCCController(object):
         #also reset maxsuggestedspeed_avg
         self.maxsuggestedspeed_avg.reset()
     self.pedal_idx = (self.pedal_idx + 1) % 16
+
     if not CS.pedal_interceptor_available or not enabled:
       return 0., 0, idx
     # Alternative speed decision logic that uses the lead car's distance
@@ -346,8 +350,8 @@ class PCCController(object):
     accel_limits = [float(x) for x in calc_cruise_accel_limits(v_ego, following)]
     accel_limits[1] *= _accel_limit_multiplier(CS.v_ego, self.lead_1)
     accel_limits[0] *= _decel_limit_multiplier(CS.v_ego, self.lead_1, CS)
-    jerk_limits = [min(-0.1, accel_limits[0]), max(0.1, accel_limits[1])]  # TODO: make a separate lookup for jerk tuning
-    accel_limits = limit_accel_in_turns(v_ego, CS.angle_steers, accel_limits, CS.CP)
+    jerk_limits = [min(-0.1, accel_limits[0]), max(0.1, accel_limits[1]/5.)]  # TODO: make a separate lookup for jerk tuning
+    #accel_limits = limit_accel_in_turns(v_ego, CS.angle_steers, accel_limits, CS.CP)
 
     output_gb = 0
     ####################################################################
@@ -368,24 +372,30 @@ class PCCController(object):
       self.v_pid = max(self.v_pid, 0.)
 
       enabled = self.enable_pedal_cruise and self.LoC.long_control_state in [LongCtrlState.pid, LongCtrlState.stopping]
+      # determine if pedal is pressed by human
+      self.prev_pedal_state = self.pedal_state
+      if CS.pedal_interceptor_value > 10:
+        self.pedal_state = True
+      else:
+          self.pedal_state = False
+      #reset PID if we just lifted foot of accelerator
+      if (not self.pedal_state) and self.prev_pedal_state:
+        self.LoC.reset(v_pid=CS.v_ego)
 
-      if self.enable_pedal_cruise:
+      if self.enable_pedal_cruise and  (not self.pedal_state):
         jerk_min, jerk_max = _jerk_limits(CS.v_ego, self.lead_1, self.v_pid * CV.MS_TO_KPH, self.lead_last_seen_time_ms, CS)
         self.v_cruise, self.a_cruise = speed_smoother(self.v_acc_start, self.a_acc_start,
                                                       self.v_pid,
                                                       accel_limits[1], accel_limits[0],
-                                                      jerk_limits[1], jerk_limits[0],
+                                                      jerk_limits[1], jerk_limits[0], #jerk_max, jerk_min,
                                                       _DT_MPC)
         
         # cruise speed can't be negative even is user is distracted
         self.v_cruise = max(self.v_cruise, 0.)
+
         self.v_acc = self.v_cruise
         self.a_acc = self.a_cruise
-
         self.v_acc_future = self.v_pid
-
-        self.v_acc_start = self.v_acc_sol
-        self.a_acc_start = self.a_acc_sol
         self.acc_start_time = cur_time
 
         # Interpolation of trajectory
@@ -393,21 +403,16 @@ class PCCController(object):
         self.a_acc_sol = self.a_acc_start + (dt / _DT_MPC) * (self.a_acc - self.a_acc_start)
         self.v_acc_sol = self.v_acc_start + dt * (self.a_acc_sol + self.a_acc_start) / 2.0
 
+        self.v_acc_start = self.v_acc_sol
+        self.a_acc_start = self.a_acc_sol
+
         # we will try to feed forward the pedal position.... we might want to feed the last output_gb....
         # it's all about testing now.
-        vTarget = clip(self.v_acc_sol, 0, self.v_pid)
-        self.vTargetFuture = clip(self.v_acc_future, 0, self.v_pid)
-        # determine if pedal is pressed by human
-        self.prev_pedal_state = self.pedal_state
-        if CS.pedal_interceptor_value > 10:
-          self.pedal_state = True
-        else:
-           self.pedal_state = False
-        #reset PID if we just lifted foot of accelerator
-        if (not self.pedal_state) and self.prev_pedal_state:
-          self.LoC.reset(v_pid=CS.v_ego)
-        t_go, t_brake = self.LoC.update(self.enable_pedal_cruise and (not self.pedal_state) , CS.v_ego, CS.brake_pressed != 0, CS.standstill, False, 
-                    self.v_pid , vTarget, self.vTargetFuture, self.a_acc_sol, CS.CP)
+        vTarget = clip(self.v_acc_sol, 0, self.v_cruise)
+        self.vTargetFuture = clip(self.v_acc_future, 0, self.v_cruise)
+        
+        t_go, t_brake = self.LoC.update(self.enable_pedal_cruise, CS.v_ego, CS.brake_pressed != 0, CS.standstill, False, 
+                    self.v_cruise , vTarget, self.vTargetFuture, self.a_acc_sol, CS.CP)
         output_gb = t_go - t_brake
         #print "Output GB Follow:", output_gb
       else:
@@ -626,15 +631,17 @@ def _accel_limit_multiplier(v_ego, lead):
 
 def _decel_limit_multiplier(v_ego, lead, CS):
   if _is_present(lead):
+    if lead.dRel < 10:
+      return 1.
     decel_map = OrderedDict([
       # (sec to collision, decel)
-      (2, 1.0),
-      (4, 0.5),
-      (8, 0.1)])
+      (4, 1.0),
+      (7, 0.7),
+      (10, 0.5)])
     return _interp_map(_sec_til_collision(lead, CS), decel_map)
   else:
     #BB: if we don't have a lead, don't do full regen to slow down smoother
-    return 0.1
+    return 0.5
     
 def _jerk_limits(v_ego, lead, max_speed_kph, lead_last_seen_time_ms, CS):
   # Allow higher accel jerk at low speed, to get started
