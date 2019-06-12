@@ -165,6 +165,7 @@ class PCCController(object):
     self.a_acc_sol = 0.0
     self.v_cruise = 0.0
     self.a_cruise = 0.0
+    self.had_lead = False
     #Long Control
     self.LoC = None
     #when was radar data last updated?
@@ -497,7 +498,10 @@ class PCCController(object):
     else:
       lead_dist_m = _visual_radar_adjusted_dist_m(self.lead_1.dRel, CS)
     # Grab the relative speed.
-    rel_speed_kph = self.lead_1.vRel * CV.MS_TO_KPH
+    rel_speed_kph = 0.
+    if self.had_lead:
+      #avoid inital break when lead just detected
+      rel_speed_kph = self.lead_1.vRel * CV.MS_TO_KPH
     # v_ego is in m/s, so safe_distance is in meters.
     safe_dist_m = _safe_distance_m(CS.v_ego)
     # Current speed in kph
@@ -509,7 +513,9 @@ class PCCController(object):
       # If no lead is present, accel up to max speed
       if lead_dist_m == 0:
         new_speed_kph = self.pedal_speed_kph
+        self.had_lead = False
       elif lead_dist_m > 0:
+        self.had_lead = True
         lead_absolute_speed_kph = actual_speed_kph + rel_speed_kph
         if lead_dist_m < MIN_SAFE_DIST_M:
           new_speed_kph = MIN_PCC_V_KPH
@@ -543,7 +549,7 @@ class PCCController(object):
           # still an acceptable speed, accept it. This could happen if the
           # driver manually accelerates, or if we roll down a hill. In either
           # case, don't fight the extra velocity unless necessary.
-          if actual_speed_kph > new_speed_kph and min_kph < actual_speed_kph < max_kph:
+          if (actual_speed_kph > new_speed_kph) and (min_kph < actual_speed_kph < max_kph):
             new_speed_kph = actual_speed_kph
 
           new_speed_kph =  clip(new_speed_kph, min_kph, max_kph)
@@ -594,7 +600,7 @@ def _min_safe_vrel_kph(m):
     # (meters, safe relative velocity in kph)
     # Remember, a negative relative velocity means we are closing the distance.
     (MIN_SAFE_DIST_M, 1),    # If lead is close, it better be pulling away.
-    (200,             -15)]) # if lead is far, it's ok if we're closing.
+    (100,             -15)]) # if lead is far, it's ok if we're closing.
   return _interp_map(m, min_vrel_by_distance)
 
 def _is_present(lead):
