@@ -92,7 +92,8 @@ def is_on_hotspot():
     blockUploadWhileTethering = car_set.get_value("blockUploadWhileTethering")
     tetherIP = car_set.get_value("tetherIP")
     is_other_tether = blockUploadWhileTethering and result.startswith(tetherIP)
-    return (is_android or is_ios or is_other_tether)
+    is_entune = result.startswith('10.0.2.')
+    return (is_android or is_ios or is_other_tether or is_entune)
   except:
     return False
 

@@ -88,12 +88,11 @@ HUDData = namedtuple("HUDData",
 
 
 class CarController(object):
-  def __init__(self, dbc_name, enable_camera=True):
+  def __init__(self, dbc_name):
     self.params = Params()
     self.braking = False
     self.brake_steady = 0.
     self.brake_last = 0.
-    self.enable_camera = enable_camera
     self.packer = CANPacker(dbc_name)
     self.epas_disabled = True
     self.last_angle = 0.
@@ -280,9 +279,6 @@ class CarController(object):
       if self.speedlimit == None:
         self.speedlimit = messaging.sub_sock(self.context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
 
-    ## Todo add code to detect Tesla DAS (camera) and go into listen and record mode only (for AP1 / AP2 cars)
-    if not self.enable_camera:
-      return
 
     # *** no output if not enabled ***
     if not enabled and CS.pcm_acc_status:

@@ -8,7 +8,6 @@
 //      brake rising edge
 //      brake > 0mph
 
-int gas_interceptor_detected = 0;
 
 // 2m/s are added to be less restrictive
 const struct lookup_t TESLA_LOOKUP_ANGLE_RATE_UP = {
@@ -1557,20 +1556,11 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
   return true;
 }
 
-static int tesla_tx_lin_hook(int lin_num, uint8_t *data, int len)
-{
-  // LIN is not used on the Tesla
-  return false;
-}
-
 static void tesla_init(int16_t param)
 {
   controls_allowed = 0;
   tesla_ignition_started = 0;
   gmlan_switch_init(1); //init the gmlan switch with 1s timeout enabled
-  #ifdef PANDA
-    lline_relay_release();
-  #endif
   uja1023_init();
 }
 
@@ -1866,11 +1856,10 @@ static int tesla_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd)
 }
 
 const safety_hooks tesla_hooks = {
-    .init = tesla_init,
-    .rx = tesla_rx_hook,
-    .tx = tesla_tx_hook,
-    .tx_lin = tesla_tx_lin_hook,
-    .ignition = tesla_ign_hook,
-    .fwd = tesla_fwd_hook,
-    .relay = nooutput_relay_hook,
+  .init = tesla_init,
+  .rx = tesla_rx_hook,
+  .tx = tesla_tx_hook,
+  .tx_lin = nooutput_tx_lin_hook,
+  .ignition = tesla_ign_hook,
+  .fwd = tesla_fwd_hook,
 };

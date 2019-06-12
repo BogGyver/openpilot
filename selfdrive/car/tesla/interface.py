@@ -224,9 +224,11 @@ class CarInterface(object):
     # ******************* do can recv *******************
     canMonoTimes = []
 
-    self.cp.update(int(sec_since_boot() * 1e9), True)
-    self.epas_cp.update(int(sec_since_boot() * 1e9), False)
-    self.pedal_cp.update(int(sec_since_boot() * 1e9), False)
+    ch_can_valid, _ = self.cp.update(int(sec_since_boot() * 1e9), True)
+    epas_can_valid, _ = self.epas_cp.update(int(sec_since_boot() * 1e9), False)
+    pedal_can_valid, _ = self.pedal_cp.update(int(sec_since_boot() * 1e9), False)
+
+    can_rcv_error = not (ch_can_valid and epas_can_valid and pedal_can_valid)
 
     self.CS.update(self.cp, self.epas_cp, self.pedal_cp)
 
@@ -332,7 +334,7 @@ class CarInterface(object):
       self.CC.opState = 0
     if c.enabled and (self.CC.opState == 0):
       self.CC.opState = 1
-    if not self.CS.can_valid:
+    if (not self.CS.can_valid) or can_rcv_error:
       self.can_invalid_count += 1
       if self.can_invalid_count >= 25: #BB increased to 25 to see if we still get the can error messages
         events.append(create_event('commIssue', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))

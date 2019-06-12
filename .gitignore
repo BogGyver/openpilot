@@ -39,3 +39,6 @@ selfdrive/visiond/visiond
 one
 .vscode/*.json
 ./launch_chffrplus.sh
+openpilot
+xx
+
