@@ -194,7 +194,7 @@ class PCCController(object):
     if self.LoC:
       self.LoC.reset(v_pid)
 
-  def update_stat(self, CS, enabled, sendcan):
+  def update_stat(self, CS, enabled):
     if not self.LoC:
       self.LoC = LongControl(CS.CP, tesla_compute_gb)
 

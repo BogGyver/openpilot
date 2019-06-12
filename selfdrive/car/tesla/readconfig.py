@@ -33,6 +33,15 @@ class ConfigFile(object):
       )
       file_changed |= didUpdate
 
+      #force_fingerprint_tesla -> forceFingerprintTesla
+      into.forceFingerprintTesla, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = main_section,
+        entry = 'force_fingerprint_tesla', type = bool,
+        default_value = False,
+        comment = 'Forces the fingerprint to Tesla Model S if OpenPilot failes to identify car via fingerprint.'
+      )
+      file_changed |= didUpdate
+
       #force_pedal_over_cc -> forcePedalOverCC
       into.forcePedalOverCC, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = main_section,

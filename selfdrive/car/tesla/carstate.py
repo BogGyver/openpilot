@@ -253,6 +253,7 @@ class CarState(object):
     self.radarPosition = 0
     self.radarEpasType = 0
     self.fix1916 = False
+    self.forceFingerprintTesla = False
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

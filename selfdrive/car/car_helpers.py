@@ -7,6 +7,7 @@ from common.fingerprints import eliminate_incompatible_cars, all_known_cars
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.swaglog import cloudlog
 import selfdrive.messaging as messaging
+from selfdrive.car.tesla.readconfig import CarSettings
 
 
 def get_startup_alert(car_recognized, controller_available):
@@ -116,9 +117,11 @@ def fingerprint(logcan, sendcan):
 
     # bail if no cars left or we've been waiting for more than 2s since can_seen
     elif len(candidate_cars) == 0 or (can_seen_ts is not None and (ts - can_seen_ts) > 2.):
-      #return None, finger, ""
-      print "Fingerprinting Failed: Returning Tesla (based on branch)"
-      return "TESLA MODEL S", finger, "TESLAFAKEVIN"
+      if CarSettings().forceFingerprintTesla:
+        print "Fingerprinting Failed: Returning Tesla (based on branch)"
+        return "TESLA MODEL S", finger, "TESLAFAKEVIN"
+      else:
+        return None, finger, ""
 
     # keep sending VIN qury if ECU isn't responsing.
     # sendcan is probably not ready due to the zmq slow joiner syndrome
