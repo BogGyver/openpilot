@@ -57,7 +57,7 @@ class CarInterface(object):
     # sending if read only is False
     if sendcan is not None:
       self.sendcan = sendcan
-      self.CC = CarController(self.cp.dbc_name, CP.enableCamera)
+      self.CC = CarController(self.cp.dbc_name)
 
     self.compute_gb = tesla_compute_gb
     
@@ -90,7 +90,7 @@ class CarInterface(object):
     return float(max(0.714, a_target / max(_A_CRUISE_MAX_V_FOLLOWING))) * min(speedLimiter, accelLimiter)
 
   @staticmethod
-  def get_params(candidate, fingerprint):
+  def get_params(candidate, fingerprint, vin):
 
     # kg of standard extra cargo to count for drive, gas, etc...
     std_cargo = 136

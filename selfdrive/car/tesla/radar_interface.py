@@ -66,7 +66,7 @@ class RadarInterface(object):
 
   def update(self):
 
-    ret = car.RadarState.new_message()
+    ret = car.RadarData.new_message()
     if not self.useTeslaRadar:
       time.sleep(0.05)
       return ret
@@ -75,7 +75,8 @@ class RadarInterface(object):
     updated_messages = set()
     while 1:
       tm = int(sec_since_boot() * 1e9)
-      updated_messages.update(self.rcp.update(tm, True))
+      _ , vls = self.rcp.update(tm, True)
+      updated_messages.update(vls)
       if RADAR_B_MSGS[-1] in updated_messages:
         break
     errors = []
