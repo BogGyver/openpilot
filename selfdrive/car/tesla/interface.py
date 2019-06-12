@@ -12,10 +12,6 @@ from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR,DBC
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V_FOLLOWING
 from common.params import read_db
 
-try:
-  from selfdrive.car.tesla.carcontroller import CarController
-except ImportError:
-  CarController = None
 
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -28,7 +24,7 @@ def tesla_compute_gb(accel, speed):
 
 
 class CarInterface(object):
-  def __init__(self, CP, sendcan=None):
+  def __init__(self, CP, CarController):
     self.CP = CP
 
     self.frame = 0
@@ -54,9 +50,8 @@ class CarInterface(object):
       self.epas_cp = get_epas_parser(CP,2)
     self.pedal_cp = get_pedal_parser(CP)
 
-    # sending if read only is False
-    if sendcan is not None:
-      self.sendcan = sendcan
+    self.CC = None
+    if CarController is not None:
       self.CC = CarController(self.cp.dbc_name)
 
     self.compute_gb = tesla_compute_gb
@@ -90,7 +85,7 @@ class CarInterface(object):
     return float(max(0.714, a_target / max(_A_CRUISE_MAX_V_FOLLOWING))) * min(speedLimiter, accelLimiter)
 
   @staticmethod
-  def get_params(candidate, fingerprint, vin):
+  def get_params(candidate, fingerprint, vin=""):
 
     # kg of standard extra cargo to count for drive, gas, etc...
     std_cargo = 136
@@ -109,6 +104,7 @@ class CarInterface(object):
 
     ret.safetyModel = car.CarParams.SafetyModels.tesla
     ret.safetyParam = 1
+    ret.carVin = vin
 
     ret.enableCamera = True
     ret.enableGasInterceptor = False #keep this False for now
@@ -526,7 +522,7 @@ class CarInterface(object):
 
     pcm_accel = int(clip(c.cruiseControl.accelOverride,0,1)*0xc6)
 
-    self.CC.update(self.sendcan, c.enabled, self.CS, self.frame, \
+    can_sends = self.CC.update(c.enabled, self.CS, self.frame, \
       c.actuators, \
       c.cruiseControl.speedOverride, \
       c.cruiseControl.override, \
@@ -541,3 +537,4 @@ class CarInterface(object):
       rightLaneVisible = c.hudControl.rightLaneVisible)
 
     self.frame += 1
+    return can_sends

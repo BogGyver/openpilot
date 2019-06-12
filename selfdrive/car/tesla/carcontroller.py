@@ -7,7 +7,6 @@ import shlex
 from cereal import log,ui
 from common.params import Params
 from collections import namedtuple
-from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.controls.lib.drive_helpers import rate_limit
 from common.numpy_fast import clip, interp
 import numpy as np
@@ -241,7 +240,7 @@ class CarController(object):
 
 
 
-  def update(self, sendcan, enabled, CS, frame, actuators, \
+  def update(self, enabled, CS, frame, actuators, \
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
              hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert, \
              snd_beep, snd_chime,leftLaneVisible,rightLaneVisible):
@@ -362,11 +361,12 @@ class CarController(object):
     if (frame % 10 == 0):
       self.ALCA.update_status((CS.cstm_btns.get_button_status("alca") > 0) and ((CS.enableALCA and not CS.hasTeslaIcIntegration) or (CS.hasTeslaIcIntegration and CS.alcaEnabled)))
       #print CS.cstm_btns.get_button_status("alca")
-
+    
+    pedal_can_sends = []
     
     if CS.pedal_interceptor_available:
       #update PCC module info
-      self.PCC.update_stat(CS, True, sendcan)
+      pedal_can_sends = self.PCC.update_stat(CS, True)
       self.ACC.enable_adaptive_cruise = False
     else:
       # Update ACC module info.
@@ -792,5 +792,5 @@ class CarController(object):
       can_sends.append(teslacan.create_pedal_command_msg(apply_accel, int(accel_needed), accel_idx))
     self.last_angle = apply_angle
     self.last_accel = apply_accel
-    #sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan'))
-    return can_sends
+    
+    return pedal_can_sends + can_sends

@@ -169,10 +169,6 @@ class PCCController(object):
     #Long Control
     self.LoC = None
     #when was radar data last updated?
-    self.last_md_ts = None
-    self.last_l100_ts = None
-    self.md_ts = None
-    self.l100_ts = None
     self.lead_last_seen_time_ms = 0
     self.continuous_lead_sightings = 0
     self.params = Params()
@@ -213,7 +209,7 @@ class PCCController(object):
         CS.cstm_btns.set_button_status("pedal", 0)
         print "disabling pedal"
       print "Pedal unavailable."
-      return
+      return can_sends
     
     # check if we had error before
     if self.pedal_interceptor_state != CS.pedal_interceptor_state:
@@ -224,7 +220,6 @@ class PCCController(object):
         idx = self.pedal_idx
         self.pedal_idx = (self.pedal_idx + 1) % 16
         can_sends.append(teslacan.create_pedal_command_msg(0, 0, idx))
-        sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan'))
         CS.UE.custom_alert_message(3, "Pedal Interceptor Off (state %s)" % self.pedal_interceptor_state, 150, 3)
       else:
         CS.UE.custom_alert_message(3, "Pedal Interceptor On", 150, 3)
@@ -306,6 +301,8 @@ class PCCController(object):
     # Update prev state after all other actions.
     self.prev_cruise_buttons = CS.cruise_buttons
     self.prev_pcm_acc_status = CS.pcm_acc_status
+
+    return can_sends
     
   def update_pdl(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset):
     cur_time = sec_since_boot()
@@ -327,23 +324,21 @@ class PCCController(object):
     # Alternative speed decision logic that uses the lead car's distance
     # and speed more directly.
     # Bring in the lead car distance from the radarState feed
-    l20 = None
+    radSt = None
     mapd = None
     #if enabled: do it always
     for socket, _ in self.poller.poll(0):
       if socket is self.radarState:
-        l20 = messaging.recv_one(socket)
+        radSt = messaging.recv_one(socket)
       elif socket is self.live_map_data:
         mapd = messaging.recv_one(socket)
-    if l20 is not None:
-      self.lead_1 = l20.radarState.leadOne
+    if radSt is not None:
+      self.lead_1 = radSt.radarState.leadOne
       if _is_present(self.lead_1):
         self.lead_last_seen_time_ms = _current_time_millis()
         self.continuous_lead_sightings += 1
       else:
         self.continuous_lead_sightings = 0
-      self.md_ts = l20.radarState.mdMonoTime
-      self.l100_ts = l20.radarState.l100MonoTime
       
 
     v_ego = CS.v_ego
@@ -482,8 +477,6 @@ class PCCController(object):
     self.prev_tesla_accel = apply_accel * enable_pedal
     self.prev_v_ego = CS.v_ego
 
-    self.last_md_ts = self.md_ts
-    self.last_l100_ts = self.l100_ts
 
     return self.prev_tesla_pedal, enable_pedal, idx
 
