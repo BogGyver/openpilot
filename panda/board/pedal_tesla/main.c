@@ -20,14 +20,13 @@
 
 #define CAN CAN1
 
-//#define PEDAL
-
 //#define PEDAL_USB
 
 #ifdef PEDAL_USB
   #include "drivers/usb.h"
 #endif
 
+#define ENTER_BOOTLOADER_MAGIC 0xdeadbeef
 uint32_t enter_bootloader_mode;
 
 void __initialize_hardware_early() {
@@ -87,6 +86,8 @@ int can_cksum(uint8_t *dat, int len, int addr) {
 // addresses to be used on CAN
 #define CAN_GAS_INPUT  0x551
 #define CAN_GAS_OUTPUT 0x552
+#define CAN_GAS_SIZE 6
+#define COUNTER_CYCLE 0xF
 
 void CAN1_TX_IRQHandler() {
   // clear interrupt

@@ -64,6 +64,7 @@ if __name__ == "__main__":
     exit(0)
   else:
     p.can_send(0x551, "\xce\xfa\xad\xde\x1e\x0b\xb0\x0a", 2)
+    
   if args.fn:
     time.sleep(0.1)
     print "flashing", args.fn
