@@ -108,7 +108,7 @@ class CarController(object):
     self.speedlimit = None
     self.trafficevents = messaging.sub_sock(self.context, service_list['trafficEvents'].port, conflate=True, poller=self.poller)
     self.pathPlan = messaging.sub_sock(self.context, service_list['pathPlan'].port, conflate=True, poller=self.poller)
-    self.live20 = messaging.sub_sock(self.context, service_list['live20'].port, conflate=True, poller=self.poller)
+    self.radarState = messaging.sub_sock(self.context, service_list['radarState'].port, conflate=True, poller=self.poller)
     self.icCarLR = messaging.sub_sock(self.context, service_list['uiIcCarLR'].port, conflate=True, poller=self.poller)
     self.gpsLocationExternal = None 
     self.speedlimit_ms = 0.
@@ -464,8 +464,8 @@ class CarController(object):
               self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
             self.speed_limit_for_cc = self.speedlimit_ms * CV.MS_TO_KPH
         #to show lead car on IC
-        if socket is self.live20:
-          leads = messaging.recv_one(socket).live20
+        if socket is self.radarState:
+          leads = messaging.recv_one(socket).radarState
           if leads is not None:
             lead_1 = leads.leadOne
             lead_2 = leads.leadTwo

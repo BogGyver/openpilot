@@ -21,7 +21,7 @@ from common.params import Params
 from selfdrive.car.tesla.movingaverage import MovingAverage
 
 
-_DT = 0.05    # 20Hz in our case, since we don't want to process more than once the same live20 message
+_DT = 0.05    # 20Hz in our case, since we don't want to process more than once the same radarState message
 
 
 # TODO: these should end up in values.py at some point, probably variable by trim
@@ -129,7 +129,7 @@ class PCCController(object):
     self.last_angle = 0.
     context = zmq.Context()
     self.poller = zmq.Poller()
-    self.live20 = messaging.sub_sock(context, service_list['live20'].port, conflate=True, poller=self.poller)
+    self.radarState = messaging.sub_sock(context, service_list['radarState'].port, conflate=True, poller=self.poller)
     self.live_map_data = messaging.sub_sock(context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
     self.lead_1 = None
     self.last_update_time = 0
@@ -326,24 +326,24 @@ class PCCController(object):
       return 0., 0, idx
     # Alternative speed decision logic that uses the lead car's distance
     # and speed more directly.
-    # Bring in the lead car distance from the Live20 feed
+    # Bring in the lead car distance from the radarState feed
     l20 = None
     mapd = None
     #if enabled: do it always
     for socket, _ in self.poller.poll(0):
-      if socket is self.live20:
+      if socket is self.radarState:
         l20 = messaging.recv_one(socket)
       elif socket is self.live_map_data:
         mapd = messaging.recv_one(socket)
     if l20 is not None:
-      self.lead_1 = l20.live20.leadOne
+      self.lead_1 = l20.radarState.leadOne
       if _is_present(self.lead_1):
         self.lead_last_seen_time_ms = _current_time_millis()
         self.continuous_lead_sightings += 1
       else:
         self.continuous_lead_sightings = 0
-      self.md_ts = l20.live20.mdMonoTime
-      self.l100_ts = l20.live20.l100MonoTime
+      self.md_ts = l20.radarState.mdMonoTime
+      self.l100_ts = l20.radarState.l100MonoTime
       
 
     v_ego = CS.v_ego
