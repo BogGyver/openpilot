@@ -22,7 +22,7 @@ int max_limit_check(int val, const int MAX, const int MIN);
 int dist_to_meas_check(int val, int val_last, struct sample_t *val_meas,
   const int MAX_RATE_UP, const int MAX_RATE_DOWN, const int MAX_ERROR);
 int driver_limit_check(int val, int val_last, struct sample_t *val_driver,
-  const int MAX, const int MAX_RATE_UP, const int MAX_RATE_DOWN, 
+  const int MAX, const int MAX_RATE_UP, const int MAX_RATE_DOWN,
   const int MAX_ALLOWANCE, const int DRIVER_FACTOR);
 int rt_rate_limit_check(int val, int val_last, const int MAX_RT_DELTA);
 float interpolate(struct lookup_t xy, float x);
@@ -53,16 +53,17 @@ int long_controls_allowed = 1;
 
 // Include the actual safety policies.
 #include "safety/safety_defaults.h"
-// #include "safety/safety_honda.h"
-//#include "safety/safety_toyota.h"
-//#include "safety/safety_toyota_ipas.h"
+#include "safety/safety_honda.h"
+#include "safety/safety_toyota.h"
+#include "safety/safety_toyota_ipas.h"
 #include "safety/safety_tesla.h"
 #include "safety/safety_gm_ascm.h"
-//#include "safety/safety_gm.h"
-//#include "safety/safety_ford.h"
-//#include "safety/safety_cadillac.h"
-//#include "safety/safety_hyundai.h"
-//#include "safety/safety_chrysler.h"
+#include "safety/safety_gm.h"
+#include "safety/safety_ford.h"
+#include "safety/safety_cadillac.h"
+#include "safety/safety_hyundai.h"
+#include "safety/safety_chrysler.h"
+#include "safety/safety_subaru.h"
 #include "safety/safety_elm327.h"
 
 const safety_hooks *current_hooks = &nooutput_hooks;
@@ -95,35 +96,35 @@ typedef struct {
 } safety_hook_config;
 
 #define SAFETY_NOOUTPUT 0
-//#define SAFETY_HONDA 1
-//#define SAFETY_TOYOTA 2
-//#define SAFETY_GM 3
-//#define SAFETY_HONDA_BOSCH 4
-//#define SAFETY_FORD 5
-//#define SAFETY_CADILLAC 6
-//#define SAFETY_HYUNDAI 7
-#define SAFETY_TESLA  8
-//#define SAFETY_CHRYSLER 9
-//#define SAFETY_TOYOTA_IPAS 0x1335
-//#define SAFETY_TOYOTA_NOLIMITS 0x1336
+#define SAFETY_HONDA 1
+#define SAFETY_TOYOTA 2
+#define SAFETY_GM 3
+#define SAFETY_HONDA_BOSCH 4
+#define SAFETY_FORD 5
+#define SAFETY_CADILLAC 6
+#define SAFETY_HYUNDAI 7
+#define SAFETY_TESLA 8
+#define SAFETY_CHRYSLER 9
+#define SAFETY_SUBARU 10
+#define SAFETY_GM_ASCM 0x1334
+#define SAFETY_TOYOTA_IPAS 0x1335
 #define SAFETY_ALLOUTPUT 0x1337
 #define SAFETY_ELM327 0xE327
 
 const safety_hook_config safety_hook_registry[] = {
   {SAFETY_NOOUTPUT, &nooutput_hooks},
-  //{SAFETY_HONDA, &honda_hooks},
-  //{SAFETY_HONDA_BOSCH, &honda_bosch_hooks},
-  //{SAFETY_TOYOTA, &toyota_hooks},
-  //{SAFETY_GM, &gm_hooks},
- // {SAFETY_FORD, &ford_hooks},
- // {SAFETY_CADILLAC, &cadillac_hooks},
+  {SAFETY_HONDA, &honda_hooks},
+  {SAFETY_HONDA_BOSCH, &honda_bosch_hooks},
+  {SAFETY_TOYOTA, &toyota_hooks},
+  {SAFETY_GM, &gm_hooks},
+  {SAFETY_FORD, &ford_hooks},
+  {SAFETY_CADILLAC, &cadillac_hooks},
+  {SAFETY_HYUNDAI, &hyundai_hooks},
+  {SAFETY_CHRYSLER, &chrysler_hooks},
+  {SAFETY_SUBARU, &subaru_hooks},
+  {SAFETY_TOYOTA_IPAS, &toyota_ipas_hooks},
+  {SAFETY_GM_ASCM, &gm_ascm_hooks},
   {SAFETY_TESLA, &tesla_hooks},
-  //{SAFETY_TOYOTA_NOLIMITS, &toyota_nolimits_hooks},
-  //{SAFETY_HYUNDAI, &hyundai_hooks},
-  //{SAFETY_CHRYSLER, &chrysler_hooks},
- // {SAFETY_TOYOTA_NOLIMITS, &toyota_nolimits_hooks},
- // {SAFETY_TOYOTA_IPAS, &toyota_ipas_hooks},
-  //{SAFETY_TESLA, &tesla_hooks},
   {SAFETY_ALLOUTPUT, &alloutput_hooks},
   {SAFETY_ELM327, &elm327_hooks},
 };
