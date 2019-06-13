@@ -100,7 +100,7 @@ def fingerprint(logcan, sendcan):
         # ignore everything not on bus 0 and with more than 11 bits,
         # which are ussually sporadic and hard to include in fingerprints.
         # also exclude VIN query response on 0x7e8
-        if can.src == 0 and can.address < 0x800 and can.address != 0x7e8:
+        if can.src == 0 and can.address < 0x7df and can.address != 0x7e8:
           finger[can.address] = len(can.dat)
           candidate_cars = eliminate_incompatible_cars(can, candidate_cars)
 

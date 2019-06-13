@@ -231,6 +231,7 @@ def thermald_thread():
 
     # start constellation of processes when the car starts
     ignition = health is not None and health.health.started
+    print "Ignition from panda: ", ignition
     ignition_seen = ignition_seen or ignition
 
     # add voltage check for ignition
@@ -278,7 +279,7 @@ def thermald_thread():
 
     charging_disabled = check_car_battery_voltage(should_start, health, charging_disabled, msg, limitBatteryMinMax, batt_min, batt_max)
 
-    msg.thermal.chargingDisabled = charger_off #charging_disabled
+    msg.thermal.chargingDisabled = charging_disabled
     #BB added "and not charging_disabled" below so we don't show red LED when not charging
     msg.thermal.chargingError = (current_filter.x > 0.) and (msg.thermal.batteryPercent < 90) and not charging_disabled   # if current is > 1A out, then charger might be off
      

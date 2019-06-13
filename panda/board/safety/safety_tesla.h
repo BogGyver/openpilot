@@ -172,6 +172,7 @@ int DAS_steeringEnabled = 0;
 
 //fake DAS controll
 int time_last_DAS_data = -1;
+int time_last_EPAS_data = -1;
 
 //fake DAS using pedal
 int DAS_usingPedal = 0;
@@ -179,7 +180,6 @@ int DAS_usingPedal = 0;
 //fake DAS - are we in drive?
 int DAS_inDrive = 0;
 int DAS_inDrive_prev = 0;
-int DAS_ignitionOn = 0;
 int DAS_present = 0;
 int tesla_radar_should_send = 0;
 int DAS_noEpasHarness = 0;
@@ -955,6 +955,20 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     return;
   }
 
+  //we use EPAS_sysStatus 0x370 to determine if the car is off or on 
+  if (addr == 0x370) {
+    time_last_EPAS_data = current_car_time;
+  }
+
+  //we just passed EPAS checkpoint let's see if we have timeout and send car off message
+  if (current_car_time - time_last_EPAS_data > 2) {
+    //no message in the last 2 seconds, car is off
+    // GTW_status
+    tesla_ignition_started = 0;
+  } else {
+    tesla_ignition_started = 1;
+  }
+
   //see if cruise is enabled [Enabled, standstill or Override] and cancel if using pedal
   if (addr == 0x368) {
     //first save values for spamming
@@ -1109,18 +1123,11 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   // Detect drive rail on (ignition) (start recording)
   if ((addr == 0x348)  && (bus_number == 0))
   {
-    // GTW_status
-    int drive_rail_on = (to_push->RDLR & 0x0001);
-    tesla_ignition_started = drive_rail_on == 1;
-    if (drive_rail_on == 1) {
-      DAS_ignitionOn = 1;
+    
+    if ((tesla_ignition_started * DAS_present * tesla_radar_should_send ) == 1) {
+      //set_uja1023_output_bits(1 << 7);
     } else {
-      DAS_ignitionOn = 0;
-    }
-    if ((DAS_ignitionOn * DAS_present * tesla_radar_should_send ) == 1) {
-      set_uja1023_output_bits(1 << 7);
-    } else {
-      clear_uja1023_output_bits(1 << 7);
+      //clear_uja1023_output_bits(1 << 7);
     }
     //ALSO use this for radar timeout, this message is always on
     uint32_t ts = TIM2->CNT;

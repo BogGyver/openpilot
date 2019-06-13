@@ -303,12 +303,11 @@ def radard_thread(gctx=None):
       ll_track_pts = np.array([tracks[iden].get_key_for_cluster_dy(-MP.lane_width) for iden in idens])
       # If we have multiple points, cluster them
       if len(ll_track_pts) > 1:
-        ll_link = linkage_vector(ll_track_pts, method='centroid')
-        ll_cluster_idxs = fcluster(ll_link, 2.5, criterion='distance')
-        ll_clusters = [None]*max(ll_cluster_idxs)
+        ll_cluster_idxs = cluster_points_centroid(ll_track_pts, 2.5)
+        ll_clusters = [None] * (max(ll_cluster_idxs) + 1)
 
         for idx in xrange(len(ll_track_pts)):
-          ll_cluster_i = ll_cluster_idxs[idx]-1
+          ll_cluster_i = ll_cluster_idxs[idx]
 
           if ll_clusters[ll_cluster_i] == None:
             ll_clusters[ll_cluster_i] = Cluster()
@@ -359,12 +358,11 @@ def radard_thread(gctx=None):
       rl_track_pts = np.array([tracks[iden].get_key_for_cluster_dy(MP.lane_width) for iden in idens])
       # If we have multiple points, cluster them
       if len(rl_track_pts) > 1:
-        rl_link = linkage_vector(rl_track_pts, method='centroid')
-        rl_cluster_idxs = fcluster(rl_link, 2.5, criterion='distance')
-        rl_clusters = [None]*max(rl_cluster_idxs)
+        rl_cluster_idxs = cluster_points_centroid(rl_track_pts, 2.5)
+        rl_clusters = [None] * (max(rl_cluster_idxs) + 1)
 
         for idx in xrange(len(rl_track_pts)):
-          rl_cluster_i = rl_cluster_idxs[idx]-1
+          rl_cluster_i = rl_cluster_idxs[idx]
 
           if rl_clusters[rl_cluster_i] == None:
             rl_clusters[rl_cluster_i] = Cluster()
