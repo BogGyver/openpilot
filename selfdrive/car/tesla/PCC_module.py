@@ -7,7 +7,7 @@ from selfdrive.car.tesla.values import AH,CruiseState, CruiseButtons, CAR
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.speed_smoother import speed_smoother
-from selfdrive.controls.lib.planner import limit_accel_in_turns, calc_cruise_accel_limits, _DT_MPC, NO_CURVATURE_SPEED
+from selfdrive.controls.lib.planner import limit_accel_in_turns, calc_cruise_accel_limits, NO_CURVATURE_SPEED
 from common.realtime import sec_since_boot
 import selfdrive.messaging as messaging
 import os
@@ -22,6 +22,7 @@ from selfdrive.car.tesla.movingaverage import MovingAverage
 
 
 _DT = 0.05    # 20Hz in our case, since we don't want to process more than once the same live20 message
+_DT_PDL = 0.05 # 20Hz, how often we call this code
 
 
 # TODO: these should end up in values.py at some point, probably variable by trim
@@ -33,8 +34,8 @@ PEDAL_MAX_UP = MAX_PEDAL_VALUE * _DT / 4
 # Cap the pedal to go from max to 0 in 0.4 seconds
 PEDAL_MAX_DOWN = MAX_PEDAL_VALUE * _DT / 0.4
 
-# min safe distance in meters. Roughly 2 car lengths.
-MIN_SAFE_DIST_M = 2.
+# min safe distance in meters. Roughly 1 car lengths.
+MIN_SAFE_DIST_M = 3.
 
 #BBTODO: move the vehicle variables; maybe make them speed variable
 TORQUE_LEVEL_ACC = 0.
@@ -351,7 +352,7 @@ class PCCController(object):
     accel_limits = [float(x) for x in calc_cruise_accel_limits(v_ego, following)]
     accel_limits[1] *= _accel_limit_multiplier(CS.v_ego, self.lead_1)
     accel_limits[0] *= _decel_limit_multiplier(CS.v_ego, self.lead_1, CS)
-    jerk_limits = [min(-0.1, accel_limits[0]/2.), max(0.1, accel_limits[1]/3.)]  # TODO: make a separate lookup for jerk tuning
+    jerk_limits = [min(-0.1, accel_limits[0]), max(0.1, accel_limits[1])]  # TODO: make a separate lookup for jerk tuning
     #accel_limits = limit_accel_in_turns(v_ego, CS.angle_steers, accel_limits, CS.CP)
 
     output_gb = 0
@@ -389,7 +390,7 @@ class PCCController(object):
                                                       self.v_pid,
                                                       accel_limits[1], accel_limits[0],
                                                       jerk_limits[1], jerk_limits[0], #jerk_max, jerk_min,
-                                                      _DT_MPC)
+                                                      _DT_PDL)
         
         # cruise speed can't be negative even is user is distracted
         self.v_cruise = max(self.v_cruise, 0.)
@@ -400,8 +401,8 @@ class PCCController(object):
         self.acc_start_time = cur_time
 
         # Interpolation of trajectory
-        dt = 0.05 #BB- Changed in planner.py min(cur_time - self.acc_start_time, _DT_MPC + _DT) + _DT  # no greater than dt mpc + dt, to prevent too high extraps
-        self.a_acc_sol = self.a_acc_start + (dt / _DT_MPC) * (self.a_acc - self.a_acc_start)
+        dt = 0.05 #BB- Changed in planner.py min(cur_time - self.acc_start_time, _DT_PDL + _DT) + _DT  # no greater than dt mpc + dt, to prevent too high extraps
+        self.a_acc_sol = self.a_acc_start + (dt / _DT_PDL) * (self.a_acc - self.a_acc_start)
         self.v_acc_sol = self.v_acc_start + dt * (self.a_acc_sol + self.a_acc_start) / 2.0
 
         self.v_acc_start = self.v_acc_sol
@@ -501,7 +502,8 @@ class PCCController(object):
     rel_speed_kph = 0.
     if self.had_lead:
       #avoid inital break when lead just detected
-      rel_speed_kph = self.lead_1.vRel * CV.MS_TO_KPH
+      # take in consideration relative acceleration to the next PDL iteration
+      rel_speed_kph = (self.lead_1.vRel + self.lead_1.aRel * _DT_PDL ) * CV.MS_TO_KPH
     # v_ego is in m/s, so safe_distance is in meters.
     safe_dist_m = _safe_distance_m(CS.v_ego)
     # Current speed in kph
@@ -526,19 +528,21 @@ class PCCController(object):
           min_vrel_kph_map = OrderedDict([
             # (distance in m, min allowed relative kph)
             (0.5 * safe_dist_m, 2),
-            (1.0 * safe_dist_m, -6),
-            (1.5 * safe_dist_m, -10),
-            (3.0 * safe_dist_m, -20)])
+            (1.0 * safe_dist_m, 0),
+            (1.5 * safe_dist_m, -2),
+            (2.0 * safe_dist_m, -5),
+            (3.0 * safe_dist_m, -10)])
           min_vrel_kph = _interp_map(lead_dist_m, min_vrel_kph_map)
           max_vrel_kph_map = OrderedDict([
             # (distance in m, max allowed relative kph)
-            (0.5 * safe_dist_m, 8),
-            (1.0 * safe_dist_m, 1),
-            (1.5 * safe_dist_m, 0),
+            (0.5 * safe_dist_m, 5),
+            (1.0 * safe_dist_m, 3),
+            (1.5 * safe_dist_m, 1),
             # With visual radar the relative velocity is 0 until the confidence
             # gets high. So even a small negative number here gives constant
             # accel until lead lead car gets close enough to read.
-            (2.0 * safe_dist_m, -2)])
+            (2.0 * safe_dist_m, -2)],
+            (3.0 * safe_dist_m, -7)]))
           max_vrel_kph = _interp_map(lead_dist_m, max_vrel_kph_map)
           #if CS.useTeslaRadar:
           #  min_vrel_kph = -1
@@ -556,8 +560,8 @@ class PCCController(object):
           
         # Enforce limits on speed in the presence of a lead car.
         new_speed_kph = min(new_speed_kph,
-                            _max_safe_speed_kph(lead_dist_m),
-                            lead_absolute_speed_kph - _min_safe_vrel_kph(lead_dist_m))
+                            _max_safe_speed_kph(lead_dist_m,actual_speed_kph,rel_speed_kph,lead_absolute_speed_kph),
+                            lead_absolute_speed_kph - _min_safe_vrel_kph(lead_dist_m,actual_speed_kph))
 
       # Enforce limits on speed
       new_speed_kph = clip(new_speed_kph, MIN_PCC_V_KPH, MAX_PCC_V_KPH)
@@ -592,16 +596,26 @@ def _visual_radar_adjusted_dist_m(m, CS):
 def _safe_distance_m(v_ego_ms):
   return max(FOLLOW_TIME_S * v_ego_ms, MIN_SAFE_DIST_M)
 
-def _max_safe_speed_kph(m):
-  return CV.MS_TO_KPH * m / FOLLOW_TIME_S
+def _max_safe_speed_kph(lead_dist_m,actual_speed_kph,rel_speed_kph,lead_absolute_speed_kph):
+  min_speed = CV.MS_TO_KPH * lead_dist_m / FOLLOW_TIME_S #safe speed if rel speed is 0
+  min_speed_2s = min_speed + rel_speed_kph * 2  / FOLLOW_TIME_S #distance at rel speed in 2 seconds
+  safe_dist = _safe_distance_m(actual_speed_kph * CV.KPH_TO_MS) 
+  if lead_dist_m > safe_dist:
+    return lead_absolute_speed_kph
+  elif lead_dist_m > .5 * safe_dist:
+    return actual_speed_kph
+  else:
+    return max(min_speed, min_speed_2s)
   
-def _min_safe_vrel_kph(m):
+def _min_safe_vrel_kph(lead_dist_m,actual_speed_kph):
+  safe_dist = _safe_distance_m(actual_speed_kph * CV.KPH_TO_MS)
   min_vrel_by_distance = OrderedDict([
     # (meters, safe relative velocity in kph)
     # Remember, a negative relative velocity means we are closing the distance.
-    (MIN_SAFE_DIST_M, 1),    # If lead is close, it better be pulling away.
-    (100,             -15)]) # if lead is far, it's ok if we're closing.
-  return _interp_map(m, min_vrel_by_distance)
+    (MIN_SAFE_DIST_M, 5),    # If lead is close, it better be pulling away.
+    (safe_dist, 0),
+    (150,             -20)]) # if lead is far, it's ok if we're closing.
+  return _interp_map(lead_dist_m, min_vrel_by_distance)
 
 def _is_present(lead):
   return bool(lead and lead.dRel)
