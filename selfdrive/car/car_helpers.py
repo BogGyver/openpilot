@@ -103,6 +103,7 @@ def fingerprint(logcan, sendcan):
         if can.src == 0 and can.address < 0x7df and can.address != 0x7e8:
           finger[can.address] = len(can.dat)
           candidate_cars = eliminate_incompatible_cars(can, candidate_cars)
+          print can.address, len(can.dat), candidate_cars
 
     if can_seen_ts is None and can_seen:
       can_seen_ts = sec_since_boot()          # start time

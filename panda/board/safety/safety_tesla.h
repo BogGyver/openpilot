@@ -33,7 +33,7 @@ uint32_t tesla_ts_angle_last = 0;
 
 int tesla_controls_allowed_last = 0;
 int steer_allowed = 1;
-
+int fake_DAS_was_on = 0;
 int tesla_brake_prev = 0;
 int tesla_gas_prev = 0;
 int tesla_speed = 0;
@@ -380,10 +380,14 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
   uint32_t MHB = 0;
 
   //check if we got data from OP in the last two seconds
-  if (current_car_time - time_last_DAS_data > 2) {
+  if (current_car_time - time_last_DAS_data > 2)  {
     //no message in the last 2 seconds, reset all variables
-    reset_DAS_data();
-    
+    if (fake_DAS_was_on == 1) {
+      reset_DAS_data();
+      fake_DAS_was_on == 0;
+    }
+  } else {
+    fake_DAS_was_on = 1;
   }
 
   if (fake_DAS_counter % 2 == 0) {
@@ -865,7 +869,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
       //lcAborting == 1;
     }
     if (DAS_alca_state == 0x05) {
-      lcUnavailableSpeed = 1;
+      //lcUnavailableSpeed = 1;
     }
     if ((DAS_cc_state == 2) && (DAS_pedalPressed > 10)) {
       ovr = 1;
@@ -1568,7 +1572,7 @@ static void tesla_init(int16_t param)
   controls_allowed = 0;
   tesla_ignition_started = 0;
   gmlan_switch_init(1); //init the gmlan switch with 1s timeout enabled
-  uja1023_init();
+  //uja1023_init();
 }
 
 static int tesla_ign_hook()
@@ -1577,7 +1581,7 @@ static int tesla_ign_hook()
 }
 
 static void tesla_fwd_to_radar_as_is(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
-  if ((enable_radar_emulation == 0) || (tesla_radar_vin_complete !=7) || (tesla_radar_should_send==0)) {
+  if ((enable_radar_emulation == 0) || (tesla_radar_vin_complete !=7) || (tesla_radar_should_send==0) ) {
     return;
   }
   CAN_FIFOMailBox_TypeDef to_send;
@@ -1595,7 +1599,7 @@ static uint32_t radar_VIN_char(int pos, int shift) {
 
 
 static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
-  if ((enable_radar_emulation == 0) || (tesla_radar_vin_complete !=7) || (tesla_radar_should_send==0)) {
+  if ((enable_radar_emulation == 0) || (tesla_radar_vin_complete !=7) || (tesla_radar_should_send==0) ) {
     return;
   }
   int32_t addr = to_fwd->RIR >> 21;

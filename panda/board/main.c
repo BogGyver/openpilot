@@ -81,7 +81,7 @@ void EXTI1_IRQHandler() {
     if (is_gpio_started() == 1) {
       power_save_disable();
     } else {
-      power_save_enable();
+      //power_save_enable();
     }
     EXTI->PR = (1 << 1);
   }
