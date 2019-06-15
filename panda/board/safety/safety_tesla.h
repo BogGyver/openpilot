@@ -300,6 +300,7 @@ static uint32_t bitShift(int value, int which_octet, int starting_bit_in_octet) 
   return ( value << ((starting_bit_in_octet - 1) + (which_octet -1) * 8));
 }
 
+void can_send(CAN_FIFOMailBox_TypeDef *to_push, uint8_t bus_number);
 
 static void send_fake_message(uint32_t RIR, uint32_t RDTR,int msg_len, int msg_addr, int bus_num, uint32_t data_lo, uint32_t data_hi) {
   CAN_FIFOMailBox_TypeDef to_send;
@@ -375,8 +376,8 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
 
   fake_DAS_counter++;
   fake_DAS_counter = fake_DAS_counter % 300;
-  uint32_t MLB;
-  uint32_t MHB;
+  uint32_t MLB = 0;
+  uint32_t MHB = 0;
 
   //check if we got data from OP in the last two seconds
   if (current_car_time - time_last_DAS_data > 2) {
@@ -864,7 +865,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
       //lcAborting == 1;
     }
     if (DAS_alca_state == 0x05) {
-      lcUnavailableSpeed == 1;
+      lcUnavailableSpeed = 1;
     }
     if ((DAS_cc_state == 2) && (DAS_pedalPressed > 10)) {
       ovr = 1;
@@ -955,6 +956,15 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     return;
   }
 
+  // Record the current car time in current_car_time (for use with double-pulling cruise stalk)
+  if (addr == 0x318)
+  {
+    int hour = (to_push->RDLR & 0x1F000000) >> 24;
+    int minute = (to_push->RDHR & 0x3F00) >> 8;
+    int second = (to_push->RDLR & 0x3F0000) >> 16;
+    current_car_time = (hour * 3600) + (minute * 60) + second;
+  }
+
   //we use EPAS_sysStatus 0x370 to determine if the car is off or on 
   if (addr == 0x370) {
     time_last_EPAS_data = current_car_time;
@@ -980,15 +990,6 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
       do_fake_stalk_cancel(to_push->RIR, to_push->RDTR);
     } 
 
-  }
-
-  // Record the current car time in current_car_time (for use with double-pulling cruise stalk)
-  if (addr == 0x318)
-  {
-    int hour = (to_push->RDLR & 0x1F000000) >> 24;
-    int minute = (to_push->RDHR & 0x3F00) >> 8;
-    int second = (to_push->RDLR & 0x3F0000) >> 16;
-    current_car_time = (hour * 3600) + (minute * 60) + second;
   }
 
   //looking for radar messages;
@@ -1345,7 +1346,6 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
 {
 
   uint32_t addr;
-  int angle_raw;
   int desired_angle;
 
   addr = to_send->RIR >> 21;
@@ -1527,7 +1527,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_steeringEnabled = (b7 >> 7);
 
     desired_angle = DAS_steeringAngle * 0.1 - 1638.35;
-    int16_t violation = 0;
+    //int16_t violation = 0;
 
     if (DAS_steeringEnabled == 0) {
       //steering is not enabled, do not check angles and do send
@@ -1544,13 +1544,13 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
 
       if (max_limit_check(desired_angle, highest_desired_angle, lowest_desired_angle))
       {
-        violation = 1;
+        //violation = 1;
         controls_allowed = 0;
         puts("Angle limit - delta! \n");
       }
       if (max_limit_check(desired_angle, TESLA_MAX_ANGLE, -TESLA_MAX_ANGLE))
       {
-        violation = 1;
+        //violation = 1;
         controls_allowed = 0;
         puts("Angle limit - max! \n");
       }

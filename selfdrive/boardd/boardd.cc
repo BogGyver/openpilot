@@ -129,6 +129,9 @@ void *safety_setter_thread(void *s) {
   case (int)cereal::CarParams::SafetyModels::SUBARU:
     safety_setting = SAFETY_SUBARU;
     break;
+  case (int)cereal::CarParams::SafetyModels::TESLA:
+    safety_setting = SAFETY_TESLA;
+    break;
   default:
     LOGE("unknown safety model: %d", safety_model);
   }
