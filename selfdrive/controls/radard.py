@@ -60,7 +60,9 @@ def radard_thread(gctx=None):
   
   # import the radar from the fingerprint
   cloudlog.info("radard is importing %s", CP.carName)
-  RadarInterface = importlib.import_module('selfdrive.car.%s.radar_interface' % CP.carName).RadarInterface
+  #RadarInterface = importlib.import_module('selfdrive.car.%s.radar_interface' % CP.carName).RadarInterface
+  #we're tesla only branch, alway import the tesla radar
+  RadarInterface = importlib.import_module('selfdrive.car.tesla.radar_interface').RadarInterface
   context = zmq.Context()
 
   # *** subscribe to features and model from visiond

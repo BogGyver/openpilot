@@ -231,7 +231,7 @@ def thermald_thread():
 
     # start constellation of processes when the car starts
     ignition = health is not None and health.health.started
-    print "Ignition from panda: ", ignition
+    # print "Ignition from panda: ", ignition
     ignition_seen = ignition_seen or ignition
 
     # add voltage check for ignition
@@ -262,6 +262,7 @@ def thermald_thread():
     if should_start:
       off_ts = None
       if started_ts is None:
+        params.car_start()
         started_ts = sec_since_boot()
         started_seen = True
         os.system('echo performance > /sys/class/devfreq/soc:qcom,cpubw/governor')

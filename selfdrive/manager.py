@@ -376,7 +376,7 @@ def manager_thread():
           start_managed_process(p)
     else:
       logger_dead = False
-      print "msg.thermal.started is False"
+      # print "msg.thermal.started is False"
       for p in car_started_processes:
         kill_managed_process(p)
 

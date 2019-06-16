@@ -287,11 +287,11 @@ int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp, int hardwired) {
       // Allow ELM security mode to be set over wifi.
       if (hardwired || (setup->b.wValue.w == SAFETY_NOOUTPUT) || (setup->b.wValue.w == SAFETY_ELM327)) {
         safety_set_mode(setup->b.wValue.w, (int16_t)setup->b.wIndex.w);
-        if (safety_ignition_hook() != -1) {
+        //if (safety_ignition_hook() != -1) {
           // if the ignition hook depends on something other than the started GPIO
           // we have to disable power savings (fix for GM and Tesla)
           power_save_disable();
-        }
+        //}
         #ifndef EON
           // always LIVE on EON
           switch (setup->b.wValue.w) {
@@ -651,7 +651,8 @@ int main() {
 
   // default to silent mode to prevent issues with Ford
   // hardcode a specific safety mode if you want to force the panda to be in a specific mode
-  safety_set_mode(SAFETY_NOOUTPUT, 0);
+  //safety_set_mode(SAFETY_NOOUTPUT, 0);
+  safety_set_mode(SAFETY_TESLA,0);
 #ifdef EON
   // if we're on an EON, it's fine for CAN to be live for fingerprinting
   can_silent = ALL_CAN_LIVE;

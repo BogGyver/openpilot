@@ -42,7 +42,7 @@ class TxType(Enum):
   PERSISTENT = 1
   CLEAR_ON_MANAGER_START = 2
   CLEAR_ON_PANDA_DISCONNECT = 3
-  CLEAR_ON_CAR_START = 300
+  CLEAR_ON_CAR_START = 4
 
 
 class UnknownKeyName(Exception):
