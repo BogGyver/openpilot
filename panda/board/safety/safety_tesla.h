@@ -33,7 +33,7 @@ uint32_t tesla_ts_angle_last = 0;
 
 int tesla_controls_allowed_last = 0;
 int steer_allowed = 1;
-int fake_DAS_was_on = 0;
+int EON_is_connected = 0;
 int tesla_brake_prev = 0;
 int tesla_gas_prev = 0;
 int tesla_speed = 0;
@@ -382,12 +382,12 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
   //check if we got data from OP in the last two seconds
   if (current_car_time - time_last_DAS_data > 2)  {
     //no message in the last 2 seconds, reset all variables
-    if (fake_DAS_was_on == 1) {
+    if (EON_is_connected == 1) {
       reset_DAS_data();
-      fake_DAS_was_on == 0;
+      EON_is_connected  = 0;
     }
   } else {
-    fake_DAS_was_on = 1;
+    EON_is_connected = 1;
   }
 
   if (fake_DAS_counter % 2 == 0) {

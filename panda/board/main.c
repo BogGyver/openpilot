@@ -64,6 +64,7 @@ void debug_ring_callback(uart_ring *ring) {
 
 int is_gpio_started() {
   // ignition is on PA1
+  // Tesla Giraffe does not connect car LIN to Panda
   return 1; //(GPIOA->IDR & (1 << 1)) == 0;
 }
 
