@@ -64,7 +64,7 @@ void debug_ring_callback(uart_ring *ring) {
 
 int is_gpio_started() {
   // ignition is on PA1
-  return (GPIOA->IDR & (1 << 1)) == 0;
+  return 1; //(GPIOA->IDR & (1 << 1)) == 0;
 }
 
 void EXTI1_IRQHandler() {
