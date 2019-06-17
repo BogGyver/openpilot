@@ -143,8 +143,12 @@ def fingerprint(logcan, sendcan):
 
 
 def get_car(logcan, sendcan):
-
-  candidate, fingerprints, vin = fingerprint(logcan, sendcan)
+  if CarSettings().forceFingerprintTesla:
+    candidate="TESLA MODEL S"
+    fingerprints=""
+    vin="TESLAFORCED"
+  else:
+    candidate, fingerprints, vin = fingerprint(logcan, sendcan)
 
   if candidate is None:
     cloudlog.warning("car doesn't match any fingerprints: %r", fingerprints)
