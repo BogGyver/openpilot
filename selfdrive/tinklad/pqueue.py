@@ -10,14 +10,13 @@
 
 import os
 import pickle
-import sys
 import tempfile
 import shutil
 
-if sys.version_info < (3, 0):
-    from Queue import Queue as SyncQ
-else:
-    from queue import Queue as SyncQ
+#python 2.7:
+from Queue import Queue as SyncQ
+#python 3:
+#from queue import Queue as SyncQ
 
 
 def _truncate(fn, length):
@@ -75,7 +74,7 @@ class Queue(SyncQ):
         if os.path.exists(self.path):
             shutil.rmtree(self.path)
 
-    def _qsize(self, len=len):
+    def _qsize(self, len=len): # pylint: disable=redefined-builtin
         return self.info['size']
 
     def _put(self, item):
@@ -113,7 +112,7 @@ class Queue(SyncQ):
     def task_done(self):
         try:
             SyncQ.task_done(self)
-        except:
+        except: # pylint: disable=bare-except 
             pass
         if self.update_info:
             self._saveinfo()
