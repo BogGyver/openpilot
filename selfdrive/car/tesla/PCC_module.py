@@ -541,7 +541,7 @@ class PCCController(object):
             # With visual radar the relative velocity is 0 until the confidence
             # gets high. So even a small negative number here gives constant
             # accel until lead lead car gets close enough to read.
-            (2.0 * safe_dist_m, -2)],
+            (2.0 * safe_dist_m, -2),
             (3.0 * safe_dist_m, -7)]))
           max_vrel_kph = _interp_map(lead_dist_m, max_vrel_kph_map)
           #if CS.useTeslaRadar:
