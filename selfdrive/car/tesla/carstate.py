@@ -1,18 +1,15 @@
-from common.numpy_fast import interp
 from common.kalman.simple_kalman import KF1D
 from selfdrive.can.parser import CANParser
 from selfdrive.config import Conversions as CV
 from selfdrive.car.tesla.ACC_module import ACCMode
 from selfdrive.car.tesla.PCC_module import PCCModes
-from selfdrive.car.tesla.values import CAR, CruiseButtons, DBC
-from selfdrive.car.modules.UIBT_module import UIButtons, UIButton
+from selfdrive.car.tesla.values import CAR, DBC
+from selfdrive.car.modules.UIBT_module import UIButtons
 import numpy as np
-from ctypes import create_string_buffer
 from selfdrive.car.modules.UIEV_module import UIEvents
 from selfdrive.car.tesla.readconfig import read_config_file
 import os
 import subprocess
-import sys
 from common.params import read_db, write_db
  
 def parse_gear_shifter(can_gear_shifter, car_fingerprint):
@@ -267,7 +264,7 @@ class CarState(object):
     # Tesla Model
     self.teslaModelDetected = 1
     self.teslaModel = read_db('/data/params','TeslaModel')
-    if self.teslaModel == None:
+    if self.teslaModel is None:
       self.teslaModel = "S"
       self.teslaModelDetected = 0
 
@@ -504,12 +501,12 @@ class CarState(object):
       #we are on a normal road, use max of the two
       self.maxdrivespeed = max(self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed)
 
-  def update_ui_buttons(self,id,btn_status):
-    # we only focus on id=3, which is for visiond
-    if (id == 3) and (self.cstm_btns.btns[id].btn_status > 0) and (self.last_visiond != self.cstm_btns.btns[id].btn_label2):
-      self.last_visiond = self.cstm_btns.btns[id].btn_label2
+  def update_ui_buttons(self,btn_id,btn_status):
+    # we only focus on btn_id=3, which is for visiond
+    if (btn_id == 3) and (self.cstm_btns.btns[btn_id].btn_status > 0) and (self.last_visiond != self.cstm_btns.btns[btn_id].btn_label2):
+      self.last_visiond = self.cstm_btns.btns[btn_id].btn_label2
       # we switched between wiggly and normal
-      args = ["/data/openpilot/selfdrive/car/modules/ch_visiond.sh", self.cstm_btns.btns[id].btn_label2]
+      args = ["/data/openpilot/selfdrive/car/modules/ch_visiond.sh", self.cstm_btns.btns[btn_id].btn_label2]
       subprocess.Popen(args, shell = False, stdin=None, stdout=None, stderr=None, env = dict(os.environ), close_fds=True)
 
 

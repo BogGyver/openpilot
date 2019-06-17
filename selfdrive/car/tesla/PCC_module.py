@@ -1,21 +1,16 @@
 from selfdrive.car.tesla import teslacan
-from selfdrive.controls.lib.longcontrol import LongControl, LongCtrlState, STARTING_TARGET_SPEED
-from selfdrive.car.tesla import teslacan
+from selfdrive.controls.lib.longcontrol import LongControl, LongCtrlState
 from common.numpy_fast import clip, interp
 from selfdrive.services import service_list
-from selfdrive.car.tesla.values import AH,CruiseState, CruiseButtons, CAR
-from selfdrive.boardd.boardd import can_list_to_can_capnp
+from selfdrive.car.tesla.values import CruiseState, CruiseButtons
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.speed_smoother import speed_smoother
-from selfdrive.controls.lib.planner import limit_accel_in_turns, calc_cruise_accel_limits, _DT_MPC, NO_CURVATURE_SPEED
+from selfdrive.controls.lib.planner import calc_cruise_accel_limits, _DT_MPC
 from common.realtime import sec_since_boot
 import selfdrive.messaging as messaging
-import os
-import subprocess
 import time
 import zmq
 import math
-import numpy as np
 from collections import OrderedDict
 from common.params import Params
 from selfdrive.car.tesla.movingaverage import MovingAverage
@@ -370,10 +365,7 @@ class PCCController(object):
       enabled = self.enable_pedal_cruise and self.LoC.long_control_state in [LongCtrlState.pid, LongCtrlState.stopping]
       # determine if pedal is pressed by human
       self.prev_pedal_state = self.pedal_state
-      if CS.pedal_interceptor_value > 10:
-        self.pedal_state = True
-      else:
-          self.pedal_state = False
+      self.pedal_state = CS.pedal_interceptor_value > 10
       #reset PID if we just lifted foot of accelerator
       if (not self.pedal_state) and self.prev_pedal_state:
         self.LoC.reset(v_pid=CS.v_ego)

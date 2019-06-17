@@ -1,10 +1,7 @@
 from selfdrive.services import service_list
-from selfdrive.car.tesla.values import AH, CruiseButtons, CruiseState, CAR
+from selfdrive.car.tesla.values import CruiseButtons, CruiseState
 from selfdrive.config import Conversions as CV
 import selfdrive.messaging as messaging
-import os
-import collections
-import subprocess
 import sys
 import time
 import zmq

@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-import numpy as np
-from common.kalman.simple_kalman import KF1D
-from cereal import car, log
+from cereal import car
 from common.numpy_fast import clip, interp
 from common.realtime import sec_since_boot
 from selfdrive.config import Conversions as CV
@@ -99,7 +97,7 @@ class CarInterface(object):
     ret.carFingerprint = candidate
 
     teslaModel = read_db('/data/params','TeslaModel')
-    if teslaModel == None:
+    if teslaModel is None:
       teslaModel = "S"
 
     ret.safetyModel = car.CarParams.SafetyModels.tesla

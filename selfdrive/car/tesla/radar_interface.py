@@ -7,7 +7,7 @@ from selfdrive.can.parser import CANParser
 from common.realtime import sec_since_boot
 from selfdrive.services import service_list
 import selfdrive.messaging as messaging
-from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
+from selfdrive.car.tesla.readconfig import CarSettings
 
 #RADAR_A_MSGS = list(range(0x371, 0x37F , 3))
 #RADAR_B_MSGS = list(range(0x372, 0x37F, 3))

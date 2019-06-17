@@ -1,6 +1,4 @@
 #human steer override module
-from selfdrive.config import Conversions as CV
-import selfdrive.messaging as messaging
 import time
 
 def _current_time_millis():

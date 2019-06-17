@@ -1,19 +1,11 @@
-import os
 import datetime
-import subprocess
-from  threading import Thread
-import traceback
-import shlex
 from cereal import log,ui
 from common.params import Params
 from collections import namedtuple
-from selfdrive.controls.lib.drive_helpers import rate_limit
 from common.numpy_fast import clip, interp
-import numpy as np
-import math as mth
 from common.realtime import sec_since_boot
 from selfdrive.car.tesla import teslacan
-from selfdrive.car.tesla.values import AH, CruiseButtons, CAR, CM
+from selfdrive.car.tesla.values import AH, CM
 from selfdrive.can.packer import CANPacker
 from selfdrive.config import Conversions as CV
 from selfdrive.car.modules.ALCA_module import ALCAController
@@ -272,10 +264,10 @@ class CarController(object):
     else:
       if CS.cstm_btns.get_button_status("dsp") != 1:
         CS.cstm_btns.set_button_status("dsp",1) 
-    """ Controls thread """
+    # """ Controls thread """
 
     if not CS.useTeslaMapData:
-      if self.speedlimit == None:
+      if self.speedlimit is None:
         self.speedlimit = messaging.sub_sock(self.context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
 
 
@@ -344,7 +336,7 @@ class CarController(object):
         if (self.params.get("IsMetric") == "0"):
           self.speed_limit_offset = self.speed_limit_offset * CV.MPH_TO_MS
     if CS.useTeslaGPS:
-      if self.gpsLocationExternal == None:
+      if self.gpsLocationExternal is None:
         self.gpsLocationExternal = messaging.pub_sock(self.context, service_list['gpsLocationExternal'].port)
       sol = gen_solution(CS)
       sol.logMonoTime = int(sec_since_boot() * 1e9)
@@ -356,7 +348,7 @@ class CarController(object):
       CS.UE.uiGyroInfoEvent(self.accPitch, self.accRoll, self.accYaw,self.magPitch, self.magRoll, self.magYaw,self.gyroPitch, self.gyroRoll, self.gyroYaw)
 
     # Update statuses for custom buttons every 0.1 sec.
-    if self.ALCA.pid == None:
+    if self.ALCA.pid is None:
       self.ALCA.set_pid(CS)
     if (frame % 10 == 0):
       self.ALCA.update_status((CS.cstm_btns.get_button_status("alca") > 0) and ((CS.enableALCA and not CS.hasTeslaIcIntegration) or (CS.hasTeslaIcIntegration and CS.alcaEnabled)))
