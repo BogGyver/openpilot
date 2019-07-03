@@ -65,10 +65,6 @@ pthread_t safety_setter_thread_handle = -1;
 pthread_t pigeon_thread_handle = -1;
 bool pigeon_needs_init;
 
-int big_recv;
-uint32_t big_data[RECV_SIZE*2];
-uint16_t sync_id;
-
 void pigeon_init();
 void *pigeon_thread(void *crap);
 
@@ -96,8 +92,7 @@ void *safety_setter_thread(void *s) {
 
   auto safety_model = car_params.getSafetyModel();
   auto safety_param = car_params.getSafetyParam();
-  sync_id = car_params.getSyncID();
-  LOGW("setting safety model: %d with param %d and sync id %d", safety_model, safety_param, sync_id);
+  LOGW("setting safety model: %d with param %d", safety_model, safety_param);
 
   int safety_setting = 0;
   switch (safety_model) {
@@ -125,10 +120,6 @@ void *safety_setter_thread(void *s) {
   case (int)cereal::CarParams::SafetyModels::CADILLAC:
     safety_setting = SAFETY_CADILLAC;
     break;
-  case (int)cereal::CarParams::SafetyModels::TESLA:
-    safety_setting = SAFETY_TESLA;
-    LOGW("Setting model to TESLA");
-    break;
   case (int)cereal::CarParams::SafetyModels::HYUNDAI:
     safety_setting = SAFETY_HYUNDAI;
     break;
@@ -137,14 +128,12 @@ void *safety_setter_thread(void *s) {
     break;
   case (int)cereal::CarParams::SafetyModels::SUBARU:
     safety_setting = SAFETY_SUBARU;
-    LOGW("found a subaru!");
+    break;
+  case (int)cereal::CarParams::SafetyModels::TESLA:
+    safety_setting = SAFETY_TESLA;
     break;
   default:
-    LOGW("unknown safety model: %d", safety_model);
-    safety_setting = SAFETY_TESLA;
-    safety_param = 1;
-    LOGW("Unknown so force TESLA! (8,1)");
-    break;
+    LOGE("unknown safety model: %d", safety_model);
   }
 
   pthread_mutex_lock(&usb_lock);
@@ -230,25 +219,17 @@ void handle_usb_issue(int err, const char func[]) {
   // TODO: check other errors, is simply retrying okay?
 }
 
-bool can_recv(void *s, uint64_t locked_wake_time, bool force_send) {
+void can_recv(void *s) {
   int err;
   uint32_t data[RECV_SIZE/4];
-  int recv, big_index;
-  uint32_t f1, f2, address;
-  bool frame_sent;
-  uint64_t cur_time;
-  frame_sent = false;
+  int recv;
+  uint32_t f1, f2;
 
   uint64_t start_time = nanos_since_boot();
 
   // do recv
   pthread_mutex_lock(&usb_lock);
 
-  cur_time = 1e-3 * nanos_since_boot();
-  if (locked_wake_time > cur_time) {
-    // Short sleep occurs after usb_lock to ensure sync timing
-    usleep(locked_wake_time - cur_time);
-  }
   do {
     err = libusb_bulk_transfer(dev_handle, 0x81, (uint8_t*)data, RECV_SIZE, &recv, TIMEOUT);
     if (err != 0) { handle_usb_issue(err, __func__); }
@@ -260,9 +241,9 @@ bool can_recv(void *s, uint64_t locked_wake_time, bool force_send) {
 
   pthread_mutex_unlock(&usb_lock);
 
-  // return if both buffers are empty
-  if ((big_recv <= 0) && (recv <= 0)) {
-    return true;
+  // return if length is 0
+  if (recv <= 0) {
+    return;
   }
 
   // create message
@@ -277,47 +258,22 @@ bool can_recv(void *s, uint64_t locked_wake_time, bool force_send) {
   for (int i = 0; i < num_msg; i++) {
     if (data[i*4] & 4) {
       // extended
-      address = data[i*4] >> 3;
-      //printf("got extended: %x\n", big_data[i*4] >> 3);
+      canData[i].setAddress(data[i*4] >> 3);
+      //printf("got extended: %x\n", data[i*4] >> 3);
     } else {
       // normal
-      address = data[i*4] >> 21;
+      canData[i].setAddress(data[i*4] >> 21);
     }
-    if (address == sync_id) force_send = true;
-  }
-  if (force_send) {
-    frame_sent = true;
-
-    capnp::MallocMessageBuilder msg;
-    cereal::Event::Builder event = msg.initRoot<cereal::Event>();
-    event.setLogMonoTime(nanos_since_boot());
-
-    auto can_data = event.initCan(big_recv/0x10);
-
-    // populate message
-    for (int i = 0; i<(big_recv/0x10); i++) {
-      if (big_data[i*4] & 4) {
-        // extended
-        can_data[i].setAddress(big_data[i*4] >> 3);
-        //printf("got extended: %x\n", big_data[i*4] >> 3);
-      } else {
-        // normal
-        can_data[i].setAddress(big_data[i*4] >> 21);
-      }
-      can_data[i].setBusTime(big_data[i*4+1] >> 16);
-      int len = big_data[i*4+1]&0xF;
-      can_data[i].setDat(kj::arrayPtr((uint8_t*)&big_data[i*4+2], len));
-      can_data[i].setSrc((big_data[i*4+1] >> 4) & 0xff);
-    }
-
-    // send to can
-    auto words = capnp::messageToFlatArray(msg);
-    auto bytes = words.asBytes();
-    zmq_send(s, bytes.begin(), bytes.size(), 0);
-    big_recv = 0;
+    canData[i].setBusTime(data[i*4+1] >> 16);
+    int len = data[i*4+1]&0xF;
+    canData[i].setDat(kj::arrayPtr((uint8_t*)&data[i*4+2], len));
+    canData[i].setSrc((data[i*4+1] >> 4) & 0xff);
   }
 
-  return frame_sent;
+  // send to can
+  auto words = capnp::messageToFlatArray(msg);
+  auto bytes = words.asBytes();
+  zmq_send(s, bytes.begin(), bytes.size(), 0);
 }
 
 void can_health(void *s) {

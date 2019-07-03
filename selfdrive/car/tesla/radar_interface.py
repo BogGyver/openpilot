@@ -7,7 +7,7 @@ from selfdrive.can.parser import CANParser
 from common.realtime import sec_since_boot
 from selfdrive.services import service_list
 import selfdrive.messaging as messaging
-from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
+from selfdrive.car.tesla.readconfig import CarSettings
 
 #RADAR_A_MSGS = list(range(0x371, 0x37F , 3))
 #RADAR_B_MSGS = list(range(0x372, 0x37F, 3))
@@ -58,15 +58,16 @@ class RadarInterface(object):
     if self.useTeslaRadar:
       self.pts = {}
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
-      self.delay = 0.05  # Delay of radar
+      self.delay = 0.1  # Delay of radar
       self.rcp = _create_radard_can_parser()
       context = zmq.Context()
       self.logcan = messaging.sub_sock(context, service_list['can'].port)
       self.radarOffset = CarSettings().get_value("radarOffset")
+      self.trackId = 1
 
   def update(self):
 
-    ret = car.RadarState.new_message()
+    ret = car.RadarData.new_message()
     if not self.useTeslaRadar:
       time.sleep(0.05)
       return ret
@@ -75,7 +76,8 @@ class RadarInterface(object):
     updated_messages = set()
     while 1:
       tm = int(sec_since_boot() * 1e9)
-      updated_messages.update(self.rcp.update(tm, True))
+      _ , vls = self.rcp.update(tm, True)
+      updated_messages.update(vls)
       if RADAR_B_MSGS[-1] in updated_messages:
         break
     errors = []
@@ -88,10 +90,14 @@ class RadarInterface(object):
         cpt = self.rcp.vl[ii]
         if (cpt['LongDist'] >= BOSCH_MAX_DIST) or (cpt['LongDist']==0) or (not cpt['Tracked']):
           self.valid_cnt[ii] = 0    # reset counter
-        if cpt['Valid'] and (cpt['LongDist'] < BOSCH_MAX_DIST) and (cpt['LongDist'] > 0) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY):
+          if ii in self.pts:
+            del self.pts[ii]
+        elif cpt['Valid'] and (cpt['LongDist'] < BOSCH_MAX_DIST) and (cpt['LongDist'] > 0) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY):
           self.valid_cnt[ii] += 1
         else:
           self.valid_cnt[ii] = max(self.valid_cnt[ii] -1, 0)
+          if (self.valid_cnt[ii]==0) and (ii in self.pts):
+            del self.pts[ii]
 
         #score = self.rcp.vl[ii+16]['SCORE']
         #print ii, self.valid_cnt[ii], cpt['Valid'], cpt['LongDist'], cpt['LatDist']
@@ -100,11 +106,12 @@ class RadarInterface(object):
         # bosch radar data needs to match Index and Index2 for validity
         # also for now ignore construction elements
         if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
-            (cpt['Index'] == self.rcp.vl[ii+1]['Index2']) and (self.valid_cnt[ii] > 10) and \
-            (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and (self.rcp.vl[ii+1]['Class'] < 4): # and ((self.rcp.vl[ii+1]['MovingState']<3) or (self.rcp.vl[ii+1]['Class'] > 0)):
+            (cpt['Index'] == self.rcp.vl[ii+1]['Index2']) and (self.valid_cnt[ii] > 5) and \
+            (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY): # and (self.rcp.vl[ii+1]['Class'] < 4): # and ((self.rcp.vl[ii+1]['MovingState']<3) or (self.rcp.vl[ii+1]['Class'] > 0)):
           if ii not in self.pts and ( cpt['Tracked']):
-            self.pts[ii] = car.RadarState.RadarPoint.new_message()
-            self.pts[ii].trackId = int((ii - 0x310)/3) 
+            self.pts[ii] = car.RadarData.RadarPoint.new_message()
+            self.pts[ii].trackId = self.trackId 
+            self.trackId = (self.trackId % 30000) + 1
           if ii in self.pts:
             self.pts[ii].dRel = cpt['LongDist']  # from front of car
             self.pts[ii].yRel = cpt['LatDist']  - self.radarOffset # in car frame's y axis, left is positive

@@ -137,7 +137,7 @@ LIN_ERR_t LIN_ReceiveData(uart_ring *LIN_UART, LIN_FRAME_t *frame)
   
   while ((resp_len < frame -> data_len) && getc(LIN_UART, (char*)&resp[resp_len])) {
     ++resp_len;
-    frame->data[resp_len]=resp;
+    frame->data[resp_len]=resp[resp_len];
   }
   
   return(LIN_OK);

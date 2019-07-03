@@ -1,10 +1,7 @@
 from selfdrive.services import service_list
-from selfdrive.car.tesla.values import AH, CruiseButtons, CruiseState, CAR
+from selfdrive.car.tesla.values import CruiseButtons, CruiseState
 from selfdrive.config import Conversions as CV
 import selfdrive.messaging as messaging
-import os
-import collections
-import subprocess
 import sys
 import time
 import zmq
@@ -66,7 +63,7 @@ class ACCController(object):
     self.automated_cruise_action_time = 0
     context = zmq.Context()
     self.poller = zmq.Poller()
-    self.live20 = messaging.sub_sock(context, service_list['live20'].port, conflate=True, poller=self.poller)
+    self.radarState = messaging.sub_sock(context, service_list['radarState'].port, conflate=True, poller=self.poller)
     self.last_update_time = 0
     self.enable_adaptive_cruise = False
     self.prev_enable_adaptive_cruise = False
@@ -218,8 +215,8 @@ class ACCController(object):
     lead_1 = None
     #if enabled:
     for socket, _ in self.poller.poll(0):
-      if socket is self.live20:
-        lead_1 = messaging.recv_one(socket).live20.leadOne
+      if socket is self.radarState:
+        lead_1 = messaging.recv_one(socket).radarState.leadOne
         if lead_1.dRel:
           self.lead_last_seen_time_ms = current_time_ms
     if self.enable_adaptive_cruise and enabled:
@@ -229,7 +226,7 @@ class ACCController(object):
       else:
         # Alternative speed decision logic that uses the lead car's distance
         # and speed more directly.
-        # Bring in the lead car distance from the Live20 feed
+        # Bring in the lead car distance from the radarState feed
         
         button_to_press = self._calc_follow_button(CS, lead_1,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset)
     if button_to_press:

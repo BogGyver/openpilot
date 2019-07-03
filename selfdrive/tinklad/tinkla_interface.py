@@ -1,6 +1,5 @@
 #!/usr/bin/env python2.7
 
-import capnp
 from cereal import tinkla
 import os
 import zmq
@@ -24,14 +23,14 @@ class TinklaClient():
             self.sock = self.zctx.socket(zmq.PUSH)
             self.sock.connect("ipc:///tmp/tinklad")
             self.pid = os.getpid()
-        except:
+        except zmq.ZMQError:
             print("Unable to connect to tinklad")
             self.sock = None
 
 
     def setUserInfo(self, info):
         self.start_client()
-        if self.sock == None:
+        if self.sock is None:
             return
 
         message = tinkla.Interface.new_message()
@@ -45,7 +44,7 @@ class TinklaClient():
     
     def logUserEvent(self, event):
         self.start_client()
-        if self.sock == None:
+        if self.sock is None:
             return
 
         event.timestamp = now_iso8601()

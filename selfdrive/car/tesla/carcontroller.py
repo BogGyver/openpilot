@@ -1,20 +1,11 @@
-import os
 import datetime
-import subprocess
-from  threading import Thread
-import traceback
-import shlex
 from cereal import log,ui
 from common.params import Params
 from collections import namedtuple
-from selfdrive.boardd.boardd import can_list_to_can_capnp
-from selfdrive.controls.lib.drive_helpers import rate_limit
 from common.numpy_fast import clip, interp
-import numpy as np
-import math as mth
 from common.realtime import sec_since_boot
 from selfdrive.car.tesla import teslacan
-from selfdrive.car.tesla.values import AH, CruiseButtons, CAR, CM
+from selfdrive.car.tesla.values import AH, CM
 from selfdrive.can.packer import CANPacker
 from selfdrive.config import Conversions as CV
 from selfdrive.car.modules.ALCA_module import ALCAController
@@ -108,7 +99,7 @@ class CarController(object):
     self.speedlimit = None
     self.trafficevents = messaging.sub_sock(self.context, service_list['trafficEvents'].port, conflate=True, poller=self.poller)
     self.pathPlan = messaging.sub_sock(self.context, service_list['pathPlan'].port, conflate=True, poller=self.poller)
-    self.live20 = messaging.sub_sock(self.context, service_list['live20'].port, conflate=True, poller=self.poller)
+    self.radarState = messaging.sub_sock(self.context, service_list['radarState'].port, conflate=True, poller=self.poller)
     self.icCarLR = messaging.sub_sock(self.context, service_list['uiIcCarLR'].port, conflate=True, poller=self.poller)
     self.gpsLocationExternal = None 
     self.speedlimit_ms = 0.
@@ -241,7 +232,7 @@ class CarController(object):
 
 
 
-  def update(self, sendcan, enabled, CS, frame, actuators, \
+  def update(self, enabled, CS, frame, actuators, \
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
              hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert, \
              snd_beep, snd_chime,leftLaneVisible,rightLaneVisible):
@@ -273,10 +264,10 @@ class CarController(object):
     else:
       if CS.cstm_btns.get_button_status("dsp") != 1:
         CS.cstm_btns.set_button_status("dsp",1) 
-    """ Controls thread """
+    # """ Controls thread """
 
     if not CS.useTeslaMapData:
-      if self.speedlimit == None:
+      if self.speedlimit is None:
         self.speedlimit = messaging.sub_sock(self.context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
 
 
@@ -345,7 +336,7 @@ class CarController(object):
         if (self.params.get("IsMetric") == "0"):
           self.speed_limit_offset = self.speed_limit_offset * CV.MPH_TO_MS
     if CS.useTeslaGPS:
-      if self.gpsLocationExternal == None:
+      if self.gpsLocationExternal is None:
         self.gpsLocationExternal = messaging.pub_sock(self.context, service_list['gpsLocationExternal'].port)
       sol = gen_solution(CS)
       sol.logMonoTime = int(sec_since_boot() * 1e9)
@@ -357,16 +348,17 @@ class CarController(object):
       CS.UE.uiGyroInfoEvent(self.accPitch, self.accRoll, self.accYaw,self.magPitch, self.magRoll, self.magYaw,self.gyroPitch, self.gyroRoll, self.gyroYaw)
 
     # Update statuses for custom buttons every 0.1 sec.
-    if self.ALCA.pid == None:
+    if self.ALCA.pid is None:
       self.ALCA.set_pid(CS)
     if (frame % 10 == 0):
       self.ALCA.update_status((CS.cstm_btns.get_button_status("alca") > 0) and ((CS.enableALCA and not CS.hasTeslaIcIntegration) or (CS.hasTeslaIcIntegration and CS.alcaEnabled)))
       #print CS.cstm_btns.get_button_status("alca")
-
+    
+    pedal_can_sends = []
     
     if CS.pedal_interceptor_available:
       #update PCC module info
-      self.PCC.update_stat(CS, True, sendcan)
+      pedal_can_sends = self.PCC.update_stat(CS, True)
       self.ACC.enable_adaptive_cruise = False
     else:
       # Update ACC module info.
@@ -464,8 +456,8 @@ class CarController(object):
               self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
             self.speed_limit_for_cc = self.speedlimit_ms * CV.MS_TO_KPH
         #to show lead car on IC
-        if socket is self.live20:
-          leads = messaging.recv_one(socket).live20
+        if socket is self.radarState:
+          leads = messaging.recv_one(socket).radarState
           if leads is not None:
             lead_1 = leads.leadOne
             lead_2 = leads.leadTwo
@@ -769,8 +761,8 @@ class CarController(object):
       self.warningNeeded = 0
     # end of DAS emulation """
     if frame % 100 == 0: # and CS.hasTeslaIcIntegration:
-        #IF WE HAVE spamIC RUNNING, send a message every second to say we are still awake
-        can_sends.append(teslacan.create_fake_IC_msg(CS.useAnalogWhenNoEon))
+        #IF WE HAVE softPanda RUNNING, send a message every second to say we are still awake
+        can_sends.append(teslacan.create_fake_IC_msg())
     idx = frame % 16
     cruise_btn = None
     if self.ACC.enable_adaptive_cruise and not CS.pedal_interceptor_available:
@@ -788,9 +780,9 @@ class CarController(object):
     if CS.pedal_interceptor_available and frame % 5 == 0: # pedal processed at 20Hz
       apply_accel, accel_needed, accel_idx = self.PCC.update_pdl(enabled, CS, frame, actuators, pcm_speed, \
                     self.speed_limit_for_cc * CV.KPH_TO_MS, self.speedlimit_valid, \
-                    self.set_speed_limit_active, self.speed_limit_offset * CV.KPH_TO_MS)
+                    self.set_speed_limit_active, self.speed_limit_offset * CV.KPH_TO_MS, self.alca_enabled)
       can_sends.append(teslacan.create_pedal_command_msg(apply_accel, int(accel_needed), accel_idx))
     self.last_angle = apply_angle
     self.last_accel = apply_accel
-    sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan'))
-
+    
+    return pedal_can_sends + can_sends

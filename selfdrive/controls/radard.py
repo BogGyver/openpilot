@@ -61,6 +61,8 @@ def radard_thread(gctx=None):
   # import the radar from the fingerprint
   cloudlog.info("radard is importing %s", CP.carName)
   RadarInterface = importlib.import_module('selfdrive.car.%s.radar_interface' % CP.carName).RadarInterface
+  #we're tesla only branch, alway import the tesla radar
+  #RadarInterface = importlib.import_module('selfdrive.car.tesla.radar_interface').RadarInterface
   context = zmq.Context()
 
   # *** subscribe to features and model from visiond
@@ -88,10 +90,10 @@ def radard_thread(gctx=None):
   icCarLR = None
   if (RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE) and use_tesla_radar:
     icCarLR = messaging.pub_sock(context, service_list['uiIcCarLR'].port)
-  path_x = np.arange(0.0, 140.0, 0.1)    # 140 meters is max
+  path_x = np.arange(0.0, 160.0, 0.1)    # 140 meters is max
 
   # Time-alignment
-  rate = 20.   # model and radar are both at 20Hz
+  rate = 20.   # tesla radar is at about 16Hz
   tsv = 1./rate
   v_len = 20         # how many speed data points to remember for t alignment with rdr data
 
@@ -117,7 +119,7 @@ def radard_thread(gctx=None):
 
     ar_pts = {}
     for pt in rr.points:
-      ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured, pt.aRel, pt.yvRel, pt.objectClass, pt.length, pt.trackId+2]
+      ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured, pt.aRel, pt.yvRel, pt.objectClass, pt.length, pt.trackId+2, pt.movingState]
 
     # receive the controlsStates
     controls_state = None
@@ -167,7 +169,7 @@ def radard_thread(gctx=None):
         ekfv.state[SPEEDV] = 0.
 
       ar_pts[VISION_POINT] = (float(ekfv.state[XV]), np.polyval(MP.d_poly, float(ekfv.state[XV])),
-                              float(ekfv.state[SPEEDV]), False, 0.,0.,1,0.,1)
+                              float(ekfv.state[SPEEDV]), False, 0.,0.,1,0.,1,0)
     else:
       ekfv.state[XV] = MP.lead_dist
       ekfv.covar = (np.diag([MP.lead_var, ekfv.var_init]))
@@ -183,7 +185,7 @@ def radard_thread(gctx=None):
       # use path from steer, set angle_offset to 0 it does not only report the physical offset
       path_y = calc_lookahead_offset(v_ego, steer_angle, path_x, VM, angle_offset=live_parameters.liveParameters.angleOffsetAverage)[0]
 
-    #BB always using the path from mode
+    #BB always use path
     path_y = np.polyval(MP.d_poly, path_x)
 
     # *** remove missing points from meta data *** 
@@ -209,7 +211,7 @@ def radard_thread(gctx=None):
       # create the track if it doesn't exist or it's a new track
       if ids not in tracks:
         tracks[ids] = Track()
-      tracks[ids].update(rpt[0], rpt[1], rpt[2], rpt[3], rpt[4],rpt[5],rpt[6],rpt[7],rpt[8],d_path, v_ego_t_aligned, steer_override)
+      tracks[ids].update(rpt[0], rpt[1], rpt[2], rpt[3], rpt[4],rpt[5],rpt[6],rpt[7],rpt[8],rpt[9],d_path, v_ego_t_aligned, steer_override,use_tesla_radar)
 
     # allow the vision model to remove the stationary flag if distance and rel speed roughly match
     if VISION_POINT in ar_pts:
@@ -226,6 +228,10 @@ def radard_thread(gctx=None):
       if fused_id is not None:
         tracks[fused_id].vision_cnt += 1
         tracks[fused_id].update_vision_fusion()
+      #BB renove vision now
+      #if (VISION_POINT in ar_pts) and use_tesla_radar:
+      #  del ar_pts[VISION_POINT]
+        
 
     if DEBUG:
       print("NEW CYCLE")
@@ -241,10 +247,11 @@ def radard_thread(gctx=None):
       clusters = [None] * (max(cluster_idxs) + 1)
 
       for idx in xrange(len(track_pts)):
-        cluster_i = cluster_idxs[idx]
-        if clusters[cluster_i] is None:
-          clusters[cluster_i] = Cluster()
-        clusters[cluster_i].add(tracks[idens[idx]])
+        if idx > VISION_POINT:
+          cluster_i = cluster_idxs[idx]
+          if clusters[cluster_i] is None:
+            clusters[cluster_i] = Cluster()
+          clusters[cluster_i].add(tracks[idens[idx]])
 
     elif len(track_pts) == 1:
       # TODO: why do we need this?
@@ -303,12 +310,11 @@ def radard_thread(gctx=None):
       ll_track_pts = np.array([tracks[iden].get_key_for_cluster_dy(-MP.lane_width) for iden in idens])
       # If we have multiple points, cluster them
       if len(ll_track_pts) > 1:
-        ll_link = linkage_vector(ll_track_pts, method='centroid')
-        ll_cluster_idxs = fcluster(ll_link, 2.5, criterion='distance')
-        ll_clusters = [None]*max(ll_cluster_idxs)
+        ll_cluster_idxs = cluster_points_centroid(ll_track_pts, 2.5)
+        ll_clusters = [None] * (max(ll_cluster_idxs) + 1)
 
         for idx in xrange(len(ll_track_pts)):
-          ll_cluster_i = ll_cluster_idxs[idx]-1
+          ll_cluster_i = ll_cluster_idxs[idx]
 
           if ll_clusters[ll_cluster_i] == None:
             ll_clusters[ll_cluster_i] = Cluster()
@@ -345,7 +351,7 @@ def radard_thread(gctx=None):
         datrl.v1Dx = float(ll_lead_clusters[0].dRel)
         datrl.v1Vrel = float(ll_lead_clusters[0].vRel)
         datrl.v1Dy = float(-ll_lead_clusters[0].yRel - lane_offset)
-        datrl.v1Id = int(ll_lead_clusters[0].track_id)
+        datrl.v1Id = int(ll_lead_clusters[0].track_id % 32)
         if ll_lead2_len > 0:
           datrl.v2Type = int(ll_lead2_clusters[0].oClass)
           if datrl.v2Type == 1 and ll_lead2_truck:
@@ -353,18 +359,17 @@ def radard_thread(gctx=None):
           datrl.v2Dx = float(ll_lead2_clusters[0].dRel)
           datrl.v2Vrel = float(ll_lead2_clusters[0].vRel)
           datrl.v2Dy = float(-ll_lead2_clusters[0].yRel - lane_offset) 
-          datrl.v2Id = int(ll_lead2_clusters[0].track_id)
+          datrl.v2Id = int(ll_lead2_clusters[0].track_id % 32)
     #RIGHT LANE
     if RI.TRACK_RIGHT_LANE and use_tesla_radar:
       rl_track_pts = np.array([tracks[iden].get_key_for_cluster_dy(MP.lane_width) for iden in idens])
       # If we have multiple points, cluster them
       if len(rl_track_pts) > 1:
-        rl_link = linkage_vector(rl_track_pts, method='centroid')
-        rl_cluster_idxs = fcluster(rl_link, 2.5, criterion='distance')
-        rl_clusters = [None]*max(rl_cluster_idxs)
+        rl_cluster_idxs = cluster_points_centroid(rl_track_pts, 2.5)
+        rl_clusters = [None] * (max(rl_cluster_idxs) + 1)
 
         for idx in xrange(len(rl_track_pts)):
-          rl_cluster_i = rl_cluster_idxs[idx]-1
+          rl_cluster_i = rl_cluster_idxs[idx]
 
           if rl_clusters[rl_cluster_i] == None:
             rl_clusters[rl_cluster_i] = Cluster()
@@ -400,7 +405,7 @@ def radard_thread(gctx=None):
         datrl.v3Dx = float(rl_lead_clusters[0].dRel)
         datrl.v3Vrel = float(rl_lead_clusters[0].vRel)
         datrl.v3Dy = float(-rl_lead_clusters[0].yRel+ lane_offset)
-        datrl.v3Id = int(rl_lead_clusters[0].track_id)
+        datrl.v3Id = int(rl_lead_clusters[0].track_id % 32)
         if rl_lead2_len > 0:
           datrl.v4Type = int(rl_lead2_clusters[0].oClass)
           if datrl.v4Type == 1 and rl_lead2_truck:
@@ -408,7 +413,7 @@ def radard_thread(gctx=None):
           datrl.v4Dx = float(rl_lead2_clusters[0].dRel)
           datrl.v4Vrel = float(rl_lead2_clusters[0].vRel)
           datrl.v4Dy = float(-rl_lead2_clusters[0].yRel + lane_offset)
-          datrl.v4Id = int(rl_lead2_clusters[0].track_id)
+          datrl.v4Id = int(rl_lead2_clusters[0].track_id % 32)
     if (RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE) and use_tesla_radar:
       icCarLR.send(datrl.to_bytes())      
     # *** publish radarState ***
@@ -420,6 +425,7 @@ def radard_thread(gctx=None):
     dat.radarState.controlsStateMonoTime = last_controls_state_ts
     if lead_len > 0:
       dat.radarState.leadOne = lead_clusters[0].toRadarState()
+      #print "lead dRel = ", dat.radarState.leadOne.dRel
       if lead1_truck:
         dat.radarState.leadOne.oClass = 0
       if lead2_len > 0:

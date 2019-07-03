@@ -231,11 +231,12 @@ def thermald_thread():
 
     # start constellation of processes when the car starts
     ignition = health is not None and health.health.started
+    # print "Ignition from panda: ", ignition
     ignition_seen = ignition_seen or ignition
 
     # add voltage check for ignition
-    if not ignition_seen and health is not None and health.health.voltage > 13500:
-      ignition = True
+    #if not ignition_seen and health is not None and health.health.voltage > 13500:
+    #  ignition = True
 
     do_uninstall = params.get("DoUninstall") == "1"
     accepted_terms = params.get("HasAcceptedTerms") == "1"
@@ -261,6 +262,7 @@ def thermald_thread():
     if should_start:
       off_ts = None
       if started_ts is None:
+        params.car_start()
         started_ts = sec_since_boot()
         started_seen = True
         os.system('echo performance > /sys/class/devfreq/soc:qcom,cpubw/governor')
@@ -278,7 +280,7 @@ def thermald_thread():
 
     charging_disabled = check_car_battery_voltage(should_start, health, charging_disabled, msg, limitBatteryMinMax, batt_min, batt_max)
 
-    msg.thermal.chargingDisabled = charger_off #charging_disabled
+    msg.thermal.chargingDisabled = charging_disabled
     #BB added "and not charging_disabled" below so we don't show red LED when not charging
     msg.thermal.chargingError = (current_filter.x > 0.) and (msg.thermal.batteryPercent < 90) and not charging_disabled   # if current is > 1A out, then charger might be off
      

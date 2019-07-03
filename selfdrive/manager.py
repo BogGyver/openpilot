@@ -376,6 +376,7 @@ def manager_thread():
           start_managed_process(p)
     else:
       logger_dead = False
+      # print "msg.thermal.started is False"
       for p in car_started_processes:
         kill_managed_process(p)
 
@@ -551,6 +552,7 @@ def main():
   except Exception:
     traceback.print_exc()
     crash.capture_exception()
+    print "EXIT ON EXCEPTION"
   finally:
     cleanup_all_processes(None, None)
 

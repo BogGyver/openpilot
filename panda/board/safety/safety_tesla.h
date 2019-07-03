@@ -33,7 +33,7 @@ uint32_t tesla_ts_angle_last = 0;
 
 int tesla_controls_allowed_last = 0;
 int steer_allowed = 1;
-
+int EON_is_connected = 0;
 int tesla_brake_prev = 0;
 int tesla_gas_prev = 0;
 int tesla_speed = 0;
@@ -172,6 +172,7 @@ int DAS_steeringEnabled = 0;
 
 //fake DAS controll
 int time_last_DAS_data = -1;
+int time_last_EPAS_data = -1;
 
 //fake DAS using pedal
 int DAS_usingPedal = 0;
@@ -179,7 +180,6 @@ int DAS_usingPedal = 0;
 //fake DAS - are we in drive?
 int DAS_inDrive = 0;
 int DAS_inDrive_prev = 0;
-int DAS_ignitionOn = 0;
 int DAS_present = 0;
 int tesla_radar_should_send = 0;
 int DAS_noEpasHarness = 0;
@@ -300,6 +300,7 @@ static uint32_t bitShift(int value, int which_octet, int starting_bit_in_octet) 
   return ( value << ((starting_bit_in_octet - 1) + (which_octet -1) * 8));
 }
 
+void can_send(CAN_FIFOMailBox_TypeDef *to_push, uint8_t bus_number);
 
 static void send_fake_message(uint32_t RIR, uint32_t RDTR,int msg_len, int msg_addr, int bus_num, uint32_t data_lo, uint32_t data_hi) {
   CAN_FIFOMailBox_TypeDef to_send;
@@ -375,14 +376,19 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
 
   fake_DAS_counter++;
   fake_DAS_counter = fake_DAS_counter % 300;
-  uint32_t MLB;
-  uint32_t MHB;
+  uint32_t MLB = 0;
+  uint32_t MHB = 0;
 
   //check if we got data from OP in the last two seconds
-  if (current_car_time - time_last_DAS_data > 2) {
+  if (current_car_time - time_last_DAS_data > 2)  {
     //no message in the last 2 seconds, reset all variables
     reset_DAS_data();
-    
+    if (EON_is_connected == 1) {
+      //reset_DAS_data();
+      EON_is_connected  = 0;
+    }
+  } else {
+    EON_is_connected = 1;
   }
 
   if (fake_DAS_counter % 2 == 0) {
@@ -864,7 +870,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
       //lcAborting == 1;
     }
     if (DAS_alca_state == 0x05) {
-      lcUnavailableSpeed == 1;
+      //lcUnavailableSpeed = 1;
     }
     if ((DAS_cc_state == 2) && (DAS_pedalPressed > 10)) {
       ovr = 1;
@@ -955,6 +961,29 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     return;
   }
 
+  // Record the current car time in current_car_time (for use with double-pulling cruise stalk)
+  if (addr == 0x318)
+  {
+    int hour = (to_push->RDLR & 0x1F000000) >> 24;
+    int minute = (to_push->RDHR & 0x3F00) >> 8;
+    int second = (to_push->RDLR & 0x3F0000) >> 16;
+    current_car_time = (hour * 3600) + (minute * 60) + second;
+  }
+
+  //we use EPAS_sysStatus 0x370 to determine if the car is off or on 
+  if (addr == 0x370) {
+    time_last_EPAS_data = current_car_time;
+  }
+
+  //we just passed EPAS checkpoint let's see if we have timeout and send car off message
+  if (current_car_time - time_last_EPAS_data > 2) {
+    //no message in the last 2 seconds, car is off
+    // GTW_status
+    tesla_ignition_started = 0;
+  } else {
+    tesla_ignition_started = 1;
+  }
+
   //see if cruise is enabled [Enabled, standstill or Override] and cancel if using pedal
   if (addr == 0x368) {
     //first save values for spamming
@@ -966,15 +995,6 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
       do_fake_stalk_cancel(to_push->RIR, to_push->RDTR);
     } 
 
-  }
-
-  // Record the current car time in current_car_time (for use with double-pulling cruise stalk)
-  if (addr == 0x318)
-  {
-    int hour = (to_push->RDLR & 0x1F000000) >> 24;
-    int minute = (to_push->RDHR & 0x3F00) >> 8;
-    int second = (to_push->RDLR & 0x3F0000) >> 16;
-    current_car_time = (hour * 3600) + (minute * 60) + second;
   }
 
   //looking for radar messages;
@@ -1109,18 +1129,11 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   // Detect drive rail on (ignition) (start recording)
   if ((addr == 0x348)  && (bus_number == 0))
   {
-    // GTW_status
-    int drive_rail_on = (to_push->RDLR & 0x0001);
-    tesla_ignition_started = drive_rail_on == 1;
-    if (drive_rail_on == 1) {
-      DAS_ignitionOn = 1;
+    
+    if ((tesla_ignition_started * DAS_present * tesla_radar_should_send ) == 1) {
+      //set_uja1023_output_bits(1 << 7);
     } else {
-      DAS_ignitionOn = 0;
-    }
-    if ((DAS_ignitionOn * DAS_present * tesla_radar_should_send ) == 1) {
-      set_uja1023_output_bits(1 << 7);
-    } else {
-      clear_uja1023_output_bits(1 << 7);
+      //clear_uja1023_output_bits(1 << 7);
     }
     //ALSO use this for radar timeout, this message is always on
     uint32_t ts = TIM2->CNT;
@@ -1338,7 +1351,6 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
 {
 
   uint32_t addr;
-  int angle_raw;
   int desired_angle;
 
   addr = to_send->RIR >> 21;
@@ -1520,7 +1532,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_steeringEnabled = (b7 >> 7);
 
     desired_angle = DAS_steeringAngle * 0.1 - 1638.35;
-    int16_t violation = 0;
+    //int16_t violation = 0;
 
     if (DAS_steeringEnabled == 0) {
       //steering is not enabled, do not check angles and do send
@@ -1537,13 +1549,13 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
 
       if (max_limit_check(desired_angle, highest_desired_angle, lowest_desired_angle))
       {
-        violation = 1;
+        //violation = 1;
         controls_allowed = 0;
         puts("Angle limit - delta! \n");
       }
       if (max_limit_check(desired_angle, TESLA_MAX_ANGLE, -TESLA_MAX_ANGLE))
       {
-        violation = 1;
+        //violation = 1;
         controls_allowed = 0;
         puts("Angle limit - max! \n");
       }
@@ -1561,7 +1573,7 @@ static void tesla_init(int16_t param)
   controls_allowed = 0;
   tesla_ignition_started = 0;
   gmlan_switch_init(1); //init the gmlan switch with 1s timeout enabled
-  uja1023_init();
+  //uja1023_init();
 }
 
 static int tesla_ign_hook()
@@ -1570,7 +1582,7 @@ static int tesla_ign_hook()
 }
 
 static void tesla_fwd_to_radar_as_is(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
-  if ((enable_radar_emulation == 0) || (tesla_radar_vin_complete !=7) || (tesla_radar_should_send==0)) {
+  if ((enable_radar_emulation == 0) || (tesla_radar_vin_complete !=7) || (tesla_radar_should_send==0) ) {
     return;
   }
   CAN_FIFOMailBox_TypeDef to_send;
@@ -1588,7 +1600,7 @@ static uint32_t radar_VIN_char(int pos, int shift) {
 
 
 static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
-  if ((enable_radar_emulation == 0) || (tesla_radar_vin_complete !=7) || (tesla_radar_should_send==0)) {
+  if ((enable_radar_emulation == 0) || (tesla_radar_vin_complete !=7) || (tesla_radar_should_send==0) ) {
     return;
   }
   int32_t addr = to_fwd->RIR >> 21;
@@ -1652,8 +1664,21 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
   if (addr == 0x00E )
   {
     to_send.RIR = (0x199 << 21) + (addr_mask & (to_fwd->RIR | 1));
+    //check if angular speed sends SNA (0x3FFF)
+    if (((to_send.RDLR >> 16) & 0xFF3F) == 0xFF3F) {
+      //if yes replace 0x3FFFF with 0x2000 which is 0 angular change
+      to_send.RDLR = (to_send.RDLR & 0x00C0FFFF) | (0x0020 << 16);
+      //if this is the case, most likely we need to change the model too
+      //so remove CRC and StW_AnglHP_Sens_Id (1st octet of RDHR)
+      to_send.RDHR = to_send.RDHR & 0x00FFFFF0;
+      //force StW_AnglHP_Sens_Id to DELPHI (0x04 1st octet of RDHR)
+      to_send.RDHR = to_send.RDHR | 0x00000004;
+      //compute new CRC
+      int crc = add_tesla_crc(to_send.RDLR, to_send.RDHR,7);
+      //Add new CRC
+      to_send.RDHR = to_send.RDHR | (crc << 24);
+    }
     can_send(&to_send, bus_num);
-
     return;
   }
   if (addr == 0x20A )
@@ -1714,8 +1739,11 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
     if (speed_kph < 0) {
       speed_kph = 0;
     }
-    //speed_kph = 20; //force it at 20 kph for debug
-    speed_kph = (int)(speed_kph/0.04) & 0x1FFF;
+    if (((0xFFF0000 & to_send.RDLR) >> 16) == 0xFFF) {
+      speed_kph = 0x1FFF; //0xFFF is signal not available for DI_Torque2 speed 0x118; should be SNA or 0x1FFF for 0x169
+    } else {
+      speed_kph = (int)(speed_kph/0.04) & 0x1FFF;
+    }
     to_send.RDLR = (speed_kph | (speed_kph << 13) | (speed_kph << 26)) & 0xFFFFFFFF;
     to_send.RDHR = ((speed_kph  >> 6) | (speed_kph << 7) | (counter << 20)) & 0x00FFFFFF;
     int cksm = 0x76;
@@ -1724,7 +1752,7 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
     to_send.RDHR = to_send.RDHR | (cksm << 24);
     can_send(&to_send, bus_num);
 
-    to_send.RIR = (0x175 << 21) + (addr_mask & (to_fwd->RIR | 1));
+    //to_send.RIR = (0x175 << 21) + (addr_mask & (to_fwd->RIR | 1));
     //can_send(&to_send, 0);
     
     return;

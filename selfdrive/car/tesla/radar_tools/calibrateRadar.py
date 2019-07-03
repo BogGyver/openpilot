@@ -76,7 +76,7 @@ class RadarInterface(object):
 
   def update(self):
 
-    ret = car.RadarState.new_message()
+    ret = car.RadarData.new_message()
     if not self.useTeslaRadar:
       time.sleep(0.05)
       return ret
@@ -85,7 +85,8 @@ class RadarInterface(object):
     updated_messages = set()
     while 1:
       tm = int(sec_since_boot() * 1e9)
-      updated_messages.update(self.rcp.update(tm, True))
+      _ , vls = self.rcp.update(tm, True)
+      updated_messages.update(vls)
       if RADAR_B_MSGS[-1] in updated_messages:
         break
     errors = []
@@ -98,16 +99,16 @@ class RadarInterface(object):
         cpt = self.rcp.vl[ii]
         if (cpt['LongDist'] >= BOSCH_MAX_DIST) or (cpt['LongDist']==0) or (not cpt['Tracked']):
           self.valid_cnt[ii] = 0    # reset counter
-        if cpt['Valid'] and (cpt['LongDist'] < BOSCH_MAX_DIST) and (cpt['LongDist'] > 0) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY):
+        elif cpt['Valid'] and (cpt['LongDist'] < BOSCH_MAX_DIST) and (cpt['LongDist'] > 0) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY):
           self.valid_cnt[ii] += 1
         else:
           self.valid_cnt[ii] = max(self.valid_cnt[ii] -1, 0)
 
         if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>=MINX) and (cpt['LongDist'] <= MAXX) and \
-            (cpt['Index'] == self.rcp.vl[ii+1]['Index2']) and (self.valid_cnt[ii] > 10) and \
+            (cpt['Index'] == self.rcp.vl[ii+1]['Index2']) and (self.valid_cnt[ii] > 4) and \
             (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and (cpt['LatDist']>=MINY) and (cpt['LatDist']<=MAXY):
           if ii not in self.pts and ( cpt['Tracked']):
-            self.pts[ii] = car.RadarState.RadarPoint.new_message()
+            self.pts[ii] = car.RadarData.RadarPoint.new_message()
             self.pts[ii].trackId = int((ii - 0x310)/3) 
           if ii in self.pts:
             self.pts[ii].dRel = cpt['LongDist']  # from front of car

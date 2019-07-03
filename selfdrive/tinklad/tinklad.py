@@ -1,10 +1,6 @@
 #!/usr/bin/env python2.7
 
-import os
 import zmq
-import calendar
-import time
-import capnp
 import cereal
 from pqueue import Queue
 from airtable_publisher import Publisher
@@ -24,7 +20,7 @@ class Cache():
     def pop(self):
         try:
             return self.task_queue._get()
-        except Exception as error: 
+        except Exception as error: #TODO: VERSIONING # pylint: disable=broad-except 
             print(LOG_PREFIX + "pop(): Error retrieving element from task queue (old format?) (%s)" % (error))
             self.task_queue._destroy()
             self.__open()
@@ -38,9 +34,9 @@ class Cache():
 
     def __open(self):
         try:
-            self.task_queue = Queue("/data/tinklad-cache")
-        except:
-            self.task_queue = Queue("./tinklad-cache")
+            self.task_queue = Queue("/data/tinklad-cache", tempdir="/data/local/tmp")
+        except OSError:
+            self.task_queue = Queue("./tinklad-cache", tempdir="./")
 
     def __init__(self):
         self.__open()
@@ -53,7 +49,7 @@ class TinklaServer():
         self.info = info
         try:
             self.publisher.send_info(info)
-        except Exception as error:
+        except Exception as error: # pylint: disable=broad-except 
             print(LOG_PREFIX + "Error attempting to publish user info (%s)" % (error))
 
     def logUserEvent(self, event, **kwargs):
@@ -74,7 +70,7 @@ class TinklaServer():
                 self.cache.push(event)
                 print(LOG_PREFIX + "Error attempting to publish, will retry later (%s)" % (error))
                 return
-            except Exception as error:
+            except Exception as error: # pylint: disable=broad-except 
                 self.cache.push(event)
                 print(LOG_PREFIX + "Error attempting to publish, will retry later (%s)" % (error))
                 return
@@ -93,8 +89,8 @@ class TinklaServer():
         context = zmq.Context()
         
         while True:
-            bytes = ''.join(sock.recv_multipart())
-            tinklaInterface = cereal.tinkla.Interface.from_bytes(bytes)
+            data = ''.join(sock.recv_multipart())
+            tinklaInterface = cereal.tinkla.Interface.from_bytes(data)
             messageType = tinklaInterface.message.which()
             if messageType == messageKeys.userInfo:
                 info = tinklaInterface.message.userInfo

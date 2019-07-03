@@ -1,6 +1,5 @@
 #!/usr/bin/env python2.7
 
-import capnp
 from cereal import tinkla
 from tinkla_interface import TinklaClient
 import time

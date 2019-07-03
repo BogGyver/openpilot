@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-import numpy as np
-from common.kalman.simple_kalman import KF1D
-from cereal import car, log
+from cereal import car
 from common.numpy_fast import clip, interp
 from common.realtime import sec_since_boot
 from selfdrive.config import Conversions as CV
@@ -12,10 +10,6 @@ from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR,DBC
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V_FOLLOWING
 from common.params import read_db
 
-try:
-  from selfdrive.car.tesla.carcontroller import CarController
-except ImportError:
-  CarController = None
 
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -28,7 +22,7 @@ def tesla_compute_gb(accel, speed):
 
 
 class CarInterface(object):
-  def __init__(self, CP, sendcan=None):
+  def __init__(self, CP, CarController):
     self.CP = CP
 
     self.frame = 0
@@ -54,10 +48,9 @@ class CarInterface(object):
       self.epas_cp = get_epas_parser(CP,2)
     self.pedal_cp = get_pedal_parser(CP)
 
-    # sending if read only is False
-    if sendcan is not None:
-      self.sendcan = sendcan
-      self.CC = CarController(self.cp.dbc_name, CP.enableCamera)
+    self.CC = None
+    if CarController is not None:
+      self.CC = CarController(self.cp.dbc_name)
 
     self.compute_gb = tesla_compute_gb
     
@@ -90,7 +83,7 @@ class CarInterface(object):
     return float(max(0.714, a_target / max(_A_CRUISE_MAX_V_FOLLOWING))) * min(speedLimiter, accelLimiter)
 
   @staticmethod
-  def get_params(candidate, fingerprint):
+  def get_params(candidate, fingerprint, vin=""):
 
     # kg of standard extra cargo to count for drive, gas, etc...
     std_cargo = 136
@@ -104,11 +97,12 @@ class CarInterface(object):
     ret.carFingerprint = candidate
 
     teslaModel = read_db('/data/params','TeslaModel')
-    if teslaModel == None:
+    if teslaModel is None:
       teslaModel = "S"
 
     ret.safetyModel = car.CarParams.SafetyModels.tesla
     ret.safetyParam = 1
+    ret.carVin = vin
 
     ret.enableCamera = True
     ret.enableGasInterceptor = False #keep this False for now
@@ -148,22 +142,22 @@ class CarInterface(object):
         ret.longitudinalTuning.kpBP = [0., 5., 35.]
         ret.longitudinalTuning.kpV = [0.6, 0.6, 0.6]
         ret.longitudinalTuning.kiBP = [0., 5., 35.]
-        ret.longitudinalTuning.kiV = [0.07,0.07,0.07]
+        ret.longitudinalTuning.kiV = [0.01,0.01,0.01]
       elif teslaModel == "SP":
         ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.40, 0.45, 0.5]
+        ret.longitudinalTuning.kpV = [0.50, 0.45, 0.4]
         ret.longitudinalTuning.kiBP = [0., 5., 35.]
-        ret.longitudinalTuning.kiV = [0.05,0.06,0.07]
+        ret.longitudinalTuning.kiV = [0.009,0.008,0.007]
       elif teslaModel == "SD":
         ret.longitudinalTuning.kpBP = [0., 5., 35.]
         ret.longitudinalTuning.kpV = [0.6, 0.6, 0.6]
         ret.longitudinalTuning.kiBP = [0., 5., 35.]
-        ret.longitudinalTuning.kiV = [0.08,0.08,0.08]
+        ret.longitudinalTuning.kiV = [0.01,0.01,0.01]
       elif teslaModel == "SPD":
         ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.40, 0.45, 0.5]
+        ret.longitudinalTuning.kpV = [0.50, 0.45, 0.4]
         ret.longitudinalTuning.kiBP = [0., 5., 35.]
-        ret.longitudinalTuning.kiV = [0.05,0.06,0.07]
+        ret.longitudinalTuning.kiV = [0.009,0.008,0.007]
       else:
         #use S numbers if we can't match anything
         ret.longitudinalTuning.kpBP = [0., 5., 35.]
@@ -496,7 +490,7 @@ class CarInterface(object):
 
   # pass in a car.CarControl
   # to be called @ 100hz
-  def apply(self, c, perception_state=log.Live20Data.new_message()):
+  def apply(self, c):
     if c.hudControl.speedVisible:
       hud_v_cruise = c.hudControl.setSpeed * CV.MS_TO_KPH
     else:
@@ -526,7 +520,7 @@ class CarInterface(object):
 
     pcm_accel = int(clip(c.cruiseControl.accelOverride,0,1)*0xc6)
 
-    self.CC.update(self.sendcan, c.enabled, self.CS, self.frame, \
+    can_sends = self.CC.update(c.enabled, self.CS, self.frame, \
       c.actuators, \
       c.cruiseControl.speedOverride, \
       c.cruiseControl.override, \
@@ -541,3 +535,4 @@ class CarInterface(object):
       rightLaneVisible = c.hudControl.rightLaneVisible)
 
     self.frame += 1
+    return can_sends

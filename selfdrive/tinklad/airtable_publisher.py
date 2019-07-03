@@ -80,7 +80,7 @@ class Publisher():
         if self.pending_info_dict != None and self.pending_info_dict != self.latest_info_dict:
             self.send_info(self.pending_info_dict, isData= True)
 
-        if self.openPilotId == None:
+        if self.openPilotId is None:
             if self.latest_info_dict != None:
                 self.openPilotId = self.latest_info_dict[self.userKeys.openPilotId]
             elif self.pending_info_dict != None:
@@ -100,9 +100,9 @@ class Publisher():
 
 
     def __generate_airtable_user_info_dict(self, info):
-        dict = info.to_dict()
-        dict.pop(self.userKeys.timestamp, None)
-        return dict
+        dictionary = info.to_dict()
+        dictionary.pop(self.userKeys.timestamp, None)
+        return dictionary
 
     def __generate_airtable_user_event_dict(self, event):
         value = event.value.which()
@@ -115,11 +115,11 @@ class Publisher():
         elif value == self.eventValueTypes.floatValue:
             value = event.value.floatValue
         openPilotId = self.openPilotId if (self.openPilotId != None) else ""
-        dict = event.to_dict()
-        dict[self.eventKeys.value] = value
-        dict[self.eventKeys.openPilotId] = openPilotId
-        # dict.pop("timestamp", None)
-        return dict
+        dictionary = event.to_dict()
+        dictionary[self.eventKeys.value] = value
+        dictionary[self.eventKeys.openPilotId] = openPilotId
+        # dictionary.pop("timestamp", None)
+        return dictionary
 
     def __update_user(self, data):
         print(LOG_PREFIX + "Updating userRecordId='%s'" % (self.userRecordId))
@@ -129,21 +129,15 @@ class Publisher():
 
     def __is_notfound_response(self, response):
         try:
-            if response["error"] != None and response["error"]["code"] == 422:
-                return True
-            else:
-                return False
-        except:
+            return response["error"] != None and response["error"]["code"] == 422
+        except: # pylint: disable=bare-except 
                 count = response["records"].__len__()
                 return count == 0
 
     def __is_error_response(self, response):
         try:
-            if response["error"] != None:
-                return True
-            else:
-                return False
-        except:
+            return response["error"] != None
+        except: # pylint: disable=bare-except 
             return False
 
     def __init__(self):
@@ -221,7 +215,7 @@ class Airtable(object):
                              params=params,
                              data=payload,
                              headers=self.headers)
-        if r.status_code == requests.codes.ok:
+        if r.status_code == requests.codes.ok: # pylint: disable=no-member
             return r.json(object_pairs_hook=self._dict_class)
         else:
             try:
@@ -233,7 +227,7 @@ class Airtable(object):
                 'error': dict(code=r.status_code, message=message)
             }
 
-    def get(
+    def get( # pylint: disable=dangerous-default-value
             self, table_name, record_id=None, limit=0, offset=None,
             filter_by_formula=None, view=None, max_records=0, fields=[]):
         params = {}
@@ -251,13 +245,13 @@ class Airtable(object):
                 params.update({'view': view})
             if max_records and check_integer(max_records):
                 params.update({'maxRecords': max_records})
-            if fields and type(fields) is list:
+            if fields and type(fields) is list: # pylint: disable=unidiomatic-typecheck
                 for field in fields: check_string(field)
                 params.update({'fields': fields})
 
         return self.__request('GET', url, params)
 
-    def iterate(
+    def iterate( # pylint: disable=dangerous-default-value
             self, table_name, batch_size=0, filter_by_formula=None, 
             view=None, max_records=0, fields=[]):
         """Iterate over all records of a table.
@@ -292,27 +286,27 @@ class Airtable(object):
             else:
                 break
 
-    def create(self, table_name, data):
+    def create(self, table_name, data): # pylint: disable=inconsistent-return-statements
         if check_string(table_name):
             payload = create_payload(data)
             return self.__request('POST', table_name,
                                   payload=json.dumps(payload))
 
-    def update(self, table_name, record_id, data):
+    def update(self, table_name, record_id, data): # pylint: disable=inconsistent-return-statements
         if check_string(table_name) and check_string(record_id):
             url = posixpath.join(table_name, record_id)
             payload = create_payload(data)
             return self.__request('PATCH', url,
                                   payload=json.dumps(payload))
 
-    def update_all(self, table_name, record_id, data):
+    def update_all(self, table_name, record_id, data): # pylint: disable=inconsistent-return-statements
         if check_string(table_name) and check_string(record_id):
             url = posixpath.join(table_name, record_id)
             payload = create_payload(data)
             return self.__request('PUT', url,
                                   payload=json.dumps(payload))
 
-    def delete(self, table_name, record_id):
+    def delete(self, table_name, record_id): # pylint: disable=inconsistent-return-statements
         if check_string(table_name) and check_string(record_id):
             url = posixpath.join(table_name, record_id)
             return self.__request('DELETE', url)

@@ -7,6 +7,7 @@ from common.fingerprints import eliminate_incompatible_cars, all_known_cars
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.swaglog import cloudlog
 import selfdrive.messaging as messaging
+from selfdrive.car.tesla.readconfig import CarSettings
 
 
 def get_startup_alert(car_recognized, controller_available):
@@ -99,9 +100,10 @@ def fingerprint(logcan, sendcan):
         # ignore everything not on bus 0 and with more than 11 bits,
         # which are ussually sporadic and hard to include in fingerprints.
         # also exclude VIN query response on 0x7e8
-        if can.src == 0 and can.address < 0x800 and can.address != 0x7e8:
+        if can.src == 0 and can.address < 0x7df and can.address != 0x7e8:
           finger[can.address] = len(can.dat)
           candidate_cars = eliminate_incompatible_cars(can, candidate_cars)
+          print can.address, len(can.dat), candidate_cars
 
     if can_seen_ts is None and can_seen:
       can_seen_ts = sec_since_boot()          # start time
@@ -116,9 +118,11 @@ def fingerprint(logcan, sendcan):
 
     # bail if no cars left or we've been waiting for more than 2s since can_seen
     elif len(candidate_cars) == 0 or (can_seen_ts is not None and (ts - can_seen_ts) > 2.):
-      #return None, finger, ""
-      print "Fingerprinting Failed: Returning Tesla (based on branch)"
-      return "TESLA MODEL S", finger, "TESLAFAKEVIN"
+      if CarSettings().forceFingerprintTesla:
+        print "Fingerprinting Failed: Returning Tesla (based on branch)"
+        return "TESLA MODEL S", finger, "TESLAFAKEVIN"
+      else:
+        return None, finger, ""
 
     # keep sending VIN qury if ECU isn't responsing.
     # sendcan is probably not ready due to the zmq slow joiner syndrome
@@ -139,8 +143,12 @@ def fingerprint(logcan, sendcan):
 
 
 def get_car(logcan, sendcan):
-
-  candidate, fingerprints, vin = fingerprint(logcan, sendcan)
+  if CarSettings().forceFingerprintTesla:
+    candidate="TESLA MODEL S"
+    fingerprints=""
+    vin="TESLAFORCED"
+  else:
+    candidate, fingerprints, vin = fingerprint(logcan, sendcan)
 
   if candidate is None:
     cloudlog.warning("car doesn't match any fingerprints: %r", fingerprints)
