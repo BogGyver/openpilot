@@ -60,8 +60,7 @@ class RadarInterface(object):
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
       self.delay = 0.1  # Delay of radar
       self.rcp = _create_radard_can_parser()
-      context = zmq.Context()
-      self.logcan = messaging.sub_sock(context, service_list['can'].port)
+      self.logcan = messaging.sub_sock(service_list['can'].port)
       self.radarOffset = CarSettings().get_value("radarOffset")
       self.trackId = 1
 

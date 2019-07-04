@@ -7,14 +7,13 @@ import zmq
 class UIEvents(object):
     def __init__(self,carstate):
         self.CS = carstate
-        context = zmq.Context()
         self.buttons_poller = zmq.Poller()
-        self.uiCustomAlert = messaging.pub_sock(context, service_list['uiCustomAlert'].port)
-        self.uiButtonInfo = messaging.pub_sock(context, service_list['uiButtonInfo'].port)
-        self.uiSetCar = messaging.pub_sock(context, service_list['uiSetCar'].port)
-        self.uiPlaySound = messaging.pub_sock(context, service_list['uiPlaySound'].port)
-        self.uiGyroInfo = messaging.pub_sock(context, service_list['uiGyroInfo'].port)
-        self.uiButtonStatus = messaging.sub_sock(context, service_list['uiButtonStatus'].port, conflate=True, poller=self.buttons_poller)
+        self.uiCustomAlert = messaging.pub_sock(service_list['uiCustomAlert'].port)
+        self.uiButtonInfo = messaging.pub_sock(service_list['uiButtonInfo'].port)
+        self.uiSetCar = messaging.pub_sock(service_list['uiSetCar'].port)
+        self.uiPlaySound = messaging.pub_sock(service_list['uiPlaySound'].port)
+        self.uiGyroInfo = messaging.pub_sock(service_list['uiGyroInfo'].port)
+        self.uiButtonStatus = messaging.sub_sock(service_list['uiButtonStatus'].port, conflate=True, poller=self.buttons_poller)
         self.prev_cstm_message = ""
         self.prev_cstm_status = -1
 

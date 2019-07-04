@@ -3,7 +3,7 @@ from cereal import log,ui
 from common.params import Params
 from collections import namedtuple
 from common.numpy_fast import clip, interp
-from common.realtime import sec_since_boot
+from common.realtime import DT_CTRL
 from selfdrive.car.tesla import teslacan
 from selfdrive.car.tesla.values import AH, CM
 from selfdrive.can.packer import CANPacker
@@ -94,13 +94,12 @@ class CarController(object):
     self.HSO = HSOController(self)
     self.GYRO = GYROController()
     self.sent_DAS_bootID = False
-    self.context = zmq.Context()
     self.poller = zmq.Poller()
     self.speedlimit = None
-    self.trafficevents = messaging.sub_sock(self.context, service_list['trafficEvents'].port, conflate=True, poller=self.poller)
-    self.pathPlan = messaging.sub_sock(self.context, service_list['pathPlan'].port, conflate=True, poller=self.poller)
-    self.radarState = messaging.sub_sock(self.context, service_list['radarState'].port, conflate=True, poller=self.poller)
-    self.icCarLR = messaging.sub_sock(self.context, service_list['uiIcCarLR'].port, conflate=True, poller=self.poller)
+    self.trafficevents = messaging.sub_sock(service_list['trafficEvents'].port, conflate=True, poller=self.poller)
+    self.pathPlan = messaging.sub_sock(service_list['pathPlan'].port, conflate=True, poller=self.poller)
+    self.radarState = messaging.sub_sock(service_list['radarState'].port, conflate=True, poller=self.poller)
+    self.icCarLR = messaging.sub_sock(service_list['uiIcCarLR'].port, conflate=True, poller=self.poller)
     self.gpsLocationExternal = None 
     self.speedlimit_ms = 0.
     self.speedlimit_valid = False
@@ -268,7 +267,7 @@ class CarController(object):
 
     if not CS.useTeslaMapData:
       if self.speedlimit is None:
-        self.speedlimit = messaging.sub_sock(self.context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
+        self.speedlimit = messaging.sub_sock(service_list['liveMapData'].port, conflate=True, poller=self.poller)
 
 
     # *** no output if not enabled ***
@@ -337,9 +336,9 @@ class CarController(object):
           self.speed_limit_offset = self.speed_limit_offset * CV.MPH_TO_MS
     if CS.useTeslaGPS:
       if self.gpsLocationExternal is None:
-        self.gpsLocationExternal = messaging.pub_sock(self.context, service_list['gpsLocationExternal'].port)
+        self.gpsLocationExternal = messaging.pub_sock(service_list['gpsLocationExternal'].port)
       sol = gen_solution(CS)
-      sol.logMonoTime = int(sec_since_boot() * 1e9)
+      sol.logMonoTime = int(frame * DT_CTRL * 1e9)
       self.gpsLocationExternal.send(sol.to_bytes())
 
     #get pitch/roll/yaw every 0.1 sec
@@ -495,7 +494,7 @@ class CarController(object):
         #to show curvature and lanes on IC
         if socket is self.pathPlan:
           pp = messaging.recv_one(socket).pathPlan
-          if pp.valid:
+          if pp.paramsValid:
             if pp.lProb > 0.75:
               self.lLine = 3
             elif pp.lProb > 0.5:

@@ -88,8 +88,8 @@ if __name__ == "__main__":
   import zmq
   from selfdrive.services import service_list
   context = zmq.Context()
-  logcan = messaging.sub_sock(context, service_list['can'].port)
-  sendcan = messaging.pub_sock(context, service_list['sendcan'].port)
+  logcan = messaging.sub_sock(service_list['can'].port)
+  sendcan = messaging.pub_sock(service_list['sendcan'].port)
   time.sleep(1.)   # give time to sendcan socket to start
 
   print get_vin(logcan, sendcan)

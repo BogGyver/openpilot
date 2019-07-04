@@ -511,9 +511,6 @@ class CarState(object):
 
   def update(self, cp, epas_cp, pedal_cp):
 
-    # copy can_valid
-    self.can_valid = cp.can_valid
-
     # car params
     v_weight_v = [0., 1.]  # don't trust smooth speed at low values to avoid premature zero snapping
     v_weight_bp = [1., 6.]   # smooth blending, below ~0.6m/s the smooth speed snaps to zero
@@ -711,7 +708,6 @@ class CarState(object):
 # carstate standalone tester
 if __name__ == '__main__':
   import zmq
-  context = zmq.Context()
 
   class CarParams(object):
     def __init__(self):

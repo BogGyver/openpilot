@@ -136,9 +136,8 @@ class ALCAController(object):
     self.laneChange_cancelled_counter = 0
     self.last_time_enabled = 0
     #we will read pitch and roll from LiveLocationData
-    context = zmq.Context()
     self.poller = zmq.Poller()
-    self.liveLocation = messaging.sub_sock(context, service_list['liveLocationTiming'].port, conflate=True, poller=self.poller)
+    self.liveLocation = messaging.sub_sock(service_list['liveLocationTiming'].port, conflate=True, poller=self.poller)
     self.roll_angle = 0.
     self.roll_accuracy = -1.
     self.roll_correction_factor = 0.

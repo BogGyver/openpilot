@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from cereal import car
 from common.numpy_fast import clip, interp
-from common.realtime import sec_since_boot
+from common.realtime import sec_since_boot, DT_CTRL
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.drive_helpers import create_event, EventTypes as ET, get_events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
@@ -9,6 +9,7 @@ from selfdrive.car.tesla.carstate import CarState, get_can_parser, get_epas_pars
 from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR,DBC
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V_FOLLOWING
 from common.params import read_db
+from selfdrive.car import STD_CARGO_KG
 
 
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
@@ -30,7 +31,6 @@ class CarInterface(object):
     self.last_enable_sent = 0
     self.gas_pressed_prev = False
     self.brake_pressed_prev = False
-    self.can_invalid_count = 0
 
     
 
@@ -85,9 +85,6 @@ class CarInterface(object):
   @staticmethod
   def get_params(candidate, fingerprint, vin=""):
 
-    # kg of standard extra cargo to count for drive, gas, etc...
-    std_cargo = 136
-
     # Scaled tire stiffness
     ts_factor = 8 
 
@@ -100,7 +97,7 @@ class CarInterface(object):
     if teslaModel is None:
       teslaModel = "S"
 
-    ret.safetyModel = car.CarParams.SafetyModels.tesla
+    ret.safetyModel = car.CarParams.SafetyModel.tesla
     ret.safetyParam = 1
     ret.carVin = vin
 
@@ -111,7 +108,7 @@ class CarInterface(object):
 
     ret.enableCruise = not ret.enableGasInterceptor
 
-    mass_models = 4722./2.205 + std_cargo
+    mass_models = 4722./2.205 + STD_CARGO_KG
     wheelbase_models = 2.959
     # RC: I'm assuming center means center of mass, and I think Model S is pretty even between two axles
     centerToFront_models = wheelbase_models * 0.48
@@ -228,7 +225,7 @@ class CarInterface(object):
 
     # create message
     ret = car.CarState.new_message()
-
+    ret.canValid = ch_can_valid and epas_can_valid and pedal_can_valid
     # speeds
     ret.vEgo = self.CS.v_ego
     ret.aEgo = self.CS.a_ego
@@ -319,8 +316,6 @@ class CarInterface(object):
     ret.buttonEvents = buttonEvents
 
     # events
-    # TODO: I don't like the way capnp does enums
-    # These strings aren't checked at compile time
     events = []
 
     #notification messages for DAS
@@ -328,10 +323,10 @@ class CarInterface(object):
       self.CC.opState = 0
     if c.enabled and (self.CC.opState == 0):
       self.CC.opState = 1
-    if (not self.CS.can_valid) or can_rcv_error:
+    if can_rcv_error:
       self.can_invalid_count += 1
-      if self.can_invalid_count >= 25: #BB increased to 25 to see if we still get the can error messages
-        events.append(create_event('commIssue', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
+      if self.can_invalid_count >= 100: #BB increased to 100 to see if we still get the can error messages
+        events.append(create_event('invalidGiraffeHonda', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
         self.CS.DAS_canErrors = 1
         if self.CC.opState == 1:
           self.CC.opState = 2
@@ -421,7 +416,7 @@ class CarInterface(object):
     if self.CS.CP.minEnableSpeed > 0 and ret.vEgo < 0.001:
       events.append(create_event('manualRestart', [ET.WARNING]))
 
-    cur_time = sec_since_boot()
+    cur_time = self.frame * DT_CTRL
     enable_pressed = False
     # handle button presses
     for b in ret.buttonEvents:

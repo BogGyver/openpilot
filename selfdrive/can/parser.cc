@@ -367,7 +367,7 @@ class CANParser {
       auto cans = event.getCan();
       UpdateCans(sec, cans);
     }
-    if (frame_count > 1) printf("        %d  frames received!", frame_count);
+    //if (frame_count > 1) printf("        %d  frames received!", frame_count);
     UpdateValid(sec);
     zmq_msg_close(&msg);
     return result;
@@ -422,6 +422,17 @@ void* can_init(int bus, const char* dbc_name,
   return (void*)ret;
 }
 
+void* can_init_with_vectors(int bus, const char* dbc_name,
+               std::vector<MessageParseOptions> message_options,
+               std::vector<SignalParseOptions> signal_options,
+               bool sendcan, const char* tcp_addr, int timeout) {
+  CANParser* ret = new CANParser(bus, std::string(dbc_name),
+                                 message_options,
+                                 signal_options,
+                                 sendcan, std::string(tcp_addr), timeout);
+  return (void*)ret;
+}
+
 int can_update(void* can, uint64_t sec, bool wait) {
   CANParser* cp = (CANParser*)can;
   return cp->update(sec, wait);
@@ -439,6 +450,14 @@ size_t can_query(void* can, uint64_t sec, bool *out_can_valid, size_t out_values
     std::copy(values.begin(), values.begin()+std::min(out_values_size, values.size()), out_values);
   }
   return values.size();
+};
+
+void can_query_vector(void* can, uint64_t sec, bool *out_can_valid, std::vector<SignalValue> &values) {
+  CANParser* cp = (CANParser*)can;
+  if (out_can_valid) {
+    *out_can_valid = cp->can_valid;
+  }
+  values = cp->query(sec);
 };
 
 }

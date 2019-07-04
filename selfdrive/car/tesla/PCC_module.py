@@ -125,10 +125,9 @@ class PCCController(object):
     self.prev_pedal_state = False
     self.automated_cruise_action_time = 0
     self.last_angle = 0.
-    context = zmq.Context()
     self.poller = zmq.Poller()
-    self.radarState = messaging.sub_sock(context, service_list['radarState'].port, conflate=True, poller=self.poller)
-    self.live_map_data = messaging.sub_sock(context, service_list['liveMapData'].port, conflate=True, poller=self.poller)
+    self.radarState = messaging.sub_sock(service_list['radarState'].port, conflate=True, poller=self.poller)
+    self.live_map_data = messaging.sub_sock(service_list['liveMapData'].port, conflate=True, poller=self.poller)
     self.lead_1 = None
     self.last_update_time = 0
     self.enable_pedal_cruise = False
@@ -662,10 +661,10 @@ def _accel_limit_multiplier(CS, lead):
   if CS.teslaModel in ["SP","SPD"]:
       accel_by_speed = OrderedDict([
         # (speed m/s, decel)
-        (0.,  1.5),  #  0 MPH
-        (10., 1.2),  # 22 MPH
-        (20., 0.6),  # 45 MPH
-        (30., 0.3)]) # 67 MPH
+        (0.,  1.1),  #   0 kmh
+        (10., 1.0),  #  35 kmh
+        (20., 0.8),  #  72 kmh
+        (30., 0.6)]) # 107 kmh
   accel_mult = _interp_map(CS.v_ego, accel_by_speed)
   if _is_present(lead):
     safe_dist_m = _safe_distance_m(CS.v_ego)
