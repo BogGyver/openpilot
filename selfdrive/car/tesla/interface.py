@@ -127,7 +127,7 @@ class CarInterface(object):
       # Kp and Ki for the lateral control for 0, 20, 40, 60 mph
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[1.20, 0.80, 0.60, 0.30], [0.16, 0.12, 0.08, 0.04]]
       ret.lateralTuning.pid.kf = 0.00006 # Initial test value TODO: investigate FF steer control for Model S?
-      ret.steerActuatorDelay = 0.17
+      ret.steerActuatorDelay = 0.5
 
       ret.steerReactance = 1.0
       ret.steerInductance = 1.0
@@ -206,7 +206,7 @@ class CarInterface(object):
     ret.openpilotLongitudinalControl = True
     ret.steerLimitAlert = False
     ret.startAccel = 0.5
-    ret.steerRateCost = 1
+    ret.steerRateCost = .9
 
     return ret
 
