@@ -111,10 +111,10 @@ class CarInterface(object):
     mass_models = 4722./2.205 + STD_CARGO_KG
     wheelbase_models = 2.959
     # RC: I'm assuming center means center of mass, and I think Model S is pretty even between two axles
-    centerToFront_models = wheelbase_models * 0.48
+    centerToFront_models = wheelbase_models * 0.50 #BB was 0.48
     centerToRear_models = wheelbase_models - centerToFront_models
     rotationalInertia_models = 2500
-    tireStiffnessFront_models = 85400
+    tireStiffnessFront_models = 90000 #BB was 85400
     tireStiffnessRear_models = 90000
     # will create Kp and Ki for 0, 20, 40, 60 mph
     ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0., 8.94, 17.88, 26.82 ], [0., 8.94, 17.88, 26.82]]
