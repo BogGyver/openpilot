@@ -114,7 +114,7 @@ class CarInterface(object):
     centerToFront_models = wheelbase_models * 0.50 #BB was 0.48
     centerToRear_models = wheelbase_models - centerToFront_models
     rotationalInertia_models = 2500
-    tireStiffnessFront_models = 90000 #BB was 85400
+    tireStiffnessFront_models = 89000 #BB was 85400
     tireStiffnessRear_models = 90000
     # will create Kp and Ki for 0, 20, 40, 60 mph
     ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0., 8.94, 17.88, 26.82 ], [0., 8.94, 17.88, 26.82]]
@@ -123,16 +123,16 @@ class CarInterface(object):
       ret.mass = mass_models
       ret.wheelbase = wheelbase_models
       ret.centerToFront = centerToFront_models
-      ret.steerRatio = 15.75
+      ret.steerRatio = 13.
       # Kp and Ki for the lateral control for 0, 20, 40, 60 mph
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[1.20, 0.80, 0.60, 0.30], [0.16, 0.12, 0.08, 0.04]]
       ret.lateralTuning.pid.kf = 0.00006 # Initial test value TODO: investigate FF steer control for Model S?
-      ret.steerActuatorDelay = 0.3
+      ret.steerActuatorDelay = 0.1
 
       ret.steerReactance = 1.0
       ret.steerInductance = 1.0
       ret.steerResistance = 1.0
-      ret.eonToFront = 0.0
+      ret.eonToFront = 0.9
       
       # Kp and Ki for the longitudinal control
       if teslaModel == "S":
@@ -206,7 +206,7 @@ class CarInterface(object):
     ret.openpilotLongitudinalControl = True
     ret.steerLimitAlert = False
     ret.startAccel = 0.5
-    ret.steerRateCost = .9
+    ret.steerRateCost = 0.6
 
     return ret
 
