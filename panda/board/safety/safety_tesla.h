@@ -172,7 +172,7 @@ int DAS_steeringEnabled = 0;
 
 //fake DAS controll
 int time_last_DAS_data = -1;
-int time_last_EPAS_data = -1;
+int time_last_EPAS_data = -10;
 
 //fake DAS using pedal
 int DAS_usingPedal = 0;
@@ -980,6 +980,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     //no message in the last 2 seconds, car is off
     // GTW_status
     tesla_ignition_started = 0;
+    time_last_EPAS_data = -10;
   } else {
     tesla_ignition_started = 1;
   }
