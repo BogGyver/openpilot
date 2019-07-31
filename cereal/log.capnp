@@ -664,6 +664,13 @@ struct PathPlan {
   angleOffset @11 :Float32;
   sensorValid @14 :Bool;
   commIssue @15 :Bool;
+  alcaDirection @16 :Int8;
+  alcaError @17 :Bool;
+  alcaCancelling @18 :Bool;
+  alcaEnabled @19 :Bool;
+  alcaLaneWidth @20 :Float32;
+  alcaStep @21 :UInt8;
+  alcaTotalSteps @22 :UInt16;
 }
 
 struct LiveLocationData {

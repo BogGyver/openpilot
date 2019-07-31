@@ -82,7 +82,7 @@ class RadarInterface(object):
     errors = []
     if not self.rcp.can_valid:
       errors.append("commIssue")
-    ret.errors = errors
+    #ret.errors = errors
     ret.canMonoTimes = canMonoTimes
     for ii in updated_messages:
       if ii in RADAR_A_MSGS:

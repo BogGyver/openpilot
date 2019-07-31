@@ -1,9 +1,10 @@
 from common.numpy_fast import clip,interp
 import numpy as np
 from selfdrive.controls.lib.latcontrol_helpers import model_polyfit, calc_desired_path, compute_path_pinv
+from selfdrive.car.modules.ALCA_module import ALCAModelParser
+
 
 CAMERA_OFFSET = 0.06  # m from center car to camera
-
 
 class ModelParser(object):
   def __init__(self):
@@ -19,9 +20,13 @@ class ModelParser(object):
     self.lane_width = 3.7
     self.l_prob = 0.
     self.r_prob = 0.
+    self.p_prob = 1.
     self.x_points = np.arange(50)
+    self.ALCAMP = ALCAModelParser()
 
-  def update(self, v_ego, md):
+
+
+  def update(self, v_ego, md, cs=None):
     if len(md.leftLane.poly):
       l_poly = np.array(md.leftLane.poly)
       r_poly = np.array(md.rightLane.poly)
@@ -44,13 +49,17 @@ class ModelParser(object):
     self.lane_width_certainty += 0.05 * (lr_prob - self.lane_width_certainty)
     current_lane_width = abs(l_poly[3] - r_poly[3])
     self.lane_width_estimate += 0.005 * (current_lane_width - self.lane_width_estimate)
-    speed_lane_width = interp(v_ego, [0., 31.], [2.8,3.5])
+    speed_lane_width = interp(v_ego, [0., 31.], [2.8, 3.5])
     self.lane_width = self.lane_width_certainty * self.lane_width_estimate + \
                       (1 - self.lane_width_certainty) * speed_lane_width
 
     self.lead_dist = md.lead.dist
     self.lead_prob = md.lead.prob
     self.lead_var = md.lead.std**2
+
+    # ALCA integration
+    if not (cs is None):
+      r_poly,l_poly,r_prob,l_prob,self.lane_width = self.ALCAMP.update(v_ego, md, cs, np.array(r_poly), np.array(l_poly), r_prob, l_prob, self.lane_width)
 
     # compute target path
     self.d_poly, self.c_poly, self.c_prob = calc_desired_path(

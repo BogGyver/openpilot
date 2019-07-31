@@ -273,6 +273,10 @@ class CarInterface(object):
     ret.leftBlinker = bool(self.CS.left_blinker_on)
     ret.rightBlinker = bool(self.CS.right_blinker_on)
 
+    ret.alcaEnabled = bool(self.CS.ALCA_enabled)
+    ret.alcaTotalSteps = int(self.CS.ALCA_total_steps)
+    ret.alcaDirection = int(self.CS.ALCA_direction)
+    ret.alcaError = bool(self.CS.ALCA_error)
 
     ret.doorOpen = not self.CS.door_all_closed
     ret.seatbeltUnlatched = not self.CS.seatbelt

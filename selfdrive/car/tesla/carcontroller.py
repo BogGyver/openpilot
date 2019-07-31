@@ -161,7 +161,7 @@ class CarController(object):
     self.useZeroC0 = False
     self.useMap = True
     self.clipC0 = False
-    self.useMapOnly = True
+    self.useMapOnly = False
     self.laneWidth = 0.
 
     self.stopSign_visible = False
@@ -347,11 +347,8 @@ class CarController(object):
       CS.UE.uiGyroInfoEvent(self.accPitch, self.accRoll, self.accYaw,self.magPitch, self.magRoll, self.magYaw,self.gyroPitch, self.gyroRoll, self.gyroYaw)
 
     # Update statuses for custom buttons every 0.1 sec.
-    if self.ALCA.pid is None:
-      self.ALCA.set_pid(CS)
     if (frame % 10 == 0):
       self.ALCA.update_status((CS.cstm_btns.get_button_status("alca") > 0) and ((CS.enableALCA and not CS.hasTeslaIcIntegration) or (CS.hasTeslaIcIntegration and CS.alcaEnabled)))
-      #print CS.cstm_btns.get_button_status("alca")
     
     pedal_can_sends = []
     
@@ -374,11 +371,9 @@ class CarController(object):
       CS.v_cruise_pcm = self.PCC.pedal_speed_kph
     else:
       CS.v_cruise_pcm = CS.v_cruise_actual
-    # Get the angle from ALCA.
-    turn_signal_needed = 0
-    alca_steer = 0.
-    apply_angle, alca_steer,self.alca_enabled, turn_signal_needed = self.ALCA.update(enabled, CS, frame, actuators,self.visionCurvC0)
-    apply_angle = -apply_angle  # Tesla is reversed vs OP.
+    # Get the turn signal from ALCA.
+    turn_signal_needed, self.alca_enabled = self.ALCA.update(enabled, CS, actuators)
+    apply_angle = -actuators.steerAngle  # Tesla is reversed vs OP.
     human_control = self.HSO.update_stat(self,CS, enabled, actuators, frame)
     human_lane_changing = changing_lanes and not self.alca_enabled
     enable_steer_control = (enabled
@@ -521,6 +516,8 @@ class CarController(object):
             self.visionCurvC0 = self.curv0
             self.prev_ldwStatus = self.ldwStatus
             self.ldwStatus = 0
+            if (self.ALCA.laneChange_direction != 0) and pp.alcaError:
+              self.ALCA.stop_ALCA()
             if self.alca_enabled:
               #exagerate position a little during ALCA to make lane change look smoother on IC
               if self.ALCA.laneChange_over_the_line:

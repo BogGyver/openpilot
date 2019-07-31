@@ -62,7 +62,7 @@ class PathPlanner(object):
     angle_offset_average = sm['liveParameters'].angleOffsetAverage
     angle_offset_bias = sm['controlsState'].angleModelBias + angle_offset_average
 
-    self.MP.update(v_ego, sm['model'])
+    self.MP.update(v_ego, sm['model'],sm['carState'])
 
     # Run MPC
     self.angle_steers_des_prev = self.angle_steers_des_mpc
@@ -126,6 +126,15 @@ class PathPlanner(object):
     plan_send.pathPlan.mpcSolutionValid = bool(plan_solution_valid)
     plan_send.pathPlan.paramsValid = bool(sm['liveParameters'].valid)
     plan_send.pathPlan.sensorValid = bool(sm['liveParameters'].sensorValid)
+
+    #ALCA params
+    plan_send.pathPlan.alcaDirection = int(self.MP.ALCAMP.ALCA_direction)
+    plan_send.pathPlan.alcaError = bool(self.MP.ALCAMP.ALCA_error)
+    plan_send.pathPlan.alcaCancelling = bool(self.MP.ALCAMP.ALCA_cancelling)
+    plan_send.pathPlan.alcaEnabled = bool(self.MP.ALCAMP.ALCA_enabled)
+    plan_send.pathPlan.alcaLaneWidth = float(self.MP.ALCAMP.ALCA_lane_width)
+    plan_send.pathPlan.alcaStep = int(self.MP.ALCAMP.ALCA_step)
+    plan_send.pathPlan.alcaTotalSteps = int(self.MP.ALCAMP.ALCA_total_steps)
 
     self.plan.send(plan_send.to_bytes())
 
