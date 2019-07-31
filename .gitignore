@@ -36,6 +36,9 @@ selfdrive/ui/ui
 selfdrive/test/tests/plant/out
 openpilot_tools/
 selfdrive/visiond/visiond
+selfdrive/loggerd/loggerd
+selfdrive/sensord/gpsd
+selfdrive/sensord/sensord
 /src/
 one
 .vscode/*.json

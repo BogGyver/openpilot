@@ -420,6 +420,9 @@ class CarState(object):
     self.ALCA_total_steps = 100
     self.ALCA_direction = 0
     self.ALCA_error = False
+
+    self.angle_offset = 0.
+    self.init_angle_offset = False
    
   def config_ui_buttons(self, pedalPresent):
     if pedalPresent:

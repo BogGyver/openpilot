@@ -55,6 +55,7 @@ class RadarInterface(object):
     self.useTeslaRadar = CarSettings().get_value("useTeslaRadar")
     self.TRACK_LEFT_LANE = True
     self.TRACK_RIGHT_LANE = True
+    self.updated_messages = set()
     if self.useTeslaRadar:
       self.pts = {}
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
@@ -63,27 +64,32 @@ class RadarInterface(object):
       self.logcan = messaging.sub_sock(service_list['can'].port)
       self.radarOffset = CarSettings().get_value("radarOffset")
       self.trackId = 1
+      self.trigger_msg = RADAR_B_MSGS[-1]
 
-  def update(self):
 
-    ret = car.RadarData.new_message()
-    if not self.useTeslaRadar:
+
+  def update(self, can_strings):
+    # in Bosch radar and we are only steering for now, so sleep 0.05s to keep
+    # radard at 20Hz and return no points
+    if self.radar_off_can:
       time.sleep(0.05)
-      return ret
+      return car.RadarData.new_message()
 
-    canMonoTimes = []
-    updated_messages = set()
-    while 1:
-      tm = int(sec_since_boot() * 1e9)
-      _ , vls = self.rcp.update(tm, True)
-      updated_messages.update(vls)
-      if RADAR_B_MSGS[-1] in updated_messages:
-        break
-    errors = []
-    if not self.rcp.can_valid:
-      errors.append("commIssue")
-    #ret.errors = errors
-    ret.canMonoTimes = canMonoTimes
+    tm = int(sec_since_boot() * 1e9)
+    vls = self.rcp.update_strings(tm, can_strings)
+    self.updated_messages.update(vls)
+
+    if self.trigger_msg not in self.updated_messages:
+      return None
+
+    rr = self._update(self.updated_messages)
+    self.updated_messages.clear()
+    return rr
+
+
+  def _update(self, updated_messages):
+    ret = car.RadarData.new_message()
+
     for ii in updated_messages:
       if ii in RADAR_A_MSGS:
         cpt = self.rcp.vl[ii]

@@ -1042,7 +1042,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     DAS_lastStalkL = to_push->RDLR;
     DAS_lastStalkH = to_push->RDHR;
     // 6 bits starting at position 0
-    int ap_lever_position = (to_push->RDLR & 0x3F);
+    int ap_lever_position = GET_BYTE(to_push, 0) & 0x3F);
     if (ap_lever_position == 2)
     { // pull forward
       // activate openpilot
@@ -1153,7 +1153,8 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   {
     int drive_state = (to_push->RDLR >> 12) & 0x7; //DI_gear : 12|3@1+
     int brake_pressed = (to_push->RDLR & 0x8000) >> 15;
-    int tesla_speed_mph = ((((((to_push->RDLR >> 24) & 0x0F) << 8) + (( to_push->RDLR >> 16) & 0xFF)) * 0.05 -25));
+    int tesla_speed_mph = (((((GET_BYTE(to_push, 3) & 0xF) << 8) + GET_BYTE(to_push, 2)) * 0.05) - 25);
+    
 
     //for fake messages for radar we need also in kph
     //actual_speed_kph = (int)(tesla_speed_mph * 1.609);
@@ -1242,7 +1243,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   if ((addr == 0x370)  && (bus_number == 1))
   {
     // if EPAS_eacStatus is not 1 or 2, disable control
-    eac_status = ((to_push->RDHR >> 21)) & 0x7;
+    eac_status = (GET_BYTE(to_push, 6) >> 5) & 0x7;
     // For human steering override we must not disable controls when eac_status == 0
     // Additional safety: we could only allow eac_status == 0 when we have human steerign allowed
     if ((controls_allowed == 1) && (eac_status != 0) && (eac_status != 1) && (eac_status != 2))
@@ -1254,7 +1255,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   //get latest steering wheel angle
   if ((addr == 0x00E)  && (bus_number == 0))
   {
-    int angle_meas_now = (int)((((to_push->RDLR & 0x3F) << 8) + ((to_push->RDLR >> 8) & 0xFF)) * 0.1 - 819.2);
+    int angle_meas_now = (int)(((((GET_BYTE(to_push, 0) & 0x3F) << 8) + GET_BYTE(to_push, 1)) * 0.1) - 819.2);
     uint32_t ts = TIM2->CNT;
     uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_ts_angle_last);
 
@@ -1533,7 +1534,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_steeringEnabled = (b7 >> 7);
 
     desired_angle = DAS_steeringAngle * 0.1 - 1638.35;
-    //int16_t violation = 0;
+    //bool violation = 0;
 
     if (DAS_steeringEnabled == 0) {
       //steering is not enabled, do not check angles and do send
@@ -1827,10 +1828,10 @@ static int tesla_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd)
     // change inhibit of GTW_epasControl
     if (addr == 0x101)
     {
-      to_fwd->RDLR = to_fwd->RDLR | 0x4000; // 0x4000: WITH_ANGLE, 0xC000: WITH_BOTH (angle and torque)
-      int checksum = (((to_fwd->RDLR & 0xFF00) >> 8) + (to_fwd->RDLR & 0xFF) + 2) & 0xFF;
-      to_fwd->RDLR = to_fwd->RDLR & 0xFFFF;
-      to_fwd->RDLR = to_fwd->RDLR + (checksum << 16);
+      to_fwd->RDLR = GET_BYTES_04(to_fwd) | 0x4000; // 0x4000: WITH_ANGLE, 0xC000: WITH_BOTH (angle and torque)
+      int checksum = (GET_BYTE(to_fwd, 1) + GET_BYTE(to_fwd, 0) + 2) & 0xFF;
+      to_fwd->RDLR = GET_BYTES_04(to_fwd) & 0xFFFF;
+      to_fwd->RDLR = GET_BYTES_04(to_fwd) + (checksum << 16);
       if (DAS_noEpasHarness == 0) {
         return 2;
       } else {

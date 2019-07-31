@@ -75,12 +75,15 @@ import glob
 import shutil
 import hashlib
 import importlib
+import re
+import stat
 import subprocess
 import traceback
 from multiprocessing import Process
 
 from setproctitle import setproctitle  #pylint: disable=no-name-in-module
 
+from common.file_helpers import atomic_write_in_dir_neos
 from common.params import Params
 import cereal
 ThermalStatus = cereal.log.ThermalData.ThermalStatus
@@ -113,12 +116,15 @@ managed_processes = {
   "pandad": "selfdrive.pandad",
   "ui": ("selfdrive/ui", ["./start.py"]),
   "calibrationd": "selfdrive.locationd.calibrationd",
-  "params_learner": ("selfdrive/locationd", ["./params_learner"]),
+  "paramsd": ("selfdrive/locationd", ["./paramsd"]),
   "visiond": ("selfdrive/visiond", ["./visiond"]),
   "sensord": ("selfdrive/sensord", ["./start_sensord.py"]),
   "gpsd": ("selfdrive/sensord", ["./start_gpsd.py"]),
   #"updated": "selfdrive.updated",
-  "athena": "selfdrive.athena.athenad",
+}
+
+daemon_processes = {
+  "athenad": "selfdrive.athena.athenad",
 }
 android_packages = ("ai.comma.plus.offroad", "ai.comma.plus.frame")
 
@@ -132,6 +138,9 @@ unkillable_processes = ['visiond']
 # processes to end with SIGINT instead of SIGTERM
 interrupt_processes = []
 
+# processes to end with SIGKILL instead of SIGTERM
+kill_processes = ['sensord']
+
 persistent_processes = [
   'tinklad',
   'thermald',
@@ -141,7 +150,6 @@ persistent_processes = [
   'uploader',
   'ui',
   'updated',
-  'athena',
 ]
 
 car_started_processes = [
@@ -151,7 +159,7 @@ car_started_processes = [
   'sensord',
   'radard',
   'calibrationd',
-  'params_learner',
+  'paramsd',
   'visiond',
   'proclogd',
   'ubloxd',
@@ -214,6 +222,29 @@ def start_managed_process(name):
     running[name] = Process(name=name, target=nativelauncher, args=(pargs, cwd))
   running[name].start()
 
+def start_daemon_process(name, params):
+  proc = daemon_processes[name]
+  pid_param = name.capitalize() + 'Pid'
+  pid = params.get(pid_param)
+
+  if pid is not None:
+    try:
+      os.kill(int(pid), 0)
+      # process is running (kill is a poorly-named system call)
+      return
+    except OSError:
+      # process is dead
+      pass
+
+  cloudlog.info("starting daemon %s" % name)
+  proc = subprocess.Popen(['python', '-m', proc],
+                         cwd='/',
+                         stdout=open('/dev/null', 'w'),
+                         stderr=open('/dev/null', 'w'),
+                         preexec_fn=os.setpgrp)
+
+  params.put(pid_param, str(proc.pid))
+
 def prepare_managed_process(p):
   proc = managed_processes[p]
   if isinstance(proc, str):
@@ -239,6 +270,8 @@ def kill_managed_process(name):
   if running[name].exitcode is None:
     if name in interrupt_processes:
       os.kill(running[name].pid, signal.SIGINT)
+    elif name in kill_processes:
+      os.kill(running[name].pid, signal.SIGKILL)
     else:
       running[name].terminate()
 
@@ -341,6 +374,12 @@ def manager_thread():
   # save boot log
   subprocess.call(["./loggerd", "--bootlog"], cwd=os.path.join(BASEDIR, "selfdrive/loggerd"))
 
+  params = Params()
+
+  # start daemon processes
+  for p in daemon_processes:
+    start_daemon_process(p, params)
+
   # start persistent processes
   for p in persistent_processes:
     start_managed_process(p)
@@ -352,7 +391,6 @@ def manager_thread():
   if os.getenv("NOBOARD") is None:
     start_managed_process("pandad")
 
-  params = Params()
   logger_dead = False
 
   # Tinkla interface
@@ -361,7 +399,6 @@ def manager_thread():
   sendUserInfoToTinkla(params)
 
   while 1:
-    # get health of board, log this in "thermal"
     msg = messaging.recv_sock(thermal_sock, wait=True)
 
     # uploader is gated based on the phone temperature
@@ -446,10 +483,46 @@ def update_apks():
 
       assert success
 
+def update_ssh():
+  ssh_home_dirpath = "/system/comma/home/.ssh/"
+  auth_keys_path = os.path.join(ssh_home_dirpath, "authorized_keys")
+  auth_keys_persist_path = os.path.join(ssh_home_dirpath, "authorized_keys.persist")
+  auth_keys_mode = stat.S_IREAD | stat.S_IWRITE
+
+  params = Params()
+  github_keys = params.get("GithubSshKeys") or ''
+
+  old_keys = open(auth_keys_path).read()
+  has_persisted_keys = os.path.exists(auth_keys_persist_path)
+  if has_persisted_keys:
+    persisted_keys = open(auth_keys_persist_path).read()
+  else:
+    # add host filter
+    persisted_keys = re.sub(r'^(?!.+?from.+? )(ssh|ecdsa)', 'from="10.0.0.0/8,172.16.0.0/12,192.168.0.0/16" \\1', old_keys, flags=re.MULTILINE)
+
+  new_keys = persisted_keys + '\n' + github_keys
+
+  if has_persisted_keys and new_keys == old_keys and os.stat(auth_keys_path)[stat.ST_MODE] == auth_keys_mode:
+    # nothing to do - let's avoid remount
+    return
+
+  try:
+    subprocess.check_call(["mount", "-o", "rw,remount", "/system"])
+    if not has_persisted_keys:
+      atomic_write_in_dir_neos(auth_keys_persist_path, persisted_keys, mode=auth_keys_mode)
+
+    atomic_write_in_dir_neos(auth_keys_path, new_keys, mode=auth_keys_mode)
+  finally:
+    try:
+      subprocess.check_call(["mount", "-o", "ro,remount", "/system"])
+    except:
+      cloudlog.exception("Failed to remount as read-only")
+      # this can fail due to "Device busy" - reboot if so
+      os.system("reboot")
+      raise RuntimeError
+
 def manager_update():
-  if os.path.exists(os.path.join(BASEDIR, "vpn")):
-    cloudlog.info("installing vpn")
-    os.system(os.path.join(BASEDIR, "vpn", "install.sh"))
+  update_ssh()
   update_apks()
 
 def manager_prepare():
@@ -524,6 +597,8 @@ def main():
     params.put("LongitudinalControl", "0")
   if params.get("LimitSetSpeed") is None:
     params.put("LimitSetSpeed", "0")
+  if params.get("LimitSetSpeedNeural") is None:
+    params.put("LimitSetSpeedNeural", "0")
 
   # is this chffrplus?
   if os.getenv("PASSIVE") is not None:
