@@ -73,16 +73,8 @@ Localizer::Localizer() {
 void Localizer::handle_log(cereal::Event::Reader event) {
   double current_time = event.getLogMonoTime() / 1.0e9;
 
-<<<<<<< HEAD
-        //sR = json["steerRatio"].number_value();
-        x = json["stiffnessFactor"].number_value();
-        ao = json["angleOffsetAverage"].number_value();
-      }
-    }
-=======
   if (prev_update_time < 0) {
     prev_update_time = current_time;
->>>>>>> e90c41c576b4630f3039be671ad5f203a865f4c8
   }
 
   auto type = event.which();

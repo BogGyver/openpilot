@@ -23,6 +23,7 @@
 #include "drivers/clock.h"
 
 #include "gpio.h"
+#include "drivers/lin.h"
 
 #ifndef EON
 #include "drivers/spi.h"
@@ -190,7 +191,7 @@ int get_health_pkt(void *dat) {
   int safety_ignition = safety_ignition_hook();
   if (safety_ignition < 0) {
     //Use the GPIO pin to determine ignition
-    health->started_pkt = (uint8_t)(current_board->check_ignition());
+    health->started_pkt = 1; // (uint8_t)(current_board->check_ignition());
   } else {
     //Current safety hooks want to determine ignition (ex: GM)
     health->started_pkt = safety_ignition;
@@ -630,13 +631,15 @@ void TIM3_IRQHandler(void) {
     }
 
     // check heartbeat counter if we are running EON code. If the heartbeat has been gone for a while, go to NOOUTPUT safety mode.
+    //BB we do not want to disable safety mode when on tesla
+    /*
     #ifdef EON
     if (heartbeat_counter >= (current_board->check_ignition() ? EON_HEARTBEAT_THRESHOLD_IGNITION_ON : EON_HEARTBEAT_THRESHOLD_IGNITION_OFF)) {
       puts("EON hasn't sent a heartbeat for 0x"); puth(heartbeat_counter); puts(" seconds. Safety is set to NOOUTPUT mode.\n");
       set_safety_mode(SAFETY_NOOUTPUT, 0U);
     }
     #endif
-
+    */
     // on to the next one
     tcnt += 1U;
   }

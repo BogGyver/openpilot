@@ -10,6 +10,7 @@ from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR,DBC
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V_FOLLOWING
 from common.params import read_db
 from selfdrive.car import STD_CARGO_KG
+from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 
 
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
@@ -31,6 +32,7 @@ class CarInterface(object):
     self.last_enable_sent = 0
     self.gas_pressed_prev = False
     self.brake_pressed_prev = False
+    self.can_invalid_count = 0
 
     
 
@@ -83,7 +85,7 @@ class CarInterface(object):
     return float(max(0.714, a_target / max(_A_CRUISE_MAX_V_FOLLOWING))) * min(speedLimiter, accelLimiter)
 
   @staticmethod
-  def get_params(candidate, fingerprint, vin=""):
+  def get_params(candidate, fingerprint, vin="", is_panda_black=False):
 
     # Scaled tire stiffness
     ts_factor = 8 
@@ -92,6 +94,7 @@ class CarInterface(object):
 
     ret.carName = "tesla"
     ret.carFingerprint = candidate
+    ret.isPandaBlack = is_panda_black
 
     teslaModel = read_db('/data/params','TeslaModel')
     if teslaModel is None:
@@ -111,10 +114,10 @@ class CarInterface(object):
     mass_models = 4722./2.205 + STD_CARGO_KG
     wheelbase_models = 2.959
     # RC: I'm assuming center means center of mass, and I think Model S is pretty even between two axles
-    centerToFront_models = wheelbase_models * 0.50 #BB was 0.48
+    centerToFront_models = wheelbase_models * 0.5 #BB was 0.48
     centerToRear_models = wheelbase_models - centerToFront_models
     rotationalInertia_models = 2500
-    tireStiffnessFront_models = 87100 #BB was 85400
+    tireStiffnessFront_models = 85100 #BB was 85400
     tireStiffnessRear_models = 90000
     # will create Kp and Ki for 0, 20, 40, 60 mph
     ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0., 8.94, 17.88, 26.82 ], [0., 8.94, 17.88, 26.82]]
@@ -137,17 +140,17 @@ class CarInterface(object):
       # Kp and Ki for the longitudinal control
       if teslaModel == "S":
         ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.6, 0.6, 0.6]
+        ret.longitudinalTuning.kpV = [0.50, 0.45, 0.4]
         ret.longitudinalTuning.kiBP = [0., 5., 35.]
         ret.longitudinalTuning.kiV = [0.01,0.01,0.01]
       elif teslaModel == "SP":
         ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.50, 0.45, 0.4]
+        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.3]
         ret.longitudinalTuning.kiBP = [0., 5., 35.]
         ret.longitudinalTuning.kiV = [0.009,0.008,0.007]
       elif teslaModel == "SD":
         ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.6, 0.6, 0.6]
+        ret.longitudinalTuning.kpV = [0.50, 0.45, 0.4]
         ret.longitudinalTuning.kiBP = [0., 5., 35.]
         ret.longitudinalTuning.kiV = [0.01,0.01,0.01]
       elif teslaModel == "SPD":
@@ -158,7 +161,7 @@ class CarInterface(object):
       else:
         #use S numbers if we can't match anything
         ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.6, 0.6, 0.6]
+        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.3]
         ret.longitudinalTuning.kiBP = [0., 5., 35.]
         ret.longitudinalTuning.kiV = [0.08,0.08,0.08]
       
@@ -207,17 +210,21 @@ class CarInterface(object):
     ret.steerLimitAlert = False
     ret.startAccel = 0.5
     ret.steerRateCost = 0.4
+    ret.radarOffCan = not CarSettings().get_value("useTeslaRadar")
 
     return ret
 
   # returns a car.CarState
-  def update(self, c):
+  def update(self, c, can_strings):
     # ******************* do can recv *******************
     canMonoTimes = []
 
-    ch_can_valid, _ = self.cp.update(int(sec_since_boot() * 1e9), True)
-    epas_can_valid, _ = self.epas_cp.update(int(sec_since_boot() * 1e9), False)
-    pedal_can_valid, _ = self.pedal_cp.update(int(sec_since_boot() * 1e9), False)
+    self.cp.update_strings(int(sec_since_boot() * 1e9), can_strings)
+    ch_can_valid = self.cp.can_valid
+    self.epas_cp.update_strings(int(sec_since_boot() * 1e9), can_strings)
+    epas_can_valid = self.epas_cp.can_valid
+    self.pedal_cp.update_strings(int(sec_since_boot() * 1e9), can_strings)
+    pedal_can_valid = self.pedal_cp.can_valid
 
     can_rcv_error = not (ch_can_valid and epas_can_valid and pedal_can_valid)
 

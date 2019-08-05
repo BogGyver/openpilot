@@ -411,11 +411,9 @@ struct CarParams {
     subaru @11;
   }
 
-  syncID @43  :Int16;  # SyncID is optional
+  syncID @41  :Int16;  # SyncID is optional
   # Kp and Ki for the lateral control
-  steerReactance @39 :Float32;
-  steerInductance @40 :Float32;
-  steerResistance @41 :Float32;
+
   eonToFront  @42  :Float32;    # [m] distance from EON to front wheels
   
 

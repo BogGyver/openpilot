@@ -22,7 +22,7 @@ const struct lookup_t TESLA_LOOKUP_MAX_ANGLE = {
     {2., 29., 38.},
     {500., 500., 500.}};
 
-const int TESLA_RT_INTERVAL = 250000; // 250ms between real time checks
+const uint32_t TESLA_RT_INTERVAL = 250000; // 250ms between real time checks
 
 struct sample_t tesla_angle_meas; // last 3 steer angles
 
@@ -47,8 +47,8 @@ int tesla_ignition_started = 0;
 #include "../drivers/uja1023.h"
 
 uint32_t tesla_ts_brakelight_on_last = 0;
-const int32_t BRAKELIGHT_CLEAR_INTERVAL = 250000; //25ms; needs to be slower than the framerate difference between the DI_torque2 (~100Hz) and DI_state messages (~10hz).
-const int32_t STW_MENU_BTN_HOLD_INTERVAL = 750000; //75ms, how long before we recognize the user is  holding this steering wheel button down
+const uint32_t BRAKELIGHT_CLEAR_INTERVAL = 250000; //25ms; needs to be slower than the framerate difference between the DI_torque2 (~100Hz) and DI_state messages (~10hz).
+const uint32_t STW_MENU_BTN_HOLD_INTERVAL = 750000; //75ms, how long before we recognize the user is  holding this steering wheel button down
 
 uint32_t stw_menu_btn_pressed_ts = 0;
 int stw_menu_current_output_state = 0;
@@ -59,7 +59,7 @@ int high_beam_lever_state = 0;
 
 int tesla_radar_status = 0; //0-not present, 1-initializing, 2-active
 uint32_t tesla_last_radar_signal = 0;
-const int TESLA_RADAR_TIMEOUT = 1000000; // 1 second between real time checks
+const uint32_t TESLA_RADAR_TIMEOUT = 1000000; // 1 second between real time checks
 char radar_VIN[] = "                 "; //leave empty if your radar VIN matches the car VIN
 int tesla_radar_vin_complete = 0;
 int tesla_radar_can = 1;
@@ -312,7 +312,7 @@ static void send_fake_message(uint32_t RIR, uint32_t RDTR,int msg_len, int msg_a
   can_send(&to_send, bus_num);
 }
 
-static void reset_DAS_data() {
+static void reset_DAS_data(void) {
   //fake DAS variables
   DAS_present = 0;
   DAS_longC_enabled = 0;
@@ -1042,7 +1042,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     DAS_lastStalkL = to_push->RDLR;
     DAS_lastStalkH = to_push->RDHR;
     // 6 bits starting at position 0
-    int ap_lever_position = GET_BYTE(to_push, 0) & 0x3F);
+    int ap_lever_position = GET_BYTE(to_push, 0) & 0x3F;
     if (ap_lever_position == 2)
     { // pull forward
       // activate openpilot
@@ -1572,13 +1572,14 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
 
 static void tesla_init(int16_t param)
 {
+  UNUSED(param);
   controls_allowed = 0;
   tesla_ignition_started = 0;
   gmlan_switch_init(1); //init the gmlan switch with 1s timeout enabled
   //uja1023_init();
 }
 
-static int tesla_ign_hook()
+static int tesla_ign_hook(void)
 {
   return tesla_ignition_started;
 }

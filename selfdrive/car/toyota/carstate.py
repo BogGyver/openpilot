@@ -3,16 +3,8 @@ from common.kalman.simple_kalman import KF1D
 from selfdrive.can.can_define import CANDefine
 from selfdrive.can.parser import CANParser
 from selfdrive.config import Conversions as CV
-<<<<<<< HEAD
-from selfdrive.car.toyota.values import CAR, DBC, STEER_THRESHOLD, NO_DSU_CAR
-from common.kalman.simple_kalman import KF1D
-from selfdrive.car.modules.UIBT_module import UIButtons,UIButton
-from selfdrive.car.modules.UIEV_module import UIEvents
-import numpy as np
-=======
 from selfdrive.car.toyota.values import CAR, DBC, STEER_THRESHOLD, TSS2_CAR, NO_DSU_CAR
 
->>>>>>> e90c41c576b4630f3039be671ad5f203a865f4c8
 def parse_gear_shifter(gear, vals):
 
   val_to_capnp = {'P': 'park', 'R': 'reverse', 'N': 'neutral',

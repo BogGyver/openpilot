@@ -198,18 +198,19 @@ def get_pedal_can_signals(CP):
   
 def get_can_parser(CP,mydbc):
   signals, checks = get_can_signals(CP)
-  return CANParser(mydbc, signals, checks, 0, timeout=100)
+  return CANParser(mydbc, signals, checks, 0)
 
 def get_epas_parser(CP,epascan):
   signals, checks = get_epas_can_signals(CP)
-  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, epascan, timeout=100)
+  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, epascan)
 
 def get_pedal_parser(CP):
   signals, checks = get_pedal_can_signals(CP)
-  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 2, timeout=100)
+  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 2)
 
 class CarState(object):
   def __init__(self, CP):
+    self.speed_control_enabled = 0
     self.CL_MIN_V = 8.9
     self.CL_MAX_A = 20.
     # labels for buttons
@@ -585,11 +586,15 @@ class CarState(object):
     self.v_weight = 0 #JCT
     speed = (cp.vl["DI_torque2"]['DI_vehicleSpeed']) * CV.MPH_TO_KPH/3.6 #JCT MPH_TO_MS. Tesla is in MPH, v_ego is expected in M/S
     speed = speed * 1.01 # To match car's displayed speed
-    self.v_ego_x = np.matrix([[speed], [0.0]])
+
+    if abs(speed - self.v_ego) > 2.0:  # Prevent large accelerations when car starts at non zero speed
+      self.v_ego_kf.x = [[speed], [0.0]]
+
     self.v_ego_raw = speed
     v_ego_x = self.v_ego_kf.update(speed)
     self.v_ego = float(v_ego_x[0])
     self.a_ego = float(v_ego_x[1])
+
 
     #BB use this set for pedal work as the user_gas_xx is used in other places
     self.pedal_interceptor_state = pedal_cp.vl["GAS_SENSOR"]['STATE']

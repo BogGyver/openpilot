@@ -1,11 +1,8 @@
 from common.realtime import DT_MDL
 from common.kalman.simple_kalman import KF1D
-<<<<<<< HEAD
 from selfdrive.car.tesla.readconfig import CarSettings
-=======
 from selfdrive.config import RADAR_TO_CENTER
-
->>>>>>> e90c41c576b4630f3039be671ad5f203a865f4c8
+from common.numpy_fast import clip, interp
 
 # the longer lead decels, the more likely it will keep decelerating
 # TODO is this a good default?
@@ -30,9 +27,10 @@ class Track(object):
     self.ekf = None
     self.initted = False
 
-  def update(self, d_rel, y_rel, v_rel,measured, a_rel, vy_rel, oClass, length, track_id,movingState, v_ego_t_aligned,use_tesla_radar):
+  def update(self, d_rel, y_rel, v_rel,measured, a_rel, vy_rel, oClass, length, track_id,movingState, d_path, v_ego_t_aligned,use_tesla_radar):
     if self.initted:
       # pylint: disable=access-member-before-definition
+      self.dPathPrev = self.dPath
       self.vLeadPrev = self.vLead
       self.vRelPrev = self.vRel
 
@@ -46,7 +44,8 @@ class Track(object):
     self.length = length #length
     self.measured = measured   # measured or estimate
     self.track_id = track_id
-    #self.stationary = (movingState == 3)
+    self.dPath = d_path
+    self.stationary = (movingState == 3)
 
     # computed velocity and accelerations
     self.vLead = self.vRel + v_ego_t_aligned
@@ -153,6 +152,10 @@ class Cluster(object):
   @property
   def track_id(self):
     return mean([t.track_id for t in self.tracks])
+ 
+  @property
+  def stationary(self):
+    return all([t.stationary for t in self.tracks])
 
   def get_RadarState(self, model_prob=0.0):
     dRel_delta_estimate = 0.

@@ -48,7 +48,7 @@ def _create_radard_can_parser():
 
 
 class RadarInterface(object):
-  def __init__(self):
+  def __init__(self,CP):
     # radar
     self.pts = {}
     self.delay = 0.1
@@ -71,7 +71,7 @@ class RadarInterface(object):
   def update(self, can_strings):
     # in Bosch radar and we are only steering for now, so sleep 0.05s to keep
     # radard at 20Hz and return no points
-    if self.radar_off_can:
+    if not self.useTeslaRadar:
       time.sleep(0.05)
       return car.RadarData.new_message()
 

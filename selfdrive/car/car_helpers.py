@@ -111,10 +111,12 @@ def fingerprint(logcan, sendcan, is_panda_black):
         if frame > frame_fingerprint:
           # fingerprint done
           car_fingerprint = candidate_cars[b][0]
-      elif len(candidate_cars[b]) == 0 and CarSettings().forceFingerprintTesla:
+    
+    
+    if (car_fingerprint is None) and CarSettings().forceFingerprintTesla:
           print "Fingerprinting Failed: Returning Tesla (based on branch)"
           car_fingerprint = "TESLA MODEL S"
-          vin = "TESLAFAKEVIN"
+          vin = "TESLAFAKEVIN12345"
 
 
     # bail if no cars left or we've been waiting for more than 2s
@@ -128,11 +130,13 @@ def fingerprint(logcan, sendcan, is_panda_black):
   return car_fingerprint, finger, vin
 
 
-def get_car(logcan, sendcan):
+def get_car(logcan, sendcan, is_panda_black):
   if CarSettings().forceFingerprintTesla:
     candidate="TESLA MODEL S"
-    fingerprints=""
-    vin="TESLAFORCED"
+    fingerprints=["","",""]
+    vin="TESLAFORCED123456"
+    cloudlog.warning("VIN %s", vin)
+    Params().put("CarVin", vin)
   else:
     candidate, fingerprints, vin = fingerprint(logcan, sendcan, is_panda_black)
 

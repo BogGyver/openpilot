@@ -35,7 +35,7 @@ MIN_SAFE_DIST_M = 6.
 #BBTODO: move the vehicle variables; maybe make them speed variable
 TORQUE_LEVEL_ACC = 0.
 TORQUE_LEVEL_DECEL = -30.
-FOLLOW_TIME_S = 1.5  # defined by CS.apFollowDistance
+
 MIN_PCC_V_KPH = 0. #
 MAX_PCC_V_KPH = 170.
 
@@ -303,7 +303,6 @@ class PCCController(object):
     
   def update_pdl(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset,alca_enabled):
     cur_time = sec_since_boot()
-    FOLLOW_TIME_S = CS.apFollowDistance
     idx = self.pedal_idx
 
     self.prev_speed_limit_kph = self.speed_limit_kph
@@ -442,7 +441,8 @@ class PCCController(object):
     if (CS.torqueLevel < TORQUE_LEVEL_ACC
         and CS.torqueLevel > TORQUE_LEVEL_DECEL
         and CS.v_ego >= 10.* CV.MPH_TO_MS
-        and abs(CS.torqueLevel) < abs(self.lastTorqueForPedalForZeroTorque)):
+        and abs(CS.torqueLevel) < abs(self.lastTorqueForPedalForZeroTorque)
+        and self.prev_tesla_accel > 0.):
       self.PedalForZeroTorque = self.prev_tesla_accel
       self.lastTorqueForPedalForZeroTorque = CS.torqueLevel
       #print "Detected new Pedal For Zero Torque at %s" % (self.PedalForZeroTorque)
@@ -498,9 +498,9 @@ class PCCController(object):
       self.vRel = self.lead_1.vRel
     if abs(self.lead_1.aRel) > .5:
       self.aRel = self.lead_1.aRel
-    rel_speed_kph = (self.vRel + 0 * FOLLOW_TIME_S * self.aRel) * CV.MS_TO_KPH
+    rel_speed_kph = (self.vRel + 0 * CS.apFollowDistance * self.aRel) * CV.MS_TO_KPH
     # v_ego is in m/s, so safe_distance is in meters.
-    safe_dist_m = _safe_distance_m(CS.v_ego)
+    safe_dist_m = _safe_distance_m(CS.v_ego,CS)
     # Current speed in kph
     actual_speed_kph = CS.v_ego * CV.MS_TO_KPH
     # speed and brake to issue
@@ -608,14 +608,14 @@ def _visual_radar_adjusted_dist_m(m, CS):
     (1000, 1000)])  # values >7m are scaled, maxing out at 1km.
   return _interp_map(m, mapping)
 
-def _safe_distance_m(v_ego_ms):
-  return max(FOLLOW_TIME_S * (v_ego_ms+1), MIN_SAFE_DIST_M)
+def _safe_distance_m(v_ego_ms, CS):
+  return max(CS.apFollowDistance * (v_ego_ms+1), MIN_SAFE_DIST_M)
 
 def _max_safe_speed_kph(lead,CS):
   return 150.
-  if (lead.vRel > 0) and (lead.dRel < _safe_distance_m(CS.v_ego)):
-    return (CS.v_ego + lead.vRel + 2 * lead.dRel/_safe_distance_m(CS.v_ego)) * CV.MS_TO_KPH
-  return CV.MS_TO_KPH * lead.dRel / FOLLOW_TIME_S
+  if (lead.vRel > 0) and (lead.dRel < _safe_distance_m(CS.v_ego,CS)):
+    return (CS.v_ego + lead.vRel + 2 * lead.dRel/_safe_distance_m(CS.v_ego,CS)) * CV.MS_TO_KPH
+  return CV.MS_TO_KPH * lead.dRel / CS.apFollowDistance
   
 def _min_safe_vrel_kph(lead,CS,actual_speed_kph):
   m = lead.dRel
@@ -637,9 +637,9 @@ def _sec_til_collision(lead, CS):
   if _is_present(lead) and lead.vRel < 0:
     if CS.useTeslaRadar:
       #BB: take in consideration acceleration when looking at time to collision. 
-      return min(0.1,-4+lead.dRel / abs(lead.vRel + min(0,lead.aRel) * FOLLOW_TIME_S))
+      return min(0.1,-4+lead.dRel / abs(lead.vRel + min(0,lead.aRel) * CS.apFollowDistance))
     else:
-      return _visual_radar_adjusted_dist_m(lead.dRel, CS) / abs(lead.vRel + min(0,lead.aRel) * FOLLOW_TIME_S)
+      return _visual_radar_adjusted_dist_m(lead.dRel, CS) / abs(lead.vRel + min(0,lead.aRel) * CS.apFollowDistance)
   else:
     return 60.  # Arbitrary, but better than MAXINT because we can still do math on it.
   
@@ -661,13 +661,13 @@ def _accel_limit_multiplier(CS, lead):
   if CS.teslaModel in ["SP","SPD"]:
       accel_by_speed = OrderedDict([
         # (speed m/s, decel)
-        (0.,  1.1),  #   0 kmh
-        (10., 1.0),  #  35 kmh
-        (20., 0.8),  #  72 kmh
-        (30., 0.6)]) # 107 kmh
+        (0.,  0.95),  #   0 kmh
+        (10., 0.8),  #  35 kmh
+        (20., 0.6),  #  72 kmh
+        (30., 0.7)]) # 107 kmh
   accel_mult = _interp_map(CS.v_ego, accel_by_speed)
   if _is_present(lead):
-    safe_dist_m = _safe_distance_m(CS.v_ego)
+    safe_dist_m = _safe_distance_m(CS.v_ego,CS)
     accel_multipliers = OrderedDict([
       # (distance in m, acceleration fraction)
       (0.6 * safe_dist_m, 0.15),
@@ -684,7 +684,7 @@ def _accel_limit_multiplier(CS, lead):
 
 def _decel_limit(accel_min,v_ego, lead, CS, max_speed_kph):
   max_speed_mult = 1.
-  safe_dist_m = _safe_distance_m(v_ego)
+  safe_dist_m = _safe_distance_m(v_ego,CS)
   # if above speed limit quickly decel
   if v_ego * CV.MS_TO_KPH > max_speed_kph:
     max_speed_mult = 2.
@@ -723,7 +723,7 @@ def _accel_pedal_max(v_ego, v_target, lead, prev_tesla_accel,CS):
   pedal_max = prev_tesla_accel
   if _is_present(lead):
     #we have lead, base on speed and distance
-    safe_dist_m = _safe_distance_m(CS.v_ego)
+    safe_dist_m = _safe_distance_m(CS.v_ego,CS)
     v_rel = lead.vLeadK - v_ego
     accel_speed_map = OrderedDict([
       # (speed m/s, decel) change in accel (0..1) per second
@@ -766,7 +766,7 @@ def _brake_pedal_min(v_ego, v_target, lead, CS, max_speed_kph):
   brake_mult1 = _interp_map(speed_delta_perc, brake_perc_map)
   brake_mult2 = 0.
   if _is_present(lead):
-    safe_dist_m = _safe_distance_m(CS.v_ego)
+    safe_dist_m = _safe_distance_m(CS.v_ego,CS)
     brake_distance_map = OrderedDict([
       # (distance in m, decceleration fraction)
       (0.8 * safe_dist_m, 1.),
@@ -801,7 +801,7 @@ def _jerk_limits(v_ego, lead, max_speed_kph, lead_last_seen_time_ms, CS):
       (4, -0.01),
       (80, -0.001)])
     decel_jerk = _interp_map(_sec_til_collision(lead, CS), decel_jerk_map)
-    safe_dist_m = _safe_distance_m(v_ego) 
+    safe_dist_m = _safe_distance_m(v_ego,CS) 
     distance_multipliers  = OrderedDict([
       # (distance in m, accel jerk)
       (0.8 * safe_dist_m, 0.01),

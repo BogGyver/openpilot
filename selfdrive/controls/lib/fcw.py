@@ -66,7 +66,7 @@ class FCWChecker(object):
 
       future_fcw_allowed = all(c >= 10 for c in self.counters.values())
       future_fcw = (self.last_min_a < -3.0 or a_delta < a_thr) and future_fcw_allowed
-      current_fcw = a_target < -3.0 and active
+      current_fcw = a_target < -3.0 and active and False
 
       if (future_fcw or current_fcw) and (self.last_fcw_time + 5.0 < cur_time):
         self.last_fcw_time = cur_time

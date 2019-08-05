@@ -159,7 +159,7 @@ class CarController(object):
     self.visionCurvC0 = 0.
     self.laneRange = 50  #max is 160m but OP has issues with precision beyond 50
     self.useZeroC0 = False
-    self.useMap = True
+    self.useMap = False
     self.clipC0 = False
     self.useMapOnly = False
     self.laneWidth = 0.
@@ -370,7 +370,7 @@ class CarController(object):
     elif self.PCC.enable_pedal_cruise:
       CS.v_cruise_pcm = self.PCC.pedal_speed_kph
     else:
-      CS.v_cruise_pcm = CS.v_cruise_actual
+      CS.v_cruise_pcm = max(0.,CS.v_ego * CV.MS_TO_KPH  +0.5) #BB try v_ego to reduce the false FCW warnings; was: vCS.v_cruise_actual
     # Get the turn signal from ALCA.
     turn_signal_needed, self.alca_enabled = self.ALCA.update(enabled, CS, actuators)
     apply_angle = -actuators.steerAngle  # Tesla is reversed vs OP.
@@ -702,10 +702,13 @@ class CarController(object):
       if (CS.pedal_interceptor_available and self.PCC.enable_pedal_cruise) or (self.ACC.enable_adaptive_cruise):
         speed_control_enabled = 1
         cc_state = 2
+        CS.speed_control_enabled = 1
       else:
+        CS.speed_control_enabled = 0
         if (CS.pcm_acc_status == 4):
           #car CC enabled but not OP, display the HOLD message
           cc_state = 3
+
     send_fake_msg = False
     send_fake_warning = False
 

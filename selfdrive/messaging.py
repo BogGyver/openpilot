@@ -4,6 +4,8 @@ from cereal import log
 from common.realtime import sec_since_boot
 from selfdrive.services import service_list
 
+MSG_ERROR_LVL = 2
+
 def new_message():
   dat = log.Event.new_message()
   dat.logMonoTime = int(sec_since_boot() * 1e9)
@@ -92,11 +94,13 @@ class SubMaster():
     self.rcv_time = {s : 0. for s in services}
     self.rcv_frame = {s : 0 for s in services}
     self.alive = {s : False for s in services}
+    self.alive_cnt = {s: 0 for s in services}
     self.sock = {}
     self.freq = {}
     self.data = {}
     self.logMonoTime = {}
     self.valid = {}
+    self.valid_cnt = {s: 0 for s in services}
     for s in services:
       # TODO: get address automatically from service_list
       if addr is not None:
@@ -106,7 +110,13 @@ class SubMaster():
       data.init(s)
       self.data[s] = getattr(data, s)
       self.logMonoTime[s] = 0
-      self.valid[s] = data.valid
+      if data.valid:
+        self.valid_cnt[s] = 0
+        self.valid[s] = True
+      else:
+        self.valid_cnt[s] += 1
+        if self.valid_cnt[s] >= MSG_ERROR_LVL:
+            self.valid[s] = False
 
   def __getitem__(self, s):
     return self.data[s]
@@ -128,14 +138,27 @@ class SubMaster():
       self.rcv_frame[s] = self.frame
       self.data[s] = getattr(msg, s)
       self.logMonoTime[s] = msg.logMonoTime
-      self.valid[s] = msg.valid
+      if msg.valid:
+        self.valid_cnt[s] = 0
+        self.valid[s] = True
+      else:
+        self.valid_cnt[s] += 1
+        if self.valid_cnt[s] >=  MSG_ERROR_LVL:
+            self.valid[s] = False
 
     for s in self.data:
       # arbitrary small number to avoid float comparison. If freq is 0, we can skip the check
       if self.freq[s] > 1e-5:
         # alive if delay is within 10x the expected frequency
-        self.alive[s] = (cur_time - self.rcv_time[s]) < (10. / self.freq[s])
+        if (cur_time - self.rcv_time[s]) < (10. / self.freq[s]):
+          self.alive_cnt[s] = 0
+          self.alive[s] = True
+        else:
+          self.alive_cnt[s] += 1
+          if self.alive_cnt[s] >= MSG_ERROR_LVL:
+              self.alive[s] = False
       else:
+        self.alive_cnt[s] = 0
         self.alive[s] = True
 
   def all_alive(self, service_list=None):
