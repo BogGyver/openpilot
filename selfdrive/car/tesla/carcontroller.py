@@ -348,7 +348,7 @@ class CarController(object):
 
     # Update statuses for custom buttons every 0.1 sec.
     if (frame % 10 == 0):
-      self.ALCA.update_status((CS.cstm_btns.get_button_status("alca") > 0) and ((CS.enableALCA and not CS.hasTeslaIcIntegration) or (CS.hasTeslaIcIntegration and CS.alcaEnabled)))
+      self.ALCA.update_status(False) #(CS.cstm_btns.get_button_status("alca") > 0) and ((CS.enableALCA and not CS.hasTeslaIcIntegration) or (CS.hasTeslaIcIntegration and CS.alcaEnabled)))
     
     pedal_can_sends = []
     
