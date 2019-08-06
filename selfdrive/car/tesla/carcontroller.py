@@ -431,10 +431,7 @@ class CarController(object):
       self.speedlimit_valid = True
       if self.speedlimit_ms == 0:
         self.speedlimit_valid = False
-      if self.isMetric:
-        self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
-      else:
-        self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
+      self.speedlimit_units = self.speedUnits(fromMetersPerSecond = self.speedlimit_ms)
     if frame % 10 == 0:
       for socket, _ in self.poller.poll(1):
         if socket is self.speedlimit and not CS.useTeslaMapData:
@@ -442,10 +439,7 @@ class CarController(object):
           lmd = messaging.recv_one(socket).liveMapData
           self.speedlimit_ms = lmd.speedLimit
           self.speedlimit_valid = lmd.speedLimitValid
-          if self.isMetric:
-            self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_KPH + 0.5
-          else:
-            self.speedlimit_units = self.speedlimit_ms * CV.MS_TO_MPH + 0.5
+          self.speedlimit_units = self.speedUnits(fromMetersPerSecond = self.speedlimit_ms)
           self.speed_limit_for_cc = self.speedlimit_ms * CV.MS_TO_KPH
         elif socket is self.radarState:
           #to show lead car on IC
@@ -808,3 +802,7 @@ class CarController(object):
       if not ((self.roadSignType_last == self.roadSignType) and (self.roadSignType == 0xFF)):
           messages.append(teslacan.create_fake_DAS_sign_msg(self.roadSignType,self.roadSignStopDist,self.roadSignColor,self.roadSignControlActive))
     return messages
+
+  # Returns speed as it needs to be displayed on the IC
+  def speedUnits(self, fromMetersPerSecond):
+    return fromMetersPerSecond * (CV.MS_TO_KPH if self.isMetric else CV.MS_TO_MPH) + 0.5
