@@ -10,7 +10,7 @@ from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR,DBC
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V_FOLLOWING
 from common.params import read_db
 from selfdrive.car import STD_CARGO_KG
-from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
+from selfdrive.car.tesla.readconfig import CarSettings
 
 
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert

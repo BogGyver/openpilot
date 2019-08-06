@@ -5,7 +5,6 @@ from selfdrive.car.tesla.ACC_module import ACCMode
 from selfdrive.car.tesla.PCC_module import PCCModes
 from selfdrive.car.tesla.values import CAR, DBC
 from selfdrive.car.modules.UIBT_module import UIButtons
-import numpy as np
 from selfdrive.car.modules.UIEV_module import UIEvents
 from selfdrive.car.tesla.readconfig import read_config_file
 import os
@@ -671,7 +670,6 @@ class CarState(object):
 
 # carstate standalone tester
 if __name__ == '__main__':
-  import zmq
 
   class CarParams(object):
     def __init__(self):
