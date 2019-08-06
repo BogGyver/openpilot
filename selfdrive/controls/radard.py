@@ -352,7 +352,7 @@ def radard_thread(gctx=None):
   RD = RadarD(mocked, RI)
   MP = ModelParser()
 
-  has_radar = not CP.radarOffCan
+  has_radar = not CP.radarOffCan or mocked
   last_md_ts = 0.
   v_ego = 0.
 
