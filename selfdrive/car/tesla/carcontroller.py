@@ -455,7 +455,7 @@ class CarController(object):
           #to show curvature and lanes on IC
           self.handlePathPlanSocketForCurvatureOnIC(pathPlanSocket = socket, CS = CS)
         elif socket is self.icCarLR:
-          can_messages = self.handleICCarLR(icCarLRSocket = socket)
+          can_messages = self.showLeftAndRightCarsOnICCanMessages(icCarLRSocket = socket)
           can_sends.extend(can_messages)
         elif socket is self.trafficevents:
           can_messages = self.handleTrafficEvents(trafficEventsSocket = socket)
@@ -750,8 +750,8 @@ class CarController(object):
       self.curv2 = self.curv2Matrix.add(0.)
       self.curv3 = self.curv3Matrix.add(0.)
 
-  # Bog: What would a good name for this be?
-  def handleICCarLR(self, icCarLRSocket):
+  # Generates IC messages for the Left and Right radar identified cars from radard
+  def showLeftAndRightCarsOnICCanMessages(self, icCarLRSocket):
     messages = []
     icCarLR_msg = ui.ICCarsLR.from_bytes(icCarLRSocket.recv())
     if icCarLR_msg is not None:
