@@ -169,7 +169,7 @@ class PCCController(object):
     self.lead_last_seen_time_ms = 0
     self.continuous_lead_sightings = 0
     self.params = Params()
-    self.average_speed_over_x_suggestions = 20 #2 seconds.... 10x a second
+    self.average_speed_over_x_suggestions = 3 #10x a second
     self.maxsuggestedspeed_avg = MovingAverage(self.average_speed_over_x_suggestions)
 
   def max_v_by_speed_limit(self,pedal_set_speed_ms ,speed_limit_ms, CS):

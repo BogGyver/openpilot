@@ -443,11 +443,11 @@ class CarState(object):
     if self.meanFleetSplineSpeedMPS == 0 or self.medianFleetSpeedMPS == 0:
       self.splineBasedSuggestedSpeed = max(self.meanFleetSplineSpeedMPS,self.medianFleetSpeedMPS)
     else:
-      self.splineBasedSuggestedSpeed = (self.splineLocConfidence * self.meanFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.medianFleetSpeedMPS ) / 100
+      self.splineBasedSuggestedSpeed = (self.splineLocConfidence * self.meanFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.medianFleetSpeedMPS ) / 100.
     # if confidence over 60%, then weight between bottom speed and top speed
     # if less than 40% then use map data
     if self.splineLocConfidence > 60:
-      self.mapBasedSuggestedSpeed = (self.splineLocConfidence * self.topQrtlFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.bottomQrtlFleetSpeedMPS ) / 100
+      self.mapBasedSuggestedSpeed = (self.splineLocConfidence * self.meanFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.bottomQrtlFleetSpeedMPS ) / 100.
     else:
       self.mapBasedSuggestedSpeed = self.baseMapSpeedLimitMPS
     if self.rampType > 0:
