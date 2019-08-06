@@ -381,9 +381,7 @@ class CarSettings(object):
     self.did_write_file = config_file.read(self, config_path = optional_config_file_path)
 
   def get_value(self, name_of_variable):
-    return_val = None
-    exec("%s = self.%s" % ('return_val', name_of_variable))
-    return return_val
+    return self.__dict__[name_of_variable]
 
 # Legacy support
 def read_config_file(into, config_path = default_config_file_path):
