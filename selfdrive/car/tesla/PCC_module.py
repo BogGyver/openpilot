@@ -612,10 +612,10 @@ def _safe_distance_m(v_ego_ms, CS):
   return max(CS.apFollowDistance * (v_ego_ms+1), MIN_SAFE_DIST_M)
 
 def _max_safe_speed_kph(lead,CS):
-  return 150.
-  if (lead.vRel > 0) and (lead.dRel < _safe_distance_m(CS.v_ego,CS)):
-    return (CS.v_ego + lead.vRel + 2 * lead.dRel/_safe_distance_m(CS.v_ego,CS)) * CV.MS_TO_KPH
-  return CV.MS_TO_KPH * lead.dRel / CS.apFollowDistance
+  if _is_present(lead):
+    return (CS.v_ego + lead.vRel + (lead.dRel - _safe_distance_m(CS.v_ego,CS))/CS.apFollowTime) * CV.MS_TO_KPH
+  else:
+    return 150.
   
 def _min_safe_vrel_kph(lead,CS,actual_speed_kph):
   m = lead.dRel
