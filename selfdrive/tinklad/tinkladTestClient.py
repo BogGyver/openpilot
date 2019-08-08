@@ -23,10 +23,10 @@ class TinklaTestClient():
         elapsed_time_us = (time.time() - start_time) * 1000 * 1000
         print("Info Time Elapsed = %d" % (elapsed_time_us))
 
-        event = tinkla.Interface.UserEvent.new_message(
+        event = tinkla.Interface.Event.new_message(
             openPilotId="test_openpilotId",
             source="unittest",
-            category="userAction",
+            category=self.tinklaClient.eventCategoryKeys.userAction,
             name="pull_stalk",
         )
         event.value.textValue="up"

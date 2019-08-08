@@ -10,8 +10,15 @@ LOG_PREFIX = "tinklad: "
 # This needs to match tinkla.capnp message keys
 class TinklaInterfaceMessageKeys():
     userInfo = 'userInfo'
-    userEvent = 'userEvent'
+    event = 'event'
 
+# This needs to match tinkla.capnp event category keys
+class TinklaInterfaceEventCategoryKeys():
+    general = 'general'
+    userAction = 'userAction'
+    openPilotAction = 'openPilotAction'
+    crash = 'crash'
+    other = 'other'
 
 class Cache():
     def push(self, event):
@@ -62,6 +69,9 @@ class TinklaServer():
 
         while self.cache.count() > 0:
             event = self.cache.pop()
+            if event.version != cereal.tinkla.interfaceVersion:
+                print(LOG_PREFIX + "Unsupported event version: %0.2f (supported version: %0.2f)" % (event.version, cereal.tinkla.interfaceVersion))
+                return
             try:
                 print(LOG_PREFIX + "Sending event to publisher: %s" % (event.to_dict()))
                 self.publisher.send_event(event)
@@ -91,12 +101,15 @@ class TinklaServer():
         while True:
             data = ''.join(sock.recv_multipart())
             tinklaInterface = cereal.tinkla.Interface.from_bytes(data)
+            if tinklaInterface.version != cereal.tinkla.interfaceVersion:
+                print("Unsupported message version: %0.2f (supported version: %0.2f)" % (tinklaInterface.version, cereal.tinkla.interfaceVersion))
+                continue
             messageType = tinklaInterface.message.which()
             if messageType == messageKeys.userInfo:
                 info = tinklaInterface.message.userInfo
                 self.setUserInfo(info)
-            elif messageType == messageKeys.userEvent:
-                event = tinklaInterface.message.userEvent
+            elif messageType == messageKeys.event:
+                event = tinklaInterface.message.event
                 self.logUserEvent(event)
 
 

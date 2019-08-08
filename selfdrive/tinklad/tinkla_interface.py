@@ -4,6 +4,7 @@ from cereal import tinkla
 import os
 import zmq
 import datetime
+from tinklad import TinklaInterfaceEventCategoryKeys
 
 tinklaClient = None
 
@@ -13,6 +14,8 @@ def now_iso8601():
 class TinklaClient():
     sock = None
     pid = None
+
+    eventCategoryKeys = TinklaInterfaceEventCategoryKeys()
     
     def start_client(self):
         if os.getpid() == self.pid:
@@ -34,7 +37,9 @@ class TinklaClient():
             return
 
         message = tinkla.Interface.new_message()
+        message.version = tinkla.interfaceVersion
         message.message.userInfo = info
+        message.message.userInfo.version = tinkla.interfaceVersion
 
         try:
             self.sock.send(message.to_bytes(), zmq.NOBLOCK)
@@ -49,7 +54,9 @@ class TinklaClient():
 
         event.timestamp = now_iso8601()
         message = tinkla.Interface.new_message()
-        message.message.userEvent = event
+        message.version = tinkla.interfaceVersion
+        message.message.event = event
+        message.message.event.version = tinkla.interfaceVersion
 
         try:
             self.sock.send(message.to_bytes(), zmq.NOBLOCK)
