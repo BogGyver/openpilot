@@ -11,6 +11,7 @@ LOG_PREFIX = "tinklad: "
 class TinklaInterfaceMessageKeys():
     userInfo = 'userInfo'
     event = 'event'
+    action = 'action'
 
 # This needs to match tinkla.capnp event category keys
 class TinklaInterfaceEventCategoryKeys():
@@ -19,6 +20,9 @@ class TinklaInterfaceEventCategoryKeys():
     openPilotAction = 'openPilotAction'
     crash = 'crash'
     other = 'other'
+
+class TinklaInterfaceActions():
+    attemptToSendPendingMessages = 'attemptToSendPendingMessages'
 
 class Cache():
     def push(self, event):
@@ -50,6 +54,11 @@ class Cache():
 
 
 class TinklaServer(): 
+
+    def attemptToSendPendingMessages(self):
+        print(LOG_PREFIX + "Attempting to send any pending messages")
+        self.publisher.send_info_if_pending()
+        self.publish_pending_events()
 
     def setUserInfo(self, info, **kwargs):
         print(LOG_PREFIX + "Sending info to publisher: %s" % (info.to_dict()))
@@ -91,6 +100,7 @@ class TinklaServer():
         self.cache = Cache()
         self.publish_pending_events()
         messageKeys = TinklaInterfaceMessageKeys()
+        actions = TinklaInterfaceActions()
 
         # Start server:
         ctx = zmq.Context()
@@ -102,7 +112,7 @@ class TinklaServer():
             data = ''.join(sock.recv_multipart())
             tinklaInterface = cereal.tinkla.Interface.from_bytes(data)
             if tinklaInterface.version != cereal.tinkla.interfaceVersion:
-                print("Unsupported message version: %0.2f (supported version: %0.2f)" % (tinklaInterface.version, cereal.tinkla.interfaceVersion))
+                print(LOG_PREFIX + "Unsupported message version: %0.2f (supported version: %0.2f)" % (tinklaInterface.version, cereal.tinkla.interfaceVersion))
                 continue
             messageType = tinklaInterface.message.which()
             if messageType == messageKeys.userInfo:
@@ -111,7 +121,11 @@ class TinklaServer():
             elif messageType == messageKeys.event:
                 event = tinklaInterface.message.event
                 self.logUserEvent(event)
-
+            elif messageType == messageKeys.action:
+                if tinklaInterface.message.action == actions.attemptToSendPendingMessages:
+                    self.attemptToSendPendingMessages()
+                else:
+                    print(LOG_PREFIX + "Unsupported action: %s" % tinklaInterface.message.action)
 
 
 def main(gctx=None):

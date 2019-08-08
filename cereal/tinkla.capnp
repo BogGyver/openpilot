@@ -14,8 +14,9 @@ struct Interface {
     version @0 :Float32;
 
     message :union {
-        userInfo @1: UserInfo;
-        event @2: Event;
+        userInfo @1 :UserInfo;
+        event @2 :Event;
+        action @3 :Text;
     }
 
     struct UserInfo {

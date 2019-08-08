@@ -39,6 +39,9 @@ class TinklaTestClient():
         userHandle = carsettings.userHandle
         print("userHandle = '%s'" % (userHandle))
 
+        print("attemptToSendPendingMessages")
+        self.tinklaClient.attemptToSendPendingMessages()
+
 if __name__ == "__main__":
     TinklaTestClient()
     

@@ -75,10 +75,12 @@ class Publisher():
         self.pending_info_dict = None
         print(LOG_PREFIX + "*send_info competed*")
 
-
-    def send_event(self, event):
+    def send_info_if_pending(self):
         if self.pending_info_dict != None and self.pending_info_dict != self.latest_info_dict:
             self.send_info(self.pending_info_dict, isData= True)
+
+    def send_event(self, event):
+        self.send_info_if_pending()
 
         if self.openPilotId is None:
             if self.latest_info_dict != None:
