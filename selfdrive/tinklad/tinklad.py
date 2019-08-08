@@ -4,6 +4,7 @@ import zmq
 import cereal
 from pqueue import Queue
 from airtable_publisher import Publisher
+import requests
 
 LOG_PREFIX = "tinklad: "
 
@@ -56,8 +57,11 @@ class Cache():
 class TinklaServer(): 
 
     def attemptToSendPendingMessages(self):
-        print(LOG_PREFIX + "Attempting to send any pending messages")
-        self.publisher.send_info_if_pending()
+        if self.cache.count() == 0 and self.publisher.pending_info_dict == None:
+            return
+        if not self.isOnline():
+            return
+        print(LOG_PREFIX + "Attempting to send pending messages")
         self.publish_pending_events()
 
     def setUserInfo(self, info, **kwargs):
@@ -93,6 +97,16 @@ class TinklaServer():
                 self.cache.push(event)
                 print(LOG_PREFIX + "Error attempting to publish, will retry later (%s)" % (error))
                 return
+
+    def isOnline(self):
+        url='https://api.airtable.com/v0/appht7GB4aJS2A0LD'
+        timeout=5
+        try:
+            _ = requests.get(url, timeout=timeout)
+            return True
+        except requests.ConnectionError:
+            return False
+        return False
 
     def __init__(self):
         self.publisher = Publisher()

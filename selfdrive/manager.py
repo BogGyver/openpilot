@@ -407,6 +407,9 @@ def manager_thread():
     else:
       start_managed_process("uploader")
 
+    # Attempt to send pending messages if there's any that queued while offline
+    tinklaClient.attemptToSendPendingMessages()
+
     if msg.thermal.freeSpace < 0.05:
       logger_dead = True
 
