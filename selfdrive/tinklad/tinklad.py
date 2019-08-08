@@ -5,6 +5,7 @@ import cereal
 from pqueue import Queue
 from airtable_publisher import Publisher
 import requests
+import time
 
 LOG_PREFIX = "tinklad: "
 
@@ -56,7 +57,15 @@ class Cache():
 
 class TinklaServer(): 
 
+    last_attempt_time = 0
+
     def attemptToSendPendingMessages(self):
+        # Throttle to once per minute
+        now = time.time()
+        if now - self.last_attempt_time < 60:
+            return
+        self.last_attempt_time = now
+
         if self.cache.count() == 0 and self.publisher.pending_info_dict == None:
             return
         if not self.isOnline():
