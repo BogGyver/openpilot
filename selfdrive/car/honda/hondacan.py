@@ -20,7 +20,15 @@ def fix(msg, addr):
   return msg2
 
 
-def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_cmd, chime, fcw, idx):
+def get_pt_bus(car_fingerprint, is_panda_black):
+  return 1 if car_fingerprint in HONDA_BOSCH and is_panda_black else 0
+
+
+def get_lkas_cmd_bus(car_fingerprint, is_panda_black):
+  return 2 if car_fingerprint in HONDA_BOSCH and not is_panda_black else 0
+
+
+def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_cmd, chime, fcw, idx, car_fingerprint, is_panda_black):
   # TODO: do we loose pressure if we keep pump off for long?
   brakelights = apply_brake > 0
   brake_rq = apply_brake > 0
@@ -39,88 +47,25 @@ def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_
     # TODO: Why are there two bits for fcw? According to dbc file the first bit should also work
     "FCW": fcw << 1,
   }
-  return packer.make_can_msg("BRAKE_COMMAND", 0, values, idx)
+  bus = get_pt_bus(car_fingerprint, is_panda_black)
+  return packer.make_can_msg("BRAKE_COMMAND", bus, values, idx)
 
 
-def create_gas_command(packer, gas_amount, idx):
-  enable = gas_amount > 0.001
-
-  values = {"ENABLE": enable}
-
-  if enable:
-    values["GAS_COMMAND"] = gas_amount * 255.
-    values["GAS_COMMAND2"] = gas_amount * 255.
-
-  return packer.make_can_msg("GAS_COMMAND", 0, values, idx)
-
-def create_acc_commands(packer, enabled, accel, idx):
-  commands = []
-
-  # 0 = off
-  # 5 = on
-  control_on = 5 if enabled else 0
-  # 0  = gas
-  # 17 = no gas
-  # 31 = ?!?!
-  state_flag = 0 if enabled and accel > 0 else 17
-  # 0 to +2000? = range
-  # 720 = no gas
-  # (scale from a max of 800 to 2000)
-  gas_command = int(accel * 2.5) if enabled and accel > 0 else 720
-  # 1 = brake
-  # 0 = no brake
-  braking_flag = 1 if enabled and accel < 0 else 0
-  # -1599 to +800? = range
-  # 0 = no accel
-  gas_brake = int(accel) if enabled else 0
-
-  acc_control_values = {
-    "GAS_COMMAND": gas_command,
-    "STATE_FLAG": state_flag,
-    "BRAKING_1": braking_flag,
-    "BRAKING_2": braking_flag,
-    # setting CONTROL_ON causes car to set POWERTRAIN_DATA->ACC_STATUS = 1
-    "CONTROL_ON": control_on,
-    "GAS_BRAKE": gas_brake,
-    "SET_TO_1": 0x01,
-  }
-  commands.append(packer.make_can_msg("ACC_CONTROL", 0, acc_control_values, idx))
-
-  acc_control_on_values = {
-    "SET_TO_3": 0x03,
-    "CONTROL_ON": enabled,
-    "SET_TO_FF": 0xff,
-    "SET_TO_75": 0x75,
-    "SET_TO_30": 0x30,
-  }
-  commands.append(packer.make_can_msg("ACC_CONTROL_ON", 0, acc_control_on_values, idx))
-
-  return commands
-
-def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, openpilot_longitudinal_control, idx):
+def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, idx, is_panda_black):
   values = {
     "STEER_TORQUE": apply_steer if lkas_active else 0,
     "STEER_TORQUE_REQUEST": lkas_active,
   }
-  # Set bus 2 for accord and new crv.
-  bus = 2 if car_fingerprint in HONDA_BOSCH and not openpilot_longitudinal_control else 0
+  bus = get_lkas_cmd_bus(car_fingerprint, is_panda_black)
   return packer.make_can_msg("STEERING_CONTROL", bus, values, idx)
 
 
-def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx):
+def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx, is_panda_black):
   commands = []
+  bus_pt = get_pt_bus(car_fingerprint, is_panda_black)
+  bus_lkas = get_lkas_cmd_bus(car_fingerprint, is_panda_black)
 
-  if car_fingerprint in HONDA_BOSCH:
-    acc_hud_values = {
-      'CRUISE_SPEED': hud.v_cruise,
-      'ENABLE_MINI_CAR': hud.mini_car,
-      'SET_TO_1': 0x01,
-      'HUD_LEAD': hud.car,
-      'HUD_DISTANCE': 0x02,
-      'ACC_ON': hud.car != 0,
-      'SET_TO_X3': 0x03,
-    }
-  else:
+  if car_fingerprint not in HONDA_BOSCH:
     acc_hud_values = {
       'PCM_SPEED': pcm_speed * CV.MS_TO_KPH,
       'PCM_GAS': hud.pcm_accel,
@@ -132,9 +77,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx):
       'SET_ME_X01_2': 1,
       'SET_ME_X01': 1,
     }
-
-  if openpilot_longitudinal_control:
-    commands.append(packer.make_can_msg("ACC_HUD", 0, acc_hud_values, idx))
+    commands.append(packer.make_can_msg("ACC_HUD", bus_pt, acc_hud_values, idx))
 
   lkas_hud_values = {
     'SET_ME_X41': 0x41,
@@ -143,43 +86,23 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx):
     'SOLID_LANES': hud.lanes,
     'BEEP': hud.beep,
   }
-  # Bosch sends commands to bus 2.
-  bus = 2 if car_fingerprint in HONDA_BOSCH and not openpilot_longitudinal_control else 0
-  commands.append(packer.make_can_msg('LKAS_HUD', bus, lkas_hud_values, idx))
+  commands.append(packer.make_can_msg('LKAS_HUD', bus_lkas, lkas_hud_values, idx))
 
   if car_fingerprint in (CAR.CIVIC, CAR.ODYSSEY):
-
     radar_hud_values = {
       'ACC_ALERTS': hud.acc_alert,
       'LEAD_SPEED': 0x1fe,  # What are these magic values
       'LEAD_STATE': 0x7,
       'LEAD_DISTANCE': 0x1e,
     }
-  elif car_fingerprint in HONDA_BOSCH:
-    radar_hud_values = {
-      'SET_TO_1' : 0x01,
-    }
-
-  if openpilot_longitudinal_control:
-    commands.append(packer.make_can_msg('RADAR_HUD', 0, radar_hud_values, idx))
+    commands.append(packer.make_can_msg('RADAR_HUD', bus_pt, radar_hud_values, idx))
   return commands
 
 
-def spam_buttons_command(packer, button_val, idx):
+def spam_buttons_command(packer, button_val, idx, car_fingerprint, is_panda_black):
   values = {
     'CRUISE_BUTTONS': button_val,
     'CRUISE_SETTING': 0,
   }
-  return packer.make_can_msg("SCM_BUTTONS", 0, values, idx)
-
-def create_radar_VIN_msg(id,radarVIN,radarCAN,radarTriggerMessage,useRadar):
-  msg_id = 0x560
-  msg_len = 8
-  msg = create_string_buffer(msg_len)
-  if id == 0:
-    struct.pack_into('BBBBBBBB', msg, 0, id,radarCAN,useRadar,((radarTriggerMessage >> 8) & 0xFF),(radarTriggerMessage & 0xFF),ord(radarVIN[0]),ord(radarVIN[1]),ord(radarVIN[2]))
-  if id == 1:
-    struct.pack_into('BBBBBBBB', msg, 0, id,ord(radarVIN[3]),ord(radarVIN[4]),ord(radarVIN[5]),ord(radarVIN[6]),ord(radarVIN[7]),ord(radarVIN[8]),ord(radarVIN[9]))
-  if id == 2:
-    struct.pack_into('BBBBBBBB', msg, 0, id,ord(radarVIN[10]),ord(radarVIN[11]),ord(radarVIN[12]),ord(radarVIN[13]),ord(radarVIN[14]),ord(radarVIN[15]),ord(radarVIN[16]))
-  return [msg_id, 0, msg.raw, 0]
+  bus = get_pt_bus(car_fingerprint, is_panda_black)
+  return packer.make_can_msg("SCM_BUTTONS", bus, values, idx)

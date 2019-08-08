@@ -2,6 +2,8 @@ import struct
 from ctypes import create_string_buffer
 from common.numpy_fast import clip
 
+IC_LANE_SCALE = 2.0
+
 def add_tesla_crc(msg,msg_len):
   """Calculate CRC8 using 1D poly, FF start, FF end"""
   crc_lookup = [0x00, 0x1D, 0x3A, 0x27, 0x74, 0x69, 0x4E, 0x53, 0xE8, 0xF5, 0xD2, 0xCF, 0x9C, 0x81, 0xA6, 0xBB, 
@@ -91,11 +93,11 @@ def create_DAS_LR_object_msg(lane,v1Class,v1Id,v1Dx,v1Dy,v1V,v2Class,v2Id,v2Dx,v
     if v2Class == 4:
       v2Class = 5
   if (v1Dx > 0):
-    v1x = int(clip(v1Dx,0,127)/0.5/2.0) & 0xFF
+    v1x = int(clip(v1Dx,0,127)/0.5/IC_LANE_SCALE) & 0xFF
     v1y = int((clip(v1Dy,-22.,22.) + 22.05)/0.35) & 0x7F
     v1v = 0x0F
     if v1Dx > 0:
-      v1v = int((clip(v1V,-30,26) + 30)/4) & 0x0F
+      v1v = int((clip(v1V,-30,26)/IC_LANE_SCALE + 30)/4) & 0x0F
   else:
     v1x = 0xFF
     v1y = 0x7F
@@ -103,11 +105,11 @@ def create_DAS_LR_object_msg(lane,v1Class,v1Id,v1Dx,v1Dy,v1V,v2Class,v2Id,v2Dx,v
     important1 = 0
     v1Class = 0
   if (v2Dx > 0):
-    v2x = int(clip(v2Dx,0,127)/0.5/2.0) & 0xFF
+    v2x = int(clip(v2Dx,0,127)/0.5/IC_LANE_SCALE) & 0xFF
     v2y = int((clip(v2Dy,-22.,22.) + 22.05)/0.35) & 0x7F
     v2v = 0x0F
     if v2Dx > 0:
-      v2v = int((clip(v2V,-30,26) + 30)/4) & 0x0F
+      v2v = int((clip(v2V,-30,26)/IC_LANE_SCALE + 30)/4) & 0x0F
   else:
     v2x = 0xFF
     v2y = 0x7F
@@ -145,7 +147,7 @@ def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, coll
 def create_fake_DAS_obj_lane_msg(leadDx,leadDy,leadClass,rLine,lLine,curv0,curv1,curv2,curv3,laneRange,laneWidth):
   msg_id = 0x557
   msg_len = 8
-  f = 1
+  f = IC_LANE_SCALE
   f2 = f * f
   f3 = f2 * f
   if (leadDx > 127):
@@ -159,9 +161,9 @@ def create_fake_DAS_obj_lane_msg(leadDx,leadDy,leadClass,rLine,lLine,curv0,curv1
   tLeadDx = int(leadDx / 0.5)
   tLeadDy = int((22.5 + leadDy) / 0.35)
   tCurv0 = (int((curv0 + 3.5)/0.035)) & 0xFF
-  tCurv1 = (int((curv1*f + 0.2)/0.0016)) & 0xFF
-  tCurv2 = (int((curv2*f2  + 0.0025)/0.00002)) & 0xFF
-  tCurv3 = (int((curv3*f3 + 0.00003)/0.00000024)) & 0xFF
+  tCurv1 = (int((clip(curv1*f,-0.2,0.2) + 0.2)/0.0016)) & 0xFF
+  tCurv2 = (int((clip(curv2*f2,-0.0025,0.0025)  + 0.0025)/0.00002)) & 0xFF
+  tCurv3 = (int((clip(curv3*f3,-0.00003,0.00003) + 0.00003)/0.00000024)) & 0xFF
   lWidth = (int((laneWidth - 2.0)/0.3125)) & 0x0F
   msg = create_string_buffer(msg_len)
   struct.pack_into('BBBBBBBB',msg ,0 , tLeadDx,tLeadDy,(lWidth << 4) + (lLine << 2) + rLine, tCurv0,tCurv1,tCurv2,tCurv3,((leadClass & 0x03) << 6) + int(laneRange/4))

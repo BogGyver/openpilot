@@ -22,7 +22,7 @@ const struct lookup_t TESLA_LOOKUP_MAX_ANGLE = {
     {2., 29., 38.},
     {500., 500., 500.}};
 
-const int TESLA_RT_INTERVAL = 250000; // 250ms between real time checks
+const uint32_t TESLA_RT_INTERVAL = 250000; // 250ms between real time checks
 
 struct sample_t tesla_angle_meas; // last 3 steer angles
 
@@ -47,8 +47,8 @@ int tesla_ignition_started = 0;
 #include "../drivers/uja1023.h"
 
 uint32_t tesla_ts_brakelight_on_last = 0;
-const int32_t BRAKELIGHT_CLEAR_INTERVAL = 250000; //25ms; needs to be slower than the framerate difference between the DI_torque2 (~100Hz) and DI_state messages (~10hz).
-const int32_t STW_MENU_BTN_HOLD_INTERVAL = 750000; //75ms, how long before we recognize the user is  holding this steering wheel button down
+const uint32_t BRAKELIGHT_CLEAR_INTERVAL = 250000; //25ms; needs to be slower than the framerate difference between the DI_torque2 (~100Hz) and DI_state messages (~10hz).
+const uint32_t STW_MENU_BTN_HOLD_INTERVAL = 750000; //75ms, how long before we recognize the user is  holding this steering wheel button down
 
 uint32_t stw_menu_btn_pressed_ts = 0;
 int stw_menu_current_output_state = 0;
@@ -59,7 +59,7 @@ int high_beam_lever_state = 0;
 
 int tesla_radar_status = 0; //0-not present, 1-initializing, 2-active
 uint32_t tesla_last_radar_signal = 0;
-const int TESLA_RADAR_TIMEOUT = 1000000; // 1 second between real time checks
+const uint32_t TESLA_RADAR_TIMEOUT = 1000000; // 1 second between real time checks
 char radar_VIN[] = "                 "; //leave empty if your radar VIN matches the car VIN
 int tesla_radar_vin_complete = 0;
 int tesla_radar_can = 1;
@@ -172,7 +172,7 @@ int DAS_steeringEnabled = 0;
 
 //fake DAS controll
 int time_last_DAS_data = -1;
-int time_last_EPAS_data = -1;
+int time_last_EPAS_data = -10;
 
 //fake DAS using pedal
 int DAS_usingPedal = 0;
@@ -312,7 +312,7 @@ static void send_fake_message(uint32_t RIR, uint32_t RDTR,int msg_len, int msg_a
   can_send(&to_send, bus_num);
 }
 
-static void reset_DAS_data() {
+static void reset_DAS_data(void) {
   //fake DAS variables
   DAS_present = 0;
   DAS_longC_enabled = 0;
@@ -980,6 +980,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     //no message in the last 2 seconds, car is off
     // GTW_status
     tesla_ignition_started = 0;
+    time_last_EPAS_data = -10;
   } else {
     tesla_ignition_started = 1;
   }
@@ -1041,7 +1042,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     DAS_lastStalkL = to_push->RDLR;
     DAS_lastStalkH = to_push->RDHR;
     // 6 bits starting at position 0
-    int ap_lever_position = (to_push->RDLR & 0x3F);
+    int ap_lever_position = GET_BYTE(to_push, 0) & 0x3F;
     if (ap_lever_position == 2)
     { // pull forward
       // activate openpilot
@@ -1152,7 +1153,8 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   {
     int drive_state = (to_push->RDLR >> 12) & 0x7; //DI_gear : 12|3@1+
     int brake_pressed = (to_push->RDLR & 0x8000) >> 15;
-    int tesla_speed_mph = ((((((to_push->RDLR >> 24) & 0x0F) << 8) + (( to_push->RDLR >> 16) & 0xFF)) * 0.05 -25));
+    int tesla_speed_mph = (((((GET_BYTE(to_push, 3) & 0xF) << 8) + GET_BYTE(to_push, 2)) * 0.05) - 25);
+    
 
     //for fake messages for radar we need also in kph
     //actual_speed_kph = (int)(tesla_speed_mph * 1.609);
@@ -1241,7 +1243,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   if ((addr == 0x370)  && (bus_number == 1))
   {
     // if EPAS_eacStatus is not 1 or 2, disable control
-    eac_status = ((to_push->RDHR >> 21)) & 0x7;
+    eac_status = (GET_BYTE(to_push, 6) >> 5) & 0x7;
     // For human steering override we must not disable controls when eac_status == 0
     // Additional safety: we could only allow eac_status == 0 when we have human steerign allowed
     if ((controls_allowed == 1) && (eac_status != 0) && (eac_status != 1) && (eac_status != 2))
@@ -1253,7 +1255,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   //get latest steering wheel angle
   if ((addr == 0x00E)  && (bus_number == 0))
   {
-    int angle_meas_now = (int)((((to_push->RDLR & 0x3F) << 8) + ((to_push->RDLR >> 8) & 0xFF)) * 0.1 - 819.2);
+    int angle_meas_now = (int)(((((GET_BYTE(to_push, 0) & 0x3F) << 8) + GET_BYTE(to_push, 1)) * 0.1) - 819.2);
     uint32_t ts = TIM2->CNT;
     uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_ts_angle_last);
 
@@ -1532,7 +1534,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_steeringEnabled = (b7 >> 7);
 
     desired_angle = DAS_steeringAngle * 0.1 - 1638.35;
-    //int16_t violation = 0;
+    //bool violation = 0;
 
     if (DAS_steeringEnabled == 0) {
       //steering is not enabled, do not check angles and do send
@@ -1570,13 +1572,14 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
 
 static void tesla_init(int16_t param)
 {
+  UNUSED(param);
   controls_allowed = 0;
   tesla_ignition_started = 0;
   gmlan_switch_init(1); //init the gmlan switch with 1s timeout enabled
   //uja1023_init();
 }
 
-static int tesla_ign_hook()
+static int tesla_ign_hook(void)
 {
   return tesla_ignition_started;
 }
@@ -1826,10 +1829,10 @@ static int tesla_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd)
     // change inhibit of GTW_epasControl
     if (addr == 0x101)
     {
-      to_fwd->RDLR = to_fwd->RDLR | 0x4000; // 0x4000: WITH_ANGLE, 0xC000: WITH_BOTH (angle and torque)
-      int checksum = (((to_fwd->RDLR & 0xFF00) >> 8) + (to_fwd->RDLR & 0xFF) + 2) & 0xFF;
-      to_fwd->RDLR = to_fwd->RDLR & 0xFFFF;
-      to_fwd->RDLR = to_fwd->RDLR + (checksum << 16);
+      to_fwd->RDLR = GET_BYTES_04(to_fwd) | 0x4000; // 0x4000: WITH_ANGLE, 0xC000: WITH_BOTH (angle and torque)
+      int checksum = (GET_BYTE(to_fwd, 1) + GET_BYTE(to_fwd, 0) + 2) & 0xFF;
+      to_fwd->RDLR = GET_BYTES_04(to_fwd) & 0xFFFF;
+      to_fwd->RDLR = GET_BYTES_04(to_fwd) + (checksum << 16);
       if (DAS_noEpasHarness == 0) {
         return 2;
       } else {

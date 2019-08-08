@@ -5,7 +5,6 @@ from selfdrive.car.tesla.ACC_module import ACCMode
 from selfdrive.car.tesla.PCC_module import PCCModes
 from selfdrive.car.tesla.values import CAR, DBC
 from selfdrive.car.modules.UIBT_module import UIButtons
-import numpy as np
 from selfdrive.car.modules.UIEV_module import UIEvents
 from selfdrive.car.tesla.readconfig import read_config_file
 import os
@@ -198,18 +197,21 @@ def get_pedal_can_signals(CP):
   
 def get_can_parser(CP,mydbc):
   signals, checks = get_can_signals(CP)
-  return CANParser(mydbc, signals, checks, 0, timeout=100)
+  return CANParser(mydbc, signals, checks, 0)
 
 def get_epas_parser(CP,epascan):
   signals, checks = get_epas_can_signals(CP)
-  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, epascan, timeout=100)
+  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, epascan)
 
 def get_pedal_parser(CP):
   signals, checks = get_pedal_can_signals(CP)
-  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 2, timeout=100)
+  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 2)
 
 class CarState(object):
   def __init__(self, CP):
+    self.speed_control_enabled = 0
+    self.CL_MIN_V = 8.9
+    self.CL_MAX_A = 20.
     # labels for buttons
     self.btns_init = [["alca",                "ALC",                      ["MadMax", "Normal", "Calm"]],
                       [ACCMode.BUTTON_NAME,   ACCMode.BUTTON_ABREVIATION, ACCMode.labels()],
@@ -310,58 +312,6 @@ class CarState(object):
 
     self.userSpeedLimitKph = 0.
     self.userSpeedLimitOffsetKph = 0.
-
-
-    if (CP.carFingerprint == CAR.MODELS):
-      # ALCA PARAMS
-
-      # max REAL delta angle for correction vs actuator
-      self.CL_MAX_ANGLE_DELTA_BP = [10., 44.]
-      self.CL_MAX_ANGLE_DELTA = [2.2, .4] # was [2.2, .3] - BB 05.Feb.2019
-
-      # adjustment factor for merging steer angle to actuator; should be over 4; the higher the smoother
-      self.CL_ADJUST_FACTOR_BP = [10., 44.]
-      self.CL_ADJUST_FACTOR = [16. , 8.]
-
-
-      # reentry angle when to let go
-      self.CL_REENTRY_ANGLE_BP = [10., 44.]
-      self.CL_REENTRY_ANGLE = [5. , 5.]
-
-      # a jump in angle above the CL_LANE_DETECT_FACTOR means we crossed the line
-      self.CL_LANE_DETECT_BP = [10., 44.]
-      self.CL_LANE_DETECT_FACTOR = [1.5, 1.5]
-
-      self.CL_LANE_PASS_BP = [10., 20., 44.]
-      self.CL_LANE_PASS_TIME = [40., 20., 20.] 
-
-      # change lane delta angles and other params
-      self.CL_MAXD_BP = [10., 32., 44.]
-      self.CL_MAXD_A = [.358, 0.084, 0.062] #delta angle based on speed; needs fine tune, based on Tesla steer ratio of 16.75
-
-      self.CL_MIN_V = 8.9 # do not turn if speed less than x m/2; 20 mph = 8.9 m/s
-
-      # do not turn if actuator wants more than x deg for going straight; this should be interp based on speed
-      self.CL_MAX_A_BP = [10., 44.]
-      self.CL_MAX_A = [10., 10.] 
-
-      # define limits for angle change every 0.1 s
-      # we need to force correction above 10 deg but less than 20
-      # anything more means we are going to steep or not enough in a turn
-      self.CL_MAX_ACTUATOR_DELTA = 2.
-      self.CL_MIN_ACTUATOR_DELTA = 0. 
-      self.CL_CORRECTION_FACTOR = 1.
-
-      #duration after we cross the line until we release is a factor of speed
-      self.CL_TIMEA_BP = [10., 32., 44.]
-      self.CL_TIMEA_T = [0.7 ,0.50, 0.45]
-
-      #duration to wait (in seconds) with blinkers on before starting to turn
-      self.CL_WAIT_BEFORE_START = 1
-
-      #END OF ALCA PARAMS
-      
-    
 
     self.brake_only = CP.enableCruise
     self.last_cruise_stalk_pull_time = 0
@@ -464,6 +414,15 @@ class CarState(object):
     self.v_cruise_pcm = 0.0
     # Actual cruise speed currently active on the car.
     self.v_cruise_actual = 0.0
+
+    #ALCA params
+    self.ALCA_enabled = False
+    self.ALCA_total_steps = 100
+    self.ALCA_direction = 0
+    self.ALCA_error = False
+
+    self.angle_offset = 0.
+    self.init_angle_offset = False
    
   def config_ui_buttons(self, pedalPresent):
     if pedalPresent:
@@ -483,11 +442,11 @@ class CarState(object):
     if self.meanFleetSplineSpeedMPS == 0 or self.medianFleetSpeedMPS == 0:
       self.splineBasedSuggestedSpeed = max(self.meanFleetSplineSpeedMPS,self.medianFleetSpeedMPS)
     else:
-      self.splineBasedSuggestedSpeed = (self.splineLocConfidence * self.meanFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.medianFleetSpeedMPS ) / 100
+      self.splineBasedSuggestedSpeed = (self.splineLocConfidence * self.meanFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.medianFleetSpeedMPS ) / 100.
     # if confidence over 60%, then weight between bottom speed and top speed
     # if less than 40% then use map data
     if self.splineLocConfidence > 60:
-      self.mapBasedSuggestedSpeed = (self.splineLocConfidence * self.topQrtlFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.bottomQrtlFleetSpeedMPS ) / 100
+      self.mapBasedSuggestedSpeed = (self.splineLocConfidence * self.meanFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.bottomQrtlFleetSpeedMPS ) / 100.
     else:
       self.mapBasedSuggestedSpeed = self.baseMapSpeedLimitMPS
     if self.rampType > 0:
@@ -624,13 +583,17 @@ class CarState(object):
     self.v_wheel_rr = 0 #JCT
     self.v_wheel = 0 #JCT
     self.v_weight = 0 #JCT
-    speed = (cp.vl["DI_torque2"]['DI_vehicleSpeed'])*CV.MPH_TO_KPH/3.6 #JCT MPH_TO_MS. Tesla is in MPH, v_ego is expected in M/S
+    speed = (cp.vl["DI_torque2"]['DI_vehicleSpeed']) * CV.MPH_TO_KPH/3.6 #JCT MPH_TO_MS. Tesla is in MPH, v_ego is expected in M/S
     speed = speed * 1.01 # To match car's displayed speed
-    self.v_ego_x = np.matrix([[speed], [0.0]])
+
+    if abs(speed - self.v_ego) > 2.0:  # Prevent large accelerations when car starts at non zero speed
+      self.v_ego_kf.x = [[speed], [0.0]]
+
     self.v_ego_raw = speed
     v_ego_x = self.v_ego_kf.update(speed)
     self.v_ego = float(v_ego_x[0])
     self.a_ego = float(v_ego_x[1])
+
 
     #BB use this set for pedal work as the user_gas_xx is used in other places
     self.pedal_interceptor_state = pedal_cp.vl["GAS_SENSOR"]['STATE']
@@ -707,7 +670,6 @@ class CarState(object):
 
 # carstate standalone tester
 if __name__ == '__main__':
-  import zmq
 
   class CarParams(object):
     def __init__(self):

@@ -300,8 +300,20 @@ struct HealthData {
   started @2 :Bool;
   controlsAllowed @3 :Bool;
   gasInterceptorDetected @4 :Bool;
-  startedSignalDetected @5 :Bool;
-  isGreyPanda @6 :Bool;
+  startedSignalDetectedDeprecated @5 :Bool;
+  hasGps @6 :Bool;
+  canSendErrs @7 :UInt32;
+  canFwdErrs @8 :UInt32;
+  gmlanSendErrs @9 :UInt32;
+  hwType @10: HwType;
+
+  enum HwType {
+    unknown @0;
+    whitePanda @1;
+    greyPanda @2;
+    blackPanda @3;
+    pedal @4;
+  }
 }
 
 struct LiveUI {
@@ -343,9 +355,11 @@ struct RadarState @0x9a185389d6fdd05f {
     fcw @10 :Bool;
     status @11 :Bool;
     aLeadTau @12 :Float32;
-    oClass @13 :Int8;
-    length @14 :Float32;
+    modelProb @13 :Float32;
+    radar @14 :Bool;
     trackId @15 :Int8;
+    oClass @16 :Int8;
+    length @17 :Float32;
   }
 }
 
@@ -362,6 +376,8 @@ struct LiveCalibrationData {
   # view_frame_from_road_frame
   # ui's is inversed needs new
   extrinsicMatrix @4 :List(Float32);
+  # the direction of travel vector in device frame
+  rpyCalib @7 :List(Float32);
 }
 
 struct LiveTracks {
@@ -437,9 +453,12 @@ struct ControlsState @0x97ff69c53601abf1 {
   vCurvature @46 :Float32;
   decelForTurn @47 :Bool;
 
+  decelForModel @54 :Bool;
+
   lateralControlState :union {
     indiState @52 :LateralINDIState;
     pidState @53 :LateralPIDState;
+    lqrState @55 :LateralLQRState;
   }
 
   enum OpenpilotState @0xdbe58b96d2d1ac61 {
@@ -494,6 +513,13 @@ struct ControlsState @0x97ff69c53601abf1 {
     saturated @8 :Bool;
    }
 
+  struct LateralLQRState {
+    active @0 :Bool;
+    steerAngle @1 :Float32;
+    i @2 :Float32;
+    output @3 :Float32;
+   }
+
 }
 
 struct LiveEventData {
@@ -511,6 +537,8 @@ struct ModelData {
   freePath @6 :List(Float32);
 
   settings @5 :ModelSettings;
+  leadFuture @7 :LeadData;
+  speed @8 :List(Float32);
 
   struct PathData {
     points @0 :List(Float32);
@@ -526,6 +554,10 @@ struct ModelData {
     std @2 :Float32;
     relVel @3 :Float32;
     relVelStd @4 :Float32;
+    relY @5 :Float32;
+    relYStd @6 :Float32;
+    relA @7 :Float32;
+    relAStd @8 :Float32;
   }
 
   struct ModelSettings {
@@ -643,6 +675,7 @@ struct Plan {
     mpc1 @1;
     mpc2 @2;
     mpc3 @3;
+    model @4;
   }
 }
 
@@ -664,6 +697,14 @@ struct PathPlan {
   angleOffset @11 :Float32;
   sensorValid @14 :Bool;
   commIssue @15 :Bool;
+  posenetValid @16 :Bool;
+  alcaError @17 :Bool;
+  alcaCancelling @18 :Bool;
+  alcaEnabled @19 :Bool;
+  alcaLaneWidth @20 :Float32;
+  alcaStep @21 :UInt8;
+  alcaTotalSteps @22 :UInt16;
+  alcaDirection @23 :Int8;
 }
 
 struct LiveLocationData {
@@ -1642,8 +1683,13 @@ struct OrbKeyFrame {
 
 struct DriverMonitoring {
   frameId @0 :UInt32;
-  descriptor @1 :List(Float32);
-  std @2 :Float32;
+  descriptorDEPRECATED @1 :List(Float32);
+  stdDEPRECATED @2 :Float32;
+  faceOrientation @3 :List(Float32);
+  facePosition @4 :List(Float32);
+  faceProb @5 :Float32;
+  leftEyeProb @6 :Float32;
+  rightEyeProb @7 :Float32;
 }
 
 struct Boot {
@@ -1661,6 +1707,8 @@ struct LiveParametersData {
   steerRatio @5 :Float32;
   sensorValid @6 :Bool;
   yawRate @7 :Float32;
+  posenetSpeed @8 :Float32;
+  posenetValid @9 :Bool;
 }
 
 struct LiveMapData {

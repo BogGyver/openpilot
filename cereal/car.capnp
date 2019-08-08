@@ -76,6 +76,8 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     controlsFailed @51;
     sensorDataInvalid @52;
     commIssue @53;
+    tooDistracted @54;
+    posenetInvalid @55;
   }
 }
 
@@ -125,6 +127,12 @@ struct CarState {
   doorOpen @24 :Bool;
   seatbeltUnlatched @25 :Bool;
   canValid @26 :Bool;
+
+  # ALCA info
+  alcaEnabled @27 :Bool;
+  alcaDirection @28 :Int8;
+  alcaTotalSteps @29 :UInt16;
+  alcaError @30 :Bool;
 
   # which packets this state came from
   canMonoTimes @12: List(UInt64);
@@ -329,6 +337,7 @@ struct CarParams {
   lateralTuning :union {
     pid @26 :LateralPIDTuning;
     indi @27 :LateralINDITuning;
+    lqr @40 :LateralLQRTuning;
   }
 
   steerLimitAlert @28 :Bool;
@@ -344,6 +353,7 @@ struct CarParams {
   steerActuatorDelay @36 :Float32; # Steering wheel actuator delay in seconds
   openpilotLongitudinalControl @37 :Bool; # is openpilot doing the longitudinal control?
   carVin @38 :Text; # VIN number queried during fingerprinting
+  isPandaBlack @39: Bool;
 
   struct LateralPIDTuning {
     kpBP @0 :List(Float32);
@@ -370,6 +380,20 @@ struct CarParams {
     actuatorEffectiveness @3 :Float32;
   }
 
+  struct LateralLQRTuning {
+    scale @0 :Float32;
+    ki @1 :Float32;
+    dcGain @2 :Float32;
+
+    # State space system
+    a @3 :List(Float32);
+    b @4 :List(Float32);
+    c @5 :List(Float32);
+
+    k @6 :List(Float32);  # LQR gain
+    l @7 :List(Float32);  # Kalman gain
+  }
+
 
   enum SafetyModel {
     # does NOT match board setting
@@ -387,11 +411,9 @@ struct CarParams {
     subaru @11;
   }
 
-  syncID @43  :Int16;  # SyncID is optional
+  syncID @41  :Int16;  # SyncID is optional
   # Kp and Ki for the lateral control
-  steerReactance @39 :Float32;
-  steerInductance @40 :Float32;
-  steerResistance @41 :Float32;
+
   eonToFront  @42  :Float32;    # [m] distance from EON to front wheels
   
 

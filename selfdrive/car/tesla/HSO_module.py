@@ -24,7 +24,7 @@ class HSOController(object):
               steer_current=(CS.angle_steers)  # Formula to convert current steering angle to match apply_steer calculated number
               apply_steer = int(-actuators.steerAngle)
               angle = abs(apply_steer-steer_current)
-              if angle > 5.:
+              if angle > 10.:
                 self.frame_humanSteered = frame
         if enabled:
             if CS.enableHSO:
