@@ -4,6 +4,7 @@ from cereal import tinkla
 import os
 import zmq
 import datetime
+import tinklad
 
 tinklaClient = None
 
@@ -13,6 +14,10 @@ def now_iso8601():
 class TinklaClient():
     sock = None
     pid = None
+
+    eventCategoryKeys = tinklad.TinklaInterfaceEventCategoryKeys()
+    messageTypeKeys = tinklad.TinklaInterfaceMessageKeys()
+    actions = tinklad.TinklaInterfaceActions()
     
     def start_client(self):
         if os.getpid() == self.pid:
@@ -34,7 +39,9 @@ class TinklaClient():
             return
 
         message = tinkla.Interface.new_message()
+        message.version = tinkla.interfaceVersion
         message.message.userInfo = info
+        message.message.userInfo.version = tinkla.interfaceVersion
 
         try:
             self.sock.send(message.to_bytes(), zmq.NOBLOCK)
@@ -49,7 +56,24 @@ class TinklaClient():
 
         event.timestamp = now_iso8601()
         message = tinkla.Interface.new_message()
-        message.message.userEvent = event
+        message.version = tinkla.interfaceVersion
+        message.message.event = event
+        message.message.event.version = tinkla.interfaceVersion
+
+        try:
+            self.sock.send(message.to_bytes(), zmq.NOBLOCK)
+        except zmq.error.Again:
+            # drop :/
+            pass
+
+    def attemptToSendPendingMessages(self):
+        self.start_client()
+        if self.sock is None:
+            return
+
+        message = tinkla.Interface.new_message()
+        message.version = tinkla.interfaceVersion
+        message.message.action = self.actions.attemptToSendPendingMessages
 
         try:
             self.sock.send(message.to_bytes(), zmq.NOBLOCK)

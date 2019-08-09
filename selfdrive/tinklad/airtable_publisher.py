@@ -75,7 +75,6 @@ class Publisher():
         self.pending_info_dict = None
         print(LOG_PREFIX + "*send_info competed*")
 
-
     def send_event(self, event):
         if self.pending_info_dict != None and self.pending_info_dict != self.latest_info_dict:
             self.send_info(self.pending_info_dict, isData= True)

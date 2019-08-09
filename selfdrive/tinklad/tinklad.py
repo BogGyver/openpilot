@@ -4,14 +4,27 @@ import zmq
 import cereal
 from pqueue import Queue
 from airtable_publisher import Publisher
+import requests
+import time
 
 LOG_PREFIX = "tinklad: "
 
 # This needs to match tinkla.capnp message keys
 class TinklaInterfaceMessageKeys():
     userInfo = 'userInfo'
-    userEvent = 'userEvent'
+    event = 'event'
+    action = 'action'
 
+# This needs to match tinkla.capnp event category keys
+class TinklaInterfaceEventCategoryKeys():
+    general = 'general'
+    userAction = 'userAction'
+    openPilotAction = 'openPilotAction'
+    crash = 'crash'
+    other = 'other'
+
+class TinklaInterfaceActions():
+    attemptToSendPendingMessages = 'attemptToSendPendingMessages'
 
 class Cache():
     def push(self, event):
@@ -44,6 +57,22 @@ class Cache():
 
 class TinklaServer(): 
 
+    last_attempt_time = 0
+
+    def attemptToSendPendingMessages(self):
+        # Throttle to once per minute
+        now = time.time()
+        if now - self.last_attempt_time < 60:
+            return
+        self.last_attempt_time = now
+
+        if self.cache.count() == 0 and self.publisher.pending_info_dict == None:
+            return
+        if not self.isOnline():
+            return
+        print(LOG_PREFIX + "Attempting to send pending messages")
+        self.publish_pending_events()
+
     def setUserInfo(self, info, **kwargs):
         print(LOG_PREFIX + "Sending info to publisher: %s" % (info.to_dict()))
         self.info = info
@@ -62,6 +91,9 @@ class TinklaServer():
 
         while self.cache.count() > 0:
             event = self.cache.pop()
+            if event.version != cereal.tinkla.interfaceVersion:
+                print(LOG_PREFIX + "Unsupported event version: %0.2f (supported version: %0.2f)" % (event.version, cereal.tinkla.interfaceVersion))
+                return
             try:
                 print(LOG_PREFIX + "Sending event to publisher: %s" % (event.to_dict()))
                 self.publisher.send_event(event)
@@ -75,12 +107,23 @@ class TinklaServer():
                 print(LOG_PREFIX + "Error attempting to publish, will retry later (%s)" % (error))
                 return
 
+    def isOnline(self):
+        url='https://api.airtable.com/v0/appht7GB4aJS2A0LD'
+        timeout=5
+        try:
+            _ = requests.get(url, timeout=timeout)
+            return True
+        except requests.ConnectionError:
+            return False
+        return False
+
     def __init__(self):
         self.publisher = Publisher()
         # set persitent cache for bad network / offline
         self.cache = Cache()
         self.publish_pending_events()
         messageKeys = TinklaInterfaceMessageKeys()
+        actions = TinklaInterfaceActions()
 
         # Start server:
         ctx = zmq.Context()
@@ -91,14 +134,21 @@ class TinklaServer():
         while True:
             data = ''.join(sock.recv_multipart())
             tinklaInterface = cereal.tinkla.Interface.from_bytes(data)
+            if tinklaInterface.version != cereal.tinkla.interfaceVersion:
+                print(LOG_PREFIX + "Unsupported message version: %0.2f (supported version: %0.2f)" % (tinklaInterface.version, cereal.tinkla.interfaceVersion))
+                continue
             messageType = tinklaInterface.message.which()
             if messageType == messageKeys.userInfo:
                 info = tinklaInterface.message.userInfo
                 self.setUserInfo(info)
-            elif messageType == messageKeys.userEvent:
-                event = tinklaInterface.message.userEvent
+            elif messageType == messageKeys.event:
+                event = tinklaInterface.message.event
                 self.logUserEvent(event)
-
+            elif messageType == messageKeys.action:
+                if tinklaInterface.message.action == actions.attemptToSendPendingMessages:
+                    self.attemptToSendPendingMessages()
+                else:
+                    print(LOG_PREFIX + "Unsupported action: %s" % tinklaInterface.message.action)
 
 
 def main(gctx=None):
