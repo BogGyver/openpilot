@@ -32,7 +32,6 @@ class TinklaEventValueTypes():
 class Publisher():
     openPilotId = None
     latest_info_dict = None # current info published
-    pending_info_dict = None 
     userRecordId = None
 
     def send_info(self, info, isData= False):
@@ -50,8 +49,6 @@ class Publisher():
                 return
 
         print(LOG_PREFIX + "Sending info. data=%s" % (data_dict))
-        self.pending_info_dict = data_dict
-
         if self.userRecordId != None:
             self.__update_user(data_dict)
 
@@ -72,21 +69,11 @@ class Publisher():
             self.__update_user(data_dict)
         
         self.latest_info_dict = data_dict
-        self.pending_info_dict = None
         print(LOG_PREFIX + "*send_info competed*")
 
     def send_event(self, event):
-        if self.pending_info_dict != None and self.pending_info_dict != self.latest_info_dict:
-            self.send_info(self.pending_info_dict, isData= True)
-
-        if self.openPilotId is None:
-            if self.latest_info_dict != None:
-                self.openPilotId = self.latest_info_dict[self.userKeys.openPilotId]
-            elif self.pending_info_dict != None:
-                print(LOG_PREFIX + "pending_data=%s" % (self.pending_info_dict))
-                self.openPilotId = self.pending_info_dict[self.userKeys.openPilotId]
-            else:
-                self.openPilotId = None
+        if self.openPilotId is None and self.latest_info_dict != None:
+            self.openPilotId = self.latest_info_dict[self.userKeys.openPilotId]
 
         event_dict = self.__generate_airtable_user_event_dict(event)
         print(LOG_PREFIX + "Sending event. data=%s" % (event_dict))

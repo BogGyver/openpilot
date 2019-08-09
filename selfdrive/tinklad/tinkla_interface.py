@@ -38,6 +38,7 @@ class TinklaClient():
         if self.sock is None:
             return
 
+        info.timestamp = now_iso8601()
         message = tinkla.Interface.new_message()
         message.version = tinkla.interfaceVersion
         message.message.userInfo = info
