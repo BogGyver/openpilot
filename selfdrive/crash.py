@@ -32,10 +32,10 @@ else:
     tinklaClient = TinklaClient()
     dongleId = params.get("DongleId")
     userHandle = carSettings.userHandle
-    event = tinkla.Interface.UserEvent.new_message(
+    event = tinkla.Interface.Event.new_message(
         openPilotId=dongleId,
         source="n/a",
-        category="general",
+        category=tinklaClient.eventCategoryKeys.crash,
         name="crash",
     )
     trace = traceback.format_exc().replace('"', '`').replace("'", '`')

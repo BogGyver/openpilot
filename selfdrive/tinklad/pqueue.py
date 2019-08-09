@@ -73,6 +73,7 @@ class Queue(SyncQ):
     def _destroy(self):
         if os.path.exists(self.path):
             shutil.rmtree(self.path)
+            os.makedirs(self.path)
 
     def _qsize(self, len=len): # pylint: disable=redefined-builtin
         return self.info['size']
