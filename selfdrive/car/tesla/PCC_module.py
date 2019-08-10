@@ -72,7 +72,10 @@ class PCCModes(object):
   @classmethod
   def is_selected(cls, mode, cstm_butns):
     """Tell if the UI buttons are set to the given mode"""
-    return type(mode) == type(cls.from_buttons(cstm_butns))
+    button_mode = cls.from_buttons(cstm_butns)
+    if not (isinstance(mode, Mode) and isinstance(button_mode, Mode)):
+      return False
+    return mode.label == button_mode.label
     
   @classmethod
   def labels(cls):
