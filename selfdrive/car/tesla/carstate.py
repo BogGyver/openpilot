@@ -257,7 +257,7 @@ class CarState(object):
     ### END OF MAIN CONFIG OPTIONS ###
 
     self.apEnabled = True
-    self.apFollowDistance =  2.5 #time in seconds to follow
+    self.apFollowTimeInS =  2.5 #time in seconds to follow
     self.keepEonOff = False
     self.alcaEnabled = True
     self.mapAwareSpeed = False
@@ -530,7 +530,7 @@ class CarState(object):
 
     if (self.hasTeslaIcIntegration):
       self.apEnabled = (cp.vl["MCU_chassisControl"]["MCU_latControlEnable"] == 1)
-      self.apFollowDistance =  1 + cp.vl["MCU_chassisControl"]["MCU_fcwSensitivity"] * 0.5
+      self.apFollowTimeInS =  1 + cp.vl["MCU_chassisControl"]["MCU_fcwSensitivity"] * 0.5
       self.keepEonOff = cp.vl["MCU_chassisControl"]["MCU_ldwEnable"] == 1
       self.alcaEnabled = cp.vl["MCU_chassisControl"]["MCU_pedalSafetyEnable"] == 1
       self.mapAwareSpeed = cp.vl["MCU_chassisControl"]["MCU_aebEnable"] == 1
