@@ -258,10 +258,10 @@ class ACCController(object):
     # Relative velocity between the lead car and our set cruise speed.
     future_vrel_kph = lead_speed_kph - CS.v_cruise_actual
     # How much we can accelerate without exceeding the max allowed speed.
-    if (CS.useTeslaMapData and (CS.mapAwareSpeed or (CS.baseMapSpeedLimitMPS <2.7)):
+    if (CS.maxdrivespeed > 0)  and CS.useTeslaMapData and (CS.mapAwareSpeed or (CS.baseMapSpeedLimitMPS <2.7)):
       max_acc_speed_kph = self.max_v_by_speed_limit(self.acc_speed_kph * CV.KPH_TO_MS, self.speed_limit_kph * CV.KPH_TO_MS, CS) * CV.MS_TO_KPH
     else:
-      max_acc_speed_kph = self.max_v_by_speed_limit(CS.v_cruise_actual * CV.KPH_TO_MS, self.acc_speed_kph * CV.KPH_TO_MS, CS) * CV.MS_TO_KPH
+      max_acc_speed_kph = self.max_v_by_speed_limit(self.acc_speed_kph * CV.KPH_TO_MS, CS.v_cruise_actual * CV.KPH_TO_MS, CS) * CV.MS_TO_KPH
     available_speed_kph = max_acc_speed_kph - CS.v_cruise_actual
     half_press_kph, full_press_kph = self._get_cc_units_kph(CS.imperial_speed_units)
     # button to issue
