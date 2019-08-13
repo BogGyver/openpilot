@@ -169,6 +169,13 @@ class ReadConfigTests(unittest.TestCase):
     self.assertEqual(cs.fix1916, False)
     os.remove(config_file_path)
 
+  # Test get_value interface:
+  def test_get_value(self):
+    value = CarSettings().get_value("userHandle")
+    self.assertEqual(value, 'your_tinkla_username')
+    value = CarSettings().get_value("doAutoUpdate")
+    self.assertEqual(value, True)
+
   def check_defaults(self, cs):
     self.assertEqual(cs.userHandle, 'your_tinkla_username')
     self.assertEqual(cs.forceFingerprintTesla, False)
@@ -201,7 +208,7 @@ class ReadConfigTests(unittest.TestCase):
     self.assertEqual(cs.radarPosition, 0)
     self.assertEqual(cs.doAutoUpdate, True)
     self.assertEqual(cs.fix1916, False)
-    # Test get_value interface:
+    self.assertEqual(cs.get_value("userHandle"), 'your_tinkla_username')
     self.assertEqual(cs.get_value("doAutoUpdate"), True)
 
   # Helper methods

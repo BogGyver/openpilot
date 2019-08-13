@@ -7,7 +7,7 @@ $Java.outerClassname("Tinkla");
 
 @0xfc8dda643156b95d;
 
-const interfaceVersion :Float32 = 2.0;
+const interfaceVersion :Float32 = 2.1;
 
 struct Interface {
 
@@ -23,7 +23,7 @@ struct Interface {
         version @0 :Float32;
 
         openPilotId @1 :Text;
-        reserved @2 :Text;
+        timestamp @2 :Text;
 
         userHandle @3 :Text;
         gitRemote @4 :Text;

@@ -72,7 +72,10 @@ class PCCModes(object):
   @classmethod
   def is_selected(cls, mode, cstm_butns):
     """Tell if the UI buttons are set to the given mode"""
-    return type(mode) == type(cls.from_buttons(cstm_butns))
+    button_mode = cls.from_buttons(cstm_butns)
+    if not (isinstance(mode, Mode) and isinstance(button_mode, Mode)):
+      return False
+    return mode.label == button_mode.label
     
   @classmethod
   def labels(cls):
@@ -498,7 +501,7 @@ class PCCController(object):
       self.vRel = self.lead_1.vRel
     if abs(self.lead_1.aRel) > .5:
       self.aRel = self.lead_1.aRel
-    rel_speed_kph = (self.vRel + 0 * CS.apFollowDistance * self.aRel) * CV.MS_TO_KPH
+    rel_speed_kph = (self.vRel + 0 * CS.apFollowTimeInS * self.aRel) * CV.MS_TO_KPH
     # v_ego is in m/s, so safe_distance is in meters.
     safe_dist_m = _safe_distance_m(CS.v_ego,CS)
     # Current speed in kph
@@ -609,13 +612,14 @@ def _visual_radar_adjusted_dist_m(m, CS):
   return _interp_map(m, mapping)
 
 def _safe_distance_m(v_ego_ms, CS):
-  return max(CS.apFollowDistance * (v_ego_ms+1), MIN_SAFE_DIST_M)
+  return max(CS.apFollowTimeInS * (v_ego_ms+1), MIN_SAFE_DIST_M)
 
 def _max_safe_speed_kph(lead,CS):
   return 150.
-  if (lead.vRel > 0) and (lead.dRel < _safe_distance_m(CS.v_ego,CS)):
-    return (CS.v_ego + lead.vRel + 2 * lead.dRel/_safe_distance_m(CS.v_ego,CS)) * CV.MS_TO_KPH
-  return CV.MS_TO_KPH * lead.dRel / CS.apFollowDistance
+  if _is_present(lead):
+    return (CS.v_ego + lead.vRel + (lead.dRel - _safe_distance_m(CS.v_ego,CS))/CS.apFollowTimeInS) * CV.MS_TO_KPH
+  else:
+    return 150.
   
 def _min_safe_vrel_kph(lead,CS,actual_speed_kph):
   m = lead.dRel
@@ -637,9 +641,9 @@ def _sec_til_collision(lead, CS):
   if _is_present(lead) and lead.vRel < 0:
     if CS.useTeslaRadar:
       #BB: take in consideration acceleration when looking at time to collision. 
-      return min(0.1,-4+lead.dRel / abs(lead.vRel + min(0,lead.aRel) * CS.apFollowDistance))
+      return min(0.1,-4+lead.dRel / abs(lead.vRel + min(0,lead.aRel) * CS.apFollowTimeInS))
     else:
-      return _visual_radar_adjusted_dist_m(lead.dRel, CS) / abs(lead.vRel + min(0,lead.aRel) * CS.apFollowDistance)
+      return _visual_radar_adjusted_dist_m(lead.dRel, CS) / abs(lead.vRel + min(0,lead.aRel) * CS.apFollowTimeInS)
   else:
     return 60.  # Arbitrary, but better than MAXINT because we can still do math on it.
   

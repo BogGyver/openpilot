@@ -247,7 +247,7 @@ class ACCController(object):
     if lead_car is None:
       return None
     # Desired gap (in seconds) between cars.
-    follow_time_s = CS.apFollowDistance
+    follow_time_s = CS.apFollowTimeInS
     # v_ego is in m/s, so safe_dist_m is in meters.
     safe_dist_m = CS.v_ego * follow_time_s
     current_time_ms = _current_time_millis()
