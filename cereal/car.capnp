@@ -131,7 +131,7 @@ struct CarState {
   canValid @26 :Bool;
 
   # ALCA info
-  alcaEnabled @27 :Bool;
+  alcaEnabled @31 :Bool;
   alcaDirection @28 :Int8;
   alcaTotalSteps @29 :UInt16;
   alcaError @30 :Bool;
