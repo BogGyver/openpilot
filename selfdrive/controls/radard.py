@@ -14,7 +14,7 @@ from cereal import car,ui
 from common.params import Params
 from common.realtime import set_realtime_priority, Ratekeeper, DT_MDL
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
-from selfdrive.controls.lib.model_parser import ModelParser
+from selfdrive.controls.lib.lane_planner import LanePlanner
 
 DEBUG = False
 
@@ -358,7 +358,7 @@ def radard_thread(gctx=None):
 
   rk = Ratekeeper(rate, print_delay_threshold=None)
   RD = RadarD(mocked, RI)
-  MP = ModelParser()
+  MP = LanePlanner()
 
   has_radar = not CP.radarOffCan or mocked
   last_md_ts = 0.
