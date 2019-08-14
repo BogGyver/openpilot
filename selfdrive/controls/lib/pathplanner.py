@@ -129,13 +129,13 @@ class PathPlanner(object):
     plan_send.pathPlan.posenetValid = bool(sm['liveParameters'].posenetValid)
 
     #ALCA params
-    plan_send.pathPlan.alcaDirection = int(self.MP.ALCAMP.ALCA_direction)
-    plan_send.pathPlan.alcaError = bool(self.MP.ALCAMP.ALCA_error)
-    plan_send.pathPlan.alcaCancelling = bool(self.MP.ALCAMP.ALCA_cancelling)
-    plan_send.pathPlan.alcaEnabled = bool(self.MP.ALCAMP.ALCA_enabled)
-    plan_send.pathPlan.alcaLaneWidth = float(self.MP.ALCAMP.ALCA_lane_width)
-    plan_send.pathPlan.alcaStep = int(self.MP.ALCAMP.ALCA_step)
-    plan_send.pathPlan.alcaTotalSteps = int(self.MP.ALCAMP.ALCA_total_steps)
+    plan_send.pathPlan.alcaDirection = int(self.LP.ALCAMP.ALCA_direction)
+    plan_send.pathPlan.alcaError = bool(self.LP.ALCAMP.ALCA_error)
+    plan_send.pathPlan.alcaCancelling = bool(self.LP.ALCAMP.ALCA_cancelling)
+    plan_send.pathPlan.alcaEnabled = bool(self.LP.ALCAMP.ALCA_enabled)
+    plan_send.pathPlan.alcaLaneWidth = float(self.LP.ALCAMP.ALCA_lane_width)
+    plan_send.pathPlan.alcaStep = int(self.LP.ALCAMP.ALCA_step)
+    plan_send.pathPlan.alcaTotalSteps = int(self.LP.ALCAMP.ALCA_total_steps)
 
     self.plan.send(plan_send.to_bytes())
 

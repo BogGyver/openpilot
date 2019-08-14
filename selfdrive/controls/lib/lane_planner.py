@@ -54,7 +54,7 @@ class LanePlanner(object):
     self.l_prob = md.leftLane.prob  # left line prob
     self.r_prob = md.rightLane.prob  # right line prob
 
-  def update_lane(self, v_ego, cs):
+  def update_lane(self, v_ego, md, cs):
     # only offset left and right lane lines; offsetting p_poly does not make sense
     self.l_poly[3] += CAMERA_OFFSET
     self.r_poly[3] += CAMERA_OFFSET
@@ -71,10 +71,10 @@ class LanePlanner(object):
 
     # ALCA integration
     if not (cs is None):
-      self.r_poly,self.l_poly,self.r_prob,self.l_prob,self.lane_width = self.ALCAMP.update(v_ego, md, cs, np.array(r_poly), np.array(l_poly), r_prob, l_prob, self.lane_width)
+      self.r_poly,self.l_poly,self.r_prob,self.l_prob,self.lane_width = self.ALCAMP.update(v_ego, md, cs, np.array(self.r_poly), np.array(self.l_poly), self.r_prob, self.l_prob, self.lane_width)
 
     self.d_poly = calc_d_poly(self.l_poly, self.r_poly, self.p_poly, self.l_prob, self.r_prob, self.lane_width)
 
   def update(self, v_ego, md, cs=None):
     self.parse_model(md)
-    self.update_lane(v_ego,cs)
+    self.update_lane(v_ego, md, cs)
