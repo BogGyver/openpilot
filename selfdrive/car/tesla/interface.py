@@ -135,8 +135,7 @@ class CarInterface(object):
       #ret.steerReactance = 1.0
       #ret.steerInductance = 1.0
       #ret.steerResistance = 1.0
-      #ret.eonToFront = 0.9
-      
+          
       # Kp and Ki for the longitudinal control
       if teslaModel == "S":
         ret.longitudinalTuning.kpBP = [0., 5., 35.]

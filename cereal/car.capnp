@@ -414,10 +414,6 @@ struct CarParams {
   }
 
   syncID @41  :Int16;  # SyncID is optional
-  # Kp and Ki for the lateral control
-
-  eonToFront  @42  :Float32;    # [m] distance from EON to front wheels
-  
 
   enum SteerControlType {
     torque @0;
