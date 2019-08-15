@@ -231,7 +231,7 @@ class CarInterface(object):
 
     # create message
     ret = car.CarState.new_message()
-    ret.canValid = ch_can_valid and epas_can_valid and pedal_can_valid
+    ret.canValid = ch_can_valid and epas_can_valid #and pedal_can_valid
     # speeds
     ret.vEgo = self.CS.v_ego
     ret.aEgo = self.CS.a_ego

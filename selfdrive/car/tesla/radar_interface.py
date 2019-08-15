@@ -147,6 +147,10 @@ class RadarInterface(object):
             self.pts[message].objectClass = 1
 
     ret.points = self.pts.values()
+    errors = []
+    if not self.rcp.can_valid:
+      errors.append("canError")
+    ret.errors = errors
     return ret
 
 # radar_interface standalone tester
