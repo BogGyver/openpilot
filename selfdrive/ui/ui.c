@@ -1674,6 +1674,8 @@ void handle_message(UIState *s, void *which) {
   struct cereal_Event eventd;
   cereal_read_Event(&eventd, eventp);
   double t = millis_since_boot();
+
+  int bts = bb_get_button_status(s,"sound");
   if (eventd.which == cereal_Event_controlsState) {
     struct cereal_ControlsState datad;
     cereal_read_ControlsState(&datad, eventd.controlsState);
@@ -1698,11 +1700,6 @@ void handle_message(UIState *s, void *which) {
     s->scene.decel_for_model = datad.decelForModel;
 
     s->alert_sound_timeout = 1 * UI_FREQ;
-
-    int bts = bb_get_button_status(s,"sound");
-    if (bts == 0) {
-      return;
-    }
 
     if (datad.alertSound != cereal_CarControl_HUDControl_AudibleAlert_none && datad.alertSound != s->alert_sound && bts != 0) {
       char* error = NULL;
