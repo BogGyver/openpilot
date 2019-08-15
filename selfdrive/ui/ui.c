@@ -1654,10 +1654,6 @@ static void update_status(UIState *s, int status) {
     set_awake(s, true);
     // wake up bg thread to change
     pthread_cond_signal(&s->bg_cond);
-    //BB add sound
-    if ((old_status != STATUS_STOPPED) || (s->status != STATUS_DISENGAGED)) {
-      bb_ui_play_sound(s,s->status);
-    }
   }
 }
 
@@ -1703,7 +1699,12 @@ void handle_message(UIState *s, void *which) {
 
     s->alert_sound_timeout = 1 * UI_FREQ;
 
-    if (datad.alertSound != cereal_CarControl_HUDControl_AudibleAlert_none && datad.alertSound != s->alert_sound) {
+    int bts = bb_get_button_status(s,"sound");
+    if (bts == 0) {
+      return;
+    }
+
+    if (datad.alertSound != cereal_CarControl_HUDControl_AudibleAlert_none && datad.alertSound != s->alert_sound && bts != 0) {
       char* error = NULL;
       if (s->alert_sound != cereal_CarControl_HUDControl_AudibleAlert_none) {
         sound_file* active_sound = get_sound_file(s->alert_sound);
@@ -1715,13 +1716,14 @@ void handle_message(UIState *s, void *which) {
 
       sound_file* sound = get_sound_file(datad.alertSound);
       slplay_play(sound->uri, sound->loop, &error);
+
       if(error) {
         LOGW("error playing sound: %s", error);
       }
 
       s->alert_sound = datad.alertSound;
       snprintf(s->alert_type, sizeof(s->alert_type), "%s", datad.alertType.str);
-    } else if ((!datad.alertSound || datad.alertSound == cereal_CarControl_HUDControl_AudibleAlert_none) && s->alert_sound != cereal_CarControl_HUDControl_AudibleAlert_none) {
+    } else if ((!datad.alertSound || datad.alertSound == cereal_CarControl_HUDControl_AudibleAlert_none) && s->alert_sound != cereal_CarControl_HUDControl_AudibleAlert_none && bts != 0) {
       sound_file* sound = get_sound_file(s->alert_sound);
 
       char* error = NULL;
