@@ -104,7 +104,7 @@ class ALCAController(object):
     self.alcaEnabled = alcaEnabled
 
 
-  def stop_ALCA(self):
+  def stop_ALCA(self, CS):
     # something is not right; ALCAModelParser is not engaged; cancel
     CS.UE.custom_alert_message(3,"Auto Lane Change Canceled! (d)",200,5)
     self.laneChange_cancelled = True
@@ -384,7 +384,7 @@ class ALCAModelParser(object):
         #compute offset
         if (not self.ALCA_error) and self.ALCA_use_visual:
           if self.ALCA_over_line:
-            if (self.ALCA_total_steps - self.ALCA_step <= 1) or ((self.ALCA_direction == 1) and (r_poly[3] < -ALCA_release_distance)) or ((self.ALCA_direction == -1) and (l_poly[3] > ALCA_release_distance)):
+            if (self.ALCA_total_steps - self.ALCA_step <= 1) or (self.ALCA_over_line and ((self.ALCA_direction == 1) and (r_poly[3] < -ALCA_release_distance)) or ((self.ALCA_direction == -1) and (l_poly[3] > ALCA_release_distance))):
               self.reset_alca()
               self.ALCA_error = False
             ix = self.ALCA_lane_width * float(self.ALCA_direction) / float(self.ALCA_total_steps)
@@ -407,10 +407,12 @@ class ALCAModelParser(object):
         
         if (self.ALCA_direction == 1 and not self.ALCA_over_line) or (self.ALCA_direction == -1 and self.ALCA_over_line):
           r_poly = np.array(l_poly)
+          l_prob = 1
           r_prob = l_prob
           r_poly[3] = l_poly[3] - self.ALCA_lane_width
         elif (self.ALCA_direction == -1 and not self.ALCA_over_line) or (self.ALCA_direction == 1 and self.ALCA_over_line):
           l_poly = np.array(r_poly)
+          r_prob = 1
           l_prob = r_prob
           l_poly[3] = r_poly[3] + self.ALCA_lane_width
         l_poly[3] += self.ALCA_OFFSET_C3

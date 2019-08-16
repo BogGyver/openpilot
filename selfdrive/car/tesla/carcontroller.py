@@ -81,6 +81,7 @@ HUDData = namedtuple("HUDData",
 class CarController(object):
   def __init__(self, dbc_name):
     self.alcaStateData = None
+    self.icLeadsData = None
     self.params = Params()
     self.braking = False
     self.brake_steady = 0.
@@ -100,6 +101,7 @@ class CarController(object):
     self.trafficevents = messaging.sub_sock(service_list['trafficEvents'].port, conflate=True, poller=self.poller)
     self.pathPlan = messaging.sub_sock(service_list['pathPlan'].port, conflate=True, poller=self.poller)
     self.radarState = messaging.sub_sock(service_list['radarState'].port, conflate=True, poller=self.poller)
+    self.icLeads = messaging.sub_sock(service_list['uiIcLeads'].port, conflate=True, poller=self.poller)
     self.icCarLR = messaging.sub_sock(service_list['uiIcCarLR'].port, conflate=True, poller=self.poller)
     self.alcaState = messaging.sub_sock(service_list['alcaState'].port, conflate=True, poller=self.poller)
     self.gpsLocationExternal = None 
@@ -349,8 +351,8 @@ class CarController(object):
 
     # Update statuses for custom buttons every 0.1 sec.
     if (frame % 10 == 0):
-      self.ALCA.update_status(False) 
-      #self.ALCA.update_status((CS.cstm_btns.get_button_status("alca") > 0) and ((CS.enableALCA and not CS.hasTeslaIcIntegration) or (CS.hasTeslaIcIntegration and CS.alcaEnabled)))
+      #self.ALCA.update_status(False) 
+      self.ALCA.update_status((CS.cstm_btns.get_button_status("alca") > 0) and ((CS.enableALCA and not CS.hasTeslaIcIntegration) or (CS.hasTeslaIcIntegration and CS.alcaEnabled)))
     
     pedal_can_sends = []
     
@@ -444,10 +446,13 @@ class CarController(object):
           self.speedlimit_valid = lmd.speedLimitValid
           self.speedlimit_units = self.speedUnits(fromMetersPerSecond = self.speedlimit_ms)
           self.speed_limit_for_cc = self.speedlimit_ms * CV.MS_TO_KPH
+        elif socket is self.icLeads:
+          self.icLeadsData = tesla.ICLeads.from_bytes(socket.recv())
         elif socket is self.radarState:
           #to show lead car on IC
-          can_messages = self.showLeadCarOnICCanMessage(radarSocket = socket)
-          can_sends.extend(can_messages)
+          if self.icLeadsData is not None:
+            can_messages = self.showLeadCarOnICCanMessage(radarSocket = socket)
+            can_sends.extend(can_messages)
         elif socket is self.alcaState:
           self.alcaStateData = tesla.ALCAState.from_bytes(socket.recv())
         elif socket is self.pathPlan:
@@ -658,8 +663,8 @@ class CarController(object):
     if (lead_1 is not None) and lead_1.status:
       self.leadDx = lead_1.dRel
       self.leadDy = self.curv0-lead_1.yRel
-      self.leadId = lead_1.trackId
-      self.leadClass = lead_1.oClass 
+      self.leadId = self.icLeadsData.lead1trackId
+      self.leadClass = self.icLeadsData.lead1oClass 
       self.leadVx = lead_1.vRel
       if (self.leadId <= 0) or (self.leadId == 63):
         self.leadId = 61
@@ -672,8 +677,8 @@ class CarController(object):
     if (lead_2 is not None) and lead_2.status:
       self.lead2Dx = lead_2.dRel
       self.lead2Dy = self.curv0-lead_2.yRel
-      self.lead2Id = lead_2.trackId
-      self.lead2Class = lead_2.oClass 
+      self.lead2Id = self.icLeadsData.lead2trackId
+      self.lead2Class = self.icLeadsData.lead2oClass 
       self.lead2Vx = lead_2.vRel
       if (self.lead2Id <= 0) or (self.lead2Id == 63):
         self.leadId = 62
@@ -718,7 +723,7 @@ class CarController(object):
       self.prev_ldwStatus = self.ldwStatus
       self.ldwStatus = 0
       if (self.ALCA.laneChange_direction != 0) and alcaStateData.alcaError:
-        self.ALCA.stop_ALCA()
+        self.ALCA.stop_ALCA(CS)
       if self.alca_enabled:
         #exagerate position a little during ALCA to make lane change look smoother on IC
         if self.ALCA.laneChange_over_the_line:
@@ -753,7 +758,7 @@ class CarController(object):
   # Generates IC messages for the Left and Right radar identified cars from radard
   def showLeftAndRightCarsOnICCanMessages(self, icCarLRSocket):
     messages = []
-    icCarLR_msg = ui.ICCarsLR.from_bytes(icCarLRSocket.recv())
+    icCarLR_msg = tesla.ICCarsLR.from_bytes(icCarLRSocket.recv())
     if icCarLR_msg is not None:
       #for icCarLR_msg in icCarLR_list:
       messages.append(teslacan.create_DAS_LR_object_msg(1,icCarLR_msg.v1Type,icCarLR_msg.v1Id,

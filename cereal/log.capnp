@@ -357,9 +357,6 @@ struct RadarState @0x9a185389d6fdd05f {
     aLeadTau @12 :Float32;
     modelProb @13 :Float32;
     radar @14 :Bool;
-    trackId @15 :Int8;
-    oClass @16 :Int8;
-    length @17 :Float32;
   }
 }
 
@@ -690,6 +687,7 @@ struct PathPlan {
   lProb @5 :Float32;
   rPoly @6 :List(Float32);
   rProb @7 :Float32;
+
   angleSteers @8 :Float32; # deg
   rateSteers @13 :Float32; # deg/s
   mpcSolutionValid @9 :Bool;
