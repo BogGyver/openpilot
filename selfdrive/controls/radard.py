@@ -377,7 +377,7 @@ def radard_thread(gctx=None):
       v_ego = sm['controlsState'].vEgo
 
     if sm.updated['model']:
-      MP.update(v_ego, sm['model'])
+      MP.update(v_ego, sm['model'], False)
     
 
     dat = RD.update(rk.frame, RI.delay, sm, rr, has_radar, MP)

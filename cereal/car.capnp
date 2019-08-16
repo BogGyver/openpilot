@@ -130,11 +130,6 @@ struct CarState {
   seatbeltUnlatched @25 :Bool;
   canValid @26 :Bool;
 
-  # ALCA info
-  alcaEnabled @31 :Bool;
-  alcaDirection @28 :Int8;
-  alcaTotalSteps @29 :UInt16;
-  alcaError @30 :Bool;
 
   # which packets this state came from
   canMonoTimes @12: List(UInt64);

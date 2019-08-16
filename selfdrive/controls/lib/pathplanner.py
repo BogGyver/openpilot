@@ -11,6 +11,7 @@ from selfdrive.controls.lib.drive_helpers import MPC_COST_LAT
 from selfdrive.controls.lib.lane_planner import LanePlanner
 import selfdrive.messaging as messaging
 from selfdrive.car.tesla.readconfig import CarSettings
+from cereal import tesla
 
 LOG_MPC = os.environ.get('LOG_MPC', False)
 
@@ -29,6 +30,7 @@ class PathPlanner(object):
 
     self.plan = messaging.pub_sock(service_list['pathPlan'].port)
     self.livempc = messaging.pub_sock(service_list['liveMpc'].port)
+    self.alca = messaging.pub_sock(service_list['alcaState'].port)
 
     self.setup_mpc(CP.steerRateCost)
     self.solution_invalid_cnt = 0
@@ -59,7 +61,7 @@ class PathPlanner(object):
     angle_offset_average = sm['liveParameters'].angleOffsetAverage
     angle_offset = sm['liveParameters'].angleOffset
 
-    self.LP.update(v_ego, sm['model'],sm['carState'])
+    self.LP.update(v_ego, sm['model'],True)
 
     # Run MPC
     self.angle_steers_des_prev = self.angle_steers_des_mpc
@@ -131,16 +133,19 @@ class PathPlanner(object):
     plan_send.pathPlan.sensorValid = bool(sm['liveParameters'].sensorValid)
     plan_send.pathPlan.posenetValid = bool(sm['liveParameters'].posenetValid)
 
-    #ALCA params
-    plan_send.pathPlan.alcaDirection = int(self.LP.ALCAMP.ALCA_direction)
-    plan_send.pathPlan.alcaError = bool(self.LP.ALCAMP.ALCA_error)
-    plan_send.pathPlan.alcaCancelling = bool(self.LP.ALCAMP.ALCA_cancelling)
-    plan_send.pathPlan.alcaEnabled = bool(self.LP.ALCAMP.ALCA_enabled)
-    plan_send.pathPlan.alcaLaneWidth = float(self.LP.ALCAMP.ALCA_lane_width)
-    plan_send.pathPlan.alcaStep = int(self.LP.ALCAMP.ALCA_step)
-    plan_send.pathPlan.alcaTotalSteps = int(self.LP.ALCAMP.ALCA_total_steps)
-
     self.plan.send(plan_send.to_bytes())
+
+    alca_state = tesla.ALCAState.new_message()
+    #ALCA params
+    alca_state.alcaDirection = int(self.LP.ALCAMP.ALCA_direction)
+    alca_state.alcaError = bool(self.LP.ALCAMP.ALCA_error)
+    alca_state.alcaCancelling = bool(self.LP.ALCAMP.ALCA_cancelling)
+    alca_state.alcaEnabled = bool(self.LP.ALCAMP.ALCA_enabled)
+    alca_state.alcaLaneWidth = float(self.LP.ALCAMP.ALCA_lane_width)
+    alca_state.alcaStep = int(self.LP.ALCAMP.ALCA_step)
+    alca_state.alcaTotalSteps = int(self.LP.ALCAMP.ALCA_total_steps)
+
+    self.alca.send(alca_state.to_bytes())
 
     if LOG_MPC:
       dat = messaging.new_message()

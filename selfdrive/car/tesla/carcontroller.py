@@ -1,5 +1,5 @@
 import datetime
-from cereal import log,ui
+from cereal import log,ui,tesla
 from common.params import Params
 from collections import namedtuple
 from common.numpy_fast import clip, interp
@@ -80,6 +80,7 @@ HUDData = namedtuple("HUDData",
 
 class CarController(object):
   def __init__(self, dbc_name):
+    self.alcaStateData = None
     self.params = Params()
     self.braking = False
     self.brake_steady = 0.
@@ -100,6 +101,7 @@ class CarController(object):
     self.pathPlan = messaging.sub_sock(service_list['pathPlan'].port, conflate=True, poller=self.poller)
     self.radarState = messaging.sub_sock(service_list['radarState'].port, conflate=True, poller=self.poller)
     self.icCarLR = messaging.sub_sock(service_list['uiIcCarLR'].port, conflate=True, poller=self.poller)
+    self.alcaState = messaging.sub_sock(service_list['alcaState'].port, conflate=True, poller=self.poller)
     self.gpsLocationExternal = None 
     self.speedlimit_ms = 0.
     self.speedlimit_valid = False
@@ -446,9 +448,12 @@ class CarController(object):
           #to show lead car on IC
           can_messages = self.showLeadCarOnICCanMessage(radarSocket = socket)
           can_sends.extend(can_messages)
+        elif socket is self.alcaState:
+          self.alcaStateData = tesla.ALCAState.from_bytes(socket.recv())
         elif socket is self.pathPlan:
           #to show curvature and lanes on IC
-          self.handlePathPlanSocketForCurvatureOnIC(pathPlanSocket = socket, CS = CS)
+          if self.alcaStateData is not None:
+            self.handlePathPlanSocketForCurvatureOnIC(pathPlanSocket = socket, alcaStateData = self.alcaStateData,CS = CS)
         elif socket is self.icCarLR:
           can_messages = self.showLeftAndRightCarsOnICCanMessages(icCarLRSocket = socket)
           can_sends.extend(can_messages)
@@ -683,7 +688,7 @@ class CarController(object):
           self.lead2Id,self.lead2Dx,self.lead2Dy,self.lead2Vx))
     return messages
 
-  def handlePathPlanSocketForCurvatureOnIC(self, pathPlanSocket, CS):
+  def handlePathPlanSocketForCurvatureOnIC(self, pathPlanSocket, alcaStateData, CS):
     pp = messaging.recv_one(pathPlanSocket).pathPlan
     if pp.paramsValid:
       if pp.lProb > 0.75:
@@ -712,7 +717,7 @@ class CarController(object):
       self.visionCurvC0 = self.curv0
       self.prev_ldwStatus = self.ldwStatus
       self.ldwStatus = 0
-      if (self.ALCA.laneChange_direction != 0) and pp.alcaError:
+      if (self.ALCA.laneChange_direction != 0) and alcaStateData.alcaError:
         self.ALCA.stop_ALCA()
       if self.alca_enabled:
         #exagerate position a little during ALCA to make lane change look smoother on IC

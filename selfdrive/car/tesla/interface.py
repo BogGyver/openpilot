@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from cereal import car
+from cereal import car, tesla
 from common.numpy_fast import clip, interp
 from common.realtime import sec_since_boot, DT_CTRL
 from selfdrive.config import Conversions as CV
@@ -11,7 +11,8 @@ from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V_FOLLOWING
 from common.params import read_db
 from selfdrive.car import STD_CARGO_KG
 from selfdrive.car.tesla.readconfig import CarSettings
-
+import selfdrive.messaging as messaging
+from selfdrive.services import service_list
 
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -33,6 +34,7 @@ class CarInterface(object):
     self.gas_pressed_prev = False
     self.brake_pressed_prev = False
     self.can_invalid_count = 0
+    self.alca = messaging.pub_sock(service_list['alcaStatus'].port)
 
     
 
@@ -231,7 +233,7 @@ class CarInterface(object):
 
     # create message
     ret = car.CarState.new_message()
-    ret.canValid = ch_can_valid and epas_can_valid #and pedal_can_valid
+    ret.canValid = ch_can_valid #and epas_can_valid #and pedal_can_valid
     # speeds
     ret.vEgo = self.CS.v_ego
     ret.aEgo = self.CS.a_ego
@@ -279,10 +281,6 @@ class CarInterface(object):
     ret.leftBlinker = bool(self.CS.left_blinker_on)
     ret.rightBlinker = bool(self.CS.right_blinker_on)
 
-    ret.alcaEnabled = bool(self.CS.ALCA_enabled)
-    ret.alcaTotalSteps = int(self.CS.ALCA_total_steps)
-    ret.alcaDirection = int(self.CS.ALCA_direction)
-    ret.alcaError = bool(self.CS.ALCA_error)
 
     ret.doorOpen = not self.CS.door_all_closed
     ret.seatbeltUnlatched = not self.CS.seatbelt
@@ -400,11 +398,11 @@ class CarInterface(object):
     if self.CP.enableCruise and ret.vEgo < self.CP.minEnableSpeed:
       events.append(create_event('speedTooLow', [ET.NO_ENTRY]))
 
-# Standard OP method to disengage:
-# disable on pedals rising edge or when brake is pressed and speed isn't zero
-#    if (ret.gasPressed and not self.gas_pressed_prev) or \
-#       (ret.brakePressed and (not self.brake_pressed_prev or ret.vEgo > 0.001)):
-#      events.append(create_event('steerTempUnavailable', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
+    # Standard OP method to disengage:
+    # disable on pedals rising edge or when brake is pressed and speed isn't zero
+    #    if (ret.gasPressed and not self.gas_pressed_prev) or \
+    #       (ret.brakePressed and (not self.brake_pressed_prev or ret.vEgo > 0.001)):
+    #      events.append(create_event('steerTempUnavailable', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
 
     #if (self.CS.cstm_btns.get_button_status("brake")>0):
     #  if ((self.CS.brake_pressed !=0) != self.brake_pressed_prev): #break not canceling when pressed
@@ -489,6 +487,16 @@ class CarInterface(object):
     # update previous brake/gas pressed
     self.gas_pressed_prev = ret.gasPressed
     self.brake_pressed_prev = self.CS.brake_pressed != 0
+
+    #pass ALCA status
+    alca_status = tesla.ALCAStatus.new_message()
+
+    alca_status.alcaEnabled = bool(self.CS.ALCA_enabled)
+    alca_status.alcaTotalSteps = int(self.CS.ALCA_total_steps)
+    alca_status.alcaDirection = int(self.CS.ALCA_direction)
+    alca_status.alcaError = bool(self.CS.ALCA_error)
+
+    self.alca.send(alca_status.to_bytes())
 
     # cast to reader so it can't be modified
     return ret.as_reader()
