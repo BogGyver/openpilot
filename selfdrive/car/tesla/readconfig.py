@@ -42,6 +42,15 @@ class ConfigFile(object):
       )
       file_changed |= didUpdate
 
+      #eon_to_front -> eonToFront
+      into.eonToFront, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = main_section,
+        entry = 'eon_to_front', entry_type = float,
+        default_value = 0.9,
+        comment = 'Distance between EON plane and front of the car.'
+      )
+      file_changed |= didUpdate
+
       #force_pedal_over_cc -> forcePedalOverCC
       into.forcePedalOverCC, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = main_section,
@@ -346,6 +355,7 @@ class CarSettings(object):
 
   userHandle = None
   forceFingerprintTesla = None
+  eonToFront = None
   forcePedalOverCC = None
   enableHSO = None
   enableALCA = None

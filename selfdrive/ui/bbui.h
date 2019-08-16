@@ -1260,14 +1260,14 @@ void bb_ui_init(UIState *s) {
     s->b.icShowLogo = true;
 }
 
-void bb_ui_play_sound( UIState *s, int sound) {
-    char* snd_command;
-    int bts = bb_get_button_status(s,"sound");
-    if ((bts > 0) || (bts == -1)) {
-        asprintf(&snd_command, "python /data/openpilot/selfdrive/car/modules/snd/playsound.py %d &", sound);
-        system(snd_command);
-    }
-}
+// void bb_ui_play_sound( UIState *s, int sound) {
+//    char* snd_command;
+//    int bts = bb_get_button_status(s,"sound");
+//    if ((bts > 0) || (bts == -1)) {
+//        asprintf(&snd_command, "python /data/openpilot/selfdrive/car/modules/snd/playsound.py %d &", sound);
+//        system(snd_command);
+//    }
+// }
 
 void bb_ui_set_car( UIState *s, char *model, char *folder) {
     strcpy(s->b.car_model,model);
@@ -1415,26 +1415,26 @@ void  bb_ui_poll_update( UIState *s) {
           zmq_msg_close(&msg);
         }  
         if (bb_polls[3].revents) {
-          //play sound socket
-          zmq_msg_t msg;
-          err = zmq_msg_init(&msg);
-          assert(err == 0);
-          err = zmq_msg_recv(&msg, s->b.uiPlaySound_sock_raw, 0);
-          assert(err >= 0);
+          // play sound socket
+          // zmq_msg_t msg;
+          // err = zmq_msg_init(&msg);
+          // assert(err == 0);
+          // err = zmq_msg_recv(&msg, s->b.uiPlaySound_sock_raw, 0);
+          // assert(err >= 0);
 
-          struct capn ctx;
-          capn_init_mem(&ctx, zmq_msg_data(&msg), zmq_msg_size(&msg), 0);
+          // struct capn ctx;
+          // capn_init_mem(&ctx, zmq_msg_data(&msg), zmq_msg_size(&msg), 0);
 
-          cereal_UIPlaySound_ptr stp;
-          stp.p = capn_getp(capn_root(&ctx), 0, 1);
-          struct cereal_UIPlaySound datad;
-          cereal_read_UIPlaySound(&datad, stp);
+          // cereal_UIPlaySound_ptr stp;
+          // stp.p = capn_getp(capn_root(&ctx), 0, 1);
+          // struct cereal_UIPlaySound datad;
+          // cereal_read_UIPlaySound(&datad, stp);
 
-          int snd = datad.sndSound;
-          bb_ui_play_sound(s,snd);
+          // int snd = datad.sndSound;
+          // bb_ui_play_sound(s,snd);
           
-          capn_free(&ctx);
-          zmq_msg_close(&msg);
+          // capn_free(&ctx);
+          // zmq_msg_close(&msg);
         } 
         if (bb_polls[4].revents) {
             // gps socket

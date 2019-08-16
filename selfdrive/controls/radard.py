@@ -14,7 +14,7 @@ from cereal import car,ui
 from common.params import Params
 from common.realtime import set_realtime_priority, Ratekeeper, DT_MDL
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
-from selfdrive.controls.lib.model_parser import ModelParser
+from selfdrive.controls.lib.lane_planner import LanePlanner
 
 DEBUG = False
 
@@ -159,11 +159,19 @@ class RadarD(object):
           clusters[cluster_i] = Cluster()
         clusters[cluster_i].add(self.tracks[idens[idx]])
     elif len(track_pts) == 1:
+      # FIXME: cluster_point_centroid hangs forever if len(track_pts) == 1
+      cluster_idxs = [0]
       clusters = [Cluster()]
       clusters[0].add(self.tracks[idens[0]])
     else:
       clusters = []
 
+    # if a new point, reset accel to the rest of the cluster
+    for idx in xrange(len(track_pts)):
+      if self.tracks[idens[idx]].cnt <= 1:
+        aLeadK = clusters[cluster_idxs[idx]].aLeadK
+        aLeadTau = clusters[cluster_idxs[idx]].aLeadTau
+        self.tracks[idens[idx]].reset_a_lead(aLeadK, aLeadTau)
     
     ### START REVIEW SECTION
 
@@ -312,7 +320,7 @@ class RadarD(object):
     # *** publish radarState ***
     dat = messaging.new_message()
     dat.init('radarState')
-    dat.valid = sm.all_alive_and_valid(service_list=['controlsState'])
+    dat.valid = sm.all_alive_and_valid(service_list=['controlsState', 'model'])
     dat.radarState.mdMonoTime = self.last_md_ts
     dat.radarState.canMonoTimes = list(rr.canMonoTimes)
     dat.radarState.radarErrors = list(rr.errors)
@@ -350,7 +358,7 @@ def radard_thread(gctx=None):
 
   rk = Ratekeeper(rate, print_delay_threshold=None)
   RD = RadarD(mocked, RI)
-  MP = ModelParser()
+  MP = LanePlanner()
 
   has_radar = not CP.radarOffCan or mocked
   last_md_ts = 0.
@@ -369,7 +377,7 @@ def radard_thread(gctx=None):
       v_ego = sm['controlsState'].vEgo
 
     if sm.updated['model']:
-      MP.update(v_ego, sm['model'])
+      MP.update(v_ego, sm['model'], False)
     
 
     dat = RD.update(rk.frame, RI.delay, sm, rr, has_radar, MP)

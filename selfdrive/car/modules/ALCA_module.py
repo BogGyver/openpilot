@@ -50,6 +50,7 @@ from selfdrive.services import service_list
 import selfdrive.messaging as messaging
 import zmq
 import numpy as np
+from cereal import tesla
 
 #wait time after turn complete before enabling smoother
 WAIT_TIME_AFTER_TURN = 2.0
@@ -253,6 +254,8 @@ class ALCAModelParser(object):
     self.ALCA_vego_prev = 0.
     self.mx = 0.
     self.dx = 0.
+    self.poller = zmq.Poller()
+    self.alcaStatus = messaging.sub_sock(service_list['alcaStatus'].port, conflate=True, poller=self.poller)
 
 
   def reset_alca (self):
@@ -270,18 +273,27 @@ class ALCAModelParser(object):
     self.ALCA_vego_prev = 0.
     self.mx = 0.
     self.dx = 0.
+    self.alcas = None
 
   def debug_alca(self,message):
     if ALCA_DEBUG:
       print message
 
-  def update(self, v_ego, md, cs, r_poly, l_poly, r_prob, l_prob, lane_width):
+  def update(self, v_ego, md, r_poly, l_poly, r_prob, l_prob, lane_width):
 
-    self.ALCA_direction = cs.alcaDirection
-    self.ALCA_enabled = cs.alcaEnabled
-    self.ALCA_total_steps = cs.alcaTotalSteps
-    self.ALCA_error = self.ALCA_error or (cs.alcaError and not self.prev_CS_ALCA_error)
-    self.prev_CS_ALCA_error = cs.alcaError
+    for socket, _ in self.poller.poll(1):
+      if socket is self.alcaStatus:
+        self.alcas = tesla.ALCAStatus.from_bytes(socket.recv())
+
+        self.ALCA_direction = self.alcas.alcaDirection
+        self.ALCA_enabled = self.alcas.alcaEnabled
+        self.ALCA_total_steps = self.alcas.alcaTotalSteps
+        self.ALCA_error = self.ALCA_error or (self.alcas.alcaError and not self.prev_CS_ALCA_error)
+        self.prev_CS_ALCA_error = self.alcas.alcaError
+
+    #if we don't have yet ALCA status, return same values
+    if self.alcas is None:
+      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width
 
     #if error but no direction, the carcontroller component is fine and we need to reset
     if self.ALCA_error and (self.ALCA_direction == 0):

@@ -25,15 +25,10 @@ _VLEAD_K = [[0.1988689], [0.28555364]]
 class Track(object):
   def __init__(self):
     self.ekf = None
-    self.initted = False
+    self.cnt = 0
 
   def update(self, d_rel, y_rel, v_rel,measured, a_rel, vy_rel, oClass, length, track_id,movingState, d_path, v_ego_t_aligned,use_tesla_radar):
-    if self.initted:
-      # pylint: disable=access-member-before-definition
-      self.dPathPrev = self.dPath
-      self.vLeadPrev = self.vLead
-      self.vRelPrev = self.vRel
-
+    
     # relative values, copy
     self.dRel = d_rel   # LONG_DIST
     self.yRel = y_rel   # -LAT_DIST
@@ -50,18 +45,13 @@ class Track(object):
     # computed velocity and accelerations
     self.vLead = self.vRel + v_ego_t_aligned
 
-    if not self.initted:
-      self.initted = True
-      self.aLeadTau = _LEAD_ACCEL_TAU
-      self.cnt = 1
-      self.vision_cnt = 0
-      self.vision = False
-      self.track_id = track_id
+      
+    if self.cnt == 0:
       self.kf = KF1D([[self.vLead], [0.0]], _VLEAD_A, _VLEAD_C, _VLEAD_K)
     else:
       self.kf.update(self.vLead)
 
-      self.cnt += 1
+    self.cnt += 1
 
     self.vLeadK = float(self.kf.x[SPEED][0])
     self.aLeadK = float(self.kf.x[ACCEL][0])
@@ -80,6 +70,10 @@ class Track(object):
     # Weigh y higher since radar is inaccurate in this dimension
     return [self.dRel, (self.yRel-dy)*2, self.vRel]
 
+  def reset_a_lead(self, aLeadK, aLeadTau):
+    self.kf = KF1D([[self.vLead], [aLeadK]], _VLEAD_A, _VLEAD_C, _VLEAD_K)
+    self.aLeadK = aLeadK
+    self.aLeadTau = aLeadTau
 
 def mean(l):
   return sum(l) / len(l)
@@ -131,11 +125,17 @@ class Cluster(object):
 
   @property
   def aLeadK(self):
-    return mean([t.aLeadK for t in self.tracks])
+    if all(t.cnt <= 1 for t in self.tracks):
+      return 0.
+    else:
+      return mean([t.aLeadK for t in self.tracks if t.cnt > 1])
 
   @property
   def aLeadTau(self):
-    return mean([t.aLeadTau for t in self.tracks])
+    if all(t.cnt <= 1 for t in self.tracks):
+      return _LEAD_ACCEL_TAU
+    else:
+      return mean([t.aLeadTau for t in self.tracks if t.cnt > 1])
 
   @property
   def measured(self):

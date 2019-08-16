@@ -78,6 +78,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     commIssue @53;
     tooDistracted @54;
     posenetInvalid @55;
+    soundsUnavailable @56;
   }
 }
 
@@ -109,6 +110,7 @@ struct CarState {
   steeringAngle @7 :Float32;   # deg
   steeringRate @15 :Float32;   # deg/s
   steeringTorque @8 :Float32;  # TODO: standardize units
+  steeringTorqueEps @27 :Float32;  # TODO: standardize units
   steeringPressed @9 :Bool;    # if the user is using the steering wheel
 
   # cruise state
@@ -128,11 +130,6 @@ struct CarState {
   seatbeltUnlatched @25 :Bool;
   canValid @26 :Bool;
 
-  # ALCA info
-  alcaEnabled @27 :Bool;
-  alcaDirection @28 :Int8;
-  alcaTotalSteps @29 :UInt16;
-  alcaError @30 :Bool;
 
   # which packets this state came from
   canMonoTimes @12: List(UInt64);
@@ -412,10 +409,6 @@ struct CarParams {
   }
 
   syncID @41  :Int16;  # SyncID is optional
-  # Kp and Ki for the lateral control
-
-  eonToFront  @42  :Float32;    # [m] distance from EON to front wheels
-  
 
   enum SteerControlType {
     torque @0;
