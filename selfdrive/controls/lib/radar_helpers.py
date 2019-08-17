@@ -171,11 +171,12 @@ class Cluster(object):
       "status": True,
       "fcw": self.is_potential_fcw(model_prob),
       "aLeadTau": float(self.aLeadTau),
-      "oClass": int(self.oClass),
-      "length": float(self.length),
-      "trackId": int(self.track_id % 32),
       "modelProb": model_prob,
       "radar": True,
+    }, {
+      "trackId": int(self.track_id % 32),
+      "oClass": int(self.oClass),
+      "length": float(self.length),
     }
 
   def get_RadarState_from_vision(self, lead_msg, v_ego):

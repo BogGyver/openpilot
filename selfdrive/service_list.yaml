@@ -88,7 +88,10 @@ uiButtonStatus: [8204, true, 0.]
 uiPlaySound: [8205, true, 0.]
 uiUpdate: [8206, true, 0.]
 uiGyroInfo: [8207, true, 0.]
+
+#tesla bosch radar integration
 uiIcCarLR: [8208, true, 0.]
+uiIcLeads: [8211, true, 0.]
 
 #alca Events
 alcaStatus: [8209, true, 0.]

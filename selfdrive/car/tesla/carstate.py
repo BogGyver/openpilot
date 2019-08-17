@@ -201,11 +201,11 @@ def get_can_parser(CP,mydbc):
 
 def get_epas_parser(CP,epascan):
   signals, checks = get_epas_can_signals(CP)
-  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, epascan)
+  return CANParser(DBC[CP.carFingerprint]['pt']+"_epas", signals, checks, epascan)
 
 def get_pedal_parser(CP):
   signals, checks = get_pedal_can_signals(CP)
-  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 2)
+  return CANParser(DBC[CP.carFingerprint]['pt']+"_pedal", signals, checks, 2)
 
 class CarState(object):
   def __init__(self, CP):
