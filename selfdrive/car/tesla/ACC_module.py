@@ -175,22 +175,22 @@ class ACCController(object):
     # Clip ACC speed between 0 and 170 KPH.
     self.acc_speed_kph = min(self.acc_speed_kph, 170)
     self.acc_speed_kph = max(self.acc_speed_kph, 0)
-
-  def max_v_by_speed_limit(self,acc_set_speed_ms ,speed_limit_ms, CS):
+    
+  def max_v_by_speed_limit(self, acc_set_speed_ms, CS):
     # if more than 10 kph / 2.78 ms, consider we have speed limit
     if (CS.maxdrivespeed > 0)  and CS.useTeslaMapData and (CS.mapAwareSpeed or (CS.baseMapSpeedLimitMPS <2.7)):
       #do we know the based speed limit?
       sl1 = 0.
       if CS.baseMapSpeedLimitMPS >= 2.7:
         #computer adjusted maxdrive based on set speed
-        sl1 = min (speed_limit_ms *  CS.maxdrivespeed / CS.baseMapSpeedLimitMPS, speed_limit_ms)
+        sl1 = min (acc_set_speed_ms *  CS.maxdrivespeed / CS.baseMapSpeedLimitMPS, acc_set_speed_ms)
         sl1 = self.maxsuggestedspeed_avg.add(sl1)
       else:
         sl1 = self.maxsuggestedspeed_avg.add(CS.maxdrivespeed)
       return min(acc_set_speed_ms, sl1)
     else:
       return acc_set_speed_ms
-    
+
   # Decide which cruise control buttons to simluate to get the car to the
   # desired speed.
   def update_acc(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset):
@@ -258,7 +258,7 @@ class ACCController(object):
     # Relative velocity between the lead car and our set cruise speed.
     future_vrel_kph = lead_speed_kph - CS.v_cruise_actual
     # How much we can accelerate without exceeding the max allowed speed.
-    max_acc_speed_kph = self.max_v_by_speed_limit(CS.v_cruise_actual * CV.KPH_TO_MS, self.acc_speed_kph, CS) * CV.MS_TO_KPH
+    max_acc_speed_kph = self.max_v_by_speed_limit(self.acc_speed_kph * CV.KPH_TO_MS, CS) * CV.MS_TO_KPH
     available_speed_kph = max_acc_speed_kph - CS.v_cruise_actual
     half_press_kph, full_press_kph = self._get_cc_units_kph(CS.imperial_speed_units)
     # button to issue
