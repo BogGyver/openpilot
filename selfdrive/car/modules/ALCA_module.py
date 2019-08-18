@@ -256,6 +256,7 @@ class ALCAModelParser(object):
     self.dx = 0.
     self.poller = zmq.Poller()
     self.alcaStatus = messaging.sub_sock(service_list['alcaStatus'].port, conflate=True, poller=self.poller)
+    self.alcas = None
 
 
   def reset_alca (self):
