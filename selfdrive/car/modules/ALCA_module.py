@@ -299,7 +299,11 @@ class ALCAModelParser(object):
     self.ALCA_r_poly = np.array(r_poly)
 
     #where are we in alca as %
-    ALCA_perc_complete = float(self.ALCA_step) / float(self.ALCA_total_steps)
+    if self.ALCA_total_steps != 0:
+      ALCA_perc_complete = float(self.ALCA_step) / float(self.ALCA_total_steps)
+    else:
+      ALCA_perc_complete = 0.0
+      
     if self.ALCA_error and self.ALCA_cancelling:
       self.debug_alca(" Error and Cancelling -> resetting...")
       self.reset_alca()
