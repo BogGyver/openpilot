@@ -12,7 +12,7 @@ GENS += gen/c/car.capnp.c gen/c/log.capnp.c gen/c/ui.capnp.c gen/c/tinkla.capnp.
 ifeq ($(UNAME_M),x86_64)
 
 ifneq (, $(shell which capnpc-java))
-GENS += gen/java/Car.java gen/java/Log.java
+GENS += gen/java/Car.java gen/java/Log.java gen/java/Tesla.java gen/java/Ui.java
 else
 $(warning capnpc-java not found, skipping java build)
 endif

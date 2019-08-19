@@ -414,10 +414,9 @@ void bb_draw_buttons( UIState *s) {
 
 void bb_ui_draw_custom_alert( UIState *s) {
     if ((strlen(s->b.custom_message) > 0) && (strlen(s->scene.alert_text1)==0)){
-      if (!((bb_get_button_status(s,"msg") == 0) && (s->b.custom_message_status<=3))) {
-        bb_ui_draw_vision_alert(s, ALERTSIZE_SMALL, s->b.custom_message_status,
-                              s->b.custom_message,"");
-                              
+      if ((!((bb_get_button_status(s,"msg") == 0) && (s->b.custom_message_status<=3))) && (s->vision_connected == true)) {
+        //bb_ui_draw_vision_alert(s, ALERTSIZE_SMALL, s->b.custom_message_status,
+          //                    s->b.custom_message,"");
       }
     } 
 }
@@ -1352,8 +1351,8 @@ void  bb_ui_poll_update( UIState *s) {
           s->b.custom_message_status = datad.caStatus;
 
           if ((strlen(s->b.custom_message) > 0) && (strlen(s->scene.alert_text1)==0)){
-            if (!((bb_get_button_status(s,"msg") == 0) && (s->b.custom_message_status<=3))) {
-              set_awake(s, true);
+            if ((!((bb_get_button_status(s,"msg") == 0) && (s->b.custom_message_status<=3))) && (s->vision_connected == true)) {
+              //set_awake(s, true);
             }
           }
 
@@ -1416,25 +1415,25 @@ void  bb_ui_poll_update( UIState *s) {
         }  
         if (bb_polls[3].revents) {
           // play sound socket
-          // zmq_msg_t msg;
-          // err = zmq_msg_init(&msg);
-          // assert(err == 0);
-          // err = zmq_msg_recv(&msg, s->b.uiPlaySound_sock_raw, 0);
-          // assert(err >= 0);
+          zmq_msg_t msg;
+          err = zmq_msg_init(&msg);
+          assert(err == 0);
+          err = zmq_msg_recv(&msg, s->b.uiPlaySound_sock_raw, 0);
+          assert(err >= 0);
 
-          // struct capn ctx;
-          // capn_init_mem(&ctx, zmq_msg_data(&msg), zmq_msg_size(&msg), 0);
+          struct capn ctx;
+          capn_init_mem(&ctx, zmq_msg_data(&msg), zmq_msg_size(&msg), 0);
 
-          // cereal_UIPlaySound_ptr stp;
-          // stp.p = capn_getp(capn_root(&ctx), 0, 1);
-          // struct cereal_UIPlaySound datad;
-          // cereal_read_UIPlaySound(&datad, stp);
+          cereal_UIPlaySound_ptr stp;
+          stp.p = capn_getp(capn_root(&ctx), 0, 1);
+          struct cereal_UIPlaySound datad;
+          cereal_read_UIPlaySound(&datad, stp);
 
-          // int snd = datad.sndSound;
+          int snd = datad.sndSound;
           // bb_ui_play_sound(s,snd);
           
-          // capn_free(&ctx);
-          // zmq_msg_close(&msg);
+          capn_free(&ctx);
+          zmq_msg_close(&msg);
         } 
         if (bb_polls[4].revents) {
             // gps socket
