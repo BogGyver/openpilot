@@ -1,5 +1,5 @@
 import datetime
-from cereal import log,ui
+from cereal import log,tesla
 from common.params import Params
 from collections import namedtuple
 from common.numpy_fast import clip, interp
@@ -80,6 +80,8 @@ HUDData = namedtuple("HUDData",
 
 class CarController(object):
   def __init__(self, dbc_name):
+    self.alcaStateData = None
+    self.icLeadsData = None
     self.params = Params()
     self.braking = False
     self.brake_steady = 0.
@@ -99,7 +101,9 @@ class CarController(object):
     self.trafficevents = messaging.sub_sock(service_list['trafficEvents'].port, conflate=True, poller=self.poller)
     self.pathPlan = messaging.sub_sock(service_list['pathPlan'].port, conflate=True, poller=self.poller)
     self.radarState = messaging.sub_sock(service_list['radarState'].port, conflate=True, poller=self.poller)
+    self.icLeads = messaging.sub_sock(service_list['uiIcLeads'].port, conflate=True, poller=self.poller)
     self.icCarLR = messaging.sub_sock(service_list['uiIcCarLR'].port, conflate=True, poller=self.poller)
+    self.alcaState = messaging.sub_sock(service_list['alcaState'].port, conflate=True, poller=self.poller)
     self.gpsLocationExternal = None 
     self.speedlimit_ms = 0.
     self.speedlimit_valid = False
@@ -347,7 +351,8 @@ class CarController(object):
 
     # Update statuses for custom buttons every 0.1 sec.
     if (frame % 10 == 0):
-      self.ALCA.update_status(False) #(CS.cstm_btns.get_button_status("alca") > 0) and ((CS.enableALCA and not CS.hasTeslaIcIntegration) or (CS.hasTeslaIcIntegration and CS.alcaEnabled)))
+      #self.ALCA.update_status(False) 
+      self.ALCA.update_status((CS.cstm_btns.get_button_status("alca") > 0) and ((CS.enableALCA and not CS.hasTeslaIcIntegration) or (CS.hasTeslaIcIntegration and CS.alcaEnabled)))
     
     pedal_can_sends = []
     
@@ -441,13 +446,19 @@ class CarController(object):
           self.speedlimit_valid = lmd.speedLimitValid
           self.speedlimit_units = self.speedUnits(fromMetersPerSecond = self.speedlimit_ms)
           self.speed_limit_for_cc = self.speedlimit_ms * CV.MS_TO_KPH
+        elif socket is self.icLeads:
+          self.icLeadsData = tesla.ICLeads.from_bytes(socket.recv())
         elif socket is self.radarState:
           #to show lead car on IC
-          can_messages = self.showLeadCarOnICCanMessage(radarSocket = socket)
-          can_sends.extend(can_messages)
+          if self.icLeadsData is not None:
+            can_messages = self.showLeadCarOnICCanMessage(radarSocket = socket)
+            can_sends.extend(can_messages)
+        elif socket is self.alcaState:
+          self.alcaStateData = tesla.ALCAState.from_bytes(socket.recv())
         elif socket is self.pathPlan:
           #to show curvature and lanes on IC
-          self.handlePathPlanSocketForCurvatureOnIC(pathPlanSocket = socket, CS = CS)
+          if self.alcaStateData is not None:
+            self.handlePathPlanSocketForCurvatureOnIC(pathPlanSocket = socket, alcaStateData = self.alcaStateData,CS = CS)
         elif socket is self.icCarLR:
           can_messages = self.showLeftAndRightCarsOnICCanMessages(icCarLRSocket = socket)
           can_sends.extend(can_messages)
@@ -652,8 +663,8 @@ class CarController(object):
     if (lead_1 is not None) and lead_1.status:
       self.leadDx = lead_1.dRel
       self.leadDy = self.curv0-lead_1.yRel
-      self.leadId = lead_1.trackId
-      self.leadClass = lead_1.oClass 
+      self.leadId = self.icLeadsData.lead1trackId
+      self.leadClass = self.icLeadsData.lead1oClass 
       self.leadVx = lead_1.vRel
       if (self.leadId <= 0) or (self.leadId == 63):
         self.leadId = 61
@@ -666,8 +677,8 @@ class CarController(object):
     if (lead_2 is not None) and lead_2.status:
       self.lead2Dx = lead_2.dRel
       self.lead2Dy = self.curv0-lead_2.yRel
-      self.lead2Id = lead_2.trackId
-      self.lead2Class = lead_2.oClass 
+      self.lead2Id = self.icLeadsData.lead2trackId
+      self.lead2Class = self.icLeadsData.lead2oClass 
       self.lead2Vx = lead_2.vRel
       if (self.lead2Id <= 0) or (self.lead2Id == 63):
         self.leadId = 62
@@ -682,7 +693,7 @@ class CarController(object):
           self.lead2Id,self.lead2Dx,self.lead2Dy,self.lead2Vx))
     return messages
 
-  def handlePathPlanSocketForCurvatureOnIC(self, pathPlanSocket, CS):
+  def handlePathPlanSocketForCurvatureOnIC(self, pathPlanSocket, alcaStateData, CS):
     pp = messaging.recv_one(pathPlanSocket).pathPlan
     if pp.paramsValid:
       if pp.lProb > 0.75:
@@ -702,17 +713,17 @@ class CarController(object):
       else:
         self.rLine = 0
       #first we clip to the AP limits of the coefficients
-      self.curv0 = -clip(pp.cPoly[3],-3.5,3.5) #self.curv0Matrix.add(-clip(pp.cPoly[3],-3.5,3.5))
-      self.curv1 = -clip(pp.cPoly[2],-0.2,0.2) #self.curv1Matrix.add(-clip(pp.cPoly[2],-0.2,0.2))
-      self.curv2 = -clip(pp.cPoly[1],-0.0025,0.0025) #self.curv2Matrix.add(-clip(pp.cPoly[1],-0.0025,0.0025))
-      self.curv3 = -clip(pp.cPoly[0],-0.00003,0.00003) #self.curv3Matrix.add(-clip(pp.cPoly[0],-0.00003,0.00003))
+      self.curv0 = -clip(pp.dPoly[3],-3.5,3.5) #self.curv0Matrix.add(-clip(pp.cPoly[3],-3.5,3.5))
+      self.curv1 = -clip(pp.dPoly[2],-0.2,0.2) #self.curv1Matrix.add(-clip(pp.cPoly[2],-0.2,0.2))
+      self.curv2 = -clip(pp.dPoly[1],-0.0025,0.0025) #self.curv2Matrix.add(-clip(pp.cPoly[1],-0.0025,0.0025))
+      self.curv3 = -clip(pp.dPoly[0],-0.00003,0.00003) #self.curv3Matrix.add(-clip(pp.cPoly[0],-0.00003,0.00003))
       self.laneWidth = pp.laneWidth
       self.laneRange = 50 # it is fixed in OP at 50m pp.viewRange
       self.visionCurvC0 = self.curv0
       self.prev_ldwStatus = self.ldwStatus
       self.ldwStatus = 0
-      if (self.ALCA.laneChange_direction != 0) and pp.alcaError:
-        self.ALCA.stop_ALCA()
+      if (self.ALCA.laneChange_direction != 0) and alcaStateData.alcaError:
+        self.ALCA.stop_ALCA(CS)
       if self.alca_enabled:
         #exagerate position a little during ALCA to make lane change look smoother on IC
         if self.ALCA.laneChange_over_the_line:
@@ -747,7 +758,7 @@ class CarController(object):
   # Generates IC messages for the Left and Right radar identified cars from radard
   def showLeftAndRightCarsOnICCanMessages(self, icCarLRSocket):
     messages = []
-    icCarLR_msg = ui.ICCarsLR.from_bytes(icCarLRSocket.recv())
+    icCarLR_msg = tesla.ICCarsLR.from_bytes(icCarLRSocket.recv())
     if icCarLR_msg is not None:
       #for icCarLR_msg in icCarLR_list:
       messages.append(teslacan.create_DAS_LR_object_msg(1,icCarLR_msg.v1Type,icCarLR_msg.v1Id,

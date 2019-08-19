@@ -7,7 +7,7 @@ $Java.outerClassname("Tinkla");
 
 @0xfc8dda643156b95d;
 
-const interfaceVersion :Float32 = 2.1;
+const interfaceVersion :Float32 = 2.2;
 
 struct Interface {
 
@@ -49,11 +49,13 @@ struct Interface {
         }
 
         enum Category {
-            general @0;
-            userAction @1;
-            openPilotAction @2;
-            crash @3;
-            other @4;
+            other @0;
+            general @1;
+            userAction @2;
+            openPilotAction @3;
+            crash @4;
+            canError @5;
+            processCommError @6;
         }
     }
 

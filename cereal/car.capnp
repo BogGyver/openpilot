@@ -78,6 +78,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     commIssue @53;
     tooDistracted @54;
     posenetInvalid @55;
+    soundsUnavailable @56;
   }
 }
 
@@ -109,6 +110,7 @@ struct CarState {
   steeringAngle @7 :Float32;   # deg
   steeringRate @15 :Float32;   # deg/s
   steeringTorque @8 :Float32;  # TODO: standardize units
+  steeringTorqueEps @27 :Float32;  # TODO: standardize units
   steeringPressed @9 :Bool;    # if the user is using the steering wheel
 
   # cruise state
@@ -127,12 +129,6 @@ struct CarState {
   doorOpen @24 :Bool;
   seatbeltUnlatched @25 :Bool;
   canValid @26 :Bool;
-
-  # ALCA info
-  alcaEnabled @27 :Bool;
-  alcaDirection @28 :Int8;
-  alcaTotalSteps @29 :UInt16;
-  alcaError @30 :Bool;
 
   # which packets this state came from
   canMonoTimes @12: List(UInt64);
@@ -215,13 +211,6 @@ struct RadarData @0x888ad6581cf0aacb {
 
     # some radars flag measurements VS estimates
     measured @6 :Bool;
-
-    # some TeslaBosch specific items
-    objectClass @7 :UInt8; # 0-unknown 1-four wheel vehicle 2-two wheel vehicle 3-pedestrian 4-construction element
-    dz @8 :Float32; # height in meter
-    movingState @9 :UInt8; # 0-indeterminate 1-moving 2-stopped 3-standing
-    length @10 :Float32; # length in meters
-    obstacleProb @11 :Float32; # probability to be an obstacle
   }
 }
 
@@ -405,17 +394,11 @@ struct CarParams {
     hondaBosch @5;
     ford @6;
     cadillac @7;
-    tesla @10;
-    chrysler @9;
     hyundai @8;
+    chrysler @9;
+    tesla @10;
     subaru @11;
   }
-
-  syncID @41  :Int16;  # SyncID is optional
-  # Kp and Ki for the lateral control
-
-  eonToFront  @42  :Float32;    # [m] distance from EON to front wheels
-  
 
   enum SteerControlType {
     torque @0;

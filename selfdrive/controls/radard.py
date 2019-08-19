@@ -10,11 +10,11 @@ from selfdrive.controls.lib.radar_helpers import Track, Cluster
 from selfdrive.config import RADAR_TO_CENTER
 from selfdrive.controls.lib.cluster.fastcluster_py import cluster_points_centroid
 from selfdrive.swaglog import cloudlog
-from cereal import car,ui
+from cereal import car,tesla
 from common.params import Params
 from common.realtime import set_realtime_priority, Ratekeeper, DT_MDL
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
-from selfdrive.controls.lib.model_parser import ModelParser
+from selfdrive.controls.lib.lane_planner import LanePlanner
 
 DEBUG = False
 
@@ -55,6 +55,12 @@ def match_vision_to_cluster(v_ego, lead, clusters):
   else:
     return None
 
+def get_rrext_by_trackId(rrext,trackId):
+  if rrext is not None:
+    for p in rrext:
+      if p.trackId == trackId:
+        return p
+  return None
 
 def get_lead(v_ego, ready, clusters, lead_msg, low_speed_override=True):
   # Determine leads, this is where the essential logic happens
@@ -64,8 +70,9 @@ def get_lead(v_ego, ready, clusters, lead_msg, low_speed_override=True):
     lead_idx = None
 
   lead_dict = {'status': False}
+  lead_dict_ext = {'trackId': 1, 'oClass': 0, 'length': 0.}
   if lead_idx is not None:
-    lead_dict = clusters[lead_idx].get_RadarState(lead_msg.prob)
+    lead_dict,lead_dict_ext = clusters[lead_idx].get_RadarState(lead_msg.prob)
   elif (lead_idx is None) and ready and (lead_msg.prob > .5):
     lead_dict = Cluster().get_RadarState_from_vision(lead_msg, v_ego)
 
@@ -74,9 +81,9 @@ def get_lead(v_ego, ready, clusters, lead_msg, low_speed_override=True):
     if len(low_speed_clusters) > 0:
       lead_idx = np.argmin([c.dRel for c in low_speed_clusters])
       if (not lead_dict['status']) or (low_speed_clusters[lead_idx].dRel < lead_dict['dRel']):
-        lead_dict = low_speed_clusters[lead_idx].get_RadarState()
+        lead_dict,lead_dict_ext = low_speed_clusters[lead_idx].get_RadarState()
 
-  return lead_dict
+  return lead_dict,lead_dict_ext
 
 
 class RadarD(object):
@@ -100,11 +107,12 @@ class RadarD(object):
     self.icCarLR = None
     if (RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE) and CarSettings().get_value("useTeslaRadar"):
       self.icCarLR = messaging.pub_sock(service_list['uiIcCarLR'].port)
+    
 
     #only used for left and right lanes
     self.path_x = np.arange(0.0, 160.0, 0.1)    # 160 meters is max
 
-  def update(self, frame, delay, sm, rr, has_radar,MP):
+  def update(self, frame, delay, sm, rr, has_radar,MP,rrext):
     self.current_time = 1e-9*max([sm.logMonoTime[key] for key in sm.logMonoTime.keys()])
     use_tesla_radar = CarSettings().get_value("useTeslaRadar")
     if sm.updated['controlsState']:
@@ -119,8 +127,8 @@ class RadarD(object):
 
     ar_pts = {}
     for pt in rr.points:
-      #ar_pts[pt.trackId] = [pt.dRel, pt.yRel, pt.vRel, pt.measured]
-      ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured, pt.aRel, pt.yvRel, pt.objectClass, pt.length, pt.trackId+2, pt.movingState]
+      extpt = get_rrext_by_trackId(rrext,pt.trackId)
+      ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured, pt.aRel, pt.yvRel, extpt.objectClass, extpt.length, pt.trackId+2, extpt.movingState]
     # *** remove missing points from meta data ***
     for ids in self.tracks.keys():
       if ids not in ar_pts:
@@ -159,11 +167,19 @@ class RadarD(object):
           clusters[cluster_i] = Cluster()
         clusters[cluster_i].add(self.tracks[idens[idx]])
     elif len(track_pts) == 1:
+      # FIXME: cluster_point_centroid hangs forever if len(track_pts) == 1
+      cluster_idxs = [0]
       clusters = [Cluster()]
       clusters[0].add(self.tracks[idens[0]])
     else:
       clusters = []
 
+    # if a new point, reset accel to the rest of the cluster
+    for idx in xrange(len(track_pts)):
+      if self.tracks[idens[idx]].cnt <= 1:
+        aLeadK = clusters[cluster_idxs[idx]].aLeadK
+        aLeadTau = clusters[cluster_idxs[idx]].aLeadTau
+        self.tracks[idens[idx]].reset_a_lead(aLeadK, aLeadTau)
     
     ### START REVIEW SECTION
 
@@ -171,7 +187,7 @@ class RadarD(object):
     #BB For Tesla integration we will also track Left and Right lanes
     #################################################################
     if (self.RI.TRACK_RIGHT_LANE or self.RI.TRACK_LEFT_LANE) and use_tesla_radar:
-      datrl = ui.ICCarsLR.new_message()
+      datrl = tesla.ICCarsLR.new_message()
       datrl.v1Type = int(0)
       datrl.v1Dx = float(0.)
       datrl.v1Vrel = float(0.)
@@ -312,16 +328,34 @@ class RadarD(object):
     # *** publish radarState ***
     dat = messaging.new_message()
     dat.init('radarState')
-    dat.valid = sm.all_alive_and_valid(service_list=['controlsState'])
+    dat.valid = sm.all_alive_and_valid(service_list=['controlsState', 'model'])
     dat.radarState.mdMonoTime = self.last_md_ts
     dat.radarState.canMonoTimes = list(rr.canMonoTimes)
     dat.radarState.radarErrors = list(rr.errors)
     dat.radarState.controlsStateMonoTime = self.last_controls_state_ts
 
+    datext = tesla.ICLeads.new_message()
+    l1x = tesla.TeslaLeadPoint.new_message()
+    l2x = tesla.TeslaLeadPoint.new_message()
     if has_radar:
-      dat.radarState.leadOne = get_lead(self.v_ego, self.ready, clusters, sm['model'].lead, low_speed_override=True)
-      dat.radarState.leadTwo = get_lead(self.v_ego, self.ready, clusters, sm['model'].leadFuture, low_speed_override=False)
-    return dat
+      l1d,l1x = get_lead(self.v_ego, self.ready, clusters, sm['model'].lead, low_speed_override=True)
+      l2d,l2x = get_lead(self.v_ego, self.ready, clusters, sm['model'].leadFuture, low_speed_override=False)
+      dat.radarState.leadOne = l1d
+      dat.radarState.leadTwo = l2d
+    
+    datext.lead1trackId = l1x['trackId']
+    datext.lead1oClass = l1x['oClass']
+    datext.lead1length = l1x['length']
+    datext.lead2trackId = l2x['trackId']
+    datext.lead2oClass = l2x['oClass']
+    datext.lead2length = l2x['length']
+    #datext.lead1trackId = l1x.trackId
+    #datext.lead1oClass = l1x.oClass
+    #datext.lead1length = l1x.length
+    #datext.lead2trackId = l2x.trackId
+    #datext.lead2oClass = l2x.oClass
+    #datext.lead2length = l2x.length
+    return dat, datext
 
 
 # fuses camera and radar data for best lead detection
@@ -347,10 +381,11 @@ def radard_thread(gctx=None):
   # *** publish radarState and liveTracks
   radarState = messaging.pub_sock(service_list['radarState'].port)
   liveTracks = messaging.pub_sock(service_list['liveTracks'].port)
+  icLeads = messaging.pub_sock(service_list['uiIcLeads'].port)
 
   rk = Ratekeeper(rate, print_delay_threshold=None)
   RD = RadarD(mocked, RI)
-  MP = ModelParser()
+  MP = LanePlanner()
 
   has_radar = not CP.radarOffCan or mocked
   last_md_ts = 0.
@@ -358,7 +393,7 @@ def radard_thread(gctx=None):
 
   while 1:
     can_strings = messaging.drain_sock_raw(can_sock, wait_for_one=True)
-    rr = RI.update(can_strings)
+    rr,rrext = RI.update(can_strings)
 
     if rr is None:
       continue
@@ -369,13 +404,14 @@ def radard_thread(gctx=None):
       v_ego = sm['controlsState'].vEgo
 
     if sm.updated['model']:
-      MP.update(v_ego, sm['model'])
+      MP.update(v_ego, sm['model'], False)
     
 
-    dat = RD.update(rk.frame, RI.delay, sm, rr, has_radar, MP)
+    dat,datext = RD.update(rk.frame, RI.delay, sm, rr, has_radar, MP, rrext)
     dat.radarState.cumLagMs = -rk.remaining*1000.
 
     radarState.send(dat.to_bytes())
+    icLeads.send(datext.to_bytes())
 
     # *** publish tracks for UI debugging (keep last) ***
     tracks = RD.tracks

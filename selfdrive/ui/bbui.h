@@ -414,10 +414,9 @@ void bb_draw_buttons( UIState *s) {
 
 void bb_ui_draw_custom_alert( UIState *s) {
     if ((strlen(s->b.custom_message) > 0) && (strlen(s->scene.alert_text1)==0)){
-      if (!((bb_get_button_status(s,"msg") == 0) && (s->b.custom_message_status<=3))) {
+      if ((!((bb_get_button_status(s,"msg") == 0) && (s->b.custom_message_status<=3))) && (s->vision_connected == true)) {
         bb_ui_draw_vision_alert(s, ALERTSIZE_SMALL, s->b.custom_message_status,
                               s->b.custom_message,"");
-                              
       }
     } 
 }
@@ -1260,14 +1259,14 @@ void bb_ui_init(UIState *s) {
     s->b.icShowLogo = true;
 }
 
-void bb_ui_play_sound( UIState *s, int sound) {
-    char* snd_command;
-    int bts = bb_get_button_status(s,"sound");
-    if ((bts > 0) || (bts == -1)) {
-        asprintf(&snd_command, "python /data/openpilot/selfdrive/car/modules/snd/playsound.py %d &", sound);
-        system(snd_command);
-    }
-}
+// void bb_ui_play_sound( UIState *s, int sound) {
+//    char* snd_command;
+//    int bts = bb_get_button_status(s,"sound");
+//    if ((bts > 0) || (bts == -1)) {
+//        asprintf(&snd_command, "python /data/openpilot/selfdrive/car/modules/snd/playsound.py %d &", sound);
+//        system(snd_command);
+//    }
+// }
 
 void bb_ui_set_car( UIState *s, char *model, char *folder) {
     strcpy(s->b.car_model,model);
@@ -1352,7 +1351,7 @@ void  bb_ui_poll_update( UIState *s) {
           s->b.custom_message_status = datad.caStatus;
 
           if ((strlen(s->b.custom_message) > 0) && (strlen(s->scene.alert_text1)==0)){
-            if (!((bb_get_button_status(s,"msg") == 0) && (s->b.custom_message_status<=3))) {
+            if ((!((bb_get_button_status(s,"msg") == 0) && (s->b.custom_message_status<=3))) && (s->vision_connected == true)) {
               set_awake(s, true);
             }
           }
@@ -1415,7 +1414,7 @@ void  bb_ui_poll_update( UIState *s) {
           zmq_msg_close(&msg);
         }  
         if (bb_polls[3].revents) {
-          //play sound socket
+          // play sound socket
           zmq_msg_t msg;
           err = zmq_msg_init(&msg);
           assert(err == 0);
@@ -1431,7 +1430,7 @@ void  bb_ui_poll_update( UIState *s) {
           cereal_read_UIPlaySound(&datad, stp);
 
           int snd = datad.sndSound;
-          bb_ui_play_sound(s,snd);
+          // bb_ui_play_sound(s,snd);
           
           capn_free(&ctx);
           zmq_msg_close(&msg);

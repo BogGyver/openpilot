@@ -150,16 +150,16 @@ def get_can_signals(CP):
 
   checks = [
       #("STW_ANGLHP_STAT",  200), #JCT Actual message freq is 40 Hz (0.025 sec)
-      ("STW_ACTN_RQ",  17), #JCT Actual message freq is 3.5 Hz (0.285 sec)
+      ("STW_ACTN_RQ",  20), #JCT Actual message freq is 3.5 Hz (0.285 sec)
       #("SBW_RQ_SCCM", 175), #JCT Actual message freq is 35 Hz (0.0286 sec)
       ("DI_torque1", 59), #JCT Actual message freq is 11.8 Hz (0.084 sec)
       ("DI_torque2", 18), #JCT Actual message freq is 3.7 Hz (0.275 sec)
       #("MCU_gpsVehicleSpeed", 2), #JCT Actual message freq is 0.487 Hz (2.05 sec)
-      ("GTW_carState", 16), #JCT Actual message freq is 3.3 Hz (0.3 sec)
+      ("GTW_carState", 20), #JCT Actual message freq is 3.3 Hz (0.3 sec)
       #("GTW_status", 2), #JCT Actual message freq is 0.5 Hz (2 sec)
-      ("DI_state", 5), #JCT Actual message freq is 1 Hz (1 sec)
+      ("DI_state", 7), #JCT Actual message freq is 1 Hz (1 sec)
       #("MCU_locationStatus", 5), #JCT Actual message freq is 1.3 Hz (0.76 sec)
-      ("GTW_carConfig", 5), #BB Actual message freq  is 1 Hz (1 sec)
+      ("GTW_carConfig", 7), #BB Actual message freq  is 1 Hz (1 sec)
   ]
 
   #checks = []
@@ -177,7 +177,7 @@ def get_epas_can_signals(CP):
   ]
 
   checks = [
-      ("EPAS_sysStatus", 7), #JCT Actual message freq is 1.3 Hz (0.76 sec)
+      ("EPAS_sysStatus", 12), #JCT Actual message freq is 1.3 Hz (0.76 sec)
   ]
 
   #checks = []
@@ -201,11 +201,11 @@ def get_can_parser(CP,mydbc):
 
 def get_epas_parser(CP,epascan):
   signals, checks = get_epas_can_signals(CP)
-  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, epascan)
+  return CANParser(DBC[CP.carFingerprint]['pt']+"_epas", signals, checks, epascan)
 
 def get_pedal_parser(CP):
   signals, checks = get_pedal_can_signals(CP)
-  return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 2)
+  return CANParser(DBC[CP.carFingerprint]['pt']+"_pedal", signals, checks, 2)
 
 class CarState(object):
   def __init__(self, CP):
@@ -252,6 +252,7 @@ class CarState(object):
     self.radarEpasType = 0
     self.fix1916 = False
     self.forceFingerprintTesla = False
+    self.eonToFront = 0.9
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

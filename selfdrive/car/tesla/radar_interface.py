@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from cereal import car
+from cereal import car,tesla
 import time
 import os
 from selfdrive.can.parser import CANParser
@@ -50,6 +50,7 @@ class RadarInterface(object):
   def __init__(self,CP):
     # radar
     self.pts = {}
+    self.extPts = {}
     self.delay = 0.1
     self.useTeslaRadar = CarSettings().get_value("useTeslaRadar")
     self.TRACK_LEFT_LANE = True
@@ -57,6 +58,7 @@ class RadarInterface(object):
     self.updated_messages = set()
     if self.useTeslaRadar:
       self.pts = {}
+      self.extPts = {}
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
       self.delay = 0.1  # Delay of radar
       self.rcp = _create_radard_can_parser()
@@ -72,7 +74,7 @@ class RadarInterface(object):
     # radard at 20Hz and return no points
     if not self.useTeslaRadar:
       time.sleep(0.05)
-      return car.RadarData.new_message()
+      return car.RadarData.new_message(),self.extPts.values()
 
     tm = int(sec_since_boot() * 1e9)
     if can_strings != None:
@@ -80,11 +82,11 @@ class RadarInterface(object):
       self.updated_messages.update(vls)
 
     if self.trigger_msg not in self.updated_messages:
-      return None
+      return None,None
 
-    rr = self._update(self.updated_messages)
+    rr,rrext = self._update(self.updated_messages)
     self.updated_messages.clear()
-    return rr
+    return rr,rrext
 
 
   def _update(self, updated_messages):
@@ -94,18 +96,21 @@ class RadarInterface(object):
       if not(message in RADAR_A_MSGS):
         if message in self.pts:
           del self.pts[message]
+          del self.extPts[message]
         continue
       cpt = self.rcp.vl[message]
       if (cpt['LongDist'] >= BOSCH_MAX_DIST) or (cpt['LongDist']==0) or (not cpt['Tracked']):
         self.valid_cnt[message] = 0    # reset counter
         if message in self.pts:
           del self.pts[message]
+          del self.extPts[message]
       elif cpt['Valid'] and (cpt['LongDist'] < BOSCH_MAX_DIST) and (cpt['LongDist'] > 0) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY):
         self.valid_cnt[message] += 1
       else:
         self.valid_cnt[message] = max(self.valid_cnt[message] -1, 0)
         if (self.valid_cnt[message]==0) and (message in self.pts):
           del self.pts[message]
+          del self.extPts[message]
 
       #score = self.rcp.vl[ii+16]['SCORE']
       #print ii, self.valid_cnt[ii], cpt['Valid'], cpt['LongDist'], cpt['LatDist']
@@ -119,7 +124,11 @@ class RadarInterface(object):
         if message not in self.pts and ( cpt['Tracked']):
           self.pts[message] = car.RadarData.RadarPoint.new_message()
           self.pts[message].trackId = self.trackId 
-          self.trackId = (self.trackId % 30000) + 1
+          self.extPts[message] = tesla.TeslaRadarPoint.new_message()
+          self.extPts[message].trackId = self.trackId 
+          self.trackId = (self.trackId + 1) & 0xFFFFFFFFFFFFFFFF
+          if self.trackId ==0:
+            self.trackId = 1
         if message in self.pts:
           self.pts[message].dRel = cpt['LongDist']  # from front of car
           self.pts[message].yRel = cpt['LatDist']  - self.radarOffset # in car frame's y axis, left is positive
@@ -127,33 +136,37 @@ class RadarInterface(object):
           self.pts[message].aRel = cpt['LongAccel']
           self.pts[message].yvRel = self.rcp.vl[message+1]['LatSpeed']
           self.pts[message].measured = bool(cpt['Meas'])
-          self.pts[message].dz = self.rcp.vl[message+1]['dZ']
-          self.pts[message].movingState = self.rcp.vl[message+1]['MovingState']
-          self.pts[message].length = self.rcp.vl[message+1]['Length']
-          self.pts[message].obstacleProb = cpt['ProbObstacle']
+          self.extPts[message].dz = self.rcp.vl[message+1]['dZ']
+          self.extPts[message].movingState = self.rcp.vl[message+1]['MovingState']
+          self.extPts[message].length = self.rcp.vl[message+1]['Length']
+          self.extPts[message].obstacleProb = cpt['ProbObstacle']
           if self.rcp.vl[message+1]['Class'] >= CLASS_MIN_PROBABILITY:
-            self.pts[message].objectClass = self.rcp.vl[message+1]['Class']
+            self.extPts[message].objectClass = self.rcp.vl[message+1]['Class']
             # for now we will use class 0- unknown stuff to show trucks
             # we will base that on being a class 1 and length of 2 (hoping they meant width not length, but as germans could not decide)
             # 0-unknown 1-four wheel vehicle 2-two wheel vehicle 3-pedestrian 4-construction element
             # going to 0-unknown 1-truck 2-car 3/4-motorcycle/bicycle 5 pedestrian - we have two bits so
-            if self.pts[message].objectClass == 0:
-              self.pts[message].objectClass = 1
-            if (self.pts[message].objectClass == 1) and ((self.pts[message].length >= 1.8) or (1.6 < self.pts[message].dz < 4.5)):
-              self.pts[message].objectClass = 0
-            if self.pts[message].objectClass == 4:
-              self.pts[message].objectClass = 1
+            if self.extPts[message].objectClass == 0:
+              self.extPts[message].objectClass = 1
+            if (self.extPts[message].objectClass == 1) and ((self.extPts[message].length >= 1.8) or (1.6 < self.extPts[message].dz < 4.5)):
+              self.extPts[message].objectClass = 0
+            if self.extPts[message].objectClass == 4:
+              self.extPts[message].objectClass = 1
           else:
-            self.pts[message].objectClass = 1
+            self.extPts[message].objectClass = 1
 
     ret.points = self.pts.values()
-    return ret
+    errors = []
+    if not self.rcp.can_valid:
+      errors.append("canError")
+    ret.errors = errors
+    return ret,self.extPts.values()
 
 # radar_interface standalone tester
 if __name__ == "__main__":
   CP = car.CarParams()
   RI = RadarInterface(CP)
   while 1:
-    ret = RI.update(can_strings = None)
+    ret,retext = RI.update(can_strings = None)
     print(chr(27) + "[2J")
     print(ret)
