@@ -1,5 +1,5 @@
 import datetime
-from cereal import log,ui,tesla
+from cereal import log,tesla
 from common.params import Params
 from collections import namedtuple
 from common.numpy_fast import clip, interp
