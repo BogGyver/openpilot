@@ -22,6 +22,8 @@ class TinklaInterfaceEventCategoryKeys():
     userAction = 'userAction'
     openPilotAction = 'openPilotAction'
     crash = 'crash'
+    canError = 'canError'
+    processCommError = 'processCommError'
     other = 'other'
 
 class TinklaInterfaceActions():

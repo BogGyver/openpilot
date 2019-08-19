@@ -1,15 +1,11 @@
 """Install exception handler for process crash."""
 import os
-import sys, traceback
+import sys
 import threading
 import capnp
-from selfdrive.tinklad.tinkla_interface import TinklaClient
-from cereal import tinkla
 from selfdrive.version import version, dirty
-from selfdrive.car.tesla.readconfig import CarSettings
-from common.params import Params
-
 from selfdrive.swaglog import cloudlog
+from selfdrive.tinklad.tinkla_interface import TinklaClient
 
 if os.getenv("NOLOG") or os.getenv("NOCRASH"):
   def capture_exception(*exc_info):
@@ -27,25 +23,8 @@ else:
                   install_sys_hook=False, transport=HTTPTransport, release=version, tags={'dirty': dirty})
 
   def sendCrashInfoToTinklad():
-    carSettings = CarSettings()
-    params = Params()
     tinklaClient = TinklaClient()
-    dongleId = params.get("DongleId")
-    userHandle = carSettings.userHandle
-    event = tinkla.Interface.Event.new_message(
-        openPilotId=dongleId,
-        source="n/a",
-        category=tinklaClient.eventCategoryKeys.crash,
-        name="crash",
-    )
-    trace = traceback.format_exc().replace('"', '`').replace("'", '`')
-    gitRemote = params.get("GitRemote")
-    gitBranch = params.get("GitBranch")
-    gitHash = params.get("GitCommit")
-    userInfo = "User Handle: %s OpenPilotId: %s" % (userHandle, dongleId)
-    gitInfo = "Git Remote: %s\nBranch: %s\nCommit: %s" % (gitRemote, gitBranch, gitHash)
-    event.value.textValue="%s\n%s\n%s" % (userInfo, gitInfo, trace)
-    tinklaClient.logUserEvent(event)
+    tinklaClient.logCrashStackTraceEvent()
 
   def capture_exception(*args, **kwargs):
     exc_info = sys.exc_info()
