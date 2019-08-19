@@ -282,6 +282,9 @@ class ALCAModelParser(object):
     self.ALCA_total_steps = cs.alcaTotalSteps
     self.ALCA_error = self.ALCA_error or (cs.alcaError and not self.prev_CS_ALCA_error)
     self.prev_CS_ALCA_error = cs.alcaError
+    
+    if not self.ALCA_enabled:
+      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width
 
     #if error but no direction, the carcontroller component is fine and we need to reset
     if self.ALCA_error and (self.ALCA_direction == 0):
