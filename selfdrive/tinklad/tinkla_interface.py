@@ -6,6 +6,12 @@ import zmq
 import datetime
 import tinklad
 
+## For helpers:
+import traceback
+from selfdrive.car.tesla.readconfig import CarSettings
+from common.params import Params
+
+
 tinklaClient = None
 
 def now_iso8601():
@@ -82,9 +88,49 @@ class TinklaClient():
             # drop :/
             pass
 
+    ## Helpers:
+
+    def logCrashStackTraceEvent(self, dongleId = None):
+        if dongleId is None:
+            dongleId = self.dongleId
+        event = tinkla.Interface.Event.new_message(
+            openPilotId=dongleId,
+            source="n/a",
+            category=self.eventCategoryKeys.crash,
+            name="crash",
+        )
+        trace = traceback.format_exc().replace('"', '`').replace("'", '`')
+        userInfo = "User Handle: %s OpenPilotId: %s" % (self.userHandle, self.dongleId)
+        gitInfo = "Git Remote: %s\nBranch: %s\nCommit: %s" % (self.gitRemote, self.gitBranch, self.gitHash)
+        event.value.textValue="%s\n%s\n%s" % (userInfo, gitInfo, trace)
+        self.logUserEvent(event)
+
+    def logCANErrorEvent(self, canMessage, additionalInformation, dongleId = None):
+        if dongleId is None:
+            dongleId = self.dongleId
+        event = tinkla.Interface.Event.new_message(
+            openPilotId=dongleId,
+            source=hex(canMessage),
+            category=self.eventCategoryKeys.canError,
+            name="CAN Error",
+        )
+        canInfo = "Can Message: {0}".format(hex(canMessage))
+        userInfo = "User Handle: %s OpenPilotId: %s" % (self.userHandle, self.dongleId)
+        gitInfo = "Git Remote: %s\nBranch: %s\nCommit: %s" % (self.gitRemote, self.gitBranch, self.gitHash)
+        event.value.textValue="%s\n%s\n%s\n%s" % (userInfo, gitInfo, canInfo, additionalInformation)
+        self.logUserEvent(event)
 
     def print_msg(self, message):
         print(message)
 
     def __init__(self):
+        carSettings = CarSettings()
+        params = Params()
+        self.dongleId = params.get("DongleId")
+        self.userHandle = carSettings.userHandle
+        self.gitRemote = params.get("GitRemote")
+        self.gitBranch = params.get("GitBranch")
+        self.gitHash = params.get("GitCommit")
+
         self.start_client()
+        tinklaClient = self
