@@ -282,9 +282,14 @@ class ALCAModelParser(object):
 
   def update(self, v_ego, md, r_poly, l_poly, r_prob, l_prob, lane_width):
 
-    for socket, _ in self.poller.poll(1):
-      if socket is self.alcaStatus:
-        self.alcas = tesla.ALCAStatus.from_bytes(socket.recv())
+    self.ALCA_direction = cs.alcaDirection
+    self.ALCA_enabled = cs.alcaEnabled
+    self.ALCA_total_steps = cs.alcaTotalSteps
+    self.ALCA_error = self.ALCA_error or (cs.alcaError and not self.prev_CS_ALCA_error)
+    self.prev_CS_ALCA_error = cs.alcaError
+    
+    if not self.ALCA_enabled:
+      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width
 
         self.ALCA_direction = self.alcas.alcaDirection
         self.ALCA_enabled = self.alcas.alcaEnabled
