@@ -56,6 +56,7 @@ class RadarInterface(object):
     self.TRACK_LEFT_LANE = True
     self.TRACK_RIGHT_LANE = True
     self.updated_messages = set()
+    self.canErrorCounter = 0
     if self.useTeslaRadar:
       self.pts = {}
       self.extPts = {}
@@ -81,8 +82,9 @@ class RadarInterface(object):
       vls = self.rcp.update_strings(tm, can_strings)
       self.updated_messages.update(vls)
 
-    if self.trigger_msg not in self.updated_messages:
-      return None,None
+    #BB disable this to see if we really can prevent the Comm and CAN errors
+    #if self.trigger_msg not in self.updated_messages:
+    #  return None,None
 
     rr,rrext = self._update(self.updated_messages)
     self.updated_messages.clear()
@@ -159,7 +161,14 @@ class RadarInterface(object):
     errors = []
     if not self.rcp.can_valid:
       errors.append("canError")
-    ret.errors = errors
+      self.canErrorCounter += 1
+    else:
+      self.canErrorCounter = 0
+    #BB: Only trigger canError for 3 consecutive errors
+    if self.canErrorCounter > 2:
+      ret.errors = errors
+    else:
+      ret.errors = []
     return ret,self.extPts.values()
 
 # radar_interface standalone tester
