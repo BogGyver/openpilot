@@ -73,9 +73,9 @@ class CarInterface(object):
     ret.longitudinalTuning.deadzoneBP = [0.]
     ret.longitudinalTuning.deadzoneV = [0.]
     ret.steerActuatorDelay = 0.
-#    ret.steerReactance = 0.7
-    ret.steerInductance = 1.0
-    ret.steerResistance = 1.0
+    # ret.steerReactance = 0.7
+    # ret.steerInductance = 1.0
+    # ret.steerResistance = 1.0
 
     return ret
 
