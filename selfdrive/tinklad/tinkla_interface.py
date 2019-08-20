@@ -105,12 +105,12 @@ class TinklaClient():
         event.value.textValue="%s\n%s\n%s" % (userInfo, gitInfo, trace)
         self.logUserEvent(event)
 
-    def logCANErrorEvent(self, canMessage, additionalInformation, dongleId = None):
+    def logCANErrorEvent(self, source, canMessage, additionalInformation, dongleId = None):
         if dongleId is None:
             dongleId = self.dongleId
         event = tinkla.Interface.Event.new_message(
             openPilotId=dongleId,
-            source=hex(canMessage),
+            source=source,
             category=self.eventCategoryKeys.canError,
             name="CAN Error",
         )

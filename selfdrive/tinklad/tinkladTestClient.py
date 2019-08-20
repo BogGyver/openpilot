@@ -46,7 +46,7 @@ class TinklaTestClient():
         self.tinklaClient.logCrashStackTraceEvent(dongleId="test_openpilotId")
 
         print("send can error")
-        self.tinklaClient.logCANErrorEvent(canMessage=123, additionalInformation="test can error logging", dongleId="test_openpilotId")
+        self.tinklaClient.logCANErrorEvent(source="tinkladTestClient", canMessage=123, additionalInformation="test can error logging", dongleId="test_openpilotId")
 
 if __name__ == "__main__":
     TinklaTestClient()

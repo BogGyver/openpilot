@@ -7,6 +7,7 @@ from common.realtime import sec_since_boot
 from selfdrive.services import service_list
 import selfdrive.messaging as messaging
 from selfdrive.car.tesla.readconfig import CarSettings
+from selfdrive.tinklad.tinkla_interface import TinklaClient
 
 #RADAR_A_MSGS = list(range(0x371, 0x37F , 3))
 #RADAR_B_MSGS = list(range(0x372, 0x37F, 3))
@@ -47,6 +48,9 @@ def _create_radard_can_parser():
 
 
 class RadarInterface(object):
+
+  tinklaClient = TinklaClient()
+
   def __init__(self,CP):
     # radar
     self.pts = {}
@@ -159,6 +163,7 @@ class RadarInterface(object):
     errors = []
     if not self.rcp.can_valid:
       errors.append("canError")
+      self.tinklaClient.logCANErrorEvent(source="radar_interface", canMessage=0, additionalInformation="Invalid CAN Count")
     ret.errors = errors
     return ret,self.extPts.values()
 
