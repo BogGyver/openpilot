@@ -16,6 +16,7 @@ RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
 OBJECT_MIN_PROBABILITY = 20.
 CLASS_MIN_PROBABILITY = 20.
 RADAR_MESSAGE_FREQUENCY = 0.050 * 1e9 #time in ns, radar sends data at 0.06 s
+VALID_THRESHOLD = 10
 
 
 # Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
@@ -73,7 +74,6 @@ class RadarInterface(object):
 
 
   def update(self, can_strings):
-    # in Bosch radar and we are only steering for now, so sleep 0.05s to keep
     # radard at 20Hz and return no points
     if not self.useTeslaRadar:
       time.sleep(0.05)
@@ -109,64 +109,60 @@ class RadarInterface(object):
       cpt = self.rcp.vl[message]
       cpt2 = self.rcp.vl[message+1]
       # ensure the two messages are from the same frame reading
-      #if self.rcp.ts[message+1] == self.rcp.ts[message]:
-      if abs(self.rcp.ts[message+1]['Index2']-self.rcp.ts[message]['Index']) < RADAR_MESSAGE_FREQUENCY:
-        if (cpt['LongDist'] >= BOSCH_MAX_DIST) or (cpt['LongDist']==0) or (not cpt['Tracked']):
-          self.valid_cnt[message] = 0    # reset counter
-          if message in self.pts:
-            del self.pts[message]
-            del self.extPts[message]
-        elif cpt['Valid'] and (cpt['LongDist'] < BOSCH_MAX_DIST) and (cpt['LongDist'] > 0) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY):
-          self.valid_cnt[message] += 1
-        else:
-          self.valid_cnt[message] = max(self.valid_cnt[message] -1, 0)
-          if (self.valid_cnt[message]==0) and (message in self.pts):
-            del self.pts[message]
-            del self.extPts[message]
+      if cpt['Index'] != cpt2['Index2']:
+        continue
+      if (cpt['LongDist'] >= BOSCH_MAX_DIST) or (cpt['LongDist']==0) or (not cpt['Tracked']):
+        self.valid_cnt[message] = 0    # reset counter
+        if message in self.pts:
+          del self.pts[message]
+          del self.extPts[message]
+      elif cpt['Valid'] and (cpt['LongDist'] < BOSCH_MAX_DIST) and (cpt['LongDist'] > 0) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY):
+        self.valid_cnt[message] += 1
+      else:
+        self.valid_cnt[message] = max(self.valid_cnt[message] -1, 0)
+        if (self.valid_cnt[message]==0) and (message in self.pts):
+          del self.pts[message]
+          del self.extPts[message]
 
-        #score = self.rcp.vl[ii+16]['SCORE']
-        #print ii, self.valid_cnt[ii], cpt['Valid'], cpt['LongDist'], cpt['LatDist']
-
-        # radar point only valid if it's a valid measurement and score is above 50
-        # bosch radar data needs to match Index and Index2 for validity
-        # also for now ignore construction elements
-        if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
-            (cpt['Index'] == cpt2['Index2']) and (self.valid_cnt[message] > 5) and \
-            (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY): 
-          if message not in self.pts and ( cpt['Tracked']):
-            self.pts[message] = car.RadarData.RadarPoint.new_message()
-            self.pts[message].trackId = self.trackId 
-            self.extPts[message] = tesla.TeslaRadarPoint.new_message()
-            self.extPts[message].trackId = self.trackId 
-            self.trackId = (self.trackId + 1) & 0xFFFFFFFFFFFFFFFF
-            if self.trackId ==0:
-              self.trackId = 1
-          if message in self.pts:
-            self.pts[message].dRel = cpt['LongDist']  # from front of car
-            self.pts[message].yRel = cpt['LatDist']  - self.radarOffset # in car frame's y axis, left is positive
-            self.pts[message].vRel = cpt['LongSpeed']
-            self.pts[message].aRel = cpt['LongAccel']
-            self.pts[message].yvRel = cpt2['LatSpeed']
-            self.pts[message].measured = bool(cpt['Meas'])
-            self.extPts[message].dz = cpt2['dZ']
-            self.extPts[message].movingState = cpt2['MovingState']
-            self.extPts[message].length = cpt2['Length']
-            self.extPts[message].obstacleProb = cpt['ProbObstacle']
-            self.extPts[message].timeStamp = int(self.rcp.ts[message+1]['Index2'])
-            if self.rcp.vl[message+1]['Class'] >= CLASS_MIN_PROBABILITY:
-              self.extPts[message].objectClass = cpt2['Class']
-              # for now we will use class 0- unknown stuff to show trucks
-              # we will base that on being a class 1 and length of 2 (hoping they meant width not length, but as germans could not decide)
-              # 0-unknown 1-four wheel vehicle 2-two wheel vehicle 3-pedestrian 4-construction element
-              # going to 0-unknown 1-truck 2-car 3/4-motorcycle/bicycle 5 pedestrian - we have two bits so
-              if self.extPts[message].objectClass == 0:
-                self.extPts[message].objectClass = 1
-              if (self.extPts[message].objectClass == 1) and ((self.extPts[message].length >= 1.8) or (1.6 < self.extPts[message].dz < 4.5)):
-                self.extPts[message].objectClass = 0
-              if self.extPts[message].objectClass == 4:
-                self.extPts[message].objectClass = 1
-            else:
+      # radar point only valid if it's a valid measurement and score is above 50
+      # bosch radar data needs to match Index and Index2 for validity
+      # also for now ignore construction elements
+      if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
+          (self.valid_cnt[message] > VALID_THRESHOLD) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY): 
+        if message not in self.pts and ( cpt['Tracked']):
+          self.pts[message] = car.RadarData.RadarPoint.new_message()
+          self.pts[message].trackId = self.trackId 
+          self.extPts[message] = tesla.TeslaRadarPoint.new_message()
+          self.extPts[message].trackId = self.trackId 
+          self.trackId = (self.trackId + 1) & 0xFFFFFFFFFFFFFFFF
+          if self.trackId ==0:
+            self.trackId = 1
+        if message in self.pts:
+          self.pts[message].dRel = cpt['LongDist']  # from front of car
+          self.pts[message].yRel = cpt['LatDist']  - self.radarOffset # in car frame's y axis, left is positive
+          self.pts[message].vRel = cpt['LongSpeed']
+          self.pts[message].aRel = cpt['LongAccel']
+          self.pts[message].yvRel = cpt2['LatSpeed']
+          self.pts[message].measured = bool(cpt['Meas'])
+          self.extPts[message].dz = cpt2['dZ']
+          self.extPts[message].movingState = cpt2['MovingState']
+          self.extPts[message].length = cpt2['Length']
+          self.extPts[message].obstacleProb = cpt['ProbObstacle']
+          self.extPts[message].timeStamp = int(self.rcp.ts[message+1]['Index2'])
+          if self.rcp.vl[message+1]['Class'] >= CLASS_MIN_PROBABILITY:
+            self.extPts[message].objectClass = cpt2['Class']
+            # for now we will use class 0- unknown stuff to show trucks
+            # we will base that on being a class 1 and length of 2 (hoping they meant width not length, but as germans could not decide)
+            # 0-unknown 1-four wheel vehicle 2-two wheel vehicle 3-pedestrian 4-construction element
+            # going to 0-unknown 1-truck 2-car 3/4-motorcycle/bicycle 5 pedestrian - we have two bits so
+            if self.extPts[message].objectClass == 0:
               self.extPts[message].objectClass = 1
+            if (self.extPts[message].objectClass == 1) and ((self.extPts[message].length >= 1.8) or (1.6 < self.extPts[message].dz < 4.5)):
+              self.extPts[message].objectClass = 0
+            if self.extPts[message].objectClass == 4:
+              self.extPts[message].objectClass = 1
+          else:
+            self.extPts[message].objectClass = 1
 
     ret.points = self.pts.values()
     errors = []
@@ -185,9 +181,9 @@ class RadarInterface(object):
 
 # radar_interface standalone tester
 if __name__ == "__main__":
-  CP = car.CarParams()
+  CP = None
   RI = RadarInterface(CP)
   while 1:
     ret,retext = RI.update(can_strings = None)
     print(chr(27) + "[2J")
-    print(ret)
+    print(ret,retext)
