@@ -6,7 +6,6 @@ from collections import defaultdict
 from selfdrive.car.honda.hondacan import fix
 from common.realtime import sec_since_boot
 from common.dbc import dbc
-from selfdrive.tinklad.tinkla_interface import TinklaClient
 
 class CANParser(object):
   def __init__(self, dbc_f, signals, checks=None):
@@ -57,8 +56,6 @@ class CANParser(object):
     for i, x in enumerate(self._msgs):
       self._message_indices[x].append(i)
 
-    self.tinklaClient = TinklaClient()
-
   def update_can(self, can_recv):
     msgs_upd = []
     cn_vl_max = 5   # no more than 5 wrong counter checks
@@ -82,7 +79,6 @@ class CANParser(object):
           # compare recalculated vs received checksum
           if msg_vl != cdat:
             print("CHECKSUM FAIL: {0}".format(hex(msg)))
-            self.tinklaClient.logCANErrorEvent(canMessage=msg, additionalInformation="Checksum failure")
             self.ck[msg] = False
             self.ok[msg] = False
         # counter check
@@ -98,7 +94,6 @@ class CANParser(object):
         # message status is invalid if we received too many wrong counter values
         if self.cn_vl[msg] >= cn_vl_max:
           print("COUNTER WRONG: {0}".format(hex(msg)))
-          self.tinklaClient.logCANErrorEvent(canMessage=msg, additionalInformation="Too many wrong counter values")
           self.ok[msg] = False
 
         # update msg time stamps and counter value
@@ -134,5 +129,4 @@ class CANParser(object):
     for msg in set(self._msgs):
       if msg in self.msgs_ck and self.sec_since_boot_cached - self.ct[msg] > 10./self.frqs[msg]:
         self.ok[msg] = False
-        self.tinklaClient.logCANErrorEvent(canMessage=msg, additionalInformation="Dead message")
 
