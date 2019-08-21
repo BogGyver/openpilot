@@ -256,6 +256,7 @@ class ALCAModelParser(object):
     self.dx = 0.
     self.poller = zmq.Poller()
     self.alcaStatus = messaging.sub_sock(service_list['alcaStatus'].port, conflate=True, poller=self.poller)
+    self.alcaState = messaging.pub_sock(service_list['alcaState'].port)
     self.alcas = None
 
 
@@ -280,18 +281,32 @@ class ALCAModelParser(object):
     if ALCA_DEBUG:
       print message
 
-  def update(self, v_ego, md, r_poly, l_poly, r_prob, l_prob, lane_width):
+  def send_state(self):
+    alca_state = tesla.ALCAState.new_message()
+    #ALCA params
+    alca_state.alcaDirection = int(self.ALCA_direction)
+    alca_state.alcaError = bool(self.ALCA_error)
+    alca_state.alcaCancelling = bool(self.ALCA_cancelling)
+    alca_state.alcaEnabled = bool(self.ALCA_enabled)
+    alca_state.alcaLaneWidth = float(self.ALCA_lane_width)
+    alca_state.alcaStep = int(self.ALCA_step)
+    alca_state.alcaTotalSteps = int(self.ALCA_total_steps)
+    self.alcaState.send(alca_state.to_bytes())
+
+  def update(self, v_ego, md, r_poly, l_poly, r_prob, l_prob, lane_width, p_poly):
 
     for socket, _ in self.poller.poll(1):
       if socket is self.alcaStatus:
         self.alcas = tesla.ALCAStatus.from_bytes(socket.recv())
     
     if not self.ALCA_enabled:
-      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width
+      self.send_state()
+      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
 
     #if we don't have yet ALCA status, return same values
     if self.alcas is None:
-      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width
+      self.send_state()
+      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
      
     self.ALCA_direction = self.alcas.alcaDirection
     self.ALCA_enabled = self.alcas.alcaEnabled
@@ -411,18 +426,20 @@ class ALCAModelParser(object):
         
         if (self.ALCA_direction == 1 and not self.ALCA_over_line) or (self.ALCA_direction == -1 and self.ALCA_over_line):
           r_poly = np.array(l_poly)
-          l_prob = 1
+          #l_prob = 1
           r_prob = l_prob
           r_poly[3] = l_poly[3] - self.ALCA_lane_width
         elif (self.ALCA_direction == -1 and not self.ALCA_over_line) or (self.ALCA_direction == 1 and self.ALCA_over_line):
           l_poly = np.array(r_poly)
-          r_prob = 1
+          #r_prob = 1
           l_prob = r_prob
           l_poly[3] = r_poly[3] + self.ALCA_lane_width
         l_poly[3] += self.ALCA_OFFSET_C3
         r_poly[3] += self.ALCA_OFFSET_C3
+        p_poly[3] += self.ALCA_OFFSET_C3
         l_poly[2] += self.ALCA_OFFSET_C2
         r_poly[2] += self.ALCA_OFFSET_C2
+        p_poly[2] += self.ALCA_OFFSET_C2
     else:
       self.reset_alca()
       self.ALCA_error = False
@@ -435,5 +452,6 @@ class ALCAModelParser(object):
       else:
         lane_width = self.ALCA_lane_width
 
-    return np.array(r_poly),np.array(l_poly),r_prob, l_prob, self.ALCA_lane_width
+    self.send_state()
+    return np.array(r_poly),np.array(l_poly),r_prob, l_prob, self.ALCA_lane_width, p_poly
  

@@ -11,7 +11,6 @@ from selfdrive.controls.lib.drive_helpers import MPC_COST_LAT
 from selfdrive.controls.lib.lane_planner import LanePlanner
 import selfdrive.messaging as messaging
 from selfdrive.car.tesla.readconfig import CarSettings
-from cereal import tesla
 
 LOG_MPC = os.environ.get('LOG_MPC', False)
 
@@ -24,13 +23,12 @@ def calc_states_after_delay(states, v_ego, steer_angle, curvature_factor, steer_
 
 class PathPlanner(object):
   def __init__(self, CP):
-    self.LP = LanePlanner()
+    self.LP = LanePlanner(shouldUseAlca=True)
 
     self.last_cloudlog_t = 0
 
     self.plan = messaging.pub_sock(service_list['pathPlan'].port)
     self.livempc = messaging.pub_sock(service_list['liveMpc'].port)
-    self.alca = messaging.pub_sock(service_list['alcaState'].port)
 
     self.setup_mpc(CP.steerRateCost)
     self.solution_invalid_cnt = 0
@@ -134,18 +132,6 @@ class PathPlanner(object):
     plan_send.pathPlan.posenetValid = bool(sm['liveParameters'].posenetValid)
 
     self.plan.send(plan_send.to_bytes())
-
-    alca_state = tesla.ALCAState.new_message()
-    #ALCA params
-    alca_state.alcaDirection = int(self.LP.ALCAMP.ALCA_direction)
-    alca_state.alcaError = bool(self.LP.ALCAMP.ALCA_error)
-    alca_state.alcaCancelling = bool(self.LP.ALCAMP.ALCA_cancelling)
-    alca_state.alcaEnabled = bool(self.LP.ALCAMP.ALCA_enabled)
-    alca_state.alcaLaneWidth = float(self.LP.ALCAMP.ALCA_lane_width)
-    alca_state.alcaStep = int(self.LP.ALCAMP.ALCA_step)
-    alca_state.alcaTotalSteps = int(self.LP.ALCAMP.ALCA_total_steps)
-
-    self.alca.send(alca_state.to_bytes())
 
     if LOG_MPC:
       dat = messaging.new_message()

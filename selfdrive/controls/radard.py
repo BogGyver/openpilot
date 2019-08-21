@@ -349,12 +349,6 @@ class RadarD(object):
     datext.lead2trackId = l2x['trackId']
     datext.lead2oClass = l2x['oClass']
     datext.lead2length = l2x['length']
-    #datext.lead1trackId = l1x.trackId
-    #datext.lead1oClass = l1x.oClass
-    #datext.lead1length = l1x.length
-    #datext.lead2trackId = l2x.trackId
-    #datext.lead2oClass = l2x.oClass
-    #datext.lead2length = l2x.length
     return dat, datext
 
 
@@ -385,7 +379,7 @@ def radard_thread(gctx=None):
 
   rk = Ratekeeper(rate, print_delay_threshold=None)
   RD = RadarD(mocked, RI)
-  MP = LanePlanner()
+  MP = LanePlanner(shouldUseAlca=False)
 
   has_radar = not CP.radarOffCan or mocked
   last_md_ts = 0.
