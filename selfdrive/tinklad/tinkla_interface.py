@@ -90,34 +90,48 @@ class TinklaClient():
 
     ## Helpers:
 
-    def logCrashStackTraceEvent(self, dongleId = None):
-        if dongleId is None:
-            dongleId = self.dongleId
+    def logCrashStackTraceEvent(self, openPilotId = None):
+        if openPilotId is None:
+            openPilotId = self.openPilotId
         event = tinkla.Interface.Event.new_message(
-            openPilotId=dongleId,
+            openPilotId=openPilotId,
             source="n/a",
             category=self.eventCategoryKeys.crash,
             name="crash",
         )
         trace = traceback.format_exc().replace('"', '`').replace("'", '`')
-        userInfo = "User Handle: %s OpenPilotId: %s" % (self.userHandle, self.dongleId)
+        userInfo = "User Handle: %s OpenPilotId: %s" % (self.userHandle, self.openPilotId)
         gitInfo = "Git Remote: %s\nBranch: %s\nCommit: %s" % (self.gitRemote, self.gitBranch, self.gitHash)
         event.value.textValue="%s\n%s\n%s" % (userInfo, gitInfo, trace)
         self.logUserEvent(event)
 
-    def logCANErrorEvent(self, source, canMessage, additionalInformation, dongleId = None):
-        if dongleId is None:
-            dongleId = self.dongleId
+    def logCANErrorEvent(self, source, canMessage, additionalInformation, openPilotId = None):
+        if openPilotId is None:
+            openPilotId = self.openPilotId
         event = tinkla.Interface.Event.new_message(
-            openPilotId=dongleId,
+            openPilotId=openPilotId,
             source=source,
             category=self.eventCategoryKeys.canError,
             name="CAN Error",
         )
         canInfo = "Can Message: {0}".format(hex(canMessage))
-        userInfo = "User Handle: %s OpenPilotId: %s" % (self.userHandle, self.dongleId)
+        userInfo = "User Handle: %s OpenPilotId: %s" % (self.userHandle, self.openPilotId)
         gitInfo = "Git Remote: %s\nBranch: %s\nCommit: %s" % (self.gitRemote, self.gitBranch, self.gitHash)
         event.value.textValue="%s\n%s\n%s\n%s" % (userInfo, gitInfo, canInfo, additionalInformation)
+        self.logUserEvent(event)
+
+    def logProcessCommErrorEvent(self, source, additionalInformation, openPilotId = None):
+        if openPilotId is None:
+            openPilotId = self.openPilotId
+        event = tinkla.Interface.Event.new_message(
+            openPilotId=openPilotId,
+            source=source,
+            category=self.eventCategoryKeys.processCommError,
+            name="Process Comm Error",
+        )
+        userInfo = "User Handle: %s OpenPilotId: %s" % (self.userHandle, self.openPilotId)
+        gitInfo = "Git Remote: %s\nBranch: %s\nCommit: %s" % (self.gitRemote, self.gitBranch, self.gitHash)
+        event.value.textValue="%s\n%s\n%s" % (userInfo, gitInfo, additionalInformation)
         self.logUserEvent(event)
 
     def print_msg(self, message):
@@ -126,7 +140,7 @@ class TinklaClient():
     def __init__(self):
         carSettings = CarSettings()
         params = Params()
-        self.dongleId = params.get("DongleId")
+        self.openPilotId = params.get("DongleId")
         self.userHandle = carSettings.userHandle
         self.gitRemote = params.get("GitRemote")
         self.gitBranch = params.get("GitBranch")

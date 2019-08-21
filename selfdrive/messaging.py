@@ -164,14 +164,34 @@ class SubMaster():
   def all_alive(self, service_list=None):
     if service_list is None:  # check all
       service_list = self.alive.keys()
-    return all(self.alive[s] for s in service_list)
+    info = ""
+    areAllAlive = True
+    for s in service_list:
+      if not self.alive[s]:
+        info = "Missing Process: '%s', alive_cnt=%d" % (s, self.alive_cnt[s])
+        areAllAlive = False
+        break
+    return (areAllAlive, info)
 
   def all_valid(self, service_list=None):
     if service_list is None:  # check all
       service_list = self.valid.keys()
-    return all(self.valid[s] for s in service_list)
+    info = ""
+    areAllValid = True
+    for s in service_list:
+      if not self.valid[s]:
+        info = "Invalid Process: '%s', valid_cnt=%d" % (s, self.valid_cnt[s])
+        areAllValid = False
+        break
+    return (areAllValid, info)
 
-  def all_alive_and_valid(self, service_list=None):
+  def all_alive_and_valid_with_info(self, service_list=None):
     if service_list is None:  # check all
       service_list = self.alive.keys()
-    return self.all_alive(service_list=service_list) and self.all_valid(service_list=service_list)
+    areAllAlive, aliveInfo = self.all_alive(service_list=service_list)
+    areAllValid, validInfo = self.all_valid(service_list=service_list)
+    return (areAllAlive and areAllValid, aliveInfo + "\n" + validInfo)
+
+  def all_alive_and_valid(self, service_list=None):
+    allAliveAndValid, info = self.all_alive_and_valid_with_info(service_list)
+    return allAliveAndValid

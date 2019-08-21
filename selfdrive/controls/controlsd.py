@@ -27,6 +27,8 @@ from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.controls.lib.driver_monitor import DriverStatus, MAX_TERMINAL_ALERTS
 from selfdrive.controls.lib.planner import LON_MPC_STEP
 from selfdrive.locationd.calibration_helpers import Calibration, Filter
+from selfdrive.tinklad.tinkla_interface import TinklaClient
+
 
 ThermalStatus = log.ThermalData.ThermalStatus
 State = log.ControlsState.OpenpilotState
@@ -423,6 +425,8 @@ def controlsd_thread(gctx=None):
 
   params = Params()
 
+  tinklaClient = TinklaClient()
+
   # Pub Sockets
   sendcan = messaging.pub_sock(service_list['sendcan'].port)
   controlsstate = messaging.pub_sock(service_list['controlsState'].port)
@@ -513,8 +517,10 @@ def controlsd_thread(gctx=None):
     prof.checkpoint("Sample")
 
     # Create alerts
-    if not sm.all_alive_and_valid():
+    all_alive_and_valid, all_alive_and_valid_info = sm.all_alive_and_valid_with_info()
+    if not all_alive_and_valid:
       events.append(create_event('commIssue', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
+      tinklaClient.logProcessCommErrorEvent(source="carcontroller", additionalInformation=all_alive_and_valid_info)
     if not sm['pathPlan'].mpcSolutionValid:
       events.append(create_event('plannerError', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
     if not sm['pathPlan'].sensorValid:
@@ -529,6 +535,7 @@ def controlsd_thread(gctx=None):
       events.append(create_event('radarCanError', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
     if not CS.canValid:
       events.append(create_event('canError', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
+      tinklaClient.logCANErrorEvent(source="carcontroller", canMessage=0, additionalInformation="Invalid CAN")
     if not sounds_available:
       events.append(create_event('soundsUnavailable', [ET.NO_ENTRY, ET.PERMANENT]))
 
