@@ -52,7 +52,7 @@ class TinklaTestClient():
         self.tinklaClient.logCANErrorEvent(source=source, canMessage=123, additionalInformation="test can error logging", openPilotId=openPilotId)
 
         print("send process comm error")
-        self.tinklaClient.logProcessCommErrorEvent(source=source, additionalInformation="test process comm error", openPilotId=openPilotId)
+        self.tinklaClient.logProcessCommErrorEvent(source=source, processName="processNameWouldBeHere", count=10, eventType="Not Alive", openPilotId=openPilotId)
 
 if __name__ == "__main__":
     TinklaTestClient()

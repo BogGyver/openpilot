@@ -162,36 +162,67 @@ class SubMaster():
         self.alive[s] = True
 
   def all_alive(self, service_list=None):
+    """Returns alive state for tracked processes.
+
+    Args:
+        service_list (list): Optional service list.
+
+    Returns:
+        tuple: areAllAlive, processName, count
+    """
     if service_list is None:  # check all
       service_list = self.alive.keys()
-    info = ""
     areAllAlive = True
+    processName = ""
+    count = 0
     for s in service_list:
       if not self.alive[s]:
-        info = "Missing Process: '%s', alive_cnt=%d" % (s, self.alive_cnt[s])
         areAllAlive = False
+        processName = s
+        count = self.alive_cnt[s]
         break
-    return (areAllAlive, info)
+    return (areAllAlive, processName, count)
 
   def all_valid(self, service_list=None):
+    """Returns valid state for tracked processes.
+
+    Args:
+        service_list (list): Optional service list.
+
+    Returns:
+        tuple: areAllValid, processName, count
+    """
     if service_list is None:  # check all
       service_list = self.valid.keys()
-    info = ""
     areAllValid = True
+    processName = ""
+    count = 0
     for s in service_list:
       if not self.valid[s]:
-        info = "Invalid Process: '%s', valid_cnt=%d" % (s, self.valid_cnt[s])
         areAllValid = False
+        processName = s
+        count = self.valid_cnt[s]
         break
-    return (areAllValid, info)
+    return (areAllValid, processName, count)
 
   def all_alive_and_valid_with_info(self, service_list=None):
+    """Returns alive and valid state for tracked processes.
+
+    Args:
+        service_list (list): Optional service list.
+
+    Returns:
+        tuple: areAllAlive, areAllValid, aliveProcessName, aliveCount, validProcessName, validCount
+    """
     if service_list is None:  # check all
       service_list = self.alive.keys()
-    areAllAlive, aliveInfo = self.all_alive(service_list=service_list)
-    areAllValid, validInfo = self.all_valid(service_list=service_list)
-    return (areAllAlive and areAllValid, aliveInfo + "\n" + validInfo)
+    areAllAlive, aliveProcessName, aliveCount = self.all_alive(service_list=service_list)
+    areAllValid, validProcessName, validCount = self.all_valid(service_list=service_list)
+    return (areAllAlive, areAllValid, aliveProcessName, aliveCount, validProcessName, )
 
   def all_alive_and_valid(self, service_list=None):
-    allAliveAndValid, info = self.all_alive_and_valid_with_info(service_list)
-    return allAliveAndValid
+    if service_list is None:  # check all
+      service_list = self.alive.keys()
+    areAllAlive, aliveProcessName, aliveCount = self.all_alive(service_list=service_list)
+    areAllValid, validProcessName, validCount = self.all_valid(service_list=service_list)
+    return areAllAlive and areAllValid

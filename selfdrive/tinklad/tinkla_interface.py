@@ -100,7 +100,7 @@ class TinklaClient():
             name="crash",
         )
         trace = traceback.format_exc().replace('"', '`').replace("'", '`')
-        userInfo = "User Handle: %s OpenPilotId: %s" % (self.userHandle, self.openPilotId)
+        userInfo = "User Handle: %s \nOpenPilotId: %s" % (self.userHandle, self.openPilotId)
         gitInfo = "Git Remote: %s\nBranch: %s\nCommit: %s" % (self.gitRemote, self.gitBranch, self.gitHash)
         event.value.textValue="%s\n%s\n%s" % (userInfo, gitInfo, trace)
         self.logUserEvent(event)
@@ -115,21 +115,22 @@ class TinklaClient():
             name="CAN Error",
         )
         canInfo = "Can Message: {0}".format(hex(canMessage))
-        userInfo = "User Handle: %s OpenPilotId: %s" % (self.userHandle, self.openPilotId)
+        userInfo = "User Handle: %s \nOpenPilotId: %s" % (self.userHandle, self.openPilotId)
         gitInfo = "Git Remote: %s\nBranch: %s\nCommit: %s" % (self.gitRemote, self.gitBranch, self.gitHash)
         event.value.textValue="%s\n%s\n%s\n%s" % (userInfo, gitInfo, canInfo, additionalInformation)
         self.logUserEvent(event)
 
-    def logProcessCommErrorEvent(self, source, additionalInformation, openPilotId = None):
+    def logProcessCommErrorEvent(self, source, processName, count, eventType, openPilotId = None):
         if openPilotId is None:
             openPilotId = self.openPilotId
         event = tinkla.Interface.Event.new_message(
             openPilotId=openPilotId,
-            source=source,
+            source=processName,
             category=self.eventCategoryKeys.processCommError,
             name="Process Comm Error",
         )
-        userInfo = "User Handle: %s OpenPilotId: %s" % (self.userHandle, self.openPilotId)
+        additionalInformation = "Process: '%s'  \nType: '%s' \nCount: '%d' \nSource: '%s'" % (processName, eventType, count, source)
+        userInfo = "User Handle: %s \nOpenPilotId: %s" % (self.userHandle, self.openPilotId)
         gitInfo = "Git Remote: %s\nBranch: %s\nCommit: %s" % (self.gitRemote, self.gitBranch, self.gitHash)
         event.value.textValue="%s\n%s\n%s" % (userInfo, gitInfo, additionalInformation)
         self.logUserEvent(event)

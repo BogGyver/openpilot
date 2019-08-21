@@ -517,10 +517,9 @@ def controlsd_thread(gctx=None):
     prof.checkpoint("Sample")
 
     # Create alerts
-    all_alive_and_valid, all_alive_and_valid_info = sm.all_alive_and_valid_with_info()
-    if not all_alive_and_valid:
+    if not sm.all_alive_and_valid():
       events.append(create_event('commIssue', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
-      tinklaClient.logProcessCommErrorEvent(source="carcontroller", additionalInformation=all_alive_and_valid_info)
+      logAllAliveAndValidInfoToTinklad(sm)
     if not sm['pathPlan'].mpcSolutionValid:
       events.append(create_event('plannerError', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
     if not sm['pathPlan'].sensorValid:
@@ -564,6 +563,14 @@ def controlsd_thread(gctx=None):
 
     rk.monitor_time()
     prof.display()
+
+  def logAllAliveAndValidInfoToTinklad(self, sm):
+    areAllAlive, aliveProcessName, aliveCount = sm.all_alive()
+    areAllValid, validProcessName, validCount = sm.all_valid()
+    if not areAllAlive:
+      tinklaClient.logProcessCommErrorEvent(source="carcontroller", processName=aliveProcessName, count=aliveCount, eventType="Not Alive")
+    else:
+      tinklaClient.logProcessCommErrorEvent(source="carcontroller", processName=validProcessName, count=validCount, eventType="Not Valid")
 
 
 def main(gctx=None):
