@@ -49,10 +49,14 @@ class TinklaTestClient():
         self.tinklaClient.logCrashStackTraceEvent(openPilotId=openPilotId)
 
         print("send can error")
-        self.tinklaClient.logCANErrorEvent(source=source, canMessage=123, additionalInformation="test can error logging", openPilotId=openPilotId)
+        self.tinklaClient.logCANErrorEvent(source=source, canMessage=1, additionalInformation="test can error logging", openPilotId=openPilotId)
+        time.sleep(1)
+        self.tinklaClient.logCANErrorEvent(source=source, canMessage=2, additionalInformation="test can error logging", openPilotId=openPilotId)
 
         print("send process comm error")
-        self.tinklaClient.logProcessCommErrorEvent(source=source, processName="processNameWouldBeHere", count=10, eventType="Not Alive", openPilotId=openPilotId)
+        self.tinklaClient.logProcessCommErrorEvent(source=source, processName="processNameWouldBeHere1", count=10, eventType="Not Alive", openPilotId=openPilotId)
+        time.sleep(1)
+        self.tinklaClient.logProcessCommErrorEvent(source=source, processName="processNameWouldBeHere2", count=10, eventType="Not Alive", openPilotId=openPilotId)
 
 if __name__ == "__main__":
     TinklaTestClient()

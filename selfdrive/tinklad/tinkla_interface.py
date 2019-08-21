@@ -5,6 +5,7 @@ import os
 import zmq
 import datetime
 import tinklad
+import time
 
 ## For helpers:
 import traceback
@@ -20,10 +21,20 @@ def now_iso8601():
 class TinklaClient():
     sock = None
     pid = None
+    lastCanErrorTimestamp = 0
+    lastProcessErrorTimestamp = 0
 
     eventCategoryKeys = tinklad.TinklaInterfaceEventCategoryKeys()
     messageTypeKeys = tinklad.TinklaInterfaceMessageKeys()
     actions = tinklad.TinklaInterfaceActions()
+
+    # Configurable:
+    # Note: If throttling, events are dropped
+    shouldThrottleCanErrorEvents = True
+    shouldThrottleProcessCommErrorEvents = True
+    # Setting to every 30min for now, because we're getting a bunch of plan, pathPlan issues. 
+    # Should change to around every 1min in the future when this is resolved
+    throttlingPeriodInSeconds = (60*30) # One event every `throttlingPeriodInSeconds`
     
     def start_client(self):
         if os.getpid() == self.pid:
@@ -106,6 +117,12 @@ class TinklaClient():
         self.logUserEvent(event)
 
     def logCANErrorEvent(self, source, canMessage, additionalInformation, openPilotId = None):
+        if self.shouldThrottleCanErrorEvents:
+            now = time.time()
+            if now - self.lastCanErrorTimestamp < self.throttlingPeriodInSeconds:
+                return
+            self.lastCanErrorTimestamp = now
+            
         if openPilotId is None:
             openPilotId = self.openPilotId
         event = tinkla.Interface.Event.new_message(
@@ -121,6 +138,12 @@ class TinklaClient():
         self.logUserEvent(event)
 
     def logProcessCommErrorEvent(self, source, processName, count, eventType, openPilotId = None):
+        if self.shouldThrottleProcessCommErrorEvents:
+            now = time.time()
+            if now - self.lastProcessErrorTimestamp < self.throttlingPeriodInSeconds:
+                return
+            self.lastProcessErrorTimestamp = now
+
         if openPilotId is None:
             openPilotId = self.openPilotId
         event = tinkla.Interface.Event.new_message(
