@@ -180,7 +180,7 @@ class RadarInterface(object):
       ret.errors = errors
     else:
       ret.errors = []
-    print ret,self.extPts.values()
+    #print ret,self.extPts.values()
     return ret,self.extPts.values()
 
 # radar_interface standalone tester
