@@ -379,7 +379,7 @@ def radard_thread(gctx=None):
 
   rk = Ratekeeper(rate, print_delay_threshold=None)
   RD = RadarD(mocked, RI)
-  MP = LanePlanner(False)
+  MP = LanePlanner(shouldUseAlca=False)
 
   has_radar = not CP.radarOffCan or mocked
   last_md_ts = 0.

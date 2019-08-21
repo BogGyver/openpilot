@@ -23,7 +23,7 @@ def calc_states_after_delay(states, v_ego, steer_angle, curvature_factor, steer_
 
 class PathPlanner(object):
   def __init__(self, CP):
-    self.LP = LanePlanner(True)
+    self.LP = LanePlanner(shouldUseAlca=True)
 
     self.last_cloudlog_t = 0
 
