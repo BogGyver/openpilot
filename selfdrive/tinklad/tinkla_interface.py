@@ -5,6 +5,7 @@ import os
 import zmq
 import datetime
 import tinklad
+import time
 
 ## For helpers:
 import traceback
@@ -20,10 +21,20 @@ def now_iso8601():
 class TinklaClient():
     sock = None
     pid = None
+    lastCanErrorTimestamp = 0
+    lastProcessErrorTimestamp = 0
 
     eventCategoryKeys = tinklad.TinklaInterfaceEventCategoryKeys()
     messageTypeKeys = tinklad.TinklaInterfaceMessageKeys()
     actions = tinklad.TinklaInterfaceActions()
+
+    # Configurable:
+    # Note: If throttling, events are dropped
+    shouldThrottleCanErrorEvents = True
+    shouldThrottleProcessCommErrorEvents = True
+    # Setting to every 30min for now, because we're getting a bunch of plan, pathPlan issues. 
+    # Should change to around every 1min in the future when this is resolved
+    throttlingPeriodInSeconds = (60*30) # One event every `throttlingPeriodInSeconds`
     
     def start_client(self):
         if os.getpid() == self.pid:
@@ -90,34 +101,61 @@ class TinklaClient():
 
     ## Helpers:
 
-    def logCrashStackTraceEvent(self, dongleId = None):
-        if dongleId is None:
-            dongleId = self.dongleId
+    def logCrashStackTraceEvent(self, openPilotId = None):
+        if openPilotId is None:
+            openPilotId = self.openPilotId
         event = tinkla.Interface.Event.new_message(
-            openPilotId=dongleId,
+            openPilotId=openPilotId,
             source="n/a",
             category=self.eventCategoryKeys.crash,
             name="crash",
         )
         trace = traceback.format_exc().replace('"', '`').replace("'", '`')
-        userInfo = "User Handle: %s OpenPilotId: %s" % (self.userHandle, self.dongleId)
+        userInfo = "User Handle: %s \nOpenPilotId: %s" % (self.userHandle, self.openPilotId)
         gitInfo = "Git Remote: %s\nBranch: %s\nCommit: %s" % (self.gitRemote, self.gitBranch, self.gitHash)
         event.value.textValue="%s\n%s\n%s" % (userInfo, gitInfo, trace)
         self.logUserEvent(event)
 
-    def logCANErrorEvent(self, canMessage, additionalInformation, dongleId = None):
-        if dongleId is None:
-            dongleId = self.dongleId
+    def logCANErrorEvent(self, source, canMessage, additionalInformation, openPilotId = None):
+        if self.shouldThrottleCanErrorEvents:
+            now = time.time()
+            if now - self.lastCanErrorTimestamp < self.throttlingPeriodInSeconds:
+                return
+            self.lastCanErrorTimestamp = now
+            
+        if openPilotId is None:
+            openPilotId = self.openPilotId
         event = tinkla.Interface.Event.new_message(
-            openPilotId=dongleId,
-            source=hex(canMessage),
+            openPilotId=openPilotId,
+            source=source,
             category=self.eventCategoryKeys.canError,
             name="CAN Error",
         )
         canInfo = "Can Message: {0}".format(hex(canMessage))
-        userInfo = "User Handle: %s OpenPilotId: %s" % (self.userHandle, self.dongleId)
+        userInfo = "User Handle: %s \nOpenPilotId: %s" % (self.userHandle, self.openPilotId)
         gitInfo = "Git Remote: %s\nBranch: %s\nCommit: %s" % (self.gitRemote, self.gitBranch, self.gitHash)
         event.value.textValue="%s\n%s\n%s\n%s" % (userInfo, gitInfo, canInfo, additionalInformation)
+        self.logUserEvent(event)
+
+    def logProcessCommErrorEvent(self, source, processName, count, eventType, openPilotId = None):
+        if self.shouldThrottleProcessCommErrorEvents:
+            now = time.time()
+            if now - self.lastProcessErrorTimestamp < self.throttlingPeriodInSeconds:
+                return
+            self.lastProcessErrorTimestamp = now
+
+        if openPilotId is None:
+            openPilotId = self.openPilotId
+        event = tinkla.Interface.Event.new_message(
+            openPilotId=openPilotId,
+            source=processName,
+            category=self.eventCategoryKeys.processCommError,
+            name="Process Comm Error",
+        )
+        additionalInformation = "Process: '%s'  \nType: '%s' \nCount: '%d' \nSource: '%s'" % (processName, eventType, count, source)
+        userInfo = "User Handle: %s \nOpenPilotId: %s" % (self.userHandle, self.openPilotId)
+        gitInfo = "Git Remote: %s\nBranch: %s\nCommit: %s" % (self.gitRemote, self.gitBranch, self.gitHash)
+        event.value.textValue="%s\n%s\n%s" % (userInfo, gitInfo, additionalInformation)
         self.logUserEvent(event)
 
     def print_msg(self, message):
@@ -126,7 +164,7 @@ class TinklaClient():
     def __init__(self):
         carSettings = CarSettings()
         params = Params()
-        self.dongleId = params.get("DongleId")
+        self.openPilotId = params.get("DongleId")
         self.userHandle = carSettings.userHandle
         self.gitRemote = params.get("GitRemote")
         self.gitBranch = params.get("GitBranch")

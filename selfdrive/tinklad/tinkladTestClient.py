@@ -10,10 +10,13 @@ class TinklaTestClient():
     def __init__(self):
         #self.start_server()
         self.tinklaClient = TinklaClient()
+        openPilotId = "test_openpilotId"
+        source = "tinkladTestClient"
+        userHandle = "test_user_handle"
 
         info = tinkla.Interface.UserInfo.new_message(
-            openPilotId="test_openpilotId",
-            userHandle="test_user_handle",
+            openPilotId=openPilotId,
+            userHandle=userHandle,
             gitRemote="test_github.com/something",
             gitBranch="test_gitbranch",
             gitHash="test_123456"
@@ -24,8 +27,8 @@ class TinklaTestClient():
         print("Info Time Elapsed = %d" % (elapsed_time_us))
 
         event = tinkla.Interface.Event.new_message(
-            openPilotId="test_openpilotId",
-            source="unittest",
+            openPilotId=openPilotId,
+            source=source,
             category=self.tinklaClient.eventCategoryKeys.userAction,
             name="pull_stalk",
         )
@@ -36,18 +39,24 @@ class TinklaTestClient():
         print("Event Time Elapsed = %d" % (elapsed_time_us))
 
         carsettings = CarSettings("./bb_openpilot_config.cfg")
-        userHandle = carsettings.userHandle
+        carsettings.userHandle = userHandle
         print("userHandle = '%s'" % (userHandle))
 
         print("attemptToSendPendingMessages")
         self.tinklaClient.attemptToSendPendingMessages()
 
         print("send crash log")
-        self.tinklaClient.logCrashStackTraceEvent(dongleId="test_openpilotId")
+        self.tinklaClient.logCrashStackTraceEvent(openPilotId=openPilotId)
 
         print("send can error")
-        self.tinklaClient.logCANErrorEvent(canMessage=123, additionalInformation="test can error logging", dongleId="test_openpilotId")
+        self.tinklaClient.logCANErrorEvent(source=source, canMessage=1, additionalInformation="test can error logging", openPilotId=openPilotId)
+        time.sleep(1)
+        self.tinklaClient.logCANErrorEvent(source=source, canMessage=2, additionalInformation="test can error logging", openPilotId=openPilotId)
+
+        print("send process comm error")
+        self.tinklaClient.logProcessCommErrorEvent(source=source, processName="processNameWouldBeHere1", count=10, eventType="Not Alive", openPilotId=openPilotId)
+        time.sleep(1)
+        self.tinklaClient.logProcessCommErrorEvent(source=source, processName="processNameWouldBeHere2", count=10, eventType="Not Alive", openPilotId=openPilotId)
 
 if __name__ == "__main__":
     TinklaTestClient()
-    
