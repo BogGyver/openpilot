@@ -210,7 +210,7 @@ class CarInterface(object):
     ret.openpilotLongitudinalControl = True
     ret.steerLimitAlert = False
     ret.startAccel = 0.5
-    ret.steerRateCost = 0.6
+    ret.steerRateCost = 0.7
     ret.radarOffCan = not CarSettings().get_value("useTeslaRadar")
 
     return ret
