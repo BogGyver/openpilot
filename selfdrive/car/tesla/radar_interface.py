@@ -17,7 +17,7 @@ RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
 OBJECT_MIN_PROBABILITY = 20.
 CLASS_MIN_PROBABILITY = 20.
 RADAR_MESSAGE_FREQUENCY = 0.050 * 1e9 #time in ns, radar sends data at 0.06 s
-VALID_MESSAGE_COUNT_THRESHOLD = 10
+VALID_MESSAGE_COUNT_THRESHOLD = 4
 
 
 # Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at

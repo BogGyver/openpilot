@@ -107,7 +107,7 @@ class RadarD(object):
     if (RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE) and CarSettings().get_value("useTeslaRadar"):
       self.icCarLR = messaging.pub_sock(service_list['uiIcCarLR'].port)
     
-
+    self.lane_width = 3.0
     #only used for left and right lanes
     self.path_x = np.arange(0.0, 160.0, 0.1)    # 160 meters is max
 
