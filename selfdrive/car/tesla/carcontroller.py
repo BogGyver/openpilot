@@ -630,6 +630,9 @@ class CarController(object):
         can_sends.append(teslacan.create_fake_IC_msg())
     idx = frame % 16
     cruise_btn = None
+    # send enabled ethernet every 0.2 sec
+    if frame % 20 == 0:
+        can_sends.append(teslacan.create_enabled_eth_msg(1))
     if self.ACC.enable_adaptive_cruise and not CS.pedal_interceptor_available:
       cruise_btn = self.ACC.update_acc(enabled, CS, frame, actuators, pcm_speed, \
                     self.speed_limit_for_cc, self.speedlimit_valid, \

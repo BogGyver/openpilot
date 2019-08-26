@@ -56,6 +56,13 @@ def create_pedal_command_msg(accelCommand, enable, idx):
       (int_accelCommand2 >> 8) & 0xFF, int_accelCommand2 & 0XFF,((enable << 7) + idx) & 0xFF)
   struct.pack_into('B', msg, msg_len-1, add_tesla_checksum(msg_id,msg))
   return [msg_id, 0, msg.raw, 2]    
+
+def create_enabled_eth_msg(status):
+  msg_id = 0x018
+  msg_len = 1
+  msg = create_string_buffer(msg_len)
+  struct.pack_into('B', msg, 0, status)
+  return [msg_id, 0, msg.raw, 0]
   
 def create_fake_IC_msg():
   msg_id = 0x649

@@ -121,8 +121,10 @@ class RadarD(object):
       self.v_ego_hist_t.append(float(frame)/rate)
     if sm.updated['model']:
       self.ready = True
+    if sm.updated['pathPlan']:
+      self.lane_width = sm['pathPlan'].laneWidth
 
-    path_y = np.polyval(sm['model'].path.poly, self.path_x)
+    path_y = np.polyval(sm['pathPlan'].dPoly, self.path_x)
 
     ar_pts = {}
     for pt in rr.points:
@@ -208,10 +210,9 @@ class RadarD(object):
       datrl.v4Dy = float(0.)
       datrl.v4Id = int(0)
       lane_offset = 0. 
-      lane_width = 3. #BB: static for now, needs to be computed
     #LEFT LANE
     if self.RI.TRACK_LEFT_LANE and use_tesla_radar:
-      ll_track_pts = np.array([self.tracks[iden].get_key_for_cluster_dy(-lane_width) for iden in idens])
+      ll_track_pts = np.array([self.tracks[iden].get_key_for_cluster_dy(-self.lane_width) for iden in idens])
       # If we have multiple points, cluster them
       if len(ll_track_pts) > 1:
         ll_cluster_idxs = cluster_points_centroid(ll_track_pts, 2.5)
@@ -234,7 +235,7 @@ class RadarD(object):
           print(i)
       # *** extract the lead car ***
       ll_lead_clusters = [c for c in ll_clusters
-                      if c.is_potential_lead_dy(self.v_ego,-lane_width)]
+                      if c.is_potential_lead_dy(self.v_ego,-self.lane_width)]
       ll_lead_clusters.sort(key=lambda x: x.dRel)
       ll_lead_len = len(ll_lead_clusters)
       ll_lead1_truck = (len([c for c in ll_lead_clusters
@@ -266,7 +267,7 @@ class RadarD(object):
           datrl.v2Id = int(ll_lead2_clusters[0].track_id % 32)
     #RIGHT LANE
     if self.RI.TRACK_RIGHT_LANE and use_tesla_radar:
-      rl_track_pts = np.array([self.tracks[iden].get_key_for_cluster_dy(lane_width) for iden in idens])
+      rl_track_pts = np.array([self.tracks[iden].get_key_for_cluster_dy(self.lane_width) for iden in idens])
       # If we have multiple points, cluster them
       if len(rl_track_pts) > 1:
         rl_cluster_idxs = cluster_points_centroid(rl_track_pts, 2.5)
@@ -289,7 +290,7 @@ class RadarD(object):
           print(i)
       # *** extract the lead car ***
       rl_lead_clusters = [c for c in rl_clusters
-                      if c.is_potential_lead_dy(self.v_ego,lane_width)]
+                      if c.is_potential_lead_dy(self.v_ego,self.lane_width)]
       rl_lead_clusters.sort(key=lambda x: x.dRel)
       rl_lead_len = len(rl_lead_clusters)
       rl_lead1_truck = (len([c for c in rl_lead_clusters
@@ -367,7 +368,7 @@ def radard_thread(gctx=None):
   RadarInterface = importlib.import_module('selfdrive.car.%s.radar_interface' % CP.carName).RadarInterface
 
   can_sock = messaging.sub_sock(service_list['can'].port)
-  sm = messaging.SubMaster(['model', 'controlsState', 'liveParameters'])
+  sm = messaging.SubMaster(['model', 'controlsState', 'liveParameters','pathPlan'])
 
   RI = RadarInterface(CP)
 

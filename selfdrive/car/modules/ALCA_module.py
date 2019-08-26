@@ -408,12 +408,9 @@ class ALCAModelParser(object):
               self.ALCA_error = False
             ix = self.ALCA_lane_width * float(self.ALCA_direction) / float(self.ALCA_total_steps)
             if self.ALCA_direction == 1:
-              #ix = -(self.ALCA_lane_width/2 + r_poly[3]) / float(self.ALCA_total_steps - self.ALCA_step)
               self.ALCA_OFFSET_C3 = ix * float (self.ALCA_step) - self.ALCA_lane_width
             else:
-              #ix = -(self.ALCA_lane_width/2 - l_poly[3]) / float(self.ALCA_total_steps - self.ALCA_step) 
               self.ALCA_OFFSET_C3 = ix * float (self.ALCA_step) + self.ALCA_lane_width
-            #self.ALCA_OFFSET_C3 = ix * float(self.ALCA_total_steps - self.ALCA_step -1)
             self.ALCA_OFFSET_C2 = self.mx * float(self.ALCA_direction) / dx
           else:
             ix = self.ALCA_lane_width * float(self.ALCA_direction) / float(self.ALCA_total_steps)
@@ -426,17 +423,23 @@ class ALCAModelParser(object):
         
         if (self.ALCA_direction == 1 and not self.ALCA_over_line) or (self.ALCA_direction == -1 and self.ALCA_over_line):
           r_poly = np.array(l_poly)
-          #l_prob = 1
+          l_prob = 1
           r_prob = l_prob
           r_poly[3] = l_poly[3] - self.ALCA_lane_width
         elif (self.ALCA_direction == -1 and not self.ALCA_over_line) or (self.ALCA_direction == 1 and self.ALCA_over_line):
           l_poly = np.array(r_poly)
-          #r_prob = 1
+          r_prob = 1
           l_prob = r_prob
           l_poly[3] = r_poly[3] + self.ALCA_lane_width
-        l_poly[3] += self.ALCA_OFFSET_C3
-        r_poly[3] += self.ALCA_OFFSET_C3
-        p_poly[3] += self.ALCA_OFFSET_C3
+        #l_poly[3] += self.ALCA_OFFSET_C3
+        #r_poly[3] += self.ALCA_OFFSET_C3
+        #p_poly[3] += self.ALCA_OFFSET_C3
+        #l_poly[2] += self.ALCA_OFFSET_C2
+        #r_poly[2] += self.ALCA_OFFSET_C2
+        #p_poly[2] += self.ALCA_OFFSET_C2
+        l_poly[3] = self.ALCA_lane_width/2
+        r_poly[3] = -self.ALCA_lane_width/2
+        p_poly[3] = 0
         l_poly[2] += self.ALCA_OFFSET_C2
         r_poly[2] += self.ALCA_OFFSET_C2
         p_poly[2] += self.ALCA_OFFSET_C2
