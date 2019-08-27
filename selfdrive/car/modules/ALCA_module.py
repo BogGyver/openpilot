@@ -295,13 +295,9 @@ class ALCAModelParser(object):
 
   def update(self, v_ego, md, r_poly, l_poly, r_prob, l_prob, lane_width, p_poly):
 
-    for socket, _ in self.poller.poll(1):
+    for socket, _ in self.poller.poll(0):
       if socket is self.alcaStatus:
         self.alcas = tesla.ALCAStatus.from_bytes(socket.recv())
-    
-    if not self.ALCA_enabled:
-      self.send_state()
-      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
 
     #if we don't have yet ALCA status, return same values
     if self.alcas is None:
@@ -313,6 +309,10 @@ class ALCAModelParser(object):
     self.ALCA_total_steps = self.alcas.alcaTotalSteps
     self.ALCA_error = self.ALCA_error or (self.alcas.alcaError and not self.prev_CS_ALCA_error)
     self.prev_CS_ALCA_error = self.alcas.alcaError
+
+    if not self.ALCA_enabled:
+      self.send_state()
+      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
 
     #if error but no direction, the carcontroller component is fine and we need to reset
     if self.ALCA_error and (self.ALCA_direction == 0):

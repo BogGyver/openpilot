@@ -2,6 +2,7 @@
 import numpy as np
 import numpy.matlib
 import importlib
+import zmq
 from collections import defaultdict, deque
 
 import selfdrive.messaging as messaging
@@ -10,7 +11,7 @@ from selfdrive.controls.lib.radar_helpers import Track, Cluster
 from selfdrive.config import RADAR_TO_CENTER
 from selfdrive.controls.lib.cluster.fastcluster_py import cluster_points_centroid
 from selfdrive.swaglog import cloudlog
-from cereal import car,tesla
+from cereal import car,log,tesla
 from common.params import Params
 from common.realtime import set_realtime_priority, Ratekeeper, DT_MDL
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
@@ -110,6 +111,9 @@ class RadarD(object):
     self.lane_width = 3.0
     #only used for left and right lanes
     self.path_x = np.arange(0.0, 160.0, 0.1)    # 160 meters is max
+    self.poller = zmq.Poller()
+    self.pathPlanSocket = messaging.sub_sock(service_list['pathPlan'].port, conflate=True, poller=self.poller)
+    self.dPoly = [0.,0.,0.,0.]
 
   def update(self, frame, delay, sm, rr, has_radar,rrext):
     self.current_time = 1e-9*max([sm.logMonoTime[key] for key in sm.logMonoTime.keys()])
@@ -121,10 +125,14 @@ class RadarD(object):
       self.v_ego_hist_t.append(float(frame)/rate)
     if sm.updated['model']:
       self.ready = True
-    if sm.updated['pathPlan']:
-      self.lane_width = sm['pathPlan'].laneWidth
 
-    path_y = np.polyval(sm['pathPlan'].dPoly, self.path_x)
+    for socket, _ in self.poller.poll(0):
+      if socket is self.pathPlanSocket:
+        pp = messaging.recv_one(self.pathPlanSocket).pathPlan
+        self.lane_width = pp.laneWidth
+        self.dPoly = pp.dPoly
+
+    path_y = np.polyval(self.dPoly, self.path_x)
 
     ar_pts = {}
     for pt in rr.points:
@@ -368,7 +376,7 @@ def radard_thread(gctx=None):
   RadarInterface = importlib.import_module('selfdrive.car.%s.radar_interface' % CP.carName).RadarInterface
 
   can_sock = messaging.sub_sock(service_list['can'].port)
-  sm = messaging.SubMaster(['model', 'controlsState', 'liveParameters','pathPlan'])
+  sm = messaging.SubMaster(['model', 'controlsState', 'liveParameters'])
 
   RI = RadarInterface(CP)
 
