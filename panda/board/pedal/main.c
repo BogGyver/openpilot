@@ -185,6 +185,7 @@ void CAN1_RX0_IRQHandler(void) {
         } else {
           puts("Failed entering Softloader or Bootloader\n");
         }
+        return;
       }
 
       // normal packet

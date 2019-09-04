@@ -53,22 +53,30 @@ if __name__ == "__main__":
   args = parser.parse_args()
 
   p = Panda()
+  print "setting panda safety to 0x1337"
   p.set_safety_mode(0x1337)
+  p.set_can_enable(0,True)
+  p.set_can_enable(1,False)
+  p.set_can_enable(2,False)
+  time.sleep(3.0)
 
   while 1:
     if len(p.can_recv()) == 0:
       break
-
+  print "entering bootloader mode"
   if args.recover:
     p.can_send(0x200, "\xce\xfa\xad\xde\x1e\x0b\xb0\x02", 0)
+    p.can_send(0x551, "\xce\xfa\xad\xde\x1e\x0b\xb0\x02", 0)
     exit(0)
   else:
     p.can_send(0x200, "\xce\xfa\xad\xde\x1e\x0b\xb0\x0a", 0)
+    p.can_send(0x551, "\xce\xfa\xad\xde\x1e\x0b\xb0\x0a", 0)
 
   if args.fn:
     time.sleep(0.1)
     print "flashing", args.fn
     code = open(args.fn).read()
+    print "file opened"
     Panda.flash_static(CanHandle(p), code)
 
   print "can flash done"

@@ -80,7 +80,8 @@ void started_interrupt_handler(uint8_t interrupt_line) {
     delay(100000);
 
     // set power savings mode here
-    int power_save_state = current_board->check_ignition() ? POWER_SAVE_STATUS_DISABLED : POWER_SAVE_STATUS_ENABLED;
+    //int power_save_state = current_board->check_ignition() ? POWER_SAVE_STATUS_DISABLED : POWER_SAVE_STATUS_ENABLED;
+    int power_save_state = POWER_SAVE_STATUS_DISABLED;
     set_power_save_state(power_save_state);
   }
   EXTI->PR = (1U << interrupt_line);

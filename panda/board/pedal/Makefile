@@ -21,6 +21,10 @@ CFLAGS += "-DALLOW_DEBUG"
 canflash: obj/$(PROJ_NAME).bin
 	../../tests/pedal/enter_canloader.py $<
 
+canflash2: obj/$(PROJ_NAME).bin
+	../../tests/pedal/enter_canloader_can2.py $<
+
+
 usbflash: obj/$(PROJ_NAME).bin
 	../../tests/pedal/enter_canloader.py; sleep 0.5
 	PYTHONPATH=../../ python -c "from python import Panda; p = [x for x in [Panda(x) for x in Panda.list()] if x.bootstub]; assert(len(p)==1); p[0].flash('obj/$(PROJ_NAME).bin', reconnect=False)"
