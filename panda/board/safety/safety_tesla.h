@@ -63,6 +63,7 @@ const uint32_t TESLA_RADAR_TIMEOUT = 10000000; // 10s second between real time c
 char radar_VIN[] = "                 "; //leave empty if your radar VIN matches the car VIN
 int tesla_radar_vin_complete = 0;
 int tesla_radar_can = 1;
+int tesla_epas_can = 2;
 int tesla_radar_trigger_message_id = 0; //not used by tesla, to showcase for other cars
 int radarPosition = 0; //0 nosecone, 1 facelift
 int radarEpasType = 0; //0/1 bosch, 2-4 mando
@@ -945,7 +946,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   }
 
   //let's see if the pedal was pressed
-  if ((addr == 0x552) && (bus_number == 2)) {
+  if ((addr == 0x552) && (bus_number == tesla_epas_can)) {
     //m1 = 0.050796813
     //m2 = 0.101593626
     //d = -22.85856576
@@ -998,7 +999,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   }
 
   //looking for radar messages;
-  if ((addr == 0x300) && (bus_number ==1)) 
+  if ((addr == 0x300) && (bus_number == tesla_radar_can)) 
   {
     uint32_t ts = TIM2->CNT;
     uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_last_radar_signal);
@@ -1017,7 +1018,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   }
 
   //0x631 is sent by radar to initiate the sync
-  if ((addr == 0x631) && (bus_number == 1))
+  if ((addr == 0x631) && (bus_number == tesla_radar_can))
   {
     uint32_t ts = TIM2->CNT;
     uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_last_radar_signal);
@@ -1239,7 +1240,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   // exit controls on EPAS error
   // EPAS_sysStatus::EPAS_eacStatus 0x370
   //BB this was on bus_number 1 which is wrong, but not tested on 2 yet
-  if ((addr == 0x370)  && (bus_number == 2))
+  if ((addr == 0x370)  && (bus_number == tesla_epas_can))
   {
     // if EPAS_eacStatus is not 1 or 2, disable control
     eac_status = (GET_BYTE(to_push, 6) >> 5) & 0x7;
@@ -1860,7 +1861,7 @@ static int tesla_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd)
     return -1;
   }
 
-  if (bus_num == 2)
+  if (bus_num == tesla_epas_can)
   {
 
     // remove GTW_epasControl in forwards
