@@ -971,7 +971,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   }
 
   //we use EPAS_sysStatus 0x370 to determine if the car is off or on 
-  if ((addr == 0x370)  && (bus_number == 0)) {
+  if ((addr == 0x370) && (bus_number != 1)) {
     time_last_EPAS_data = current_car_time;
   }
 
