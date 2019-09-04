@@ -58,10 +58,11 @@ WAIT_TIME_AFTER_TURN = 2.0
 #ALCA
 ALCA_line_check_low_limit = 0.25
 ALCA_line_check_high_limit = 0.75
-ALCA_line_min_prob = 0.1
+ALCA_line_min_prob = 0.01
 ALCA_release_distance = 0.3
 
 ALCA_DEBUG = True
+DEBUG_INFO = "step {step} of {total_steps}: direction={ALCA_direction} | using visual = {ALCA_use_visual} | over line={ALCA_over_line} | lane width={ALCA_lane_width} | left to move={left_to_move} | from center ={from_center} | C2 offset = {ALCA_OFFSET_C2} | "
 
 class ALCAController(object):
   def __init__(self,carcontroller,alcaEnabled,steerByAngle):
@@ -248,14 +249,11 @@ class ALCAModelParser(object):
     self.ALCA_over_line = False
     self.prev_CS_ALCA_error = False
     self.ALCA_use_visual = True
-    self.ALCA_l_poly = np.array([0., 0., 0., -100.])
-    self.ALCA_r_poly = np.array([0., 0., 0., -100.])
     self.ALCA_vego = 0.
     self.ALCA_vego_prev = 0.
-    self.mx = 0.
-    self.dx = 0.
     self.poller = zmq.Poller()
     self.alcaStatus = messaging.sub_sock(service_list['alcaStatus'].port, conflate=True, poller=self.poller)
+    self.alcaState = messaging.pub_sock(service_list['alcaState'].port)
     self.alcas = None
 
 
@@ -269,29 +267,36 @@ class ALCAModelParser(object):
     self.ALCA_OFFSET_C2 = 0.
     self.ALCA_over_line = False
     self.ALCA_use_visual = True
-    self.ALCA_l_poly = np.array([0., 0., 0., -100.])
-    self.ALCA_r_poly = np.array([0., 0., 0., -100.])
     self.ALCA_vego_prev = 0.
-    self.mx = 0.
-    self.dx = 0.
     self.alcas = None
 
   def debug_alca(self,message):
     if ALCA_DEBUG:
       print message
 
-  def update(self, v_ego, md, r_poly, l_poly, r_prob, l_prob, lane_width):
+  def send_state(self):
+    alca_state = tesla.ALCAState.new_message()
+    #ALCA params
+    alca_state.alcaDirection = int(self.ALCA_direction)
+    alca_state.alcaError = bool(self.ALCA_error)
+    alca_state.alcaCancelling = bool(self.ALCA_cancelling)
+    alca_state.alcaEnabled = bool(self.ALCA_enabled)
+    alca_state.alcaLaneWidth = float(self.ALCA_lane_width)
+    alca_state.alcaStep = int(self.ALCA_step)
+    alca_state.alcaTotalSteps = int(self.ALCA_total_steps)
+    self.alcaState.send(alca_state.to_bytes())
 
-    for socket, _ in self.poller.poll(1):
+  def update(self, v_ego, md, r_poly, l_poly, r_prob, l_prob, lane_width, p_poly):
+
+    for socket, _ in self.poller.poll(0):
       if socket is self.alcaStatus:
         self.alcas = tesla.ALCAStatus.from_bytes(socket.recv())
-    
-    if not self.ALCA_enabled:
-      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width
 
     #if we don't have yet ALCA status, return same values
     if self.alcas is None:
-      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width
+      self.send_state()
+      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
+
      
     self.ALCA_direction = self.alcas.alcaDirection
     self.ALCA_enabled = self.alcas.alcaEnabled
@@ -299,20 +304,14 @@ class ALCAModelParser(object):
     self.ALCA_error = self.ALCA_error or (self.alcas.alcaError and not self.prev_CS_ALCA_error)
     self.prev_CS_ALCA_error = self.alcas.alcaError
 
+    if not self.ALCA_enabled:
+      self.send_state()
+      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
+
     #if error but no direction, the carcontroller component is fine and we need to reset
     if self.ALCA_error and (self.ALCA_direction == 0):
       self.ALCA_error = False
-    mx = 0.
-    if self.ALCA_enabled and not (self.ALCA_direction == 0):
-      mx = min(abs(r_poly[3] - self.ALCA_r_poly[3]),abs(l_poly[3] - self.ALCA_l_poly[3]))
-      if mx > 0.5:
-        mx = self.mx
-      self.mx = mx
-    else:
-      self.mx = 0
-    
-    self.ALCA_l_poly = np.array(l_poly)
-    self.ALCA_r_poly = np.array(r_poly)
+
 
     #where are we in alca as %
     ALCA_perc_complete = float(self.ALCA_step) / float(self.ALCA_total_steps)
@@ -331,10 +330,7 @@ class ALCAModelParser(object):
     if self.ALCA_enabled and not (self.ALCA_direction == 0):
       if ALCA_DEBUG:
         print ALCA_perc_complete, self.ALCA_step,self.ALCA_total_steps
-      self.debug_alca(" ALCA enabled and direction not 0 -> let's go...")
       ALCA_increment = -3 if self.ALCA_cancelling else 1
-      if ALCA_DEBUG:
-        print "increment", ALCA_increment
       self.ALCA_step += ALCA_increment
       if (self.ALCA_step < 0) or (self.ALCA_step >= self.ALCA_total_steps):
         #done so end ALCA
@@ -343,86 +339,76 @@ class ALCAModelParser(object):
       else:
         #if between 20% and 80% of change is done, let's check if we are over the line
         if ALCA_line_check_low_limit  < ALCA_perc_complete  < ALCA_line_check_high_limit :
-          self.debug_alca("perc complete between ALCA_line_check_low_limit and ALCA_line_check_high_limit...")
           if self.ALCA_direction == -1:
             #if we are moving to the right
-            if (l_prob > ALCA_line_min_prob ) and (0 < l_poly[3] <  (self.ALCA_lane_width / 3.)):
-              self.debug_alca("alca over the line...")
+            if (l_prob > ALCA_line_min_prob ) and (0. <= l_poly[3] <=  (self.ALCA_lane_width /2.)):
               self.ALCA_over_line = True
           if self.ALCA_direction == 1:
             #if we are moving to the left
-            if (r_prob > ALCA_line_min_prob ) and ((-self.ALCA_lane_width / 3.) < r_poly[3] < 0 ):
-              self.debug_alca("alca over the line...")
+            if (r_prob > ALCA_line_min_prob ) and ((-self.ALCA_lane_width / 2.) <= r_poly[3] <= 0 ):
               self.ALCA_over_line = True
         elif ALCA_perc_complete >= ALCA_line_check_high_limit :
-          self.debug_alca("alca over the line (ALCA_line_check_high_limit )...")
           self.ALCA_over_line = True
         else:
-          self.debug_alca("alca not over the line (ALCA_line_check_low_limit)...")
           self.ALCA_over_line = False
         #make sure we always have the line we need in sight
-        if self.ALCA_over_line:
-          self.debug_alca("OVER THE LINE")
         prev_ALCA_use_visual = self.ALCA_use_visual
         if (not self.ALCA_over_line) and (((self.ALCA_direction == 1) and (l_prob < ALCA_line_min_prob)) or ((self.ALCA_direction == -1) and (r_prob < ALCA_line_min_prob))):
-          self.debug_alca("alca not over line, not using visual")
           self.ALCA_use_visual = False
         elif self.ALCA_over_line and (((self.ALCA_direction == 1) and (r_prob < ALCA_line_min_prob)) or ((self.ALCA_direction == -1) and (l_prob < ALCA_line_min_prob))):
-          self.debug_alca("alca over line, not using visual")
           self.ALCA_use_visual = False
         else:
-          self.debug_alca("alca using visual")
           self.ALCA_use_visual = True
 
         #did we just switch between visual and non-visual?
         if prev_ALCA_use_visual != self.ALCA_use_visual:
           self.reset_alca()
 
-        #maybe we need to change this with real time than assume 0.05s at 20Hz
-        #compute how much distance we did since last iteration
-        dx = 0.05 * (self.ALCA_vego_prev + v_ego) / 2
-        #total distance traveled through the lane change
-        self.dx += dx
-        ix = 0.
-
         #compute offset
+        from_center = 0.
+        left_to_move = 0.
+        if self.ALCA_enabled and not (self.ALCA_direction == 0):
+          if self.ALCA_over_line:
+            if self.ALCA_direction == 1:
+              from_center = self.ALCA_lane_width / 2 - r_poly[3]
+            else:
+              from_center = self.ALCA_lane_width / 2 + l_poly[3]
+          else:
+            if self.ALCA_direction == 1:
+              from_center = self.ALCA_lane_width / 2 - l_poly[3]
+            else:
+              from_center = self.ALCA_lane_width / 2 + r_poly[3]
+          if from_center < 0.:
+            from_center += self.ALCA_lane_width /2 
+          left_to_move = self.ALCA_lane_width - from_center
+          steps_left = self.ALCA_total_steps - self.ALCA_step
+          self.ALCA_OFFSET_C2 = float(self.ALCA_direction * left_to_move) / float(steps_left * 0.05 * (self.ALCA_vego_prev + v_ego) / 2.)
+          if ALCA_DEBUG:
+            debug_string = DEBUG_INFO.format(step=self.ALCA_step,total_steps=self.ALCA_total_steps,ALCA_direction=self.ALCA_direction,ALCA_use_visual=self.ALCA_use_visual,ALCA_over_line=self.ALCA_over_line,ALCA_lane_width=self.ALCA_lane_width, left_to_move=left_to_move, from_center=from_center, ALCA_OFFSET_C2=self.ALCA_OFFSET_C2)
+            self.debug_alca(debug_string)
+        else:
+          self.ALCA_OFFSET_C2 = 0.
+        
         if (not self.ALCA_error) and self.ALCA_use_visual:
           if self.ALCA_over_line:
             if (self.ALCA_total_steps - self.ALCA_step <= 1) or (self.ALCA_over_line and ((self.ALCA_direction == 1) and (r_poly[3] < -ALCA_release_distance)) or ((self.ALCA_direction == -1) and (l_poly[3] > ALCA_release_distance))):
               self.reset_alca()
               self.ALCA_error = False
-            ix = self.ALCA_lane_width * float(self.ALCA_direction) / float(self.ALCA_total_steps)
-            if self.ALCA_direction == 1:
-              #ix = -(self.ALCA_lane_width/2 + r_poly[3]) / float(self.ALCA_total_steps - self.ALCA_step)
-              self.ALCA_OFFSET_C3 = ix * float (self.ALCA_step) - self.ALCA_lane_width
-            else:
-              #ix = -(self.ALCA_lane_width/2 - l_poly[3]) / float(self.ALCA_total_steps - self.ALCA_step) 
-              self.ALCA_OFFSET_C3 = ix * float (self.ALCA_step) + self.ALCA_lane_width
-            #self.ALCA_OFFSET_C3 = ix * float(self.ALCA_total_steps - self.ALCA_step -1)
-            self.ALCA_OFFSET_C2 = self.mx * float(self.ALCA_direction) / dx
-          else:
-            ix = self.ALCA_lane_width * float(self.ALCA_direction) / float(self.ALCA_total_steps)
-            self.ALCA_OFFSET_C3 = ix * float (self.ALCA_step) 
-            self.ALCA_OFFSET_C2 = self.mx * float(self.ALCA_direction) / dx
-        else:
-          self.ALCA_OFFSET_C3 = 0.
-          self.ALCA_OFFSET_C2 = 0.
 
-        
         if (self.ALCA_direction == 1 and not self.ALCA_over_line) or (self.ALCA_direction == -1 and self.ALCA_over_line):
           r_poly = np.array(l_poly)
           l_prob = 1
           r_prob = l_prob
-          r_poly[3] = l_poly[3] - self.ALCA_lane_width
         elif (self.ALCA_direction == -1 and not self.ALCA_over_line) or (self.ALCA_direction == 1 and self.ALCA_over_line):
           l_poly = np.array(r_poly)
           r_prob = 1
           l_prob = r_prob
-          l_poly[3] = r_poly[3] + self.ALCA_lane_width
-        l_poly[3] += self.ALCA_OFFSET_C3
-        r_poly[3] += self.ALCA_OFFSET_C3
+        l_poly[3] = self.ALCA_lane_width / 2
+        r_poly[3] = -self.ALCA_lane_width / 2
+        p_poly[3] = 0
         l_poly[2] += self.ALCA_OFFSET_C2
         r_poly[2] += self.ALCA_OFFSET_C2
+        p_poly[2] += self.ALCA_OFFSET_C2
     else:
       self.reset_alca()
       self.ALCA_error = False
@@ -435,5 +421,6 @@ class ALCAModelParser(object):
       else:
         lane_width = self.ALCA_lane_width
 
-    return np.array(r_poly),np.array(l_poly),r_prob, l_prob, self.ALCA_lane_width
+    self.send_state()
+    return np.array(r_poly),np.array(l_poly),r_prob, l_prob, self.ALCA_lane_width, p_poly
  

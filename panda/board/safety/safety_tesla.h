@@ -59,10 +59,11 @@ int high_beam_lever_state = 0;
 
 int tesla_radar_status = 0; //0-not present, 1-initializing, 2-active
 uint32_t tesla_last_radar_signal = 0;
-const uint32_t TESLA_RADAR_TIMEOUT = 1000000; // 1 second between real time checks
+const uint32_t TESLA_RADAR_TIMEOUT = 10000000; // 10s second between real time checks
 char radar_VIN[] = "                 "; //leave empty if your radar VIN matches the car VIN
 int tesla_radar_vin_complete = 0;
 int tesla_radar_can = 1;
+int tesla_epas_can = 2;
 int tesla_radar_trigger_message_id = 0; //not used by tesla, to showcase for other cars
 int radarPosition = 0; //0 nosecone, 1 facelift
 int radarEpasType = 0; //0/1 bosch, 2-4 mando
@@ -945,7 +946,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   }
 
   //let's see if the pedal was pressed
-  if ((addr == 0x552) && (bus_number == 2)) {
+  if ((addr == 0x552) && (bus_number == tesla_epas_can)) {
     //m1 = 0.050796813
     //m2 = 0.101593626
     //d = -22.85856576
@@ -953,7 +954,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   }
 
   //we use 0x108 at 100Hz to detect timing of messages sent by our fake DAS and EPB
-  if (addr == 0x108) {
+  if ((addr == 0x108)  && (bus_number == 0)) {
     if (fake_DAS_counter % 10 == 5) {
       do_EPB_epasControl(to_push->RIR,to_push->RDTR);
     }
@@ -962,8 +963,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   }
 
   // Record the current car time in current_car_time (for use with double-pulling cruise stalk)
-  if (addr == 0x318)
-  {
+  if ((addr == 0x318) && (bus_number == 0)) {
     int hour = (to_push->RDLR & 0x1F000000) >> 24;
     int minute = (to_push->RDHR & 0x3F00) >> 8;
     int second = (to_push->RDLR & 0x3F0000) >> 16;
@@ -971,7 +971,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   }
 
   //we use EPAS_sysStatus 0x370 to determine if the car is off or on 
-  if (addr == 0x370) {
+  if ((addr == 0x370) && (bus_number != 1)) {
     time_last_EPAS_data = current_car_time;
   }
 
@@ -986,7 +986,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   }
 
   //see if cruise is enabled [Enabled, standstill or Override] and cancel if using pedal
-  if (addr == 0x368) {
+  if ((addr == 0x368)  && (bus_number == 0)) {
     //first save values for spamming
     DAS_diStateL = to_push->RDLR;
     DAS_diStateH = to_push->RDHR;
@@ -999,7 +999,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   }
 
   //looking for radar messages;
-  if ((addr == 0x300) && (bus_number ==1)) 
+  if ((addr == 0x300) && (bus_number == tesla_radar_can)) 
   {
     uint32_t ts = TIM2->CNT;
     uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_last_radar_signal);
@@ -1018,7 +1018,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   }
 
   //0x631 is sent by radar to initiate the sync
-  if ((addr == 0x631) && (bus_number == 1))
+  if ((addr == 0x631) && (bus_number == tesla_radar_can))
   {
     uint32_t ts = TIM2->CNT;
     uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_last_radar_signal);
@@ -1036,8 +1036,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     }
   }
 
-  if (addr == 0x45)
-  {
+  if ((addr == 0x45)  && (bus_number == 0)) {
     //first save for future use
     DAS_lastStalkL = to_push->RDLR;
     DAS_lastStalkH = to_push->RDHR;
@@ -1240,7 +1239,8 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
 
   // exit controls on EPAS error
   // EPAS_sysStatus::EPAS_eacStatus 0x370
-  if ((addr == 0x370)  && (bus_number == 1))
+  //BB this was on bus_number 1 which is wrong, but not tested on 2 yet
+  if ((addr == 0x370)  && (bus_number == tesla_epas_can))
   {
     // if EPAS_eacStatus is not 1 or 2, disable control
     eac_status = (GET_BYTE(to_push, 6) >> 5) & 0x7;
@@ -1293,8 +1293,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   
     /* <-- revB giraffe GPIO */
   //BO_ 1001 DAS_bodyControls: 8 XXX
-  if (addr == 0x3e9)
-  {
+  if ((addr == 0x3e9)  && (bus_number == 0)) {
     int high_beam_decision = (to_push->RDLR >> 10) & 0x3; //DAS_highLowBeamDecision : 10|2@1+
     // highLowBeamDecision:
     //0: Undecided (Car off)
@@ -1320,8 +1319,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   } //DAS_bodyControls
   
   //BO_ 872 DI_state: 8 DI
-  if (addr == 0x368)
-  {
+  if ((addr == 0x368)  && (bus_number == 0)) {
     int regen_brake_light = (to_push->RDLR >> 8) & 0x1; //DI_regenLight : 8|1@1+
     //if the car's brake lights are on, set pin 2 to high
     if (regen_brake_light == 1)
@@ -1863,7 +1861,7 @@ static int tesla_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd)
     return -1;
   }
 
-  if (bus_num == 2)
+  if (bus_num == tesla_epas_can)
   {
 
     // remove GTW_epasControl in forwards

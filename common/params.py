@@ -53,7 +53,7 @@ keys = {
   "AccessToken": [TxType.PERSISTENT],
   "AthenadPid": [TxType.PERSISTENT],
   "CalibrationParams": [TxType.PERSISTENT],
-  "CarParams": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT], #[TxType.CLEAR_ON_CAR_START],
+  "CarParams": [TxType.CLEAR_ON_CAR_START], #[TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT], #[TxType.CLEAR_ON_CAR_START],
   "CarVin": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT], #[TxType.PERSISTENT], #[TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT],
   "CompletedTrainingVersion": [TxType.PERSISTENT],
   "ControlsParams": [TxType.PERSISTENT],

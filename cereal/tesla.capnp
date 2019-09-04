@@ -35,6 +35,7 @@ struct TeslaRadarPoint {
   movingState @3 :UInt8; # 0-indeterminate 1-moving 2-stopped 3-standing
   length @4 :Float32; # length in meters
   obstacleProb @5 :Float32; # probability to be an obstacle
+  timeStamp @6 :UInt64; #timestamp when the pair was received
 }
 
 struct ICCarsLR {

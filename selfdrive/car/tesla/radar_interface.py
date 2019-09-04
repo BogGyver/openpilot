@@ -7,6 +7,7 @@ from common.realtime import sec_since_boot
 from selfdrive.services import service_list
 import selfdrive.messaging as messaging
 from selfdrive.car.tesla.readconfig import CarSettings
+from selfdrive.tinklad.tinkla_interface import TinklaClient
 
 #RADAR_A_MSGS = list(range(0x371, 0x37F , 3))
 #RADAR_B_MSGS = list(range(0x372, 0x37F, 3))
@@ -15,6 +16,8 @@ RADAR_A_MSGS = list(range(0x310, 0x36F , 3))
 RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
 OBJECT_MIN_PROBABILITY = 20.
 CLASS_MIN_PROBABILITY = 20.
+RADAR_MESSAGE_FREQUENCY = 0.050 * 1e9 #time in ns, radar sends data at 0.06 s
+VALID_MESSAGE_COUNT_THRESHOLD = 4
 
 
 # Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
@@ -41,12 +44,15 @@ def _create_radard_can_parser():
                 [0] * msg_a_n + [0.] * msg_a_n + [0.] * msg_b_n + [0] * msg_b_n +
                 [0] * msg_b_n + [0.] * msg_b_n + [0.] * msg_b_n +[0.] * msg_b_n + [0]* msg_b_n)
 
-  checks = zip(RADAR_A_MSGS + RADAR_B_MSGS, [20]*(msg_a_n + msg_b_n))
+  checks = zip(RADAR_A_MSGS + RADAR_B_MSGS, [60]*(msg_a_n + msg_b_n))
 
   return CANParser(os.path.splitext(dbc_f)[0], signals, checks, 1)
 
 
 class RadarInterface(object):
+
+  tinklaClient = TinklaClient()
+
   def __init__(self,CP):
     # radar
     self.pts = {}
@@ -56,6 +62,7 @@ class RadarInterface(object):
     self.TRACK_LEFT_LANE = True
     self.TRACK_RIGHT_LANE = True
     self.updated_messages = set()
+    self.canErrorCounter = 0
     if self.useTeslaRadar:
       self.pts = {}
       self.extPts = {}
@@ -65,27 +72,32 @@ class RadarInterface(object):
       self.logcan = messaging.sub_sock(service_list['can'].port)
       self.radarOffset = CarSettings().get_value("radarOffset")
       self.trackId = 1
-      self.trigger_msg = RADAR_B_MSGS[-1]
+      self.trigger_start_msg = RADAR_A_MSGS[0]
+      self.trigger_end_msg = RADAR_B_MSGS[-1]
 
 
 
   def update(self, can_strings):
-    # in Bosch radar and we are only steering for now, so sleep 0.05s to keep
     # radard at 20Hz and return no points
     if not self.useTeslaRadar:
       time.sleep(0.05)
       return car.RadarData.new_message(),self.extPts.values()
+
 
     tm = int(sec_since_boot() * 1e9)
     if can_strings != None:
       vls = self.rcp.update_strings(tm, can_strings)
       self.updated_messages.update(vls)
 
-    if self.trigger_msg not in self.updated_messages:
+
+    if self.trigger_start_msg not in self.updated_messages:
+      return None,None
+
+    if self.trigger_end_msg not in self.updated_messages:
       return None,None
 
     rr,rrext = self._update(self.updated_messages)
-    self.updated_messages.clear()
+    #self.updated_messages.clear()
     return rr,rrext
 
 
@@ -99,6 +111,10 @@ class RadarInterface(object):
           del self.extPts[message]
         continue
       cpt = self.rcp.vl[message]
+      cpt2 = self.rcp.vl[message+1]
+      # ensure the two messages are from the same frame reading
+      if cpt['Index'] != cpt2['Index2']:
+        continue
       if (cpt['LongDist'] >= BOSCH_MAX_DIST) or (cpt['LongDist']==0) or (not cpt['Tracked']):
         self.valid_cnt[message] = 0    # reset counter
         if message in self.pts:
@@ -112,15 +128,11 @@ class RadarInterface(object):
           del self.pts[message]
           del self.extPts[message]
 
-      #score = self.rcp.vl[ii+16]['SCORE']
-      #print ii, self.valid_cnt[ii], cpt['Valid'], cpt['LongDist'], cpt['LatDist']
-
       # radar point only valid if it's a valid measurement and score is above 50
       # bosch radar data needs to match Index and Index2 for validity
       # also for now ignore construction elements
       if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
-          (cpt['Index'] == self.rcp.vl[message+1]['Index2']) and (self.valid_cnt[message] > 5) and \
-          (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY): # and (self.rcp.vl[ii+1]['Class'] < 4): # and ((self.rcp.vl[ii+1]['MovingState']<3) or (self.rcp.vl[ii+1]['Class'] > 0)):
+          (self.valid_cnt[message] > VALID_MESSAGE_COUNT_THRESHOLD) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY): 
         if message not in self.pts and ( cpt['Tracked']):
           self.pts[message] = car.RadarData.RadarPoint.new_message()
           self.pts[message].trackId = self.trackId 
@@ -134,14 +146,15 @@ class RadarInterface(object):
           self.pts[message].yRel = cpt['LatDist']  - self.radarOffset # in car frame's y axis, left is positive
           self.pts[message].vRel = cpt['LongSpeed']
           self.pts[message].aRel = cpt['LongAccel']
-          self.pts[message].yvRel = self.rcp.vl[message+1]['LatSpeed']
+          self.pts[message].yvRel = cpt2['LatSpeed']
           self.pts[message].measured = bool(cpt['Meas'])
-          self.extPts[message].dz = self.rcp.vl[message+1]['dZ']
-          self.extPts[message].movingState = self.rcp.vl[message+1]['MovingState']
-          self.extPts[message].length = self.rcp.vl[message+1]['Length']
+          self.extPts[message].dz = cpt2['dZ']
+          self.extPts[message].movingState = cpt2['MovingState']
+          self.extPts[message].length = cpt2['Length']
           self.extPts[message].obstacleProb = cpt['ProbObstacle']
+          self.extPts[message].timeStamp = int(self.rcp.ts[message+1]['Index2'])
           if self.rcp.vl[message+1]['Class'] >= CLASS_MIN_PROBABILITY:
-            self.extPts[message].objectClass = self.rcp.vl[message+1]['Class']
+            self.extPts[message].objectClass = cpt2['Class']
             # for now we will use class 0- unknown stuff to show trucks
             # we will base that on being a class 1 and length of 2 (hoping they meant width not length, but as germans could not decide)
             # 0-unknown 1-four wheel vehicle 2-two wheel vehicle 3-pedestrian 4-construction element
@@ -159,14 +172,22 @@ class RadarInterface(object):
     errors = []
     if not self.rcp.can_valid:
       errors.append("canError")
-    ret.errors = errors
+      self.tinklaClient.logCANErrorEvent(source="radar_interface", canMessage=0, additionalInformation="Invalid CAN Count")
+      self.canErrorCounter += 1
+    else:
+      self.canErrorCounter = 0
+    #BB: Only trigger canError for 3 consecutive errors
+    if self.canErrorCounter > 2:
+      ret.errors = errors
+    else:
+      ret.errors = []
     return ret,self.extPts.values()
 
 # radar_interface standalone tester
 if __name__ == "__main__":
-  CP = car.CarParams()
+  CP = None
   RI = RadarInterface(CP)
   while 1:
     ret,retext = RI.update(can_strings = None)
     print(chr(27) + "[2J")
-    print(ret)
+    print(ret,retext)

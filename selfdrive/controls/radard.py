@@ -2,6 +2,7 @@
 import numpy as np
 import numpy.matlib
 import importlib
+import zmq
 from collections import defaultdict, deque
 
 import selfdrive.messaging as messaging
@@ -10,11 +11,10 @@ from selfdrive.controls.lib.radar_helpers import Track, Cluster
 from selfdrive.config import RADAR_TO_CENTER
 from selfdrive.controls.lib.cluster.fastcluster_py import cluster_points_centroid
 from selfdrive.swaglog import cloudlog
-from cereal import car,tesla
+from cereal import car,log,tesla
 from common.params import Params
 from common.realtime import set_realtime_priority, Ratekeeper, DT_MDL
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
-from selfdrive.controls.lib.lane_planner import LanePlanner
 
 DEBUG = False
 
@@ -108,11 +108,14 @@ class RadarD(object):
     if (RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE) and CarSettings().get_value("useTeslaRadar"):
       self.icCarLR = messaging.pub_sock(service_list['uiIcCarLR'].port)
     
-
+    self.lane_width = 3.0
     #only used for left and right lanes
     self.path_x = np.arange(0.0, 160.0, 0.1)    # 160 meters is max
+    self.poller = zmq.Poller()
+    self.pathPlanSocket = messaging.sub_sock(service_list['pathPlan'].port, conflate=True, poller=self.poller)
+    self.dPoly = [0.,0.,0.,0.]
 
-  def update(self, frame, delay, sm, rr, has_radar,MP,rrext):
+  def update(self, frame, delay, sm, rr, has_radar,rrext):
     self.current_time = 1e-9*max([sm.logMonoTime[key] for key in sm.logMonoTime.keys()])
     use_tesla_radar = CarSettings().get_value("useTeslaRadar")
     if sm.updated['controlsState']:
@@ -123,7 +126,13 @@ class RadarD(object):
     if sm.updated['model']:
       self.ready = True
 
-    path_y = np.polyval(MP.d_poly, self.path_x)
+    for socket, _ in self.poller.poll(0):
+      if socket is self.pathPlanSocket:
+        pp = messaging.recv_one(self.pathPlanSocket).pathPlan
+        self.lane_width = pp.laneWidth
+        self.dPoly = pp.dPoly
+
+    path_y = np.polyval(self.dPoly, self.path_x)
 
     ar_pts = {}
     for pt in rr.points:
@@ -208,11 +217,10 @@ class RadarD(object):
       datrl.v4Vrel = float(0.)
       datrl.v4Dy = float(0.)
       datrl.v4Id = int(0)
-      lane_offset = 0. #MP.lane_width
-      lane_width = 3. #BB: static for now, needs to be computed
+      lane_offset = 0. 
     #LEFT LANE
     if self.RI.TRACK_LEFT_LANE and use_tesla_radar:
-      ll_track_pts = np.array([self.tracks[iden].get_key_for_cluster_dy(-lane_width) for iden in idens])
+      ll_track_pts = np.array([self.tracks[iden].get_key_for_cluster_dy(-self.lane_width) for iden in idens])
       # If we have multiple points, cluster them
       if len(ll_track_pts) > 1:
         ll_cluster_idxs = cluster_points_centroid(ll_track_pts, 2.5)
@@ -235,7 +243,7 @@ class RadarD(object):
           print(i)
       # *** extract the lead car ***
       ll_lead_clusters = [c for c in ll_clusters
-                      if c.is_potential_lead_dy(self.v_ego,-lane_width)]
+                      if c.is_potential_lead_dy(self.v_ego,-self.lane_width)]
       ll_lead_clusters.sort(key=lambda x: x.dRel)
       ll_lead_len = len(ll_lead_clusters)
       ll_lead1_truck = (len([c for c in ll_lead_clusters
@@ -267,7 +275,7 @@ class RadarD(object):
           datrl.v2Id = int(ll_lead2_clusters[0].track_id % 32)
     #RIGHT LANE
     if self.RI.TRACK_RIGHT_LANE and use_tesla_radar:
-      rl_track_pts = np.array([self.tracks[iden].get_key_for_cluster_dy(lane_width) for iden in idens])
+      rl_track_pts = np.array([self.tracks[iden].get_key_for_cluster_dy(self.lane_width) for iden in idens])
       # If we have multiple points, cluster them
       if len(rl_track_pts) > 1:
         rl_cluster_idxs = cluster_points_centroid(rl_track_pts, 2.5)
@@ -290,7 +298,7 @@ class RadarD(object):
           print(i)
       # *** extract the lead car ***
       rl_lead_clusters = [c for c in rl_clusters
-                      if c.is_potential_lead_dy(self.v_ego,lane_width)]
+                      if c.is_potential_lead_dy(self.v_ego,self.lane_width)]
       rl_lead_clusters.sort(key=lambda x: x.dRel)
       rl_lead_len = len(rl_lead_clusters)
       rl_lead1_truck = (len([c for c in rl_lead_clusters
@@ -349,12 +357,6 @@ class RadarD(object):
     datext.lead2trackId = l2x['trackId']
     datext.lead2oClass = l2x['oClass']
     datext.lead2length = l2x['length']
-    #datext.lead1trackId = l1x.trackId
-    #datext.lead1oClass = l1x.oClass
-    #datext.lead1length = l1x.length
-    #datext.lead2trackId = l2x.trackId
-    #datext.lead2oClass = l2x.oClass
-    #datext.lead2length = l2x.length
     return dat, datext
 
 
@@ -385,7 +387,6 @@ def radard_thread(gctx=None):
 
   rk = Ratekeeper(rate, print_delay_threshold=None)
   RD = RadarD(mocked, RI)
-  MP = LanePlanner()
 
   has_radar = not CP.radarOffCan or mocked
   last_md_ts = 0.
@@ -403,11 +404,9 @@ def radard_thread(gctx=None):
     if sm.updated['controlsState']:
       v_ego = sm['controlsState'].vEgo
 
-    if sm.updated['model']:
-      MP.update(v_ego, sm['model'], False)
     
 
-    dat,datext = RD.update(rk.frame, RI.delay, sm, rr, has_radar, MP, rrext)
+    dat,datext = RD.update(rk.frame, RI.delay, sm, rr, has_radar, rrext)
     dat.radarState.cumLagMs = -rk.remaining*1000.
 
     radarState.send(dat.to_bytes())

@@ -27,10 +27,11 @@ from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.controls.lib.driver_monitor import DriverStatus, MAX_TERMINAL_ALERTS
 from selfdrive.controls.lib.planner import LON_MPC_STEP
 from selfdrive.locationd.calibration_helpers import Calibration, Filter
+from selfdrive.tinklad.tinkla_interface import TinklaClient
+
 
 ThermalStatus = log.ThermalData.ThermalStatus
 State = log.ControlsState.OpenpilotState
-
 
 def isActive(state):
   """Check if the actuators are enabled"""
@@ -261,7 +262,7 @@ def state_control(frame, rcv_frame, plan, path_plan, live_params, CS, CP, state,
   actuators.gas, actuators.brake = LoC.update(active, CS.vEgo, CS.brakePressed, CS.standstill, CS.cruiseState.standstill,
                                               v_cruise_kph, v_acc_sol, plan.vTargetFuture, a_acc_sol, CP)
   # Steering PID loop and lateral MPC
-  actuators.steer, actuators.steerAngle, lac_log = LaC.update(active, CS.vEgo, CS.steeringAngle, CS.steeringRate, CS.steeringTorqueEps, CS.steeringPressed, CP, VM, path_plan)
+  actuators.steer, actuators.steerAngle, lac_log = LaC.update(active, CS.vEgo, CS.steeringAngle, CS.steeringRate, CS.steeringTorqueEps, CS.steeringPressed, CP, VM, path_plan, live_params)
 
   # Send a "steering required alert" if saturation count has reached the limit
   if LaC.sat_flag and CP.steerLimitAlert:
@@ -414,6 +415,13 @@ def data_send(sm, CS, CI, CP, VM, state, events, actuators, v_cruise_kph, rk, ca
 
   return CC, events_bytes
 
+def logAllAliveAndValidInfoToTinklad(sm, tinklaClient):
+  areAllAlive, aliveProcessName, aliveCount = sm.all_alive()
+  areAllValid, validProcessName, validCount = sm.all_valid()
+  if not areAllAlive:
+    tinklaClient.logProcessCommErrorEvent(source="carcontroller", processName=aliveProcessName, count=aliveCount, eventType="Not Alive")
+  else:
+    tinklaClient.logProcessCommErrorEvent(source="carcontroller", processName=validProcessName, count=validCount, eventType="Not Valid")
 
 def controlsd_thread(gctx=None):
   gc.disable()
@@ -422,6 +430,8 @@ def controlsd_thread(gctx=None):
   set_realtime_priority(3)
 
   params = Params()
+
+  tinklaClient = TinklaClient()
 
   # Pub Sockets
   sendcan = messaging.pub_sock(service_list['sendcan'].port)
@@ -515,6 +525,7 @@ def controlsd_thread(gctx=None):
     # Create alerts
     if not sm.all_alive_and_valid():
       events.append(create_event('commIssue', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
+      logAllAliveAndValidInfoToTinklad(sm=sm, tinklaClient=tinklaClient)
     if not sm['pathPlan'].mpcSolutionValid:
       events.append(create_event('plannerError', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
     if not sm['pathPlan'].sensorValid:
@@ -529,6 +540,7 @@ def controlsd_thread(gctx=None):
       events.append(create_event('radarCanError', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
     if not CS.canValid:
       events.append(create_event('canError', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
+      tinklaClient.logCANErrorEvent(source="carcontroller", canMessage=0, additionalInformation="Invalid CAN")
     if not sounds_available:
       events.append(create_event('soundsUnavailable', [ET.NO_ENTRY, ET.PERMANENT]))
 
