@@ -296,6 +296,7 @@ class ALCAModelParser(object):
     if self.alcas is None:
       self.send_state()
       return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
+
      
     self.ALCA_direction = self.alcas.alcaDirection
     self.ALCA_enabled = self.alcas.alcaEnabled
