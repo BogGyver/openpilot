@@ -376,7 +376,7 @@ def radard_thread(gctx=None):
   RadarInterface = importlib.import_module('selfdrive.car.%s.radar_interface' % CP.carName).RadarInterface
 
   can_sock = messaging.sub_sock(service_list['can'].port)
-  sm = messaging.SubMaster(['model', 'controlsState', 'liveParameters'])
+  sm = messaging.SubMaster(['model', 'controlsState']) #BB: is this why we get CommIssues? liveParameters is not used anywhere, 'liveParameters'])
 
   RI = RadarInterface(CP)
 
