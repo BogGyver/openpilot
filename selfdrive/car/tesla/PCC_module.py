@@ -59,7 +59,7 @@ class PCCModes(object):
   _all_modes = [OpMode(), FollowMode()]
   _mode_map = {mode.label : mode for mode in _all_modes}
   BUTTON_NAME = 'pedal'
-  BUTTON_ABREVIATION = 'PDL'
+  BUTTON_ABREVIATION = 'PCC'
   
   @classmethod
   def from_label(cls, label):
@@ -227,7 +227,7 @@ class PCCController(object):
     if CS.brake_pressed and self.enable_pedal_cruise:
       self.enable_pedal_cruise = False
       self.reset(0.)
-      CS.UE.custom_alert_message(3, "PDL Disabled", 150, 4)
+      CS.UE.custom_alert_message(3, "PCC Disabled", 150, 4)
       CS.cstm_btns.set_button_status("pedal", 1)
       print "brake pressed"
 
