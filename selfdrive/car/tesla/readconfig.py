@@ -21,8 +21,10 @@ class ConfigFile(object):
         print("no config file, creating with defaults...")
 
       main_section = 'OP_CONFIG'
+      logging_section = 'LOGGING'
       config = ConfigParser.RawConfigParser(allow_no_value=True)
       config.add_section(main_section)
+      config.add_section(logging_section)
 
       #user_handle -> userHandle
       into.userHandle, didUpdate = self.read_config_entry(
@@ -316,6 +318,22 @@ class ConfigFile(object):
       )
       file_changed |= didUpdate
 
+      into.shouldLogCanErrors, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = logging_section,
+        entry = 'should_log_can_errors', entry_type = bool,
+        default_value = False,
+        comment = 'Enable to log CAN errors to Tinkla'
+      )
+      file_changed |= didUpdate
+
+      into.shouldLogProcessCommErrors, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = logging_section,
+        entry = 'should_log_process_comm_errors', entry_type = bool,
+        default_value = False,
+        comment = 'Enable to log Process Comm errors to Tinkla'
+      )
+      file_changed |= didUpdate
+
       if file_changed:
         did_write = True
         with open(config_path, self.config_file_w) as configfile:
@@ -385,6 +403,9 @@ class CarSettings(object):
   radarPosition = None
   fix1916 = None
   doAutoUpdate = None
+  shouldLogProcessCommErrors = None
+  shouldLogCanErrors = None
+
 
   def __init__(self, optional_config_file_path = default_config_file_path):
     config_file = ConfigFile()

@@ -117,6 +117,9 @@ class TinklaClient():
         self.logUserEvent(event)
 
     def logCANErrorEvent(self, source, canMessage, additionalInformation, openPilotId = None):
+        if not self.carSettings.shouldLogCanErrors:
+            return
+
         if self.shouldThrottleCanErrorEvents:
             now = time.time()
             if now - self.lastCanErrorTimestamp < self.throttlingPeriodInSeconds:
@@ -138,6 +141,9 @@ class TinklaClient():
         self.logUserEvent(event)
 
     def logProcessCommErrorEvent(self, source, processName, count, eventType, openPilotId = None):
+        if not self.carSettings.shouldLogProcessCommErrors:
+            return
+
         if self.shouldThrottleProcessCommErrorEvents:
             now = time.time()
             if now - self.lastProcessErrorTimestamp < self.throttlingPeriodInSeconds:
@@ -162,10 +168,10 @@ class TinklaClient():
         print(message)
 
     def __init__(self):
-        carSettings = CarSettings()
         params = Params()
+        self.carSettings = CarSettings()
         self.openPilotId = params.get("DongleId")
-        self.userHandle = carSettings.userHandle
+        self.userHandle = self.carSettings.userHandle
         self.gitRemote = params.get("GitRemote")
         self.gitBranch = params.get("GitBranch")
         self.gitHash = params.get("GitCommit")
