@@ -1,6 +1,5 @@
 from common.realtime import DT_MDL
 from common.kalman.simple_kalman import KF1D
-from selfdrive.car.tesla.readconfig import CarSettings
 from selfdrive.config import RADAR_TO_CENTER
 from common.numpy_fast import clip, interp
 
@@ -80,11 +79,11 @@ def mean(l):
 
 
 class Cluster(object):
-  def __init__(self):
+  def __init__(self,use_tesla_radar):
     self.tracks = set()
     #BB frame delay for dRel calculation, in seconds
     self.frame_delay = 0.2
-    self.useTeslaRadar = CarSettings().get_value("useTeslaRadar")
+    self.useTeslaRadar = use_tesla_radar
 
   def add(self, t):
     # add the first track

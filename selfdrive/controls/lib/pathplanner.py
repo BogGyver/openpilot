@@ -33,6 +33,7 @@ class PathPlanner(object):
     self.setup_mpc(CP.steerRateCost)
     self.solution_invalid_cnt = 0
     self.path_offset_i = 0.0
+    self.eonToFront = CarSettings().get_value("eonToFront")
 
   def setup_mpc(self, steer_rate_cost):
     self.libmpc = libmpc_py.libmpc
@@ -75,9 +76,9 @@ class PathPlanner(object):
     #   self.path_offset_i = 0.0
 
     # account for actuation delay
-    eonToFront = CarSettings().get_value("eonToFront")
+    
 
-    self.cur_state = calc_states_after_delay(self.cur_state, v_ego, angle_steers - angle_offset, curvature_factor, VM.sR, CP.steerActuatorDelay, eonToFront)
+    self.cur_state = calc_states_after_delay(self.cur_state, v_ego, angle_steers - angle_offset, curvature_factor, VM.sR, CP.steerActuatorDelay, self.eonToFront)
 
     v_ego_mpc = max(v_ego, 5.0)  # avoid mpc roughness due to low speed
     self.libmpc.run_mpc(self.cur_state, self.mpc_solution,

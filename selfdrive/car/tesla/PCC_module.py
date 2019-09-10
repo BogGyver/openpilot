@@ -310,6 +310,22 @@ class PCCController(object):
 
     self.prev_speed_limit_kph = self.speed_limit_kph
 
+    ######################################################################################
+    # Determine pedal "zero"
+    #
+    #save position for cruising (zero acc, zero brake, no torque) when we are above 10 MPH
+    ######################################################################################
+    if (CS.torqueLevel < TORQUE_LEVEL_ACC
+        and CS.torqueLevel > TORQUE_LEVEL_DECEL
+        and CS.v_ego >= 10.* CV.MPH_TO_MS
+        and abs(CS.torqueLevel) < abs(self.lastTorqueForPedalForZeroTorque)
+        and self.prev_tesla_accel > 0.):
+      self.PedalForZeroTorque = self.prev_tesla_accel
+      self.lastTorqueForPedalForZeroTorque = CS.torqueLevel
+      #print "Detected new Pedal For Zero Torque at %s" % (self.PedalForZeroTorque)
+      #print "Torque level at detection %s" % (CS.torqueLevel)
+      #print "Speed level at detection %s" % (CS.v_ego * CV.MS_TO_MPH)
+
     if speed_limit_valid and set_speed_limit_active and (speed_limit_ms > 2.7):
       self.speed_limit_kph = (speed_limit_ms +  speed_limit_offset) * CV.MS_TO_KPH
       if not (int(self.prev_speed_limit_kph) == int(self.speed_limit_kph)):
@@ -435,22 +451,6 @@ class PCCController(object):
     elif PCCModes.is_selected(OpMode(), CS.cstm_btns):
       output_gb = actuators.gas - actuators.brake
       self.v_pid = -10.
-
-    ######################################################################################
-    # Determine pedal "zero"
-    #
-    #save position for cruising (zero acc, zero brake, no torque) when we are above 10 MPH
-    ######################################################################################
-    if (CS.torqueLevel < TORQUE_LEVEL_ACC
-        and CS.torqueLevel > TORQUE_LEVEL_DECEL
-        and CS.v_ego >= 10.* CV.MPH_TO_MS
-        and abs(CS.torqueLevel) < abs(self.lastTorqueForPedalForZeroTorque)
-        and self.prev_tesla_accel > 0.):
-      self.PedalForZeroTorque = self.prev_tesla_accel
-      self.lastTorqueForPedalForZeroTorque = CS.torqueLevel
-      #print "Detected new Pedal For Zero Torque at %s" % (self.PedalForZeroTorque)
-      #print "Torque level at detection %s" % (CS.torqueLevel)
-      #print "Speed level at detection %s" % (CS.v_ego * CV.MS_TO_MPH)
 
     self.last_output_gb = output_gb
     # accel and brake

@@ -62,6 +62,7 @@ ALCA_line_min_prob = 0.01
 ALCA_release_distance = 0.3
 ALCA_line_prob_low = 0.1
 ALCA_line_prob_high = 0.4
+ALCA_zero_line = 2.5 #meters in front where to check for distance vs line
 
 ALCA_DEBUG = True
 DEBUG_INFO = "step {step} of {total_steps}: direction = {ALCA_direction} | using visual = {ALCA_use_visual} | over line = {ALCA_over_line} | lane width = {ALCA_lane_width} | left to move = {left_to_move} | from center = {from_center} | C2 offset = {ALCA_OFFSET_C2} | C1 offset = {ALCA_OFFSET_C1} | Prob Low = {prob_low} | Prob High = {prob_high}"
@@ -357,65 +358,65 @@ class ALCAModelParser(object):
         self.debug_alca(" step out of bounds -> resetting...")
         self.reset_alca()
 
-        #compute offset
-        from_center = 0.
-        left_to_move = 0.
-        if self.ALCA_enabled and not (self.ALCA_direction == 0):
-          #compute distances to lines
-          self.distance_to_line_L = abs(l_poly[3])
-          self.distance_to_line_R = abs(r_poly[3])
-          if ((self.ALCA_direction == 1) and ((self.distance_to_line_L > 1.1 * self.prev_distance_to_line_L) or (self.distance_to_line_R < self.ALCA_lane_width / 3.))) or \
-            ((self.ALCA_direction == -1) and ((self.distance_to_line_R > 1.1 * self.prev_distance_to_line_R) or (self.distance_to_line_L < self.ALCA_lane_width / 3.))):
-            self.ALCA_over_line = True
-          left_to_move = self.ALCA_lane_width / 5.
-          if self.ALCA_over_line:
-            left_to_move = self.ALCA_lane_width / 2. - (self.distance_to_line_L if self.ALCA_direction == 1 else self.distance_to_line_R)
-            if left_to_move < ALCA_release_distance:
-              self.reset_alca()
-              self.send_state()
-              return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
-          distance_ahead = float((0.5 * self.ALCA_total_steps) * 0.05 * (self.ALCA_vego_prev + v_ego) / 2.) #1/2 distance to go during the change
-          d1 = np.polyval(p_poly,distance_left)
-          d2 = np.polyval(p_poly,distance_left + 1)
-          cos = 1.
-          if abs(d2 - d1) > 0.1:
-            cos = abs(np.cos(np.arctan(1/abs(d2-d1))))
-          ltm = cos * left_to_move
-          #compute offsets
-          self.ALCA_OFFSET_C2 = 0.
-          self.ALCA_OFFSET_C1 = float(self.ALCA_direction * ltm) / (distance_left * distance_left)
-          self.prev_distance_to_line_R = self.distance_to_line_R
-          self.prev_distance_to_line_L = self.distance_to_line_L
-          if ALCA_DEBUG:
-            debug_string = DEBUG_INFO.format(step=self.ALCA_step,total_steps=self.ALCA_total_steps,ALCA_direction=self.ALCA_direction,ALCA_use_visual=self.ALCA_use_visual,ALCA_over_line=self.ALCA_over_line,ALCA_lane_width=self.ALCA_lane_width, left_to_move=left_to_move, from_center=from_center, ALCA_OFFSET_C2=self.ALCA_OFFSET_C2, ALCA_OFFSET_C1=self.ALCA_OFFSET_C1,prob_low=self.hit_prob_low,prob_high=self.hit_prob_high)
-            self.debug_alca(debug_string)
-        else:
-          self.ALCA_OFFSET_C2 = 0.
-          self.ALCA_OFFSET_C1 = 0.
-        
-        
-        if (not self.ALCA_error) and self.ALCA_use_visual:
-          if self.ALCA_over_line:
-            if (self.ALCA_total_steps - self.ALCA_step <= 1) or (self.ALCA_over_line and ((self.ALCA_direction == 1) and (r_poly[3] < -ALCA_release_distance)) or ((self.ALCA_direction == -1) and (l_poly[3] > ALCA_release_distance))):
-              self.reset_alca()
-              self.ALCA_error = False
+      #compute offset
+      from_center = 0.
+      left_to_move = 0.
+      if self.ALCA_enabled and not (self.ALCA_direction == 0):
+        #compute distances to lines
+        self.distance_to_line_L = abs(np.polyval(l_poly,ALCA_zero_line))
+        self.distance_to_line_R = abs(np.polyval(r_poly,ALCA_zero_line))
+        if ((self.ALCA_direction == 1) and ((self.distance_to_line_L > 1.1 * self.prev_distance_to_line_L) or (self.distance_to_line_R < self.ALCA_lane_width / 3.))) or \
+          ((self.ALCA_direction == -1) and ((self.distance_to_line_R > 1.1 * self.prev_distance_to_line_R) or (self.distance_to_line_L < self.ALCA_lane_width / 3.))):
+          self.ALCA_over_line = True
+        left_to_move = self.ALCA_lane_width / 5.
+        if self.ALCA_over_line:
+          left_to_move = self.ALCA_lane_width / 2. - (self.distance_to_line_L if self.ALCA_direction == 1 else self.distance_to_line_R)
+          if left_to_move < ALCA_release_distance:
+            self.reset_alca()
+            self.send_state()
+            return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
+        distance_left = float((self.ALCA_total_steps) * 0.05 * (self.ALCA_vego_prev + v_ego) / 2.) #5m + distance left
+        d1 = np.polyval(p_poly,distance_left)
+        d2 = np.polyval(p_poly,distance_left + 1)
+        cos = 1.
+        if abs(d2 - d1) > 0.1:
+          cos = abs(np.cos(np.arctan(1/abs(d2-d1))))
+        ltm = cos * left_to_move
+        #compute offsets
+        self.ALCA_OFFSET_C2 = 0.
+        self.ALCA_OFFSET_C1 = float(self.ALCA_direction * ltm) / (distance_left * distance_left)
+        self.prev_distance_to_line_R = self.distance_to_line_R
+        self.prev_distance_to_line_L = self.distance_to_line_L
+        if ALCA_DEBUG:
+          debug_string = DEBUG_INFO.format(step=self.ALCA_step,total_steps=self.ALCA_total_steps,ALCA_direction=self.ALCA_direction,ALCA_use_visual=self.ALCA_use_visual,ALCA_over_line=self.ALCA_over_line,ALCA_lane_width=self.ALCA_lane_width, left_to_move=left_to_move, from_center=from_center, ALCA_OFFSET_C2=self.ALCA_OFFSET_C2, ALCA_OFFSET_C1=self.ALCA_OFFSET_C1,prob_low=self.hit_prob_low,prob_high=self.hit_prob_high)
+          self.debug_alca(debug_string)
+      else:
+        self.ALCA_OFFSET_C2 = 0.
+        self.ALCA_OFFSET_C1 = 0.
+      
+      
+      if (not self.ALCA_error) and self.ALCA_use_visual:
+        if self.ALCA_over_line:
+          if (self.ALCA_total_steps - self.ALCA_step <= 1) or (self.ALCA_over_line and ((self.ALCA_direction == 1) and (r_poly[3] < -ALCA_release_distance)) or ((self.ALCA_direction == -1) and (l_poly[3] > ALCA_release_distance))):
+            self.reset_alca()
+            self.ALCA_error = False
 
-        if l_prob > r_prob:
-          r_poly = np.array(l_poly)
-          if l_prob > ALCA_line_prob_low:
-            l_prob = 1
-          r_prob = l_prob
-        else:
-          l_poly = np.array(r_poly)
-          if r_prob > ALCA_line_prob_low:
-            r_prob = 1
-          l_prob = r_prob     
-        l_poly[3] = self.ALCA_lane_width / 2
-        r_poly[3] = -self.ALCA_lane_width / 2
-        l_poly[2] = self.ALCA_OFFSET_C2
-        r_poly[2] = self.ALCA_OFFSET_C2
-        l_poly[1] += self.ALCA_OFFSET_C1
-        r_poly[1] += self.ALCA_OFFSET_C1
+      if l_prob > r_prob:
+        r_poly = np.array(l_poly)
+        if l_prob > ALCA_line_prob_low:
+          l_prob = 1
+        r_prob = l_prob
+      else:
+        l_poly = np.array(r_poly)
+        if r_prob > ALCA_line_prob_low:
+          r_prob = 1
+        l_prob = r_prob     
+      l_poly[3] = self.ALCA_lane_width / 2
+      r_poly[3] = -self.ALCA_lane_width / 2
+      l_poly[2] = self.ALCA_OFFSET_C2
+      r_poly[2] = self.ALCA_OFFSET_C2
+      l_poly[1] += self.ALCA_OFFSET_C1
+      r_poly[1] += self.ALCA_OFFSET_C1
     else:
       self.reset_alca()
       self.ALCA_error = False

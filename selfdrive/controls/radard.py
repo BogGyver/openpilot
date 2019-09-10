@@ -74,7 +74,7 @@ def get_lead(v_ego, ready, clusters, lead_msg, low_speed_override=True):
   if lead_idx is not None:
     lead_dict,lead_dict_ext = clusters[lead_idx].get_RadarState(lead_msg.prob)
   elif (lead_idx is None) and ready and (lead_msg.prob > .5):
-    lead_dict = Cluster().get_RadarState_from_vision(lead_msg, v_ego)
+    lead_dict = Cluster(False).get_RadarState_from_vision(lead_msg, v_ego)
 
   if low_speed_override:
     low_speed_clusters = [c for c in clusters if c.potential_low_speed_lead(v_ego)]
@@ -87,7 +87,7 @@ def get_lead(v_ego, ready, clusters, lead_msg, low_speed_override=True):
 
 
 class RadarD(object):
-  def __init__(self, mocked, RI):
+  def __init__(self, mocked, RI,use_tesla_radar):
     self.current_time = 0
     self.mocked = mocked
     self.RI = RI
@@ -105,7 +105,8 @@ class RadarD(object):
     self.v_ego_t_aligned = 0.
     self.ready = False
     self.icCarLR = None
-    if (RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE) and CarSettings().get_value("useTeslaRadar"):
+    self.use_tesla_radar = use_tesla_radar
+    if (RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE) and self.use_tesla_radar:
       self.icCarLR = messaging.pub_sock(service_list['uiIcCarLR'].port)
     
     self.lane_width = 3.0
@@ -117,7 +118,7 @@ class RadarD(object):
 
   def update(self, frame, delay, sm, rr, has_radar,rrext):
     self.current_time = 1e-9*max([sm.logMonoTime[key] for key in sm.logMonoTime.keys()])
-    use_tesla_radar = CarSettings().get_value("useTeslaRadar")
+    
     if sm.updated['controlsState']:
       self.active = sm['controlsState'].active
       self.v_ego = sm['controlsState'].vEgo
@@ -159,7 +160,7 @@ class RadarD(object):
       # create the track if it doesn't exist or it's a new track
       if ids not in self.tracks:
         self.tracks[ids] = Track()
-      self.tracks[ids].update(rpt[0], rpt[1], rpt[2], rpt[3], rpt[4],rpt[5],rpt[6],rpt[7],rpt[8],rpt[9], d_path, self.v_ego_t_aligned,use_tesla_radar)
+      self.tracks[ids].update(rpt[0], rpt[1], rpt[2], rpt[3], rpt[4],rpt[5],rpt[6],rpt[7],rpt[8],rpt[9], d_path, self.v_ego_t_aligned,self.use_tesla_radar)
 
     idens = list(self.tracks.keys())
     track_pts = np.array([self.tracks[iden].get_key_for_cluster() for iden in idens])
@@ -173,12 +174,12 @@ class RadarD(object):
       for idx in xrange(len(track_pts)):
         cluster_i = cluster_idxs[idx]
         if clusters[cluster_i] is None:
-          clusters[cluster_i] = Cluster()
+          clusters[cluster_i] = Cluster(self.use_tesla_radar)
         clusters[cluster_i].add(self.tracks[idens[idx]])
     elif len(track_pts) == 1:
       # FIXME: cluster_point_centroid hangs forever if len(track_pts) == 1
       cluster_idxs = [0]
-      clusters = [Cluster()]
+      clusters = [Cluster(self.use_tesla_radar)]
       clusters[0].add(self.tracks[idens[0]])
     else:
       clusters = []
@@ -195,7 +196,7 @@ class RadarD(object):
     #################################################################
     #BB For Tesla integration we will also track Left and Right lanes
     #################################################################
-    if (self.RI.TRACK_RIGHT_LANE or self.RI.TRACK_LEFT_LANE) and use_tesla_radar:
+    if (self.RI.TRACK_RIGHT_LANE or self.RI.TRACK_LEFT_LANE) and self.use_tesla_radar:
       datrl = tesla.ICCarsLR.new_message()
       datrl.v1Type = int(0)
       datrl.v1Dx = float(0.)
@@ -219,7 +220,7 @@ class RadarD(object):
       datrl.v4Id = int(0)
       lane_offset = 0. 
     #LEFT LANE
-    if self.RI.TRACK_LEFT_LANE and use_tesla_radar:
+    if self.RI.TRACK_LEFT_LANE and self.use_tesla_radar:
       ll_track_pts = np.array([self.tracks[iden].get_key_for_cluster_dy(-self.lane_width) for iden in idens])
       # If we have multiple points, cluster them
       if len(ll_track_pts) > 1:
@@ -230,11 +231,11 @@ class RadarD(object):
           ll_cluster_i = ll_cluster_idxs[idx]
 
           if ll_clusters[ll_cluster_i] == None:
-            ll_clusters[ll_cluster_i] = Cluster()
+            ll_clusters[ll_cluster_i] = Cluster(self.use_tesla_radar)
           ll_clusters[ll_cluster_i].add(self.tracks[idens[idx]])
       elif len(ll_track_pts) == 1:
         # TODO: why do we need this?
-        ll_clusters = [Cluster()]
+        ll_clusters = [Cluster(self.use_tesla_radar)]
         ll_clusters[0].add(self.tracks[idens[0]])
       else:
         ll_clusters = []
@@ -274,7 +275,7 @@ class RadarD(object):
           datrl.v2Dy = float(-ll_lead2_clusters[0].yRel - lane_offset) 
           datrl.v2Id = int(ll_lead2_clusters[0].track_id % 32)
     #RIGHT LANE
-    if self.RI.TRACK_RIGHT_LANE and use_tesla_radar:
+    if self.RI.TRACK_RIGHT_LANE and self.use_tesla_radar:
       rl_track_pts = np.array([self.tracks[iden].get_key_for_cluster_dy(self.lane_width) for iden in idens])
       # If we have multiple points, cluster them
       if len(rl_track_pts) > 1:
@@ -285,11 +286,11 @@ class RadarD(object):
           rl_cluster_i = rl_cluster_idxs[idx]
 
           if rl_clusters[rl_cluster_i] == None:
-            rl_clusters[rl_cluster_i] = Cluster()
+            rl_clusters[rl_cluster_i] = Cluster(self.use_tesla_radar)
           rl_clusters[rl_cluster_i].add(self.tracks[idens[idx]])
       elif len(rl_track_pts) == 1:
         # TODO: why do we need this?
-        rl_clusters = [Cluster()]
+        rl_clusters = [Cluster(self.use_tesla_radar)]
         rl_clusters[0].add(self.tracks[idens[0]])
       else:
         rl_clusters = []
@@ -327,7 +328,7 @@ class RadarD(object):
           datrl.v4Vrel = float(rl_lead2_clusters[0].vRel)
           datrl.v4Dy = float(-rl_lead2_clusters[0].yRel + lane_offset)
           datrl.v4Id = int(rl_lead2_clusters[0].track_id % 32)
-    if (self.RI.TRACK_RIGHT_LANE or self.RI.TRACK_LEFT_LANE) and use_tesla_radar:
+    if (self.RI.TRACK_RIGHT_LANE or self.RI.TRACK_LEFT_LANE) and self.use_tesla_radar:
       self.icCarLR.send(datrl.to_bytes())      
 
     ### END REVIEW SECTION
@@ -386,7 +387,7 @@ def radard_thread(gctx=None):
   icLeads = messaging.pub_sock(service_list['uiIcLeads'].port)
 
   rk = Ratekeeper(rate, print_delay_threshold=None)
-  RD = RadarD(mocked, RI)
+  RD = RadarD(mocked, RI,use_tesla_radar)
 
   has_radar = not CP.radarOffCan or mocked
   last_md_ts = 0.

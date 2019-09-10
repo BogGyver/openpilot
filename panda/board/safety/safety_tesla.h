@@ -1652,7 +1652,7 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
     to_send.RDHR = to_fwd->RDHR & 0xCFFF0F0F;
     to_send.RDHR = to_send.RDHR | 0x10000000 | (radarPosition << 4) | (radarEpasType << 12);
     
-    if ((sizeof(radar_VIN) >= 4) && ((int)(radar_VIN[7]) == 0x32)) {
+    if ((sizeof(radar_VIN) >= 4) && (((int)(radar_VIN[7]) == 0x32) || ((int)(radar_VIN[7]) == 0x34))) {
         //also change to AWD if needed (most likely) if manual VIN and if position 8 of VIN is a 2 (dual motor)
         to_send.RDLR = to_send.RDLR | 0x08;
     }
