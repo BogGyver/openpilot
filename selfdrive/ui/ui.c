@@ -1689,7 +1689,9 @@ void handle_message(UIState *s, void *which) {
       if (s->alert_sound != cereal_CarControl_HUDControl_AudibleAlert_none) {
         stop_alert_sound(s->alert_sound);
       }
-      play_alert_sound(datad.alertSound);
+      if (bts !=0) {
+        play_alert_sound(datad.alertSound);
+      }
 
       s->alert_sound = datad.alertSound;
       snprintf(s->alert_type, sizeof(s->alert_type), "%s", datad.alertType.str);
