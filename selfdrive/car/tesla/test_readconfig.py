@@ -171,10 +171,13 @@ class ReadConfigTests(unittest.TestCase):
 
   # Test get_value interface:
   def test_get_value(self):
-    value = CarSettings().get_value("userHandle")
+    config_file_path = "./test_config_file3.cfg"
+    cs = readconfig.CarSettings(optional_config_file_path=config_file_path)
+    value = cs.get_value("userHandle")
     self.assertEqual(value, 'your_tinkla_username')
-    value = CarSettings().get_value("doAutoUpdate")
+    value = cs.get_value("doAutoUpdate")
     self.assertEqual(value, True)
+    os.remove(config_file_path)
 
   def check_defaults(self, cs):
     self.assertEqual(cs.userHandle, 'your_tinkla_username')
@@ -210,6 +213,8 @@ class ReadConfigTests(unittest.TestCase):
     self.assertEqual(cs.fix1916, False)
     self.assertEqual(cs.get_value("userHandle"), 'your_tinkla_username')
     self.assertEqual(cs.get_value("doAutoUpdate"), True)
+    self.assertEqual(cs.shouldLogCanErrors, False)
+    self.assertEqual(cs.shouldLogProcessCommErrors, False)
 
   # Helper methods
 
