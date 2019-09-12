@@ -1,3 +1,4 @@
+from cereal import car
 from common.numpy_fast import interp
 from common.kalman.simple_kalman import KF1D
 from selfdrive.can.can_define import CANDefine
@@ -6,10 +7,12 @@ from selfdrive.config import Conversions as CV
 from selfdrive.car.honda.values import CAR, DBC, STEER_THRESHOLD, SPEED_FACTOR, HONDA_BOSCH
 from selfdrive.car.honda.readconfig import read_config_file
 
+GearShifter = car.CarState.GearShifter
+
 def parse_gear_shifter(gear, vals):
 
-  val_to_capnp = {'P': 'park', 'R': 'reverse', 'N': 'neutral',
-                  'D': 'drive', 'S': 'sport', 'L': 'low'}
+  val_to_capnp = {'P': GearShifter.park, 'R': GearShifter.reverse, 'N': GearShifter.neutral,
+                  'D': GearShifter.drive, 'S': GearShifter.sport, 'L': GearShifter.low}
   try:
     return val_to_capnp[vals[gear]]
   except KeyError:
@@ -117,6 +120,10 @@ def get_can_signals(CP):
                 ("MAIN_ON", "SCM_BUTTONS", 0)]
   elif CP.carFingerprint in (CAR.CRV, CAR.ACURA_RDX, CAR.PILOT_2019, CAR.RIDGELINE):
     signals += [("MAIN_ON", "SCM_BUTTONS", 0)]
+  elif CP.carFingerprint == CAR.FIT:
+    signals += [("CAR_GAS", "GAS_PEDAL_2", 0),
+                ("MAIN_ON", "SCM_BUTTONS", 0),
+                ("BRAKE_HOLD_ACTIVE", "VSA_STATUS", 0)]
   elif CP.carFingerprint == CAR.ODYSSEY:
     signals += [("MAIN_ON", "SCM_FEEDBACK", 0),
                 ("EPB_STATE", "EPB_STATUS", 0)]

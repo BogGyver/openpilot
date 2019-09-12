@@ -44,5 +44,6 @@ one
 .vscode/*.json
 ./launch_chffrplus.sh
 openpilot
+notebooks
 xx
 

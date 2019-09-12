@@ -25,6 +25,7 @@ class Track(object):
   def __init__(self):
     self.ekf = None
     self.cnt = 0
+    self.aLeadTau = _LEAD_ACCEL_TAU
 
   def update(self, d_rel, y_rel, v_rel,measured, a_rel, vy_rel, oClass, length, track_id,movingState, d_path, v_ego_t_aligned,use_tesla_radar):
     
@@ -138,7 +139,7 @@ class Cluster(object):
 
   @property
   def measured(self):
-    return any([t.measured for t in self.tracks])
+    return any(t.measured for t in self.tracks)
 
   @property
   def oClass(self):
