@@ -86,7 +86,7 @@ class RadarInterface(object):
 
     tm = int(sec_since_boot() * 1e9)
     if can_strings != None:
-      vls = self.rcp.update_strings(tm, can_strings)
+      vls = self.rcp.update_strings(can_strings)
       self.updated_messages.update(vls)
 
 

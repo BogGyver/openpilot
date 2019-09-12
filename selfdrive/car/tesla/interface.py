@@ -220,11 +220,11 @@ class CarInterface(object):
     # ******************* do can recv *******************
     canMonoTimes = []
 
-    self.cp.update_strings(int(sec_since_boot() * 1e9), can_strings)
+    self.cp.update_strings(can_strings)
     ch_can_valid = self.cp.can_valid
-    self.epas_cp.update_strings(int(sec_since_boot() * 1e9), can_strings)
+    self.epas_cp.update_strings(can_strings)
     epas_can_valid = self.epas_cp.can_valid
-    self.pedal_cp.update_strings(int(sec_since_boot() * 1e9), can_strings)
+    self.pedal_cp.update_strings(can_strings)
     pedal_can_valid = self.pedal_cp.can_valid
 
     can_rcv_error = not (ch_can_valid and epas_can_valid and pedal_can_valid)

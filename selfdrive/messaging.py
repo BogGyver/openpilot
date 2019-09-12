@@ -167,6 +167,26 @@ class SubMaster(object):
         self.alive_cnt[s] = 0
         self.alive[s] = True
 
+  def all_alive_with_info(self, service_list=None):
+    """Returns alive state for tracked processes.
+    Args:
+        service_list (list): Optional service list.
+    Returns:
+        tuple: areAllAlive, processName, count
+    """
+    if service_list is None:  # check all
+      service_list = self.alive.keys()
+    areAllAlive = True
+    processName = ""
+    count = 0
+    for s in service_list:
+      if not self.alive[s]:
+        areAllAlive = False
+        processName = s
+        count = self.alive_cnt[s]
+        break
+    return (areAllAlive, processName, count)
+
   def all_alive(self, service_list=None):
     """Returns alive state for tracked processes.
 
@@ -181,6 +201,28 @@ class SubMaster(object):
     return all(self.alive[s] for s in service_list if s not in self.ignore_alive)
 
   def all_valid(self, service_list=None):
+    """Returns valid state for tracked processes.
+
+    Args:
+        service_list (list): Optional service list.
+
+    Returns:
+        tuple: areAllValid, processName, count
+    """
+    if service_list is None:  # check all
+      service_list = self.valid.keys()
+    areAllValid = True
+    processName = ""
+    count = 0
+    for s in service_list:
+      if not self.valid[s]:
+        areAllValid = False
+        processName = s
+        count = self.valid_cnt[s]
+        break
+    return areAllValid
+
+  def all_valid_with_info(self, service_list=None):
     """Returns valid state for tracked processes.
 
     Args:
