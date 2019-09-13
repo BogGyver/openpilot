@@ -268,9 +268,11 @@ class PCCController(object):
       elif CS.cruise_buttons == CruiseButtons.RES_ACCEL_2ND:
         self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph) + 5 * speed_uom_kph
       elif CS.cruise_buttons == CruiseButtons.DECEL_SET:
-        self.pedal_speed_kph = min(self.pedal_speed_kph, actual_speed_kph) - speed_uom_kph
+        #self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph) - speed_uom_kph
+        self.pedal_speed_kph =self.pedal_speed_kph - speed_uom_kph
       elif CS.cruise_buttons == CruiseButtons.DECEL_2ND:
-        self.pedal_speed_kph = min(self.pedal_speed_kph, actual_speed_kph) - 5 * speed_uom_kph
+        #self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph) - 5 * speed_uom_kph
+        self.pedal_speed_kph = self.pedal_speed_kph - 5 * speed_uom_kph
       # Clip PCC speed between 0 and 170 KPH.
       self.pedal_speed_kph = clip(self.pedal_speed_kph, MIN_PCC_V_KPH, MAX_PCC_V_KPH)
     # If something disabled cruise control, disable PCC too
