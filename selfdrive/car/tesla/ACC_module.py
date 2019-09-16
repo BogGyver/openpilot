@@ -211,6 +211,9 @@ class ACCController(object):
         and CS.pcm_acc_status == CruiseState.ENABLED):
       button_to_press = CruiseButtons.CANCEL
 
+    #disengage if cruise is canceled
+    if (not self.enable_adaptive_cruise) and (CS.pcm_acc_status > 1):
+      button_to_press = CruiseButtons.CANCEL 
     lead_1 = None
     #if enabled:
     for socket, _ in self.poller.poll(0):
@@ -218,7 +221,7 @@ class ACCController(object):
         lead_1 = messaging.recv_one(socket).radarState.leadOne
         if lead_1.dRel:
           self.lead_last_seen_time_ms = current_time_ms
-    if self.enable_adaptive_cruise and enabled:
+    if self.enable_adaptive_cruise and enabled: # and (button_to_press == None):
       if CS.cstm_btns.get_button_label2(ACCMode.BUTTON_NAME) in ["OP", "AutoOP"]:    
         button_to_press = self._calc_button(CS, pcm_speed)
         self.new_speed = pcm_speed * CV.MS_TO_KPH
