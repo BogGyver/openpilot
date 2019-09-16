@@ -87,6 +87,7 @@ int streetSignObject_b3 = 0;
 int streetSignObject_active = 0;
 
 //fake DAS counters
+int DAS_uom = 0; //units of measure, 0 = MPH, 1 = km/h
 int DAS_bootID_sent = 0;
 int fake_DAS_counter = 0;
 int DAS_object_idx = 0;
@@ -134,8 +135,9 @@ int DAS_op_status_last_received = 1;
 int DAS_alca_state = 0x05;
 int DAS_hands_on_state = 0;
 int DAS_forward_collision_warning = 0;
+int DAS_units_included = 0;
 int DAS_cc_state = 0;
-int DAS_acc_speed_limit_mph = 0;
+int DAS_acc_speed_limit = 0; //in car speed units
 int DAS_acc_speed_kph = 0;
 int DAS_collision_warning = 0;
 int DAS_ldwStatus = 0;
@@ -331,7 +333,7 @@ static void reset_DAS_data(void) {
   DAS_hands_on_state = 0;
   DAS_forward_collision_warning = 0;
   DAS_cc_state = 0;
-  DAS_acc_speed_limit_mph = 0;
+  DAS_acc_speed_limit = 0;
   DAS_acc_speed_kph = 0;
   DAS_collision_warning = 0;
   DAS_telLeftMarkerQuality = 3; //3-high, 2-medium, 1-low 0-lowest
@@ -497,7 +499,11 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
         jerk_min = 0x000;
         jerk_max = 0x0F;
         acc_state = 0x04;//bb send HOLD?
-        acc_speed_kph = (int)(DAS_acc_speed_limit_mph * 1.609 * 10.0);
+        float uom = 1;
+        if ((DAS_uom == 0) && (DAS_units_included == 0)) {
+          uom = 1.609;
+        }
+        acc_speed_kph = (int)(DAS_acc_speed_limit * uom * 10.0);
         accel_max = 0x1FE; //(int)((DAS_accel_max + 15 ) / 0.04);
         accel_min = 0x001; //(int)((DAS_accel_min + 15 ) / 0.04);
       }
@@ -762,7 +768,11 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     DAS_status_idx = DAS_status_idx % 16;
 
     //send DAS_status2 - 0x389
-    int sl2 = ((int)(DAS_acc_speed_limit_mph / 0.2)) & 0x3FF;
+    float uom = 1.0;
+    if ((DAS_uom == 1) && (DAS_units_included == 1)){
+      uom = 1.0/1.609;
+    }
+    int sl2 = ((int)(DAS_acc_speed_limit * uom / 0.2)) & 0x3FF;
     if (sl2 == 0) {
       sl2 = 0x3FF;
     }
@@ -992,6 +1002,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     DAS_diStateH = to_push->RDHR;
     DAS_diState_idx = (DAS_diStateH & 0xF000 ) >> 12;
     int acc_state = ((to_push->RDLR & 0xF000) >> 12);
+    DAS_uom = (to_push->RDLR >> 31) & 1;
     if ((DAS_usingPedal == 1) && ( acc_state >= 2) && ( acc_state <= 4)) {
       do_fake_stalk_cancel(to_push->RIR, to_push->RDTR);
     } 
@@ -1513,14 +1524,15 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     int b7 = ((to_send->RDHR >> 24) & 0xFF);
 
     DAS_acc_speed_kph = b1;
-    DAS_acc_speed_limit_mph = b4;
+    DAS_acc_speed_limit = b4;
     DAS_longC_enabled = ((b0 & 0x80) >> 7);
     DAS_gas_to_resume = ((b0 & 0x40) >> 6);
     DAS_206_apUnavailable = ((b0 & 0x20) >> 5);
     DAS_collision_warning = ((b0 & 0x10) >> 4);
     DAS_op_status = (b0 & 0x0F);
     DAS_turn_signal_request = ((b2 & 0xC0) >> 6);
-    DAS_forward_collision_warning = ((b2 & 0x30) >> 4);
+    DAS_forward_collision_warning = ((b2 & 0x10) >> 4);
+    DAS_units_included = ((b2 & 0x20) >> 5);
     DAS_hands_on_state = (b2 & 0x0F);
     DAS_cc_state = ((b3 & 0xC0)>>6);
     DAS_usingPedal = ((b3 & 0x20) >> 5);

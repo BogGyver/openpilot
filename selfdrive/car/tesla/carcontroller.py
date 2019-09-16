@@ -369,12 +369,15 @@ class CarController(object):
     human_control = False
 
     # update CS.v_cruise_pcm based on module selected.
+    speed_uom_kph = 1.
+    if CS.imperial_speed_units:
+      speed_uom_kph = CV.KPH_TO_MPH
     if self.ACC.enable_adaptive_cruise:
-      CS.v_cruise_pcm = self.ACC.acc_speed_kph
+      CS.v_cruise_pcm = self.ACC.acc_speed_kph * speed_uom_kph
     elif self.PCC.enable_pedal_cruise:
-      CS.v_cruise_pcm = self.PCC.pedal_speed_kph
+      CS.v_cruise_pcm = self.PCC.pedal_speed_kph * speed_uom_kph
     else:
-      CS.v_cruise_pcm = max(0.,CS.v_ego * CV.MS_TO_KPH  +0.5) #BB try v_ego to reduce the false FCW warnings; was: vCS.v_cruise_actual
+      CS.v_cruise_pcm = max(0.,CS.v_ego * CV.MS_TO_KPH  +0.5) * speed_uom_kph
     # Get the turn signal from ALCA.
     turn_signal_needed, self.alca_enabled = self.ALCA.update(enabled, CS, actuators)
     apply_angle = -actuators.steerAngle  # Tesla is reversed vs OP.
@@ -458,7 +461,7 @@ class CarController(object):
         elif socket is self.pathPlan:
           #to show curvature and lanes on IC
           if self.alcaStateData is not None:
-            self.handlePathPlanSocketForCurvatureOnIC(pathPlanSocket = socket, alcaStateData = self.alcaStateData,CS = CS)
+            self.handlePathPlanSocketForCurvatureOnIC(pathPlanSocket = socket, alcaStateData = self.alcaStateData,CS = CS, human_control = human_control)
         elif socket is self.icCarLR:
           can_messages = self.showLeftAndRightCarsOnICCanMessages(icCarLRSocket = socket)
           can_sends.extend(can_messages)
@@ -610,7 +613,7 @@ class CarController(object):
             turn_signal_needed,forward_collision_warning,hands_on_state, \
             cc_state, 1 if (CS.pedal_interceptor_available) else 0,alca_state, \
             #acc_speed_limit_mph,
-            CS.v_cruise_pcm * CV.KPH_TO_MPH, 
+            CS.v_cruise_pcm, 
             speed_limit_to_car,
             apply_angle,
             1 if enable_steer_control else 0))
@@ -633,7 +636,7 @@ class CarController(object):
     # send enabled ethernet every 0.2 sec
     if frame % 20 == 0:
         can_sends.append(teslacan.create_enabled_eth_msg(1))
-    if self.ACC.enable_adaptive_cruise and not CS.pedal_interceptor_available:
+    if (not CS.pedal_interceptor_available) and frame % 5 == 0: # acc processed at 20Hz
       cruise_btn = self.ACC.update_acc(enabled, CS, frame, actuators, pcm_speed, \
                     self.speed_limit_for_cc, self.speedlimit_valid, \
                     self.set_speed_limit_active, self.speed_limit_offset)
@@ -696,7 +699,7 @@ class CarController(object):
           self.lead2Id,self.lead2Dx,self.lead2Dy,self.lead2Vx))
     return messages
 
-  def handlePathPlanSocketForCurvatureOnIC(self, pathPlanSocket, alcaStateData, CS):
+  def handlePathPlanSocketForCurvatureOnIC(self, pathPlanSocket, alcaStateData, CS, human_control):
     pp = messaging.recv_one(pathPlanSocket).pathPlan
     if pp.paramsValid:
       if pp.lProb > 0.75:
@@ -733,7 +736,7 @@ class CarController(object):
           self.curv0 = self.ALCA.laneChange_direction * self.laneWidth - self.curv0
         self.curv0 = clip(self.curv0, -3.5, 3.5)
       else:
-        if CS.enableLdw and (not CS.blinker_on) and (CS.v_ego > 15.6) and (not CS.steer_override):
+        if CS.enableLdw and (not CS.blinker_on) and (CS.v_ego > 15.6) and (not human_control):
           if pp.lProb > LDW_LANE_PROBAB:
             lLaneC0 = -pp.lPoly[3]
             if abs(lLaneC0) < LDW_WARNING_2:

@@ -267,13 +267,13 @@ class CarInterface(object):
     ret.gearShifter = self.CS.gear_shifter
 
     ret.steeringTorque = self.CS.steer_torque_driver
-    ret.steeringPressed = self.CS.steer_override or not self.CS.enableDriverMonitor
+    ret.steeringPressed = self.CS.steer_override
 
     # cruise state
     ret.cruiseState.enabled = True #self.CS.pcm_acc_status != 0
-    ret.cruiseState.speed = self.CS.v_cruise_pcm * CV.KPH_TO_MS
+    ret.cruiseState.speed = self.CS.v_cruise_pcm * CV.KPH_TO_MS * (CV.MPH_TO_KPH if self.CS.imperial_speed_units else 1.)
     ret.cruiseState.available = bool(self.CS.main_on)
-    ret.cruiseState.speedOffset = self.CS.cruise_speed_offset
+    ret.cruiseState.speedOffset = 0.
     ret.cruiseState.standstill = False
 
     # TODO: button presses

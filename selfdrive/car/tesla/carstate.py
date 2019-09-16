@@ -29,18 +29,6 @@ def parse_gear_shifter(can_gear_shifter, car_fingerprint):
 
 
 
-def calc_cruise_offset(offset, speed):
-  # euristic formula so that speed is controlled to ~ 0.3m/s below pid_speed
-  # constraints to solve for _K0, _K1, _K2 are:
-  # - speed = 0m/s, out = -0.3
-  # - speed = 34m/s, offset = 20, out = -0.25
-  # - speed = 34m/s, offset = -2.5, out = -1.8
-  _K0 = -0.3
-  _K1 = -0.01879
-  _K2 = 0.01013
-  return min(_K0 + _K1 * speed + _K2 * speed * offset, 0.)
-
-
 def get_can_signals(CP):
 # this function generates lists for signal, messages and initial values
   signals = [
@@ -626,7 +614,7 @@ class CarState(object):
     self.DI_cruiseSet = cp.vl["DI_state"]['DI_cruiseSet']
     if self.imperial_speed_units:
       self.DI_cruiseSet = self.DI_cruiseSet * CV.MPH_TO_KPH
-    self.cruise_speed_offset = calc_cruise_offset(self.DI_cruiseSet*CV.KPH_TO_MS, self.v_ego)
+    self.cruise_speed_offset = 0.
     self.gear_shifter = parse_gear_shifter(can_gear_shifter, self.CP.carFingerprint)
 
     self.pedal_gas = 0. # cp.vl["DI_torque1"]['DI_pedalPos'] / 102 #BB: to make it between 0..1
@@ -666,7 +654,7 @@ class CarState(object):
 
     self.v_cruise_actual = self.DI_cruiseSet
     self.hud_lead = 0 #JCT
-    self.cruise_speed_offset = calc_cruise_offset(self.v_cruise_pcm, self.v_ego)
+    self.cruise_speed_offset = 0.
 
 
 # carstate standalone tester
