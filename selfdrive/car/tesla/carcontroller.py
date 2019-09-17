@@ -362,7 +362,8 @@ class CarController(object):
       self.ACC.enable_adaptive_cruise = False
     else:
       # Update ACC module info.
-      self.ACC.update_stat(CS, True)
+      if  frame % 5 == 0:
+        self.ACC.update_stat(CS, True)
       self.PCC.enable_pedal_cruise = False
     
     # Update HSO module info.

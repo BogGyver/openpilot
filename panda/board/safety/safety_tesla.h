@@ -1003,7 +1003,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     DAS_diState_idx = (DAS_diStateH & 0xF000 ) >> 12;
     int acc_state = ((to_push->RDLR & 0xF000) >> 12);
     DAS_uom = (to_push->RDLR >> 31) & 1;
-    if ((DAS_usingPedal == 1) && ( acc_state >= 2) && ( acc_state <= 4)) {
+    if (((DAS_usingPedal == 1) || ((DAS_usingPedal == 0) && (DAS_cc_state != 2)) ) && ( acc_state >= 2) && ( acc_state <= 4)) {
       do_fake_stalk_cancel(to_push->RIR, to_push->RDTR);
     } 
 
