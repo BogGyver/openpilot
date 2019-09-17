@@ -8,13 +8,32 @@ class HSOController(object):
     def __init__(self,carcontroller):
         self.CC = carcontroller
         self.frame_humanSteered = 0
+        self.turn_signal_needed = 0 # send 1 for left, 2 for right 0 for not needed
+        self.last_blinker_on = 0
+        self.blinker_on = 0
+        self.frame_blinker_on = 0
+        self.last_human_blinker_on = 0
     
 
     def update_stat(self,CC,CS,enabled,actuators,frame):
         human_control = False
+        self.last_blinker_on = self.blinker_on
+        if CS.right_blinker_on:
+          self.blinker_on = 2
+        elif CS.left_blinker_on:
+          self.blinker_on = 1
+        if self.blinker_on > 0:
+            self.frame_blinker_on = frame
+            self.last_human_blinker_on = self.blinker_on
+        else:
+            if frame - self.frame_blinker_on < 30:
+                self.blinker_on = self.last_human_blinker_on
+            else:
+                self.last_human_blinker_on = 0
+
         if CS.enableHSO and enabled:
           #if steering but not by ALCA
-          if (CS.right_blinker_on or CS.left_blinker_on) and (self.CC.ALCA.laneChange_enabled <= 1):
+          if (CS.right_blinker_on or CS.left_blinker_on) and (self.CC.ALCA.laneChange_enabled <= 1):# and (self.last_blinker_on != self.blinker_on):
             self.frame_humanSteered = frame
           if (CS.steer_override > 0) and (frame - self.frame_humanSteered > 50): 
             self.frame_humanSteered = frame
@@ -24,20 +43,28 @@ class HSOController(object):
               steer_current=(CS.angle_steers)  # Formula to convert current steering angle to match apply_steer calculated number
               apply_steer = int(-actuators.steerAngle)
               angle = abs(apply_steer-steer_current)
-              if angle > 10.:
+              if angle > 15.:
                 self.frame_humanSteered = frame
         if enabled:
             if CS.enableHSO:
               if (frame - self.frame_humanSteered < 50):
                 human_control = True
-                #CS.cstm_btns.set_button_status("steer",3)
                 CS.UE.custom_alert_message(3,"Manual Steering Enabled",51,4)
-              #else:
-              #  CS.cstm_btns.set_button_status("steer",2)
-        #else:
-        #    if CS.cstm_btns.get_button_status("steer") > 0:
-        #      CS.cstm_btns.set_button_status("steer",1)
+        #if human control and turn signal on, and previous turn signal was not on or was different, adjust
+        #same direction again cancels signal
+        if human_control:
+          self.turn_signal_needed = self.blinker_on
+        #if no human control, no turn signal needed
+        if not human_control:
+          self.turn_signal_needed = 0
+          self.last_blinker_on = 0
+          self.blinker_on = 0
         if (not human_control) and (CC.DAS_219_lcTempUnavailableSpeed == 1):
           CC.DAS_219_lcTempUnavailableSpeed = 0
           CC.warningNeeded = 1
-        return human_control and enabled
+          self.turn_signal_needed = 0
+        if (self.CC.ALCA.laneChange_enabled > 1):
+          self.turn_signal_needed = 0
+          self.blinker_on = 0
+          self.last_blinker_on = 0
+        return human_control and enabled, self.turn_signal_needed

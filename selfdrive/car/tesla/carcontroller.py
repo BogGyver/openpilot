@@ -382,7 +382,9 @@ class CarController(object):
     # Get the turn signal from ALCA.
     turn_signal_needed, self.alca_enabled = self.ALCA.update(enabled, CS, actuators)
     apply_angle = -actuators.steerAngle  # Tesla is reversed vs OP.
-    human_control = self.HSO.update_stat(self,CS, enabled, actuators, frame)
+    human_control,turn_signal_needed_hso = self.HSO.update_stat(self,CS, enabled, actuators, frame)
+    if turn_signal_needed == 0:
+      turn_signal_needed = turn_signal_needed_hso
     human_lane_changing = changing_lanes and not self.alca_enabled
     enable_steer_control = (enabled
                             and not human_lane_changing
@@ -462,7 +464,7 @@ class CarController(object):
         elif socket is self.pathPlan:
           #to show curvature and lanes on IC
           if self.alcaStateData is not None:
-            self.handlePathPlanSocketForCurvatureOnIC(pathPlanSocket = socket, alcaStateData = self.alcaStateData,CS = CS, human_control = human_control)
+            self.handlePathPlanSocketForCurvatureOnIC(pathPlanSocket = socket, alcaStateData = self.alcaStateData,CS = CS, turn_signal_needed = turn_signal_needed)
         elif socket is self.icCarLR:
           can_messages = self.showLeftAndRightCarsOnICCanMessages(icCarLRSocket = socket)
           can_sends.extend(can_messages)
@@ -700,7 +702,7 @@ class CarController(object):
           self.lead2Id,self.lead2Dx,self.lead2Dy,self.lead2Vx))
     return messages
 
-  def handlePathPlanSocketForCurvatureOnIC(self, pathPlanSocket, alcaStateData, CS, human_control):
+  def handlePathPlanSocketForCurvatureOnIC(self, pathPlanSocket, alcaStateData, CS, turn_signal_needed):
     pp = messaging.recv_one(pathPlanSocket).pathPlan
     if pp.paramsValid:
       if pp.lProb > 0.75:
@@ -737,7 +739,7 @@ class CarController(object):
           self.curv0 = self.ALCA.laneChange_direction * self.laneWidth - self.curv0
         self.curv0 = clip(self.curv0, -3.5, 3.5)
       else:
-        if CS.enableLdw and (not CS.blinker_on) and (CS.v_ego > 15.6) and (not human_control):
+        if CS.enableLdw and (not CS.blinker_on) and (CS.v_ego > 15.6) and (turn_signal_needed == 0):
           if pp.lProb > LDW_LANE_PROBAB:
             lLaneC0 = -pp.lPoly[3]
             if abs(lLaneC0) < LDW_WARNING_2:
