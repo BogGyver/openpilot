@@ -1,6 +1,9 @@
 #human steer override module
 import time
 
+MAX_TIME_BLINKER_ON = 300 # in 0.01 seconds
+TIME_REMEMBER_LAST_BLINKER = 70 # in 0.01 seconds
+
 def _current_time_millis():
   return int(round(time.time() * 1000))
 
@@ -13,6 +16,7 @@ class HSOController(object):
         self.blinker_on = 0
         self.frame_blinker_on = 0
         self.last_human_blinker_on = 0
+        self.frame_human_blinker_on = 0
     
 
     def update_stat(self,CC,CS,enabled,actuators,frame):
@@ -20,16 +24,22 @@ class HSOController(object):
         self.last_blinker_on = self.blinker_on
         if CS.right_blinker_on:
           self.blinker_on = 2
+          self.frame_human_blinker_on = frame
         elif CS.left_blinker_on:
           self.blinker_on = 1
+          self.frame_human_blinker_on = frame
         if self.blinker_on > 0:
             self.frame_blinker_on = frame
             self.last_human_blinker_on = self.blinker_on
         else:
-            if frame - self.frame_blinker_on < 30:
+            if frame - self.frame_blinker_on < TIME_REMEMBER_LAST_BLINKER:
                 self.blinker_on = self.last_human_blinker_on
             else:
                 self.last_human_blinker_on = 0
+        if frame - self.frame_human_blinker_on > MAX_TIME_BLINKER_ON:
+          self.blinker_on = 0
+          self.turn_signal_needed = 0
+          self.last_blinker_on = 0
 
         if CS.enableHSO and enabled:
           #if steering but not by ALCA
