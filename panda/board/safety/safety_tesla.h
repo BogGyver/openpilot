@@ -756,8 +756,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
 
   if (fake_DAS_counter % 50 == 0) {
     //send DAS_status - 0x399
-    int sl = (int)(DAS_speed_limit_kph / 5); 
-    MLB = DAS_op_status + 0xF0 + (sl << 8) + (((DAS_collision_warning << 6) + sl) << 16);
+    MLB = DAS_op_status + 0xF0 + (DAS_speed_limit_kph << 8) + (((DAS_collision_warning << 6) + DAS_speed_limit_kph) << 16);
     MHB = ((DAS_cc_state & 0x03) << 3) + (DAS_ldwStatus << 5) + 
         (((DAS_hands_on_state << 2) + ((DAS_alca_state & 0x03) << 6)) << 8) +
        ((( DAS_status_idx << 4) + (DAS_alca_state >> 2)) << 16);

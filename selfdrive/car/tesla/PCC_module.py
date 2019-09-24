@@ -19,6 +19,9 @@ from selfdrive.car.tesla.movingaverage import MovingAverage
 _DT = 0.05    # 10Hz in our case, since we don't want to process more than once the same radarState message
 _DT_MPC = _DT
 
+#Reset the PID completely on disengage of PCC
+RESET_PID_ON_DISENGAGE = False
+
 # TODO: these should end up in values.py at some point, probably variable by trim
 # Accel limits
 MAX_RADAR_DISTANCE = 120. #max distance to take in consideration radar reading
@@ -37,7 +40,7 @@ TORQUE_LEVEL_ACC = 0.
 TORQUE_LEVEL_DECEL = -30.
 
 MIN_PCC_V_KPH = 0. #
-MAX_PCC_V_KPH = 170.
+MAX_PCC_V_KPH = 270.
 
 ANGLE_STOP_ACCEL = 10. #this should be speed dependent
 
@@ -191,7 +194,7 @@ class PCCController(object):
       return pedal_set_speed_ms
 
   def reset(self, v_pid):
-    if self.LoC:
+    if self.LoC and RESET_PID_ON_DISENGAGE:
       self.LoC.reset(v_pid)
 
   def update_stat(self, CS, enabled):
@@ -620,7 +623,7 @@ def _max_safe_speed_kph(lead,CS):
   if _is_present(lead):
     return (CS.v_ego + lead.vRel + (lead.dRel - _safe_distance_m(CS.v_ego,CS))/CS.apFollowTimeInS) * CV.MS_TO_KPH
   else:
-    return 150.
+    return MAX_PCC_V_KPH
   
 def _min_safe_vrel_kph(lead,CS,actual_speed_kph):
   m = lead.dRel
@@ -692,7 +695,11 @@ def _decel_limit(accel_min,v_ego, lead, CS, max_speed_kph):
   safe_dist_m = _safe_distance_m(v_ego,CS)
   # if above speed limit quickly decel
   if v_ego * CV.MS_TO_KPH > max_speed_kph:
-    max_speed_mult = 2.
+    overshot = v_ego * CV.MS_TO_KPH - max_speed_kph
+    if overshot >= 5:
+      max_speed_mult = 2.
+    elif overshot >= 2.:
+      max_speed_mult = 1.5
   if _is_present(lead):
     time_to_brake = max(0.1,_sec_til_collision(lead, CS))
     if 0 < lead.dRel < MIN_SAFE_DIST_M:

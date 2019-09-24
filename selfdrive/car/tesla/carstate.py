@@ -412,6 +412,7 @@ class CarState(object):
 
     self.angle_offset = 0.
     self.init_angle_offset = False
+    self.speedLimitToIc = 0
    
   def config_ui_buttons(self, pedalPresent):
     if pedalPresent:
@@ -535,10 +536,19 @@ class CarState(object):
     else:
       self.userSpeedLimitKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_mppSpeedLimit"] * CV.MPH_TO_KPH
 
-    speed_limit_tesla_lookup = [0,5,7,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,130,140,150,160,0,0] 
+    speed_limit_tesla_lookup = [0,5,7,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,130,140,150,160,170,0] 
     self.speedLimitUnits = cp.vl["UI_driverAssistMapData"]["UI_mapSpeedUnits"]
     self.speedLimitKph = speed_limit_tesla_lookup[int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])] * (1 + 0.609 * (1 - self.speedLimitUnits))
-
+    self.speedLimitToIc = int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])
+    #BB unsure yet but DBC tells us that the map data has 0x00 as unknown, 0x1E as UNLIMITED and 0x1F as SNA while
+    #the DAS_status has 0x00 as UNKNOWN/SNA and 0x1F as UNLIMITED. Needs testing on Autobahn
+    if self.speedLimitToIc >= 2:
+        self.speedLimitToIc -= 1 #map data has 7 in second position
+    if self.speedLimitToIc == 0x1E:
+      self.speedLimitToIc = 0
+    elif self.speedLimitToIc == 0x1D: #no speed limit
+      self.speedLimitToIc = 0x1F
+      self.speedLimitKph = 170.
 
     rdSignMsg = cp.vl["UI_driverAssistRoadSign"]["UI_roadSign"]
     if rdSignMsg == 4:

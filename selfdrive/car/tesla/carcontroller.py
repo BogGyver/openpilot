@@ -615,9 +615,8 @@ class CarController(object):
             acc_speed_kph, \
             turn_signal_needed,forward_collision_warning,hands_on_state, \
             cc_state, 1 if (CS.pedal_interceptor_available) else 0,alca_state, \
-            #acc_speed_limit_mph,
-            CS.v_cruise_pcm, 
-            speed_limit_to_car,
+            CS.v_cruise_pcm, #acc_speed_limit_mph,
+            CS.speedLimitToIc, #speed_limit_to_car,
             apply_angle,
             1 if enable_steer_control else 0))
     if send_fake_warning or (self.opState == 2) or (self.opState == 5) or (self.stopSignWarning != self.stopSignWarning_last) or (self.stopLightWarning != self.stopLightWarning_last) or (self.warningNeeded == 1) or (frame % 100 == 0):
