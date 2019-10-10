@@ -173,6 +173,10 @@ def thermald_thread():
   health_prev = None
   current_connectivity_alert = None
 
+  # Make sure charging is enabled
+  charging_disabled = False
+  os.system('echo "1" > /sys/class/power_supply/battery/charging_enabled')
+
   params = Params()
 
   while 1:
@@ -340,7 +344,7 @@ def thermald_thread():
     thermal_status_prev = thermal_status
     usb_power_prev = usb_power
 
-    print(msg)
+    #print(msg)
 
     # report to server once per minute
     if (count % int(60. / DT_TRML)) == 0:

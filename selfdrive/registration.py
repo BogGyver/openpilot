@@ -57,9 +57,9 @@ def get_subscriber_info():
 
 def get_git_remote():
   try:
-    local_branch = subprocess.run(["git", "name-rev", "--name-only", "HEAD"], capture_output=True).stdout.strip().decode("utf-8")
-    tracking_remote = subprocess.run(["git", "config", "branch."+local_branch+".remote"],capture_output=True).stdout.strip().decode("utf-8")
-    return subprocess.run(["git", "config", "remote."+tracking_remote+".url"],capture_output=True).stdout.strip().decode("utf-8")
+    local_branch = subprocess.run(["git", "name-rev", "--name-only", "HEAD"], capture_output=True).stdout.decode("utf-8").strip()
+    tracking_remote = subprocess.run(["git", "config", "branch."+local_branch+".remote"],capture_output=True).stdout.decode("utf-8").strip()
+    return subprocess.run(["git", "config", "remote."+tracking_remote+".url"],capture_output=True).stdout.decode("utf-8").strip()
   except subprocess.CalledProcessError:
     return ""
 
