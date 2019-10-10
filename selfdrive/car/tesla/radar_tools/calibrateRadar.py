@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.7
 import sys
 try:
     sys.path.index('/data/openpilot/')
@@ -39,7 +39,7 @@ def _create_radard_can_parser():
   msg_a_n = len(RADAR_A_MSGS)
   msg_b_n = len(RADAR_B_MSGS)
 
-  signals = zip(['LongDist'] * msg_a_n +  ['LatDist'] * msg_a_n +
+  signals = list(zip(['LongDist'] * msg_a_n +  ['LatDist'] * msg_a_n +
                 ['LongSpeed'] * msg_a_n + ['LongAccel'] * msg_a_n + 
                 ['Valid'] * msg_a_n + ['Tracked'] * msg_a_n + 
                 ['Meas'] * msg_a_n + ['ProbExist'] * msg_a_n + 
@@ -51,11 +51,11 @@ def _create_radard_can_parser():
                 [255.] * msg_a_n + [0.] * msg_a_n + [0.] * msg_a_n + [0.] * msg_a_n + 
                 [0] * msg_a_n + [0] * msg_a_n + [0] * msg_a_n + [0.] * msg_a_n +
                 [0] * msg_a_n + [0.] * msg_a_n + [0.] * msg_b_n + [0] * msg_b_n +
-                [0] * msg_b_n + [0.] * msg_b_n + [0.] * msg_b_n +[0.] * msg_b_n + [0]* msg_b_n)
+                [0] * msg_b_n + [0.] * msg_b_n + [0.] * msg_b_n +[0.] * msg_b_n + [0]* msg_b_n))
 
-  checks = zip(RADAR_A_MSGS + RADAR_B_MSGS, [20]*(msg_a_n + msg_b_n))
+  checks = list(zip(RADAR_A_MSGS + RADAR_B_MSGS, [20]*(msg_a_n + msg_b_n)))
 
-  return CANParser(os.path.splitext(dbc_f)[0], signals, checks, 1)
+  return CANParser(os.path.splitext(dbc_f)[0].encode('utf8'), signals, checks, 1)
 
 
 class RadarInterface(object):
@@ -148,4 +148,4 @@ if __name__ == "__main__":
   while 1:
     ret = RI.update()
     print(chr(27) + "[2J")
-    print ret
+    print (ret)
