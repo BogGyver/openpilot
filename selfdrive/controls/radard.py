@@ -2,7 +2,7 @@
 import importlib
 import math
 from collections import defaultdict, deque
-
+import numpy as np
 import zmq
 
 import selfdrive.messaging as messaging

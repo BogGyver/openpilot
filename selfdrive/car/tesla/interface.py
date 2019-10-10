@@ -12,7 +12,9 @@ from selfdrive.car import STD_CARGO_KG
 from selfdrive.car.tesla.readconfig import CarSettings
 import selfdrive.messaging as messaging
 from selfdrive.services import service_list
+from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V
 
+A_ACC_MAX = max(_A_CRUISE_MAX_V)
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
@@ -64,6 +66,11 @@ class CarInterface():
     # limit the pcm accel cmd if:
     # - v_ego exceeds v_target, or
     # - a_ego exceeds a_target and v_ego is close to v_target
+
+    # normalized max accel. Allowing max accel at low speed causes speed overshoots
+    max_accel_bp = [10, 20]    # m/s
+    max_accel_v = [0.714, 1.0] # unit of max accel
+    max_accel = interp(v_ego, max_accel_bp, max_accel_v)
 
     eA = a_ego - a_target
     valuesA = [1.0, 0.1]

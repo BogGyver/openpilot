@@ -58,7 +58,7 @@ class RadarInterface(RadarInterfaceBase):
     # radar
     self.pts = {}
     self.extPts = {}
-    self.delay = 0.1
+    self.delay = int(0.1 / DT_RDR)
     self.useTeslaRadar = CarSettings().get_value("useTeslaRadar")
     self.TRACK_LEFT_LANE = True
     self.TRACK_RIGHT_LANE = True
@@ -68,7 +68,6 @@ class RadarInterface(RadarInterfaceBase):
       self.pts = {}
       self.extPts = {}
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
-      self.delay = 0.1  # Delay of radar
       self.rcp = _create_radard_can_parser()
       self.logcan = messaging.sub_sock(service_list['can'].port)
       self.radarOffset = CarSettings().get_value("radarOffset")

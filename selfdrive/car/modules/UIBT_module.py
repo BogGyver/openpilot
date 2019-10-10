@@ -22,7 +22,7 @@ class UIButtons:
     def write_buttons_labels_to_file(self):
         fo = open(self.buttons_labels_path, buttons_file_rw)
         for btn in self.btns:
-            fo.write(struct.pack(btn_msg_struct,btn.btn_name,btn.btn_label,btn.btn_label2))
+            fo.write(struct.pack(btn_msg_struct,btn.btn_name.encode('utf8'),btn.btn_label.encode('utf8'),btn.btn_label2.encode('utf8')))
         fo.close()
 
     def read_buttons_labels_from_file(self):
@@ -34,12 +34,12 @@ class UIButtons:
             for i in range(0, len(indata), btn_msg_len):
                 j = int(i/btn_msg_len)
                 name,label,label2 = struct.unpack(btn_msg_struct, indata[i:i+btn_msg_len]) 
-                if self.btns[j].btn_name == name.rstrip("\0"):
+                if self.btns[j].btn_name == name: #.rstrip("\0"):
                     file_matches = True
-                    self.btns[j].btn_label = label.rstrip("\0")
+                    self.btns[j].btn_label = label #.rstrip("\0")
                     #check if label is actually a valid option
-                    if label2.rstrip("\0") in self.CS.btns_init[j][2]:
-                        self.btns[j].btn_label2 = label2.rstrip("\0")
+                    if label2 in self.CS.btns_init[j][2]:
+                        self.btns[j].btn_label2 = label2 #.rstrip("\0")
                     else:
                         self.btns[j].btn_label2 = self.CS.btns_init[j][2][0]
             return file_matches
