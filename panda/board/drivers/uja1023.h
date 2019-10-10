@@ -71,7 +71,7 @@ void UJA_TIM5_IRQHandler(void) {
         */
         frame_to_send = px_req_frame;
       }
-      LIN_SendData(&lin2_ring, &frame_to_send);
+      LIN_SendData(&uart_ring_lin2, &frame_to_send);
       /*
       puts("Set UJA to output: ");
       puth(px_req_frame.data[0]);
@@ -83,11 +83,11 @@ void UJA_TIM5_IRQHandler(void) {
     
     if (lin_send_timer == (TICKS_PER_FRAME / 10)  && frame_to_send.has_response) {
       //send empty header to slave
-      LIN_SendReceiveFrame(&lin2_ring, &frame_to_receive);      
+      LIN_SendReceiveFrame(&uart_ring_lin2, &frame_to_receive);      
     }
 
     if (lin_send_timer == ((TICKS_PER_FRAME / 10) * 2) && frame_to_send.has_response) {
-      LIN_ReceiveData(&lin2_ring, &frame_to_receive);
+      LIN_ReceiveData(&uart_ring_lin2, &frame_to_receive);
       puts("Received Lin frame: ");
       
       /*

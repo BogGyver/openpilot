@@ -4,7 +4,7 @@ default_config_file_path = '/data/bb_openpilot.cfg'
 
 class ConfigFile():
   config_file_r = 'r'
-  config_file_w = 'wb'
+  config_file_w = 'w'
 
   ### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
   def read(self, into, config_path):
