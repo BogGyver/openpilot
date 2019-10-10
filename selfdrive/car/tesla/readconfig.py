@@ -1,4 +1,4 @@
-import ConfigParser
+import configparser
 
 default_config_file_path = '/data/bb_openpilot.cfg'
 
@@ -8,7 +8,7 @@ class ConfigFile():
 
   ### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
   def read(self, into, config_path):
-      configr = ConfigParser.ConfigParser()
+      configr = configparser.ConfigParser()
       file_changed = False
 
       try:
@@ -22,7 +22,7 @@ class ConfigFile():
 
       main_section = 'OP_CONFIG'
       logging_section = 'LOGGING'
-      config = ConfigParser.RawConfigParser(allow_no_value=True)
+      config = configparser.RawConfigParser(allow_no_value=True)
       config.add_section(main_section)
       config.add_section(logging_section)
 
@@ -357,7 +357,7 @@ class ConfigFile():
           result = configr.getfloat(section, entry)
         else:
           result = configr.get(section, entry)
-      except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+      except (configparser.NoSectionError, configparser.NoOptionError):
         result = default_value
         updated = True
       config.set(section, entry, result)

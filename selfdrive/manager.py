@@ -561,29 +561,11 @@ def main():
   if params.get("Passive") is None:
     raise Exception("Passive must be set to continue")
 
-<<<<<<< HEAD
-  # put something on screen while we set things up
-  if os.getenv("PREPAREONLY") is not None:
-    spinner_proc = None
-  else:
-    spinner_text = "chffrplus" if params.get("Passive")=="1" else "openpilot"
-    spinner_proc = subprocess.Popen(["./spinner", "Loading %s"%spinner_text],
-      cwd=os.path.join(BASEDIR, "selfdrive", "ui", "spinner"),
-      close_fds=True)
-  try:
-    manager_update()
-    manager_init()
-    manager_prepare()
-  finally:
-    if spinner_proc:
-      spinner_proc.terminate()
-=======
   with Spinner() as spinner:
       spinner.update("0") # Show progress bar
       manager_update()
       manager_init()
       manager_prepare(spinner)
->>>>>>> cf80f7a28bc737f50e096b21dea2dd2d6d4a1621
 
   if os.getenv("PREPAREONLY") is not None:
     return
@@ -596,7 +578,7 @@ def main():
   except Exception:
     traceback.print_exc()
     crash.capture_exception()
-    print "EXIT ON EXCEPTION"
+    print ("EXIT ON EXCEPTION")
   finally:
     cleanup_all_processes(None, None)
 

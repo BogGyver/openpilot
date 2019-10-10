@@ -45,7 +45,7 @@ class UIButtons:
             return file_matches
         else:
             #we don't have all the data, ignore
-            print "labels file is bad"
+            print ("labels file is bad")
             return False
 
 
@@ -67,7 +67,7 @@ class UIButtons:
                 self.btns[i].btn_status = ord(indata[i]) - 48
         else:
             #something wrong with the file
-            print "status file is bad"
+            print ("status file is bad")
 
     def send_button_info(self):
         if self.isLive:
@@ -110,10 +110,10 @@ class UIButtons:
         self.btns = []
         try:
             self.CS.init_ui_buttons()
-            print "Buttons iniatlized with custom CS code"  
+            print ("Buttons iniatlized with custom CS code")  
         except AttributeError:
             # no init method
-            print "Buttons iniatlized with just base code"
+            print ("Buttons iniatlized with just base code")
         for i in range(0,len(self.CS.btns_init)):
             self.btns.append(UIButton(self.CS.btns_init[i][0],self.CS.btns_init[i][1],1,self.CS.btns_init[i][2][0],i))
 
@@ -197,4 +197,4 @@ class UIButtons:
             self.CS.update_ui_buttons(id,btn_status)
         except AttributeError:
             # no update method
-            print "Buttons updated with just base code"
+            print ("Buttons updated with just base code")

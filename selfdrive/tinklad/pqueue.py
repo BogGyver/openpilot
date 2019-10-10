@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3.7
 
 # 
 # https://github.com/balena/python-pqueue
@@ -13,10 +13,8 @@ import pickle
 import tempfile
 import shutil
 
-#python 2.7:
-from Queue import Queue as SyncQ
-#python 3:
-#from queue import Queue as SyncQ
+
+from queue import Queue as SyncQ
 
 
 def _truncate(fn, length):

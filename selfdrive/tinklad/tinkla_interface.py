@@ -1,10 +1,11 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3.7
 
 from cereal import tinkla
 import os
 import zmq
 import datetime
-import tinklad
+#import tinklad
+from selfdrive.tinklad.tinklad import TinklaInterfaceEventCategoryKeys, TinklaInterfaceMessageKeys, TinklaInterfaceActions
 import time
 
 ## For helpers:
@@ -24,9 +25,9 @@ class TinklaClient():
     lastCanErrorTimestamp = 0
     lastProcessErrorTimestamp = 0
 
-    eventCategoryKeys = tinklad.TinklaInterfaceEventCategoryKeys()
-    messageTypeKeys = tinklad.TinklaInterfaceMessageKeys()
-    actions = tinklad.TinklaInterfaceActions()
+    eventCategoryKeys = TinklaInterfaceEventCategoryKeys()
+    messageTypeKeys = TinklaInterfaceMessageKeys()
+    actions = TinklaInterfaceActions()
 
     # Configurable:
     # Note: If throttling, events are dropped

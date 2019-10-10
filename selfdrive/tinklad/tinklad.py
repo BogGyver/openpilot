@@ -1,9 +1,9 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3.7
 
 import zmq
 import cereal
-from pqueue import Queue
-from airtable_publisher import Publisher
+from selfdrive.tinklad.pqueue import Queue
+from selfdrive.tinklad.airtable_publisher import Publisher
 import requests
 import time
 import os 
@@ -11,13 +11,13 @@ import os
 LOG_PREFIX = "tinklad: "
 
 # This needs to match tinkla.capnp message keys
-class TinklaInterfaceMessageKeys():
+class TinklaInterfaceMessageKeys:
     userInfo = 'userInfo'
     event = 'event'
     action = 'action'
 
 # This needs to match tinkla.capnp event category keys
-class TinklaInterfaceEventCategoryKeys():
+class TinklaInterfaceEventCategoryKeys:
     general = 'general'
     userAction = 'userAction'
     openPilotAction = 'openPilotAction'
@@ -26,7 +26,7 @@ class TinklaInterfaceEventCategoryKeys():
     processCommError = 'processCommError'
     other = 'other'
 
-class TinklaInterfaceActions():
+class TinklaInterfaceActions:
     attemptToSendPendingMessages = 'attemptToSendPendingMessages'
 
 class Cache():

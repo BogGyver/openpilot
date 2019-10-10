@@ -1,4 +1,4 @@
-import ConfigParser
+import configparser
 
 config_path = '/data/honda_openpilot.cfg'
 config_file_r = 'r'
@@ -6,13 +6,13 @@ config_file_w = 'wb'
 
 def read_config_file(CS):
     file_changed = False
-    configr = ConfigParser.ConfigParser()
+    configr = configparser.ConfigParser()
     try:
       configr.read(config_path)
     except:
       file_changed = True
-      print "no config file, creating with defaults..."
-    config = ConfigParser.RawConfigParser()
+      print ("no config file, creating with defaults...")
+    config = configparser.RawConfigParser()
     config.add_section('OP_CONFIG')
     
       

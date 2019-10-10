@@ -122,7 +122,7 @@ def fingerprint(logcan, sendcan, has_relay):
     
     
     if (car_fingerprint is None) and CarSettings().forceFingerprintTesla:
-          print "Fingerprinting Failed: Returning Tesla (based on branch)"
+          print ("Fingerprinting Failed: Returning Tesla (based on branch)")
           car_fingerprint = "TESLA MODEL S"
           vin = "TESLAFAKEVIN12345"
 

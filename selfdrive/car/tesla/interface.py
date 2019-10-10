@@ -7,7 +7,6 @@ from selfdrive.controls.lib.drive_helpers import create_event, EventTypes as ET,
 from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.car.tesla.carstate import CarState, get_can_parser, get_epas_parser, get_pedal_parser
 from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR,DBC
-from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V_FOLLOWING
 from common.params import read_db
 from selfdrive.car import STD_CARGO_KG
 from selfdrive.car.tesla.readconfig import CarSettings
@@ -84,7 +83,7 @@ class CarInterface():
     # accelOverride is more or less the max throttle allowed to pcm: usually set to a constant
     # unless aTargetMax is very high and then we scale with it; this help in quicker restart
 
-    return float(max(0.714, a_target / max(_A_CRUISE_MAX_V_FOLLOWING))) * min(speedLimiter, accelLimiter)
+    return float(max(max_accel, a_target / A_ACC_MAX)) * min(speedLimiter, accelLimiter)
 
   @staticmethod
   def get_params(candidate, fingerprint, vin="", is_panda_black=False):
@@ -108,8 +107,8 @@ class CarInterface():
 
     ret.enableCamera = True
     ret.enableGasInterceptor = False #keep this False for now
-    print "ECU Camera Simulated: ", ret.enableCamera
-    print "ECU Gas Interceptor: ", ret.enableGasInterceptor
+    print ("ECU Camera Simulated: ", ret.enableCamera)
+    print ("ECU Gas Interceptor: ", ret.enableGasInterceptor)
 
     ret.enableCruise = not ret.enableGasInterceptor
 
@@ -431,7 +430,7 @@ class CarInterface():
 
       # do enable on both accel and decel buttons
       if b.type == "altButton3" and not b.pressed:
-        print "enabled pressed at", cur_time
+        print ("enabled pressed at", cur_time)
         self.last_enable_pressed = cur_time
         enable_pressed = True
 

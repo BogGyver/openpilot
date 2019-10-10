@@ -120,7 +120,6 @@ def handle_fan(max_cpu_temp, bat_temp, fan_speed):
   return fan_speed
 
 
-<<<<<<< HEAD
 def check_car_battery_voltage(should_start, health, charging_disabled, msg, limitBatteryMinMax, batt_min, batt_max):
 
   # charging disallowed if:
@@ -141,8 +140,6 @@ def check_car_battery_voltage(should_start, health, charging_disabled, msg, limi
   return charging_disabled
 
 
-=======
->>>>>>> cf80f7a28bc737f50e096b21dea2dd2d6d4a1621
 def thermald_thread():
 
   # if limitting battery to Min-Max%. edit /data/bb_openpilot.cfg
@@ -323,24 +320,17 @@ def thermald_thread():
          started_seen and (sec_since_boot() - off_ts) > 60:
         os.system('LD_LIBRARY_PATH="" svc power shutdown')
 
-<<<<<<< HEAD
     charging_disabled = check_car_battery_voltage(should_start, health, charging_disabled, msg, limitBatteryMinMax, batt_min, batt_max)
 
     msg.thermal.chargingDisabled = charging_disabled
     #BB added "and not charging_disabled" below so we don't show red LED when not charging
     msg.thermal.chargingError = (current_filter.x > 0.) and (msg.thermal.batteryPercent < 90) and not charging_disabled   # if current is > 1A out, then charger might be off
      
-=======
-    msg.thermal.chargingError = current_filter.x > 0. and msg.thermal.batteryPercent < 90  # if current is positive, then battery is being discharged
->>>>>>> cf80f7a28bc737f50e096b21dea2dd2d6d4a1621
     msg.thermal.started = started_ts is not None
     msg.thermal.startedTs = int(1e9*(started_ts or 0))
 
     msg.thermal.thermalStatus = thermal_status
     thermal_sock.send(msg.to_bytes())
-<<<<<<< HEAD
-    #print msg
-=======
 
     if usb_power_prev and not usb_power:
       params.put("Offroad_ChargeDisabled", json.dumps(OFFROAD_ALERTS["Offroad_ChargeDisabled"]))
@@ -351,7 +341,6 @@ def thermald_thread():
     usb_power_prev = usb_power
 
     print(msg)
->>>>>>> cf80f7a28bc737f50e096b21dea2dd2d6d4a1621
 
     # report to server once per minute
     if (count % int(60. / DT_TRML)) == 0:

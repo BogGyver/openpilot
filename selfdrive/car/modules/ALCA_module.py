@@ -175,7 +175,7 @@ class ALCAController():
       if CS.left_blinker_on:
         laneChange_direction = -1
 
-      if (self.laneChange_enabled > 1) and (self.laneChange_direction <> laneChange_direction):
+      if (self.laneChange_enabled > 1) and (self.laneChange_direction != laneChange_direction):
         # something is not right; signal in oposite direction; cancel
         CS.UE.custom_alert_message(3,"Auto Lane Change Canceled! (s)",200,5)
         self.laneChange_cancelled = True
@@ -289,7 +289,7 @@ class ALCAModelParser():
 
   def debug_alca(self,message):
     if ALCA_DEBUG:
-      print message
+      print (message)
 
   def send_state(self):
     alca_state = tesla.ALCAState.new_message()

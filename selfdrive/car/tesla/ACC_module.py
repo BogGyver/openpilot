@@ -352,11 +352,11 @@ class ACCController():
       ratio = 0
       if safe_dist_m > 0:
         ratio = (lead_dist_m / safe_dist_m) * 100
-      print "Ratio: {0:.1f}%  lead: {1:.1f}m  avail: {2:.1f}kph  vRel: {3:.1f}kph  Angle: {4:.1f}deg".format(
-        ratio, lead_dist_m, available_speed_kph, lead_car.vRel * CV.MS_TO_KPH, CS.angle_steers)
+      print ("Ratio: {0:.1f}%  lead: {1:.1f}m  avail: {2:.1f}kph  vRel: {3:.1f}kph  Angle: {4:.1f}deg".format(
+        ratio, lead_dist_m, available_speed_kph, lead_car.vRel * CV.MS_TO_KPH, CS.angle_steers))
       self.last_update_time = current_time_ms
       if msg != None:
-        print "ACC: " + msg
+        print ("ACC: " + msg)
     return button
     
   def _should_autoengage_cc(self, CS, lead_car=None):
