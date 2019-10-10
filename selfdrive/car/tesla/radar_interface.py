@@ -1,11 +1,12 @@
 #!/usr/bin/env python
-from cereal import car,tesla
-import time
 import os
+import time
+from cereal import car, tesla
 from selfdrive.can.parser import CANParser
-from common.realtime import sec_since_boot
+from common.realtime import DT_RDR
 from selfdrive.services import service_list
 import selfdrive.messaging as messaging
+from selfdrive.car.interfaces import RadarInterfaceBase
 from selfdrive.car.tesla.readconfig import CarSettings
 from selfdrive.tinklad.tinkla_interface import TinklaClient
 
@@ -49,7 +50,7 @@ def _create_radard_can_parser():
   return CANParser(os.path.splitext(dbc_f)[0], signals, checks, 1)
 
 
-class RadarInterface(object):
+class RadarInterface(RadarInterfaceBase):
 
   tinklaClient = TinklaClient()
 
@@ -82,9 +83,6 @@ class RadarInterface(object):
     if not self.useTeslaRadar:
       time.sleep(0.05)
       return car.RadarData.new_message(),self.extPts.values()
-
-
-    tm = int(sec_since_boot() * 1e9)
     if can_strings != None:
       vls = self.rcp.update_strings(can_strings)
       self.updated_messages.update(vls)

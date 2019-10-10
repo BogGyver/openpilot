@@ -33,8 +33,7 @@ selfdrive/logcatd/logcatd
 selfdrive/mapd/default_speeds_by_region.json
 selfdrive/proclogd/proclogd
 selfdrive/ui/ui
-selfdrive/test/tests/plant/out
-openpilot_tools/
+selfdrive/test/longitudinal_maneuvers/out
 selfdrive/visiond/visiond
 selfdrive/loggerd/loggerd
 selfdrive/sensord/gpsd

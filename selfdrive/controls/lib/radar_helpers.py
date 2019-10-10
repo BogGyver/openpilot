@@ -21,7 +21,8 @@ _VLEAD_C = [1.0, 0.0]
 #_VLEAD_K = np.matrix([[ 0.05705578], [ 0.03073241]])
 _VLEAD_K = [[0.1988689], [0.28555364]]
 
-class Track(object):
+
+class Track():
   def __init__(self):
     self.ekf = None
     self.cnt = 0
@@ -79,7 +80,7 @@ def mean(l):
   return sum(l) / len(l)
 
 
-class Cluster(object):
+class Cluster():
   def __init__(self,use_tesla_radar):
     self.tracks = set()
     #BB frame delay for dRel calculation, in seconds

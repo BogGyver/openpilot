@@ -78,7 +78,7 @@ HUDData = namedtuple("HUDData",
 
 
 
-class CarController(object):
+class CarController():
   def __init__(self, dbc_name):
     self.alcaStateData = None
     self.icLeadsData = None

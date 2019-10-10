@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
 import os
 import time
 from selfdrive.locationd.test import ublox
@@ -30,29 +31,26 @@ def main(gctx=None):
         logs = messaging.drain_sock(sock)
         for log in logs:
           buff = log.ubloxRaw
-          ttime = log.logMonoTime
+          time = log.logMonoTime
           msg = ublox.UBloxMessage()
           msg.add(buff)
           if msg.valid():
             if msg.name() == 'NAV_PVT':
               sol = gen_solution(msg)
               if unlogger:
-                sol.logMonoTime = ttime
+                sol.logMonoTime = time
               else:
                 sol.logMonoTime = int(realtime.sec_since_boot() * 1e9)
               gpsLocationExternal.send(sol.to_bytes())
             elif msg.name() == 'RXM_RAW':
               raw = gen_raw(msg)
               if unlogger:
-                raw.logMonoTime = ttime
+                raw.logMonoTime = time
               else:
                 raw.logMonoTime = int(realtime.sec_since_boot() * 1e9)
               ubloxGnss.send(raw.to_bytes())
           else:
-            print "INVALID MESSAGE"
-  else:
-    while True:
-      time.sleep(1.1)
+            print("INVALID MESSAGE")
 
 
 if __name__ == "__main__":

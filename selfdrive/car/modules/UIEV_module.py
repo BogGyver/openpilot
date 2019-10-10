@@ -4,7 +4,7 @@ import selfdrive.messaging as messaging
 from selfdrive.services import service_list
 import zmq
 
-class UIEvents(object):
+class UIEvents():
     def __init__(self,carstate):
         self.CS = carstate
         self.buttons_poller = zmq.Poller()

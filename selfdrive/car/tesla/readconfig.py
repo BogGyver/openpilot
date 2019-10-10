@@ -2,7 +2,7 @@ import ConfigParser
 
 default_config_file_path = '/data/bb_openpilot.cfg'
 
-class ConfigFile(object):
+class ConfigFile():
   config_file_r = 'r'
   config_file_w = 'wb'
 
@@ -369,7 +369,7 @@ class ConfigFile(object):
       updated = (prev_file_contents.find(new_comment) == -1)
       return updated
 
-class CarSettings(object):
+class CarSettings():
 
   userHandle = None
   forceFingerprintTesla = None

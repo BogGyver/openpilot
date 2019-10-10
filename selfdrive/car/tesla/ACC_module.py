@@ -8,7 +8,7 @@ import zmq
 from selfdrive.car.tesla.movingaverage import MovingAverage
  
 
-class ACCState(object):
+class ACCState():
   # Possible states of the ACC system, following the DI_cruiseState naming
   # scheme.
   OFF = 0         # Disabled by UI.
@@ -16,14 +16,14 @@ class ACCState(object):
   ENABLED = 2     # Engaged.
   NOT_READY = 9   # Not ready to be engaged due to the state of the car.
   
-class _Mode(object):
+class _Mode():
   def __init__(self, label, autoresume, state):
     self.label = label
     self.autoresume = autoresume
     self.state = state
     self.next = None
   
-class ACCMode(object):
+class ACCMode():
   # Possible ACC modes, controlling how ACC behaves.
   # This is separate from ACC state. For example, you could
   # have ACC in "Autoresume" mode in "Standby" state.
@@ -52,7 +52,7 @@ def _current_time_millis():
   return int(round(time.time() * 1000))
 
 
-class ACCController(object):
+class ACCController():
   
   # Tesla cruise only functions above 17 MPH
   MIN_CRUISE_SPEED_MS = 17.1 * CV.MPH_TO_MS

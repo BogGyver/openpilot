@@ -6,7 +6,7 @@ import readconfig
 from selfdrive.car.tesla.readconfig import read_config_file, CarSettings
 
 
-class CarSettingsTestClass(object):
+class CarSettingsTestClass():
   forcePedalOverCC = None
   fix1916 = None
 

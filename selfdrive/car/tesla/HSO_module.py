@@ -7,7 +7,7 @@ TIME_REMEMBER_LAST_BLINKER = 70 # in 0.01 seconds
 def _current_time_millis():
   return int(round(time.time() * 1000))
 
-class HSOController(object):
+class HSOController():
     def __init__(self,carcontroller):
         self.CC = carcontroller
         self.frame_humanSteered = 0

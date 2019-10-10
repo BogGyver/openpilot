@@ -195,7 +195,7 @@ def get_pedal_parser(CP):
   signals, checks = get_pedal_can_signals(CP)
   return CANParser(DBC[CP.carFingerprint]['pt']+"_pedal", signals, checks, 2)
 
-class CarState(object):
+class CarState():
   def __init__(self, CP):
     self.speed_control_enabled = 0
     self.CL_MIN_V = 8.9
@@ -670,7 +670,7 @@ class CarState(object):
 # carstate standalone tester
 if __name__ == '__main__':
 
-  class CarParams(object):
+  class CarParams():
     def __init__(self):
       self.carFingerprint = "TESLA MODEL S"
       self.enableCruise = 0

@@ -24,7 +24,7 @@ def tesla_compute_gb(accel, speed):
   return float(accel) / 3.
 
 
-class CarInterface(object):
+class CarInterface():
   def __init__(self, CP, CarController):
     self.CP = CP
 

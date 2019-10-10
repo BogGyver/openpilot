@@ -49,7 +49,7 @@ MIN_CAN_SPEED = 0.3  #TODO: parametrize this in car interface
 # Pull the cruise stalk twice in this many ms for a 'double pull'
 STALK_DOUBLE_PULL_MS = 750
 
-class Mode(object):
+class Mode():
   label = None
 
 class OpMode(Mode):
@@ -58,7 +58,7 @@ class OpMode(Mode):
 class FollowMode(Mode):
   label = 'FOLLOW'
   
-class PCCModes(object):
+class PCCModes():
   _all_modes = [OpMode(), FollowMode()]
   _mode_map = {mode.label : mode for mode in _all_modes}
   BUTTON_NAME = 'pedal'
@@ -109,7 +109,7 @@ def max_v_in_mapped_curve_ms(map_data, pedal_set_speed_kph):
 
 
 
-class PCCState(object):
+class PCCState():
   # Possible state of the ACC system, following the DI_cruiseState naming
   # scheme.
   OFF = 0         # Disabled by UI.
@@ -123,7 +123,7 @@ def _current_time_millis():
 
 
 #this is for the pedal cruise control
-class PCCController(object):
+class PCCController():
   def __init__(self,carcontroller):
     self.CC = carcontroller
     self.human_cruise_action_time = 0
