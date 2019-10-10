@@ -142,10 +142,10 @@ def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, coll
   msg = create_string_buffer(msg_len)
   units_included = 1
   c_apply_steer = int(((int( apply_angle * 10 + 0x4000 )) & 0x7FFF) + (enable_steer_control << 15))
-  struct.pack_into('BBBBBBBB', msg, 0,(speed_control_enabled << 7) + (speed_override << 6) + (apUnavailable << 5) + (collision_warning << 4) + op_status, \
-      acc_speed_kph, \
-      (turn_signal_needed << 6) + (units_included << 5) + (forward_collission_warning << 4) + hands_on_state, \
-      (cc_state << 6) + (pedal_state << 5) + alca_state, \
+  struct.pack_into('BBBBBBBB', msg, 0,int((speed_control_enabled << 7) + (speed_override << 6) + (apUnavailable << 5) + (collision_warning << 4) + op_status), \
+      int(acc_speed_kph), \
+      int((turn_signal_needed << 6) + (units_included << 5) + (forward_collission_warning << 4) + hands_on_state), \
+      int((cc_state << 6) + (pedal_state << 5) + alca_state), \
       int(acc_speed_limit_mph),
       int(legal_speed_limit),
       int(c_apply_steer & 0xFF),
