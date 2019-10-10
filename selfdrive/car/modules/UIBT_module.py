@@ -34,12 +34,12 @@ class UIButtons:
             for i in range(0, len(indata), btn_msg_len):
                 j = int(i/btn_msg_len)
                 name,label,label2 = struct.unpack(btn_msg_struct, indata[i:i+btn_msg_len]) 
-                if self.btns[j].btn_name == name: #.rstrip("\0"):
+                if self.btns[j].btn_name == name.decode('utf8').rstrip("\0"):
                     file_matches = True
-                    self.btns[j].btn_label = label #.rstrip("\0")
+                    self.btns[j].btn_label = label.decode('utf8').rstrip("\0")
                     #check if label is actually a valid option
                     if label2 in self.CS.btns_init[j][2]:
-                        self.btns[j].btn_label2 = label2 #.rstrip("\0")
+                        self.btns[j].btn_label2 = label2.decode('utf8').rstrip("\0")
                     else:
                         self.btns[j].btn_label2 = self.CS.btns_init[j][2][0]
             return file_matches
@@ -64,7 +64,7 @@ class UIButtons:
         fi.close()
         if len(indata) == 6:
             for i in range(0,len(indata)):
-                self.btns[i].btn_status = ord(indata[i]) - 48
+                self.btns[i].btn_status = (indata[i]) - 48
         else:
             #something wrong with the file
             print ("status file is bad")
