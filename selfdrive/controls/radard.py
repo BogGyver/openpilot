@@ -64,7 +64,7 @@ def get_rrext_by_trackId(rrext,trackId):
         return p
   return None
 
-def get_lead(v_ego, ready, clusters, lead_msg, low_speed_override=True):
+def get_lead(v_ego, ready, clusters, lead_msg, low_speed_override=True,use_tesla_radar=False):
   # Determine leads, this is where the essential logic happens
   if len(clusters) > 0 and ready and lead_msg.prob > .5:
     cluster = match_vision_to_cluster(v_ego, lead_msg, clusters)
@@ -76,7 +76,7 @@ def get_lead(v_ego, ready, clusters, lead_msg, low_speed_override=True):
   if cluster is not None:
     lead_dict,lead_dict_ext = cluster.get_RadarState(lead_msg.prob)
   elif (cluster is None) and ready and (lead_msg.prob > .5):
-    lead_dict = Cluster().get_RadarState_from_vision(lead_msg, v_ego)
+    lead_dict = Cluster(use_tesla_radar).get_RadarState_from_vision(lead_msg, v_ego)
 
   if low_speed_override:
     low_speed_clusters = [c for c in clusters if c.potential_low_speed_lead(v_ego)]
@@ -229,7 +229,7 @@ class RadarD():
         ll_cluster_idxs = cluster_points_centroid(ll_track_pts, 2.5)
         ll_clusters = [None] * (max(ll_cluster_idxs) + 1)
 
-        for idx in xrange(len(ll_track_pts)):
+        for idx in range(len(ll_track_pts)):
           ll_cluster_i = ll_cluster_idxs[idx]
 
           if ll_clusters[ll_cluster_i] == None:
@@ -284,7 +284,7 @@ class RadarD():
         rl_cluster_idxs = cluster_points_centroid(rl_track_pts, 2.5)
         rl_clusters = [None] * (max(rl_cluster_idxs) + 1)
 
-        for idx in xrange(len(rl_track_pts)):
+        for idx in range(len(rl_track_pts)):
           rl_cluster_i = rl_cluster_idxs[idx]
 
           if rl_clusters[rl_cluster_i] == None:
@@ -349,8 +349,8 @@ class RadarD():
     l1x = tesla.TeslaLeadPoint.new_message()
     l2x = tesla.TeslaLeadPoint.new_message()
     if has_radar:
-      l1d,l1x = get_lead(self.v_ego, self.ready, clusters, sm['model'].lead, low_speed_override=True)
-      l2d,l2x = get_lead(self.v_ego, self.ready, clusters, sm['model'].leadFuture, low_speed_override=False)
+      l1d,l1x = get_lead(self.v_ego, self.ready, clusters, sm['model'].lead, low_speed_override=True,use_tesla_radar=self.use_tesla_radar)
+      l2d,l2x = get_lead(self.v_ego, self.ready, clusters, sm['model'].leadFuture, low_speed_override=False, use_tesla_radar=self.use_tesla_radar)
       dat.radarState.leadOne = l1d
       dat.radarState.leadTwo = l2d
     
