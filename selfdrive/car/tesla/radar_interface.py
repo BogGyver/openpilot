@@ -165,7 +165,7 @@ class RadarInterface(RadarInterfaceBase):
           else:
             self.extPts[message].objectClass = 1
 
-    ret.points = self.pts.values()
+    ret.points = list(self.pts.values())
     errors = []
     if not self.rcp.can_valid:
       errors.append("canError")

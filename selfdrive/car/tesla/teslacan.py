@@ -31,7 +31,7 @@ def add_tesla_crc(msg,msg_len):
 
 def add_tesla_checksum(msg_id,msg):
  """Calculates the checksum for the data part of the Tesla message"""
- checksum = ((msg_id) & 0xFF) + ((msg_id >> 8) & 0xFF)
+ checksum = ((msg_id) & 0xFF) + int((msg_id >> 8) & 0xFF)
  for i in range(0,len(msg),1):
   checksum = (checksum + ord(msg[i])) & 0xFF
  return checksum
@@ -52,8 +52,8 @@ def create_pedal_command_msg(accelCommand, enable, idx):
     int_accelCommand = 0
     int_accelCommand2 = 0
   msg = create_string_buffer(msg_len)
-  struct.pack_into('BBBBB', msg, 0, (int_accelCommand >> 8) & 0xFF, int_accelCommand & 0xFF, \
-      (int_accelCommand2 >> 8) & 0xFF, int_accelCommand2 & 0XFF,((enable << 7) + idx) & 0xFF)
+  struct.pack_into('BBBBB', msg, 0, int((int_accelCommand >> 8) & 0xFF), int_accelCommand & 0xFF, \
+      int((int_accelCommand2 >> 8) & 0xFF), int_accelCommand2 & 0XFF,((enable << 7) + idx) & 0xFF)
   struct.pack_into('B', msg, msg_len-1, add_tesla_checksum(msg_id,msg))
   return [msg_id, 0, msg.raw, 2]    
 
@@ -76,7 +76,7 @@ def create_radar_VIN_msg(radarId,radarVIN,radarCAN,radarTriggerMessage,useRadar,
   msg_len = 8
   msg = create_string_buffer(msg_len)
   if radarId == 0:
-    struct.pack_into('BBBBBBBB', msg, 0, radarId, radarCAN, useRadar + (radarPosition << 1) + (radarEpasType << 3),((radarTriggerMessage >> 8) & 0xFF),(radarTriggerMessage & 0xFF),ord(radarVIN[0]),ord(radarVIN[1]),ord(radarVIN[2]))
+    struct.pack_into('BBBBBBBB', msg, 0, radarId, radarCAN, useRadar + (radarPosition << 1) + (radarEpasType << 3),int((radarTriggerMessage >> 8) & 0xFF),(radarTriggerMessage & 0xFF),ord(radarVIN[0]),ord(radarVIN[1]),ord(radarVIN[2]))
   if radarId == 1:
     struct.pack_into('BBBBBBBB', msg, 0, radarId, ord(radarVIN[3]), ord(radarVIN[4]),ord(radarVIN[5]),ord(radarVIN[6]),ord(radarVIN[7]),ord(radarVIN[8]),ord(radarVIN[9]))
   if radarId == 2:
@@ -124,9 +124,9 @@ def create_DAS_LR_object_msg(lane,v1Class,v1Id,v1Dx,v1Dy,v1V,v2Class,v2Id,v2Dx,v
     important2 = 0
     v2Class = 0
   struct.pack_into('BBBBBBBB', msg, 0,lane + (v1Class << 3) + (important1 << 7),v1x, v1v + ((v1y << 4) & 0xF0),
-    ((v1y >> 4) & 0x07) + ((v1Id << 3) & 0xF8), ((v1Id >> 5) & 0x03) + (v2Class << 2) +(important2 << 6) + ((v2x << 7) & 0x80),
-    ((v2x >> 1) & 0x7F) + ((v2v << 7) & 0x80), ((v2v >> 1) & 0x07) + ((v2y << 3) & 0xF8),
-    ((v2y >> 5) & 0x03) + ((v2Id << 2) & 0xFC))
+    int((v1y >> 4) & 0x07) + ((v1Id << 3) & 0xF8), int((v1Id >> 5) & 0x03) + (v2Class << 2) +(important2 << 6) + ((v2x << 7) & 0x80),
+    int((v2x >> 1) & 0x7F) + ((v2v << 7) & 0x80), int((v2v >> 1) & 0x07) + ((v2y << 3) & 0xF8),
+    int((v2y >> 5) & 0x03) + ((v2Id << 2) & 0xFC))
   return [msg_id, 0, msg.raw, 0]
 
 def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, collision_warning, op_status, \
@@ -149,7 +149,7 @@ def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, coll
       acc_speed_limit_mph,
       legal_speed_limit,
       c_apply_steer & 0xFF,
-      (c_apply_steer >> 8) & 0xFF)
+      int((c_apply_steer >> 8) & 0xFF))
   return [msg_id, 0, msg.raw, 0]
 
 def create_fake_DAS_obj_lane_msg(leadDx,leadDy,leadClass,rLine,lLine,curv0,curv1,curv2,curv3,laneRange,laneWidth):
@@ -185,8 +185,8 @@ def create_fake_DAS_sign_msg(roadSignType,roadSignStopDist,roadSignColor,roadSig
   source = 0x02 #vision
   roadSignStopDist_t = (((roadSignStopDist + 20) / 0.2) & 0x3FF)
   sign1 = ((roadSignType & 0x03) << 6) +(roadSignColor << 3) + 0x04
-  sign2 = ((roadSignStopDist_t & 0x03) << 6) + (roadSignType >> 2)
-  sign3 = (roadSignStopDist_t >> 2)
+  sign2 = ((roadSignStopDist_t & 0x03) << 6) + int((roadSignType >> 2) & 0xFF)
+  sign3 = int(roadSignStopDist_t >> 2)
   sign4 = (orientation << 6) + (arrow << 3) + (source << 1) + roadSignControlActive
   msg = create_string_buffer(msg_len)
   struct.pack_into('BBBB',msg ,0 , sign1,sign2,sign3,sign4)

@@ -138,7 +138,7 @@ class RadarInterface(object):
           if ii in self.pts:
             del self.pts[ii]
 
-    ret.points = self.pts.values()
+    ret.points = list(self.pts.values())
     return ret
 
 
