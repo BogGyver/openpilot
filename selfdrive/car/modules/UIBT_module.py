@@ -34,14 +34,18 @@ class UIButtons:
             for i in range(0, len(indata), btn_msg_len):
                 j = int(i/btn_msg_len)
                 name,label,label2 = struct.unpack(btn_msg_struct, indata[i:i+btn_msg_len]) 
-                if self.btns[j].btn_name == name.decode('utf8').rstrip("\0"):
+                if self.btns[j].btn_name.rstrip("\0") == name.decode('utf8').rstrip("\0"):
                     file_matches = True
                     self.btns[j].btn_label = label.decode('utf8').rstrip("\0")
                     #check if label is actually a valid option
-                    if label2 in self.CS.btns_init[j][2]:
+                    if label2.decode('utf8').rstrip("\0") in self.CS.btns_init[j][2]:
                         self.btns[j].btn_label2 = label2.decode('utf8').rstrip("\0")
+                        print (self.btns[j].btn_name," label2: using last value from file")
                     else:
                         self.btns[j].btn_label2 = self.CS.btns_init[j][2][0]
+                        print (self.btns[j].btn_name," label2: using default value")
+                else:
+                    print(self.btns[j].btn_name," label does not match, using default")
             return file_matches
         else:
             #we don't have all the data, ignore
