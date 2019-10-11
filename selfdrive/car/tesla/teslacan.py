@@ -261,7 +261,7 @@ def create_cruise_adjust_msg(spdCtrlLvr_stat, turnIndLvr_Stat, real_steering_whe
                    (fake_stalk['SpdCtrlLvr_Stat']) +
                    (int(round(fake_stalk['VSL_Enbl_Rq'])) << 6))
   # Set the 2nd byte, containing DTR_Dist_Rq
-  struct.pack_into('B', msg, 1,  fake_stalk['DTR_Dist_Rq'])
+  struct.pack_into('B', msg, 1,  int(fake_stalk['DTR_Dist_Rq']))
   # Set the 3rd byte, containing turn indicator, highbeams, and wiper wash
   struct.pack_into('B', msg, 2,
                    int(round(fake_stalk['TurnIndLvr_Stat'])) +
@@ -276,7 +276,7 @@ def create_cruise_adjust_msg(spdCtrlLvr_stat, turnIndLvr_Stat, real_steering_whe
   
   # Finally, set the CRC for the message. Must be calculated last!
   fake_stalk['CRC_STW_ACTN_RQ'] = add_tesla_crc(msg=msg, msg_len=7)
-  struct.pack_into('B', msg, msg_len-1, fake_stalk['CRC_STW_ACTN_RQ'])
+  struct.pack_into('B', msg, msg_len-1, int(fake_stalk['CRC_STW_ACTN_RQ']))
 
   return [msg_id, 0, msg.raw, 0]
 

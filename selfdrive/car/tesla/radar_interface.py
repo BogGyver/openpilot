@@ -174,7 +174,7 @@ class RadarInterface(RadarInterfaceBase):
     else:
       self.canErrorCounter = 0
     #BB: Only trigger canError for 3 consecutive errors
-    if self.canErrorCounter > 2:
+    if self.canErrorCounter > 9:
       ret.errors = errors
     else:
       ret.errors = []
