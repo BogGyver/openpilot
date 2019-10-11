@@ -180,7 +180,8 @@ class PCCController():
 
   def max_v_by_speed_limit(self,pedal_set_speed_ms ,speed_limit_ms, CS):
     # if more than 10 kph / 2.78 ms, consider we have speed limit
-    if (CS.maxdrivespeed > 0)  and CS.useTeslaMapData and (CS.mapAwareSpeed or (CS.baseMapSpeedLimitMPS <2.7)):
+    # if the difference is more than 20 MPH, ignore the speed limit as it is probably wrong (an overpass' speed instead of the current road)
+    if ((CS.maxdrivespeed > 0) and CS.useTeslaMapData and (CS.mapAwareSpeed or (CS.baseMapSpeedLimitMPS <2.7)) and ((pedal_set_speed_ms-speed_limit_ms) < 46.3)):
       #do we know the based speed limit?
       sl1 = 0.
       if CS.baseMapSpeedLimitMPS >= 2.7:

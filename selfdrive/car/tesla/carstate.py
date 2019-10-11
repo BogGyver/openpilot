@@ -240,7 +240,7 @@ class CarState():
     self.radarEpasType = 0
     self.fix1916 = False
     self.forceFingerprintTesla = False
-    self.eonToFront = 0.9
+    self.eonToFront = 0.1
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
