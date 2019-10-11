@@ -241,6 +241,7 @@ class CarState():
     self.fix1916 = False
     self.forceFingerprintTesla = False
     self.eonToFront = 0.1
+    self.spinnerText = ""
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

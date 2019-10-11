@@ -8,7 +8,7 @@ class ConfigFile():
 
   ### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
   def read(self, into, config_path):
-      configr = configparser.ConfigParser()
+      configr = configparser.RawConfigParser()
       file_changed = False
 
       try:
@@ -317,6 +317,15 @@ class ConfigFile():
         comment = 'Set this setting to False if you do not want OP to autoupdate every time you reboot and there is a change on the repo'
       )
       file_changed |= didUpdate
+      
+      #spiner_text -> spinnerText
+      into.spinnerText, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = main_section,
+        entry = 'spinner_text', entry_type = str,
+        default_value = '%d',
+        comment = 'The text that is shown for the spinner when spawning the managed services.'
+      )
+      file_changed |= didUpdate
 
       into.shouldLogCanErrors, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = logging_section,
@@ -403,6 +412,7 @@ class CarSettings():
   radarPosition = None
   fix1916 = None
   doAutoUpdate = None
+  spinnerText = None
   shouldLogProcessCommErrors = None
   shouldLogCanErrors = None
 

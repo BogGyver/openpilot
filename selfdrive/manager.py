@@ -471,13 +471,14 @@ def manager_update():
 def manager_prepare(spinner=None):
   # build cereal first
   subprocess.check_call(["make", "-j4"], cwd=os.path.join(BASEDIR, "cereal"))
-
+  carSettings = CarSettings()
   # build all processes
   os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
   for i, p in enumerate(managed_processes):
     if spinner is not None:
-      spinner.update("%d" % (100.0 * (i + 1) / len(managed_processes),))
+      spinText = carSettings.spinnerText
+      spinner.update(spinText % (100.0 * (i + 1) / len(managed_processes),))
     prepare_managed_process(p)
 
 def uninstall():
