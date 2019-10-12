@@ -393,9 +393,9 @@ class ACCController():
     
   def _seconds_to_collision(self, CS, lead_car):
     if not lead_car or not lead_car.dRel:
-      return sys.maxint
+      return sys.maxsize
     elif lead_car.vRel >= 0:
-      return sys.maxint
+      return sys.maxsize
     return abs(float(lead_car.dRel) / lead_car.vRel)
     
   def _get_cc_units_kph(self, is_imperial_units):
