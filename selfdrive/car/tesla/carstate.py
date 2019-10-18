@@ -242,6 +242,7 @@ class CarState():
     self.forceFingerprintTesla = False
     self.eonToFront = 0.1
     self.spinnerText = ""
+    self.enableParamLearner = False
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

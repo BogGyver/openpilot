@@ -327,6 +327,15 @@ class ConfigFile():
       )
       file_changed |= didUpdate
 
+      #enable_param_learner -> enableParamLearner
+      into.enableParamLearner, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = main_section,
+        entry = 'enable_param_learner', entry_type = bool,
+        default_value = False,
+        comment = 'Set this setting to True if you want OP to relearn steering rate automatically or will be using fixed rate when False'
+      )
+      file_changed |= didUpdate
+
       into.shouldLogCanErrors, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = logging_section,
         entry = 'should_log_can_errors', entry_type = bool,
@@ -415,6 +424,7 @@ class CarSettings():
   spinnerText = None
   shouldLogProcessCommErrors = None
   shouldLogCanErrors = None
+  enableParamLearner = None
 
   def __init__(self, optional_config_file_path = default_config_file_path):
     config_file = ConfigFile()

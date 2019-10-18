@@ -134,7 +134,7 @@ class CarInterface():
       ret.mass = mass_models
       ret.wheelbase = wheelbase_models
       ret.centerToFront = centerToFront_models
-      ret.steerRatio = 11.
+      ret.steerRatio = 11.5
       # Kp and Ki for the lateral control for 0, 20, 40, 60 mph
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[1.20, 0.80, 0.60, 0.30], [0.16, 0.12, 0.08, 0.04]]
       ret.lateralTuning.pid.kf = 0.00006 # Initial test value TODO: investigate FF steer control for Model S?
@@ -216,7 +216,7 @@ class CarInterface():
     ret.openpilotLongitudinalControl = True
     ret.steerLimitAlert = False
     ret.startAccel = 0.5
-    ret.steerRateCost = .516673
+    ret.steerRateCost = 0.5
     ret.radarOffCan = not CarSettings().get_value("useTeslaRadar")
 
     return ret

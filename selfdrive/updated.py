@@ -8,10 +8,13 @@ import time
 
 from common.params import Params
 from selfdrive.swaglog import cloudlog
+from selfdrive.car.tesla.readconfig import CarSettings
 
 NICE_LOW_PRIORITY = ["nice", "-n", "19"]
 def main(gctx=None):
   params = Params()
+  carSettings = CarSettings()
+  doAutoUpdate = carSettings.doAutoUpdate
 
   while True:
     # try network
@@ -19,34 +22,34 @@ def main(gctx=None):
     if ping_failed:
       time.sleep(60)
       continue
+    if doAutoUpdate:
+      # download application update
+      try:
+        r = subprocess.check_output(NICE_LOW_PRIORITY + ["git", "fetch"], stderr=subprocess.STDOUT).decode('utf8')
+      except subprocess.CalledProcessError as e:
+        cloudlog.event("git fetch failed",
+          cmd=e.cmd,
+          output=e.output,
+          returncode=e.returncode)
+        time.sleep(60)
+        continue
+      cloudlog.info("git fetch success: %s", r)
 
-    # download application update
-    try:
-      r = subprocess.check_output(NICE_LOW_PRIORITY + ["git", "fetch"], stderr=subprocess.STDOUT).decode('utf8')
-    except subprocess.CalledProcessError as e:
-      cloudlog.event("git fetch failed",
-        cmd=e.cmd,
-        output=e.output,
-        returncode=e.returncode)
-      time.sleep(60)
-      continue
-    cloudlog.info("git fetch success: %s", r)
+      # Write update available param
+      try:
+        cur_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).rstrip()
+        upstream_hash = subprocess.check_output(["git", "rev-parse", "@{u}"]).rstrip()
+        params.put("UpdateAvailable", str(int(cur_hash != upstream_hash)))
+      except:
+        params.put("UpdateAvailable", "0")
 
-    # Write update available param
-    try:
-      cur_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).rstrip()
-      upstream_hash = subprocess.check_output(["git", "rev-parse", "@{u}"]).rstrip()
-      params.put("UpdateAvailable", str(int(cur_hash != upstream_hash)))
-    except:
-      params.put("UpdateAvailable", "0")
-
-    # Write latest release notes to param
-    try:
-      r = subprocess.check_output(["git", "--no-pager", "show", "@{u}:RELEASES.md"])
-      r = r[:r.find(b'\n\n')] # Slice latest release notes
-      params.put("ReleaseNotes", r + b"\n")
-    except:
-      params.put("ReleaseNotes", "")
+      # Write latest release notes to param
+      try:
+        r = subprocess.check_output(["git", "--no-pager", "show", "@{u}:RELEASES.md"])
+        r = r[:r.find(b'\n\n')] # Slice latest release notes
+        params.put("ReleaseNotes", r + b"\n")
+      except:
+        params.put("ReleaseNotes", "")
 
     t = datetime.datetime.now().isoformat()
     params.put("LastUpdateTime", t.encode('utf8'))

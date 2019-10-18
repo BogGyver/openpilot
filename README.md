@@ -1,5 +1,5 @@
 
-WARNING: TESLA ONLY OPENPILOT 0.6.4-T12
+WARNING: TESLA ONLY OPENPILOT 0.6.5-T13
 ======
 This repo contains code that was modified specifically for Tesla and will not work on other cars!
 

@@ -42,6 +42,31 @@ ParamsLearner::ParamsLearner(cereal::CarParams::Reader car_params,
   alpha2 = 0.0005 * learning_rate;
   alpha3 = 0.1 * learning_rate;
   alpha4 = 1.0 * learning_rate;
+  cs_sr = car_params.getSteerRatio();
+  learnerEnabled = false;
+  char line[500];
+  int linenum=0;
+  FILE *stream;
+  stream = fopen("/data/bb_openpilot.cfg","r");
+  while(fgets(line, 500, stream) != NULL)
+  {
+          char setting[256], value[256], oper[10];
+
+          linenum++;
+          if(line[0] == '#') continue;
+          if(sscanf(line, "%s %s %s", setting, oper , value) != 3)
+          {
+                  continue;
+          }       
+          if (strcmp("enable_param_learner",setting) == 0) {
+            printf("Found [%s] %s [%s]\n", setting, oper, value);
+            learnerEnabled = (strcmp("True",value) == 0);
+            printf("Set learnerEnabled to [%s]\n", learnerEnabled ? "true" : "false");
+            sR = cs_sr;
+            printf("Setting steerRatio to [%f]\n", sR);
+          }
+  }
+  fclose(stream);
 }
 
 bool ParamsLearner::update(double psi, double u, double sa) {
@@ -58,7 +83,11 @@ bool ParamsLearner::update(double psi, double u, double sa) {
     ao = new_ao;
     slow_ao = new_slow_ao;
     x = new_x;
-    //sR = new_sR;
+    if (learnerEnabled) {
+      sR = new_sR;
+    } else {
+      sR = cs_sr;
+    }
   }
 
 #ifdef DEBUG
