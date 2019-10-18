@@ -59,7 +59,7 @@ ParamsLearner::ParamsLearner(cereal::CarParams::Reader car_params,
                   continue;
           }       
           if (strcmp("enable_param_learner",setting) == 0) {
-            printf("Found [%s] %s [%s]\n", setting, oper, value);
+            //printf("Found [%s] %s [%s]\n", setting, oper, value);
             learnerEnabled = (strcmp("True",value) == 0);
             printf("Set learnerEnabled to [%s]\n", learnerEnabled ? "true" : "false");
             sR = cs_sr;
