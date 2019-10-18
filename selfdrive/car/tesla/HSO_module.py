@@ -10,6 +10,7 @@ def _current_time_millis():
 class HSOController():
     def __init__(self,carcontroller):
         self.CC = carcontroller
+        self.human_control = False
         self.frame_humanSteered = 0
         self.turn_signal_needed = 0 # send 1 for left, 2 for right 0 for not needed
         self.last_blinker_on = 0
@@ -20,7 +21,7 @@ class HSOController():
     
 
     def update_stat(self,CC,CS,enabled,actuators,frame):
-        human_control = False
+        self.human_control = False
         self.last_blinker_on = self.blinker_on
         if CS.right_blinker_on:
           self.blinker_on = 2
@@ -58,18 +59,18 @@ class HSOController():
         if enabled:
             if CS.enableHSO:
               if (frame - self.frame_humanSteered < 50):
-                human_control = True
+                self.human_control = True
                 CS.UE.custom_alert_message(3,"Manual Steering Enabled",51,4)
         #if human control and turn signal on, and previous turn signal was not on or was different, adjust
         #same direction again cancels signal
-        if human_control:
+        if self.human_control:
           self.turn_signal_needed = self.blinker_on
         #if no human control, no turn signal needed
-        if not human_control:
+        if not self.human_control:
           self.turn_signal_needed = 0
           self.last_blinker_on = 0
           self.blinker_on = 0
-        if (not human_control) and (CC.DAS_219_lcTempUnavailableSpeed == 1):
+        if (not self.human_control) and (CC.DAS_219_lcTempUnavailableSpeed == 1):
           CC.DAS_219_lcTempUnavailableSpeed = 0
           CC.warningNeeded = 1
           self.turn_signal_needed = 0
@@ -77,4 +78,4 @@ class HSOController():
           self.turn_signal_needed = 0
           self.blinker_on = 0
           self.last_blinker_on = 0
-        return human_control and enabled, self.turn_signal_needed
+        return self.human_control and enabled, self.turn_signal_needed
