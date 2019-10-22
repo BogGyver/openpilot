@@ -129,6 +129,7 @@ ModelData model_eval_frame(ModelState* s, cl_command_queue q,
   // so d = points[0]
   model.left_lane.poly[3] = model.left_lane.points[0];
   model.right_lane.poly[3] = model.right_lane.points[0];
+  model.path.poly[3] = model.path.points[0];
 
   const double max_dist = 140.0;
   const double max_rel_vel = 10.0;
