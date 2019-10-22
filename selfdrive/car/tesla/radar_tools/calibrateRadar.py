@@ -76,11 +76,9 @@ class RadarInterface(object):
       self.can_poller.register(self.can_sock)
 
   def update(self):
-
-    ret = car.RadarData.new_message()
     if not self.useTeslaRadar:
       time.sleep(0.05)
-      return ret
+      return None
 
     canMonoTimes = []
     updated_messages = set()
@@ -93,8 +91,6 @@ class RadarInterface(object):
     errors = []
     if not self.rcp.can_valid:
       errors.append("commIssue")
-    ret.errors = errors
-    ret.canMonoTimes = canMonoTimes
     for ii in updated_messages:
       if ii in RADAR_A_MSGS:
         cpt = self.rcp.vl[ii]
@@ -140,8 +136,7 @@ class RadarInterface(object):
           if ii in self.pts:
             del self.pts[ii]
 
-    ret.points = list(self.pts.values())
-    return ret
+    return list(self.pts.values())
 
 
 
