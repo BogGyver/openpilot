@@ -10,6 +10,7 @@ def _current_time_millis():
 class HSOController():
     def __init__(self,carcontroller):
         self.CC = carcontroller
+        self.human_control = False
         self.frame_humanSteered = 0
         self.turn_signal_needed = 0 # send 1 for left, 2 for right 0 for not needed
         self.last_blinker_on = 0
@@ -77,4 +78,5 @@ class HSOController():
           self.turn_signal_needed = 0
           self.blinker_on = 0
           self.last_blinker_on = 0
+        self.human_control = human_control
         return human_control and enabled, self.turn_signal_needed
