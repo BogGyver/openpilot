@@ -53,7 +53,7 @@ def _create_radard_can_parser():
                 [0] * msg_a_n + [0.] * msg_a_n + [0.] * msg_b_n + [0] * msg_b_n +
                 [0] * msg_b_n + [0.] * msg_b_n + [0.] * msg_b_n +[0.] * msg_b_n + [0]* msg_b_n))
 
-  checks = list(zip(RADAR_A_MSGS + RADAR_B_MSGS, [20]*(msg_a_n + msg_b_n)))
+  checks = list(zip(RADAR_A_MSGS + RADAR_B_MSGS, [6]*(msg_a_n + msg_b_n)))
 
   return CANParser(os.path.splitext(dbc_f)[0].encode('utf8'), signals, checks, 1)
 
@@ -71,7 +71,9 @@ class RadarInterface(object):
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
       self.delay = 0.05  # Delay of radar
       self.rcp = _create_radard_can_parser()
-      self.logcan = messaging.sub_sock(service_list['can'].port)
+      self.can_sock = messaging.sub_sock(service_list['can'].port)
+      self.can_poller = zmq.Poller()
+      self.can_poller.register(self.can_sock)
 
   def update(self):
 
@@ -83,8 +85,8 @@ class RadarInterface(object):
     canMonoTimes = []
     updated_messages = set()
     while 1:
-      tm = int(sec_since_boot() * 1e9)
-      _ , vls = self.rcp.update(tm, True)
+      can_strings = messaging.drain_sock_raw_poller(self.can_poller, self.can_sock, wait_for_one=True)
+      vls = self.rcp.update(can_strings)
       updated_messages.update(vls)
       if RADAR_B_MSGS[-1] in updated_messages:
         break
