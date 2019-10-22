@@ -86,7 +86,7 @@ class RadarInterface(object):
     updated_messages = set()
     while 1:
       can_strings = messaging.drain_sock_raw_poller(self.can_poller, self.can_sock, wait_for_one=True)
-      vls = self.rcp.update(can_strings)
+      vls = self.rcp.update_strings(can_strings)
       updated_messages.update(vls)
       if RADAR_B_MSGS[-1] in updated_messages:
         break
