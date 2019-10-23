@@ -663,17 +663,17 @@ def _accel_limit_multiplier(CS, lead):
   with other accel limits."""
   accel_by_speed = OrderedDict([
     # (speed m/s, decel)
-    (0.,  2.5),  #  0 MPH
-    (10., 1.5),  # 22 MPH
-    (20., 1.2),  # 45 MPH
-    (30., 0.7)]) # 67 MPH
+      (0.,  0.95),  #   0 kmh
+      (10., 0.95),  #  35 kmh
+      (20., 0.925),  #  72 kmh
+      (30., 0.875)]) # 107 kmh
   if CS.teslaModel in ["SP","SPD"]:
       accel_by_speed = OrderedDict([
         # (speed m/s, decel)
         (0.,  0.95),  #   0 kmh
-        (10., 0.8),  #  35 kmh
-        (20., 0.6),  #  72 kmh
-        (30., 0.7)]) # 107 kmh
+        (10., 0.95),  #  35 kmh
+        (20., 0.925),  #  72 kmh
+        (30., 0.875)]) # 107 kmh
   accel_mult = _interp_map(CS.v_ego, accel_by_speed)
   if _is_present(lead):
     safe_dist_m = _safe_distance_m(CS.v_ego,CS)
