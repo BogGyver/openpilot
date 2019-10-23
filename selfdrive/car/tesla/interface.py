@@ -152,9 +152,9 @@ class CarInterface():
         ret.longitudinalTuning.kiV = [0.01,0.01,0.01]
       elif teslaModel == "SP":
         ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.3]
+        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.325]
         ret.longitudinalTuning.kiBP = [0., 5., 35.]
-        ret.longitudinalTuning.kiV = [0.009,0.008,0.007]
+        ret.longitudinalTuning.kiV = [0.00915,0.00825,0.00725]
       elif teslaModel == "SD":
         ret.longitudinalTuning.kpBP = [0., 5., 35.]
         ret.longitudinalTuning.kpV = [0.50, 0.45, 0.4]
@@ -216,7 +216,7 @@ class CarInterface():
     ret.openpilotLongitudinalControl = True
     ret.steerLimitAlert = False
     ret.startAccel = 0.5
-    ret.steerRateCost = 0.5
+    ret.steerRateCost = 1.0
     ret.radarOffCan = not CarSettings().get_value("useTeslaRadar")
 
     return ret
