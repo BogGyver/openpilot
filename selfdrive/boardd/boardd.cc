@@ -29,7 +29,7 @@
 #include <algorithm>
 
 // double the FIFO size
-#define RECV_SIZE (0x1000)
+#define RECV_SIZE (0x3000)
 #define TIMEOUT 0
 
 namespace {
