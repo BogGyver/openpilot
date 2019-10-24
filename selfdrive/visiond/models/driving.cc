@@ -119,9 +119,9 @@ ModelData model_eval_frame(ModelState* s, cl_command_queue q,
   model.left_lane.prob = sigmoid(net_outputs.left_lane[MODEL_PATH_DISTANCE*2]);
   model.right_lane.prob = sigmoid(net_outputs.right_lane[MODEL_PATH_DISTANCE*2]);
 
-  poly_fit(model.path.points, model.path.stds, model.path.poly);
-  poly_fit(model.left_lane.points, model.left_lane.stds, model.left_lane.poly);
-  poly_fit(model.right_lane.points, model.right_lane.stds, model.right_lane.poly);
+  poly_fit(model.path.points, model.path.stds, model.path.poly,0);
+  poly_fit(model.left_lane.points, model.left_lane.stds, model.left_lane.poly, 3);
+  poly_fit(model.right_lane.points, model.right_lane.stds, model.right_lane.poly, 3);
 
   const double max_dist = 140.0;
   const double max_rel_vel = 10.0;
@@ -191,13 +191,13 @@ void model_free(ModelState* s) {
   delete s->m;
 }
 
-void poly_fit(float *in_pts, float *in_stds, float *out) {
+void poly_fit(float *in_pts, float *in_stds, float *out, int dx) {
   // References to inputs
   Eigen::Map<Eigen::Matrix<float, MODEL_PATH_DISTANCE, 1> > pts(in_pts, MODEL_PATH_DISTANCE);
   Eigen::Map<Eigen::Matrix<float, MODEL_PATH_DISTANCE, 1> > std(in_stds, MODEL_PATH_DISTANCE);
   Eigen::Map<Eigen::Matrix<float, POLYFIT_DEGREE - 1, 1> > p(out, POLYFIT_DEGREE - 1);
 
-  float y0 = pts[0];
+  float y0 = pts[dx];
   pts = pts.array() - y0;
 
   // Build Least Squares equations

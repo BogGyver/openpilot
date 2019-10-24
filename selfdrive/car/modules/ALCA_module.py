@@ -383,8 +383,8 @@ class ALCAModelParser():
           cos = abs(np.cos(np.arctan(1/abs(d2-d1))))
         ltm = cos * left_to_move
         #compute offsets
-        self.ALCA_OFFSET_C2 = 0.
-        self.ALCA_OFFSET_C1 = float(self.ALCA_direction * ltm) / (distance_left * distance_left)
+        self.ALCA_OFFSET_C1 = 0.
+        self.ALCA_OFFSET_C2 = float(self.ALCA_direction * ltm) / (distance_left )
         self.prev_distance_to_line_R = self.distance_to_line_R
         self.prev_distance_to_line_L = self.distance_to_line_L
         if ALCA_DEBUG:
@@ -413,8 +413,8 @@ class ALCAModelParser():
         l_prob = r_prob     
       l_poly[3] = self.ALCA_lane_width / 2
       r_poly[3] = -self.ALCA_lane_width / 2
-      l_poly[2] = self.ALCA_OFFSET_C2
-      r_poly[2] = self.ALCA_OFFSET_C2
+      l_poly[2] += self.ALCA_OFFSET_C2
+      r_poly[2] += self.ALCA_OFFSET_C2
       l_poly[1] += self.ALCA_OFFSET_C1
       r_poly[1] += self.ALCA_OFFSET_C1
     else:
