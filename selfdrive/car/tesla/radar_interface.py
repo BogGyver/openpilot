@@ -87,11 +87,11 @@ class RadarInterface(RadarInterfaceBase):
       self.updated_messages.update(vls)
 
 
-    if self.trigger_start_msg not in self.updated_messages:
-      return None,None
+    #if self.trigger_start_msg not in self.updated_messages:
+    #  return None,None
 
-    if self.trigger_end_msg not in self.updated_messages:
-      return None,None
+    #if self.trigger_end_msg not in self.updated_messages:
+    #  return None,None
 
     rr,rrext = self._update(self.updated_messages)
     #self.updated_messages.clear()
@@ -108,6 +108,8 @@ class RadarInterface(RadarInterfaceBase):
           del self.extPts[message]
         continue
       cpt = self.rcp.vl[message]
+      if not (message + 1 in updated_messages):
+        continue
       cpt2 = self.rcp.vl[message+1]
       # ensure the two messages are from the same frame reading
       if cpt['Index'] != cpt2['Index2']:

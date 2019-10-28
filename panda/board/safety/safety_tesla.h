@@ -110,6 +110,7 @@ int DI_locStatus_idx = 0;
 int DAS_carLog_idx = 0;
 int DAS_telemetry_idx = 0;
 
+
 //fake DAS variables
 int DAS_longC_enabled = 0;
 int DAS_speed_limit_kph = 0;
@@ -121,6 +122,7 @@ int DAS_jerk_min = 0x000;
 int DAS_jerk_max = 0x0F;
 int DAS_gas_to_resume = 0;
 int DAS_206_apUnavailable = 0;
+int DAS_haptic_request = 1;
 
 //fake DAS objects
 int DAS_LEAD_OBJECT_MLB = 0xFFFFFF00;
@@ -328,6 +330,7 @@ static void reset_DAS_data(void) {
   DAS_jerk_max = 0x0F;
   DAS_gas_to_resume = 0;
   DAS_206_apUnavailable = 0;
+  DAS_haptic_request = 1;
   DAS_op_status = 1; //unavailable
   DAS_alca_state = 0x05;
   DAS_hands_on_state = 0;
@@ -394,10 +397,25 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     EON_is_connected = 1;
   }
 
+  //ldw type of warning... use haptic if we manually steer
+  if (DAS_ldwStatus > 0) {
+    //DAS_haptic_request = 1;
+    //if OP not enabled or manual steering, only use haptic
+    if (((DAS_219_lcTempUnavailableSpeed == 1) || (DAS_op_status < 5)) && (DAS_ldwStatus > 2)) {
+      DAS_ldwStatus -= 2;
+    } 
+    //if OP enabled and no manual steering, always force audible alert
+    if ((DAS_219_lcTempUnavailableSpeed == 0)  && (DAS_op_status == 5) && (DAS_ldwStatus > 0) && (DAS_ldwStatus < 3)) {
+      DAS_ldwStatus += 2;
+    }
+  } else {
+    //DAS_haptic_request = 0;
+  }
+
   if (fake_DAS_counter % 2 == 0) {
     //send DAS_steeringControl - 0x488
     MHB = 0x00;
-    MLB = ((DAS_steeringAngle >> 8) & 0x7F) + 
+    MLB = ((DAS_steeringAngle >> 8) & 0x7F) + (DAS_haptic_request << 7) +
         ((DAS_steeringAngle & 0xFF) << 8) + 
         (((((DAS_steeringEnabled & controls_allowed & DAS_inDrive)  )<< 6) + DAS_steeringControl_idx) << 16);
     int cksm = add_tesla_cksm2(MLB, MHB, 0x488, 3);
@@ -1002,7 +1020,8 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     DAS_diState_idx = (DAS_diStateH & 0xF000 ) >> 12;
     int acc_state = ((to_push->RDLR & 0xF000) >> 12);
     DAS_uom = (to_push->RDLR >> 31) & 1;
-    if (((DAS_usingPedal == 1) || ((DAS_usingPedal == 0) && (DAS_cc_state != 2)) ) && ( acc_state >= 2) && ( acc_state <= 4)) {
+    //if (((DAS_usingPedal == 1) || ((DAS_usingPedal == 0) && (DAS_cc_state != 2)) ) && ( acc_state >= 2) && ( acc_state <= 4)) {
+    if ((DAS_usingPedal == 1) && ( acc_state >= 2) && ( acc_state <= 4)) {
       do_fake_stalk_cancel(to_push->RIR, to_push->RDTR);
     } 
 

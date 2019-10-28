@@ -125,7 +125,7 @@ class CarInterface():
     centerToFront_models = wheelbase_models * 0.5 #BB was 0.48
     centerToRear_models = wheelbase_models - centerToFront_models
     rotationalInertia_models = 2500
-    tireStiffnessFront_models = 88100 #BB was 85400
+    tireStiffnessFront_models = 85100 #BB was 85400
     tireStiffnessRear_models = 90000
     # will create Kp and Ki for 0, 20, 40, 60 mph
     ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0., 8.94, 17.88, 26.82 ], [0., 8.94, 17.88, 26.82]]
