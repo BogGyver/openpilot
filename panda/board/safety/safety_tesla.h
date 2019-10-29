@@ -122,7 +122,7 @@ int DAS_jerk_min = 0x000;
 int DAS_jerk_max = 0x0F;
 int DAS_gas_to_resume = 0;
 int DAS_206_apUnavailable = 0;
-int DAS_haptic_request = 1;
+int DAS_haptic_request = 0;
 
 //fake DAS objects
 int DAS_LEAD_OBJECT_MLB = 0xFFFFFF00;
@@ -330,7 +330,7 @@ static void reset_DAS_data(void) {
   DAS_jerk_max = 0x0F;
   DAS_gas_to_resume = 0;
   DAS_206_apUnavailable = 0;
-  DAS_haptic_request = 1;
+  DAS_haptic_request = 0;
   DAS_op_status = 1; //unavailable
   DAS_alca_state = 0x05;
   DAS_hands_on_state = 0;
@@ -399,7 +399,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
 
   //ldw type of warning... use haptic if we manually steer
   if (DAS_ldwStatus > 0) {
-    //DAS_haptic_request = 1;
+    DAS_haptic_request = 1;
     //if OP not enabled or manual steering, only use haptic
     if (((DAS_219_lcTempUnavailableSpeed == 1) || (DAS_op_status < 5)) && (DAS_ldwStatus > 2)) {
       DAS_ldwStatus -= 2;
@@ -409,7 +409,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
       DAS_ldwStatus += 2;
     }
   } else {
-    //DAS_haptic_request = 0;
+    DAS_haptic_request = 0;
   }
 
   if (fake_DAS_counter % 2 == 0) {
@@ -1854,10 +1854,12 @@ static int tesla_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd)
       tesla_fwd_to_radar_as_is(tesla_radar_can, to_fwd);
     }
 
-    // change inhibit of GTW_epasControl
+    // change inhibit of GTW_epasControl and enabled haptic for LDW
     if (addr == 0x101)
     {
-      to_fwd->RDLR = GET_BYTES_04(to_fwd) | 0x4000; // 0x4000: WITH_ANGLE, 0xC000: WITH_BOTH (angle and torque)
+      to_fwd->RDLR = GET_BYTES_04(to_fwd) | 0x4000 | 0x1000; 
+      // 0x4000: WITH_ANGLE, 0xC000: WITH_BOTH (angle and torque)
+      // 0x1000: enabled LDW for haptic
       int checksum = (GET_BYTE(to_fwd, 1) + GET_BYTE(to_fwd, 0) + 2) & 0xFF;
       to_fwd->RDLR = GET_BYTES_04(to_fwd) & 0xFFFF;
       to_fwd->RDLR = GET_BYTES_04(to_fwd) + (checksum << 16);
