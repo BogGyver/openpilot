@@ -95,7 +95,7 @@ class RadarInterface(RadarInterfaceBase):
       return None,None
 
     rr,rrext = self._update(self.updated_messages)
-    #self.updated_messages.clear()
+    self.updated_messages.clear()
     return rr,rrext
 
 
