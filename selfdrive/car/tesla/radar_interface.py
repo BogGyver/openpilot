@@ -47,6 +47,7 @@ def _create_radard_can_parser():
 
   checks = list(zip(RADAR_A_MSGS + RADAR_B_MSGS, [6]*(msg_a_n + msg_b_n)))
 
+
   return CANParser(os.path.splitext(dbc_f)[0].encode('utf8'), signals, checks, 1)
 
 
@@ -82,6 +83,7 @@ class RadarInterface(RadarInterfaceBase):
     if not self.useTeslaRadar:
       time.sleep(0.05)
       return car.RadarData.new_message(),self.extPts.values()
+
     if can_strings != None:
       vls = self.rcp.update_strings(can_strings)
       self.updated_messages.update(vls)
@@ -93,7 +95,7 @@ class RadarInterface(RadarInterfaceBase):
       return None,None
 
     rr,rrext = self._update(self.updated_messages)
-    self.updated_messages.clear()
+    #self.updated_messages.clear()
     return rr,rrext
 
 

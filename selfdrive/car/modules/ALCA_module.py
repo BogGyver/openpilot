@@ -67,6 +67,7 @@ ALCA_zero_line = 2.5 #meters in front where to check for distance vs line
 ALCA_DEBUG = True
 DEBUG_INFO = "step {step} of {total_steps}: direction = {ALCA_direction} | using visual = {ALCA_use_visual} | over line = {ALCA_over_line} | lane width = {ALCA_lane_width} | left to move = {left_to_move} | from center = {from_center} | C2 offset = {ALCA_OFFSET_C2} | C1 offset = {ALCA_OFFSET_C1} | Prob Low = {prob_low} | Prob High = {prob_high}"
 
+
 class ALCAController():
   def __init__(self,carcontroller,alcaEnabled,steerByAngle):
     #import settings
@@ -309,7 +310,6 @@ class ALCAModelParser():
       if socket is self.alcaStatus:
         self.alcas = tesla.ALCAStatus.from_bytes(socket.recv())
 
-
     #if we don't have yet ALCA status, return same values
     if self.alcas is None:
       self.send_state()
@@ -352,7 +352,10 @@ class ALCAModelParser():
         self.ALCA_error = False
 
     if self.ALCA_enabled and not (self.ALCA_direction == 0):
+
       self.ALCA_step += 1 #ALCA_increment
+  
+
       if (self.ALCA_step < 0) or (self.ALCA_step >= self.ALCA_total_steps):
         #done so end ALCA
         self.debug_alca(" step out of bounds -> resetting...")
@@ -417,6 +420,7 @@ class ALCAModelParser():
       r_poly[2] += self.ALCA_OFFSET_C2
       l_poly[1] += self.ALCA_OFFSET_C1
       r_poly[1] += self.ALCA_OFFSET_C1
+
     else:
       self.reset_alca()
       self.ALCA_error = False
