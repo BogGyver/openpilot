@@ -1020,11 +1020,17 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     DAS_diState_idx = (DAS_diStateH & 0xF000 ) >> 12;
     int acc_state = ((to_push->RDLR & 0xF000) >> 12);
     DAS_uom = (to_push->RDLR >> 31) & 1;
-    //if (((DAS_usingPedal == 1) || ((DAS_usingPedal == 0) && (DAS_cc_state != 2)) ) && ( acc_state >= 2) && ( acc_state <= 4)) {
+    //if pedal and CC looks enabled, disable
     if ((DAS_usingPedal == 1) && ( acc_state >= 2) && ( acc_state <= 4)) {
       do_fake_stalk_cancel(to_push->RIR, to_push->RDTR);
     } 
-
+    //if ACC not enabled but CC is enabled, disable if more than 2 seconds since last pull
+    if ((EON_is_connected == 1) && (DAS_usingPedal == 0) && (DAS_cc_state != 2) && ( acc_state >= 2) && ( acc_state <= 4)) {
+      //disable if more than two seconds since last pull, or there was never a stalk pull
+      if (((current_car_time >= time_at_last_stalk_pull + 2) && (current_car_time != -1) && (time_at_last_stalk_pull != -1)) || (time_at_last_stalk_pull == -1)) {
+        do_fake_stalk_cancel(to_push->RIR, to_push->RDTR);
+      }
+    }
   }
 
   //looking for radar messages;

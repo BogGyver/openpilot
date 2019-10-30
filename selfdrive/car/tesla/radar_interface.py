@@ -86,15 +86,14 @@ class RadarInterface(RadarInterfaceBase):
       vls = self.rcp.update_strings(can_strings)
       self.updated_messages.update(vls)
 
+    if self.trigger_start_msg not in self.updated_messages:
+      return None,None
 
-    #if self.trigger_start_msg not in self.updated_messages:
-    #  return None,None
-
-    #if self.trigger_end_msg not in self.updated_messages:
-    #  return None,None
+    if self.trigger_end_msg not in self.updated_messages:
+      return None,None
 
     rr,rrext = self._update(self.updated_messages)
-    #self.updated_messages.clear()
+    self.updated_messages.clear()
     return rr,rrext
 
 
