@@ -49,6 +49,8 @@ MIN_CAN_SPEED = 0.3  #TODO: parametrize this in car interface
 # Pull the cruise stalk twice in this many ms for a 'double pull'
 STALK_DOUBLE_PULL_MS = 750
 
+V_PID_FILE = '/data/params/d/pidParams'
+
 class Mode():
   label = None
 
@@ -195,6 +197,13 @@ class PCCController():
       return pedal_set_speed_ms
 
   def reset(self, v_pid):
+    # Save the v_pid at every disengagement - to keep the nice smoothenss across drives.
+    if not RESET_PID_ON_DISENGAGE:
+      data = {}
+      data['v_pid'] = self.v_pid
+      with open(V_PID_FILE , 'w') as outfile :
+        json.dump(data, outfile)
+
     if self.LoC and RESET_PID_ON_DISENGAGE:
       self.LoC.reset(v_pid)
 
@@ -378,7 +387,17 @@ class PCCController():
     # how much accel and break we have to do
     ####################################################################
     if PCCModes.is_selected(FollowMode(), CS.cstm_btns):
-      self.v_pid = self.calc_follow_speed_ms(CS,alca_enabled)
+      # Get v_id from the stored file, only the first activation where v_pid eq 0
+      if (self.v_pid == 0.):
+        try:
+          v_pid_json = open(V_PID_FILE)
+          data = json.load(v_pid_json)
+          self.v_pid = data['v_pid']
+        except IOError:
+          print("v_pid file not present, creating at first reset")
+      else:
+        self.v_pid = self.calc_follow_speed_ms(CS,alca_enabled)
+      
       if mapd is not None:
         v_curve = max_v_in_mapped_curve_ms(mapd.liveMapData, self.pedal_speed_kph)
         if v_curve:
