@@ -180,7 +180,7 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 3370. * CV.LB_TO_KG + STD_CARGO_KG
       ret.lateralTuning.pid.kf = 0.00007818594
 
-    elif candidate == CAR.COROLLA_TSS2:
+    elif candidate in [CAR.COROLLA_TSS2, CAR.COROLLAH_TSS2]:
       stop_and_go = True
       ret.safetyParam = 73
       ret.wheelbase = 2.63906
@@ -190,7 +190,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.6], [0.1]]
       ret.lateralTuning.pid.kf = 0.00007818594
 
-    elif candidate == CAR.LEXUS_ESH_TSS2:
+    elif candidate in [CAR.LEXUS_ES_TSS2, CAR.LEXUS_ESH_TSS2]:
       stop_and_go = True
       ret.safetyParam = 73
       ret.wheelbase = 2.8702
@@ -212,7 +212,7 @@ class CarInterface(CarInterfaceBase):
 
     elif candidate == CAR.LEXUS_IS:
       stop_and_go = False
-      ret.safetyParam = 66
+      ret.safetyParam = 77
       ret.wheelbase = 2.79908
       ret.steerRatio = 13.3
       tire_stiffness_factor = 0.444
