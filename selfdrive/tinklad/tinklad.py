@@ -163,7 +163,8 @@ class TinklaServer():
                 print(LOG_PREFIX + "Unsupported message version: %0.2f (supported version: %0.2f)" % (tinklaInterface.version, cereal.tinkla.interfaceVersion))
                 continue
             messageType = tinklaInterface.message.which()
-            print(LOG_PREFIX + "> Received message. Type: '%s'" % messageType)
+            if messageType != messageKeys.action:
+                print(LOG_PREFIX + "> Received message. Type: '%s'" % messageType)
             if messageType == messageKeys.userInfo:
                 info = tinklaInterface.message.userInfo
                 await self.setUserInfo(info)
