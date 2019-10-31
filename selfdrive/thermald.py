@@ -271,8 +271,6 @@ def thermald_thread():
 
     # start constellation of processes when the car starts
     ignition = health is not None and health.health.started
-    ignition_seen = ignition_seen or ignition
-
 
     do_uninstall = params.get("DoUninstall") == b"1"
     accepted_terms = params.get("HasAcceptedTerms") == terms_version
