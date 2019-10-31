@@ -18,6 +18,7 @@ class HSOController():
         self.frame_blinker_on = 0
         self.last_human_blinker_on = 0
         self.frame_human_blinker_on = 0
+        self.HSO_numb_period = 150
     
 
     def update_stat(self,CC,CS,enabled,actuators,frame):
@@ -54,7 +55,7 @@ class HSOController():
               steer_current=(CS.angle_steers)  # Formula to convert current steering angle to match apply_steer calculated number
               apply_steer = int(-actuators.steerAngle)
               angle = abs(apply_steer-steer_current)
-              if angle > 15.:
+              if frame < (self.frame_blinker_on + self.HSO_numb_period) or angle > 15.:
                 self.frame_humanSteered = frame
         if enabled:
             if CS.enableHSO:
