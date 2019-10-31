@@ -7,7 +7,7 @@ $Java.outerClassname("Tinkla");
 
 @0xfc8dda643156b95d;
 
-const interfaceVersion :Float32 = 2.2;
+const interfaceVersion :Float32 = 3; # Use integer values here
 
 struct Interface {
 

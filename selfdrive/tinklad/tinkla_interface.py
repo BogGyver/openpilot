@@ -13,6 +13,7 @@ import traceback
 from selfdrive.car.tesla.readconfig import CarSettings
 from common.params import Params
 
+LOG_PREFIX = "tinklad client: "
 
 tinklaClient = None
 
@@ -49,7 +50,6 @@ class TinklaClient():
         except zmq.ZMQError:
             print("Unable to connect to tinklad")
             self.sock = None
-
 
     def setUserInfo(self, info):
         self.start_client()
