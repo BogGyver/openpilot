@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+# Created by Raf 5/2019
+
+import asyncio
 
 AIRTABLE_API_KEY = 'keyvqdsl2VIIr9Q2A'
 AIRTABLE_BASE_ID = 'appht7GB4aJS2A0LD'
@@ -34,7 +38,7 @@ class Publisher():
     latest_info_dict = None # current info published
     userRecordId = None
 
-    def send_info(self, info, isData= False):
+    async def send_info(self, info, isData= False):
         data_dict = None
         if isData:
             data_dict = info
@@ -50,15 +54,15 @@ class Publisher():
 
         print(LOG_PREFIX + "Sending info. data=%s" % (data_dict))
         if self.userRecordId != None:
-            self.__update_user(data_dict)
+            await self.__update_user(data_dict)
 
         if info.openPilotId != None and info.openPilotId != '':
             self.openPilotId = info.openPilotId
 
-        response = self.at.get(USERS_TABLE, limit=1, filter_by_formula=("{openPilotId} = '%s'" % (self.openPilotId)))
+        response = await self.at.get(USERS_TABLE, limit=1, filter_by_formula=("{openPilotId} = '%s'" % (self.openPilotId)))
         if self.__is_notfound_response(response): # Not found, create:
             print(LOG_PREFIX + "Creating record for openPilotId='%s'" % (info.openPilotId))
-            response = self.at.create(USERS_TABLE, data_dict)
+            response = await self.at.create(USERS_TABLE, data_dict)
             if self.__is_error_response(response):
                 raise Exception(response)
         elif self.__is_error_response(response): #Unsupported error
@@ -66,23 +70,22 @@ class Publisher():
             raise Exception(response)
         else:
             self.userRecordId = response["records"][0]["id"]
-            self.__update_user(data_dict)
+            await self.__update_user(data_dict)
         
         self.latest_info_dict = data_dict
         print(LOG_PREFIX + "*send_info competed*")
 
-    def send_event(self, event):
+    async def send_event(self, event):
         if self.openPilotId is None and self.latest_info_dict != None:
             self.openPilotId = self.latest_info_dict[self.userKeys.openPilotId]
 
         event_dict = self.__generate_airtable_user_event_dict(event)
         print(LOG_PREFIX + "Sending event. data=%s" % (event_dict))
-        response = self.at.create(EVENTS_TABLE, event_dict)
+        response = await self.at.create(EVENTS_TABLE, event_dict)
         if self.__is_error_response(response):
             print(LOG_PREFIX + "Error sending airtable event. %s" % (response))
             raise Exception(response)
         print(LOG_PREFIX + "*send_event competed*")
-
 
 
     def __generate_airtable_user_info_dict(self, info):
@@ -100,16 +103,16 @@ class Publisher():
             value = event.value.intValue
         elif value == self.eventValueTypes.floatValue:
             value = event.value.floatValue
-        openPilotId = self.openPilotId if (self.openPilotId != None) else ""
+        openPilotId = event.openPilotId if (event.openPilotId != None) else (self.openPilotId if (self.openPilotId != None) else "")
         dictionary = event.to_dict()
         dictionary[self.eventKeys.value] = value
         dictionary[self.eventKeys.openPilotId] = openPilotId
         # dictionary.pop("timestamp", None)
         return dictionary
 
-    def __update_user(self, data):
+    async def __update_user(self, data):
         print(LOG_PREFIX + "Updating userRecordId='%s'" % (self.userRecordId))
-        response = self.at.update(USERS_TABLE, self.userRecordId, data)
+        response = await self.at.update(USERS_TABLE, self.userRecordId, data)
         if self.__is_error_response(response):
             raise Exception(response)
 
@@ -117,8 +120,8 @@ class Publisher():
         try:
             return response["error"] != None and response["error"]["code"] == 422
         except: # pylint: disable=bare-except 
-                count = response["records"].__len__()
-                return count == 0
+            count = response["records"].__len__()
+            return count == 0
 
     def __is_error_response(self, response):
         try:
@@ -193,14 +196,28 @@ class Airtable(object):
         self.headers = {'Authorization': 'Bearer %s' % api_key}
         self._dict_class = dict_class
 
-    def __request(self, method, url, params=None, payload=None):
+    def __perform_request(self, method, url, params, data, headers):
+        return requests.request(
+            method,
+            url,
+            params=params,
+            data=data,
+            headers=headers
+        )
+
+    async def __request(self, method, url, params=None, payload=None):
         if method in ['POST', 'PUT', 'PATCH']:
             self.headers.update({'Content-type': 'application/json'})
-        r = requests.request(method,
-                             posixpath.join(self.base_url, url),
-                             params=params,
-                             data=payload,
-                             headers=self.headers)
+        loop = asyncio.get_event_loop()
+        r = await loop.run_in_executor(
+            None, 
+            self.__perform_request,
+            method,
+            posixpath.join(self.base_url, url),
+            params,
+            payload,
+            self.headers
+        )
         if r.status_code == requests.codes.ok: # pylint: disable=no-member
             return r.json(object_pairs_hook=self._dict_class)
         else:
@@ -272,27 +289,27 @@ class Airtable(object):
             else:
                 break
 
-    def create(self, table_name, data): # pylint: disable=inconsistent-return-statements
+    async def create(self, table_name, data): # pylint: disable=inconsistent-return-statements
         if check_string(table_name):
             payload = create_payload(data)
-            return self.__request('POST', table_name,
+            return await self.__request('POST', table_name,
                                   payload=json.dumps(payload))
 
-    def update(self, table_name, record_id, data): # pylint: disable=inconsistent-return-statements
+    async def update(self, table_name, record_id, data): # pylint: disable=inconsistent-return-statements
         if check_string(table_name) and check_string(record_id):
             url = posixpath.join(table_name, record_id)
             payload = create_payload(data)
-            return self.__request('PATCH', url,
+            return await self.__request('PATCH', url,
                                   payload=json.dumps(payload))
 
-    def update_all(self, table_name, record_id, data): # pylint: disable=inconsistent-return-statements
+    async def update_all(self, table_name, record_id, data): # pylint: disable=inconsistent-return-statements
         if check_string(table_name) and check_string(record_id):
             url = posixpath.join(table_name, record_id)
             payload = create_payload(data)
-            return self.__request('PUT', url,
+            return await self.__request('PUT', url,
                                   payload=json.dumps(payload))
 
-    def delete(self, table_name, record_id): # pylint: disable=inconsistent-return-statements
+    async def delete(self, table_name, record_id): # pylint: disable=inconsistent-return-statements
         if check_string(table_name) and check_string(record_id):
             url = posixpath.join(table_name, record_id)
-            return self.__request('DELETE', url)
+            return await self.__request('DELETE', url)

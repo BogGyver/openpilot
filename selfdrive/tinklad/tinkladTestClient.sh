@@ -1,1 +1,1 @@
-PYTHONPATH="../../" python2.7 tinkladTestClient.py 
+PYTHONPATH="../../" python3 tinkladTestClient.py 

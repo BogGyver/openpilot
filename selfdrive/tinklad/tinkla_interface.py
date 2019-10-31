@@ -1,11 +1,11 @@
-#!/usr/bin/env python3.7
+#!/usr/bin/env python3
+# Created by Raf 5/2019
 
 from cereal import tinkla
 import os
 import zmq
 import datetime
-#import tinklad
-from selfdrive.tinklad.tinklad import TinklaInterfaceEventCategoryKeys, TinklaInterfaceMessageKeys, TinklaInterfaceActions
+from selfdrive.tinklad import tinklad
 import time
 
 ## For helpers:
@@ -13,6 +13,7 @@ import traceback
 from selfdrive.car.tesla.readconfig import CarSettings
 from common.params import Params
 
+LOG_PREFIX = "tinklad client: "
 
 tinklaClient = None
 
@@ -25,9 +26,9 @@ class TinklaClient():
     lastCanErrorTimestamp = 0
     lastProcessErrorTimestamp = 0
 
-    eventCategoryKeys = TinklaInterfaceEventCategoryKeys()
-    messageTypeKeys = TinklaInterfaceMessageKeys()
-    actions = TinklaInterfaceActions()
+    eventCategoryKeys = tinklad.TinklaInterfaceEventCategoryKeys()
+    messageTypeKeys = tinklad.TinklaInterfaceMessageKeys()
+    actions = tinklad.TinklaInterfaceActions()
 
     # Configurable:
     # Note: If throttling, events are dropped
@@ -49,7 +50,6 @@ class TinklaClient():
         except zmq.ZMQError:
             print("Unable to connect to tinklad")
             self.sock = None
-
 
     def setUserInfo(self, info):
         self.start_client()
@@ -167,8 +167,14 @@ class TinklaClient():
         print(message)
 
     def __init__(self):
-        params = Params()
-        self.carSettings = CarSettings()
+        try:
+            params = Params()
+        except OSError:
+            params = Params(db="./params")
+        try:
+            self.carSettings = CarSettings()
+        except IOError:
+            self.carSettings = CarSettings(optional_config_file_path="./bb_openpilot.cfg")
         self.openPilotId = params.get("DongleId")
         self.userHandle = self.carSettings.userHandle
         self.gitRemote = params.get("GitRemote")
