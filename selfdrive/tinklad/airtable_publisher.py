@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# Created by Raf 5/2019
 
 AIRTABLE_API_KEY = 'keyvqdsl2VIIr9Q2A'
 AIRTABLE_BASE_ID = 'appht7GB4aJS2A0LD'

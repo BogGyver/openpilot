@@ -1,4 +1,5 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
+# Created by Raf 5/2019
 
 from cereal import tinkla
 from tinkla_interface import TinklaClient
