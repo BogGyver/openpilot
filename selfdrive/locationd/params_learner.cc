@@ -28,6 +28,8 @@ ParamsLearner::ParamsLearner(cereal::CarParams::Reader car_params,
   cF0 = car_params.getTireStiffnessFront();
   cR0 = car_params.getTireStiffnessRear();
 
+  prev_u = 0;
+
   l = car_params.getWheelbase();
   m = car_params.getMass();
 
@@ -70,7 +72,8 @@ ParamsLearner::ParamsLearner(cereal::CarParams::Reader car_params,
 }
 
 bool ParamsLearner::update(double psi, double u, double sa) {
-  if (u > 10.0 && fabs(sa) < (DEGREES_TO_RADIANS * 90.)) {
+  //BB only learn when speed is constant; accel and decel in turns can affect learner
+  if ((u > 10.0 && fabs(sa) < (DEGREES_TO_RADIANS * 90.)) && ( prev_u = u)) {
     double ao_diff = 2.0*cF0*cR0*l*u*x*(1.0*cF0*cR0*l*u*x*(ao - sa) + psi*sR*(cF0*cR0*pow(l, 2)*x - m*pow(u, 2)*(aF*cF0 - aR*cR0)))/(pow(sR, 2)*pow(cF0*cR0*pow(l, 2)*x - m*pow(u, 2)*(aF*cF0 - aR*cR0), 2));
     double new_ao = ao - alpha1 * ao_diff;
 
@@ -89,7 +92,7 @@ bool ParamsLearner::update(double psi, double u, double sa) {
       sR = cs_sr;
     }
   }
-
+  prev_u = u;
 #ifdef DEBUG
   std::cout << "Instant AO: " << (RADIANS_TO_DEGREES * ao) << "\tAverage AO: " << (RADIANS_TO_DEGREES * slow_ao);
   std::cout << "\tStiffness: " << x << "\t sR: " << sR << std::endl;

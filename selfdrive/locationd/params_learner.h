@@ -26,6 +26,7 @@ public:
   double ao;
   double slow_ao;
   double x, sR;
+  double prev_u; //BB previous speed so we only learn when speed is constant between iterations
 
   ParamsLearner(cereal::CarParams::Reader car_params,
                 double angle_offset,
