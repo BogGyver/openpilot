@@ -63,6 +63,7 @@ ALCA_release_distance = 0.3
 ALCA_line_prob_low = 0.1
 ALCA_line_prob_high = 0.4
 ALCA_zero_line = 2.5 #meters in front where to check for distance vs line
+ESTIMATE_CURV_AT = 1. #% of full distance to estimate curvature
 
 ALCA_DEBUG = True
 DEBUG_INFO = "step {step} of {total_steps}: direction = {ALCA_direction} | using visual = {ALCA_use_visual} | over line = {ALCA_over_line} | lane width = {ALCA_lane_width} | left to move = {left_to_move} | from center = {from_center} | C2 offset = {ALCA_OFFSET_C2} | C1 offset = {ALCA_OFFSET_C1} | Prob Low = {prob_low} | Prob High = {prob_high}"
@@ -166,7 +167,6 @@ class ALCAController():
       CS.UE.custom_alert_message(3,"Auto Lane Change Unavailable!",500,3)
       CS.cstm_btns.set_button_status("alca",9)
 
-
     if self.alcaEnabled and enabled and (((not self.prev_right_blinker_on) and CS.right_blinker_on) or \
       ((not self.prev_left_blinker_on) and CS.left_blinker_on))  and \
       (CS.v_ego >= cl_min_v) and (abs(actuators.steerAngle) < cl_max_a):
@@ -192,6 +192,9 @@ class ALCAController():
         self.laneChange_counter = 1
         self.laneChange_direction = laneChange_direction
         CS.cstm_btns.set_button_status("alca",2)
+
+    self.prev_right_blinker_on = CS.right_blinker_on
+    self.prev_left_blinker_on = CS.left_blinker_on
 
     if (not self.alcaEnabled) and self.laneChange_enabled > 1:
       self.laneChange_enabled = 1
@@ -247,6 +250,7 @@ class ALCAModelParser():
     self.ALCA_step = 0
     self.ALCA_total_steps = 20 * 5 #20 Hz, 5 seconds, wifey mode
     self.ALCA_cancelling = False
+    self.ALCA_done = False #True
     self.ALCA_enabled = False
     self.ALCA_OFFSET_C3 = 0.
     self.ALCA_OFFSET_C2 = 0.
@@ -272,8 +276,9 @@ class ALCAModelParser():
     self.ALCA_step = 0
     self.ALCA_direction = 0
     self.ALCA_cancelling = False
-    self.ALCA_error = True
+    self.ALCA_error = False
     self.ALCA_enabled = False
+    self.ALCA_done = False #True
     self.ALCA_OFFSET_C3 = 0.
     self.ALCA_OFFSET_C2 = 0.
     self.ALCA_OFFSET_C1 = 0.
@@ -315,16 +320,22 @@ class ALCAModelParser():
       self.send_state()
       return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
 
-     
-    self.ALCA_direction = self.alcas.alcaDirection
+    if self.alcas.alcaDirection == 0:
+      self.ALCA_done = False
+
+    if not self.ALCA_done:
+      self.ALCA_direction = self.alcas.alcaDirection
+    else:
+      self.ALCA_direction = 0
     self.ALCA_enabled = self.alcas.alcaEnabled
+    
     self.ALCA_total_steps = self.alcas.alcaTotalSteps
     self.ALCA_error = self.ALCA_error or (self.alcas.alcaError and not self.prev_CS_ALCA_error)
     self.prev_CS_ALCA_error = self.alcas.alcaError
 
     if not self.ALCA_enabled:
       self.send_state()
-      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
+      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width,np.array(p_poly)
 
     #if error but no direction, the carcontroller component is fine and we need to reset
     if self.ALCA_error and (self.ALCA_direction == 0):
@@ -366,12 +377,12 @@ class ALCAModelParser():
       left_to_move = 0.
       if self.ALCA_enabled and not (self.ALCA_direction == 0):
         #compute distances to lines
-        self.distance_to_line_L = abs(np.polyval(l_poly,ALCA_zero_line))
-        self.distance_to_line_R = abs(np.polyval(r_poly,ALCA_zero_line))
+        self.distance_to_line_L = abs(l_poly[3]) #abs(np.polyval(l_poly,ALCA_zero_line))
+        self.distance_to_line_R = abs(r_poly[3]) #abs(np.polyval(r_poly,ALCA_zero_line))
         if ((self.ALCA_direction == 1) and ((self.distance_to_line_L > 1.1 * self.prev_distance_to_line_L) or (self.distance_to_line_R < self.ALCA_lane_width / 3.))) or \
           ((self.ALCA_direction == -1) and ((self.distance_to_line_R > 1.1 * self.prev_distance_to_line_R) or (self.distance_to_line_L < self.ALCA_lane_width / 3.))):
           self.ALCA_over_line = True
-        left_to_move = self.ALCA_lane_width / 5.
+        left_to_move = self.ALCA_lane_width * ESTIMATE_CURV_AT #we will estimate at a ESTIMATE_CURV_AT of the distance
         if self.ALCA_over_line:
           left_to_move = self.ALCA_lane_width / 2. - (self.distance_to_line_L if self.ALCA_direction == 1 else self.distance_to_line_R)
           if left_to_move < ALCA_release_distance:
@@ -379,15 +390,15 @@ class ALCAModelParser():
             self.send_state()
             return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
         distance_left = float((self.ALCA_total_steps) * 0.05 * (self.ALCA_vego_prev + v_ego) / 2.) #5m + distance left
-        d1 = np.polyval(p_poly,distance_left)
-        d2 = np.polyval(p_poly,distance_left + 1)
+        d1 = np.polyval(p_poly,distance_left * ESTIMATE_CURV_AT)
+        d2 = np.polyval(p_poly,distance_left * ESTIMATE_CURV_AT + 1)
         cos = 1.
         if abs(d2 - d1) > 0.1:
           cos = abs(np.cos(np.arctan(1/abs(d2-d1))))
         ltm = cos * left_to_move
         #compute offsets
         self.ALCA_OFFSET_C1 = 0.
-        self.ALCA_OFFSET_C2 = float(self.ALCA_direction * ltm) / (distance_left )
+        self.ALCA_OFFSET_C2 = ESTIMATE_CURV_AT * float(self.ALCA_direction * ltm) / (distance_left )
         self.prev_distance_to_line_R = self.distance_to_line_R
         self.prev_distance_to_line_L = self.distance_to_line_L
         if ALCA_DEBUG:
@@ -420,6 +431,9 @@ class ALCAModelParser():
       r_poly[2] += self.ALCA_OFFSET_C2
       l_poly[1] += self.ALCA_OFFSET_C1
       r_poly[1] += self.ALCA_OFFSET_C1
+      p_poly[3] = 0
+      p_poly[2] += self.ALCA_OFFSET_C2
+      p_poly[1] += self.ALCA_OFFSET_C1
 
     else:
       self.reset_alca()
@@ -434,5 +448,5 @@ class ALCAModelParser():
         lane_width = self.ALCA_lane_width
 
     self.send_state()
-    return np.array(r_poly),np.array(l_poly),r_prob, l_prob, self.ALCA_lane_width, p_poly
+    return np.array(r_poly),np.array(l_poly),r_prob, l_prob, self.ALCA_lane_width, np.array(p_poly)
  

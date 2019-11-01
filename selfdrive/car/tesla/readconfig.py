@@ -21,9 +21,11 @@ class ConfigFile():
         print("no config file, creating with defaults...")
 
       main_section = 'OP_CONFIG'
+      pref_section = 'OP_PREFERENCES'
       logging_section = 'LOGGING'
       config = configparser.RawConfigParser(allow_no_value=True)
       config.add_section(main_section)
+      config.add_section(pref_section)
       config.add_section(logging_section)
 
       #user_handle -> userHandle
@@ -41,15 +43,6 @@ class ConfigFile():
         entry = 'force_fingerprint_tesla', entry_type = bool,
         default_value = False,
         comment = 'Forces the fingerprint to Tesla Model S if OpenPilot fails to identify car via fingerprint.'
-      )
-      file_changed |= didUpdate
-
-      #eon_to_front -> eonToFront
-      into.eonToFront, didUpdate = self.read_config_entry(
-        config, configr, prev_file_contents, section = main_section,
-        entry = 'eon_to_front', entry_type = float,
-        default_value = 0.9,
-        comment = 'Distance between EON plane and front of the car.'
       )
       file_changed |= didUpdate
 
@@ -71,7 +64,7 @@ class ConfigFile():
       )
       file_changed |= didUpdate
 
-      #enable_das_emulation -> enableDasEmulation
+      #enable_alca -> enableALCA
       into.enableALCA, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = main_section,
         entry = 'enable_alca', entry_type = bool,
@@ -98,57 +91,12 @@ class ConfigFile():
       )
       file_changed |= didUpdate
 
-      #enable_roll_angle_correction -> enableRollAngleCorrection
-      into.enableSpeedVariableDesAngle, didUpdate = self.read_config_entry(
-        config, configr, prev_file_contents, section = main_section,
-        entry = 'enable_speed_variable_angle', entry_type = bool,
-        default_value = True,
-        comment = ''
-      )
-      file_changed |= didUpdate
-
-      #enable_roll_angle_correction -> enableRollAngleCorrection
-      into.enableRollAngleCorrection, didUpdate = self.read_config_entry(
-        config, configr, prev_file_contents, section = main_section,
-        entry = 'enable_roll_angle_correction', entry_type = bool,
-        default_value = False,
-        comment = ''
-      )
-      file_changed |= didUpdate
-
-      #enable_feed_forward_angle_correction -> enableFeedForwardAngleCorrection
-      into.enableFeedForwardAngleCorrection, didUpdate = self.read_config_entry(
-        config, configr, prev_file_contents, section = main_section,
-        entry = 'enable_feed_forward_angle_correction', entry_type = bool,
-        default_value = True,
-        comment = ''
-      )
-      file_changed |= didUpdate
-
       #enable_driver_monitor -> enableDriverMonitor
       into.enableDriverMonitor, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = main_section,
         entry = 'enable_driver_monitor', entry_type = bool,
         default_value = True,
         comment = 'When turned off, the OpenPilot is tricked into thinking you have the hands on the sterring wheel all the time'
-      )
-      file_changed |= didUpdate
-
-      #enable_show_car -> enableShowCar
-      into.enableShowCar, didUpdate = self.read_config_entry(
-        config, configr, prev_file_contents, section = main_section,
-        entry = 'enable_show_car', entry_type = bool,
-        default_value = True,
-        comment = 'Shows a Tesla car in the limitted UI mode instead of the triangle that identifies the lead car; this is only used if you do not have IC/CID integration'
-      )
-      file_changed |= didUpdate
-
-      #enable_show_logo -> enableShowLogo
-      into.enableShowLogo, didUpdate = self.read_config_entry(
-        config, configr, prev_file_contents, section = main_section,
-        entry = 'enable_show_logo', entry_type = bool,
-        default_value = True,
-        comment = 'Shows a Tesla red logo on the EON screen when OP is not enabled'
       )
       file_changed |= didUpdate
 
@@ -264,15 +212,6 @@ class ConfigFile():
         into.radarVIN = default_radar_vin
         file_changed = True
 
-      #enable_ldw = enableLdw
-      into.enableLdw, didUpdate = self.read_config_entry(
-        config, configr, prev_file_contents, section = main_section,
-        entry = 'enable_ldw', entry_type = bool,
-        default_value = True,
-        comment = 'Enable the Lane Departure Warning (LDW) feature; this feature warns the driver is the car gets too close to one of the lines when driving above 45 MPH (72 km/h) without touching the steering wheel and when the turn signal is off'
-      )
-      file_changed |= didUpdate
-
       #radar_offset -> radarOffset
       into.radarOffset, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = main_section,
@@ -320,19 +259,55 @@ class ConfigFile():
       
       #spiner_text -> spinnerText
       into.spinnerText, didUpdate = self.read_config_entry(
-        config, configr, prev_file_contents, section = main_section,
+        config, configr, prev_file_contents, section = pref_section,
         entry = 'spinner_text', entry_type = str,
         default_value = '%d',
         comment = 'The text that is shown for the spinner when spawning the managed services.'
       )
       file_changed |= didUpdate
 
-      #enable_param_learner -> enableParamLearner
-      into.enableParamLearner, didUpdate = self.read_config_entry(
-        config, configr, prev_file_contents, section = main_section,
-        entry = 'enable_param_learner', entry_type = bool,
-        default_value = False,
-        comment = 'Set this setting to True if you want OP to relearn steering rate automatically or will be using fixed rate when False'
+      #hso_numb_period -> hsoNumbPeriod
+      into.hsoNumbPeriod, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = pref_section,
+        entry = 'hso_numb_period', entry_type = float,
+        default_value = 1.5,
+        comment = 'Period to delay (in seconds) the reengagement of LKAS after human turn signal has been used. Time starts when the turn signal is turned on.'
+      )
+      file_changed |= didUpdate
+
+      #enable_ldw = enableLdw
+      into.enableLdw, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = pref_section,
+        entry = 'enable_ldw', entry_type = bool,
+        default_value = True,
+        comment = 'Enable the Lane Departure Warning (LDW) feature; this feature warns the driver is the car gets too close to one of the lines when driving above 45 MPH (72 km/h) without touching the steering wheel and when the turn signal is off'
+      )
+      file_changed |= didUpdate
+
+      #ldw_numb_period -> ldwNumbPeriod
+      into.ldwNumbPeriod, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = pref_section,
+        entry = 'ldw_numb_period', entry_type = float,
+        default_value = 1.5,
+        comment = 'Period to delay (in seconds) the LDW warnings after human turn signal has been used. Time starts when the turn signal is turned on.'
+      )
+      file_changed |= didUpdate
+
+      #enable_show_car -> enableShowCar
+      into.enableShowCar, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = pref_section,
+        entry = 'enable_show_car', entry_type = bool,
+        default_value = True,
+        comment = 'Shows a Tesla car in the limitted UI mode instead of the triangle that identifies the lead car; this is only used if you do not have IC/CID integration'
+      )
+      file_changed |= didUpdate
+
+      #enable_show_logo -> enableShowLogo
+      into.enableShowLogo, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = pref_section,
+        entry = 'enable_show_logo', entry_type = bool,
+        default_value = True,
+        comment = 'Shows a Tesla red logo on the EON screen when OP is not enabled'
       )
       file_changed |= didUpdate
 
@@ -391,15 +366,11 @@ class CarSettings():
 
   userHandle = None
   forceFingerprintTesla = None
-  eonToFront = None
   forcePedalOverCC = None
   enableHSO = None
   enableALCA = None
   enableDasEmulation = None
   enableRadarEmulation = None
-  enableSpeedVariableDesAngle = None
-  enableRollAngleCorrection = None
-  enableFeedForwardAngleCorrection = None
   enableDriverMonitor = None
   enableShowCar = None
   enableShowLogo = None
@@ -424,7 +395,8 @@ class CarSettings():
   spinnerText = None
   shouldLogProcessCommErrors = None
   shouldLogCanErrors = None
-  enableParamLearner = None
+  hsoNumbPeriod = None
+  ldwNumbPeriod = None
 
   def __init__(self, optional_config_file_path = default_config_file_path):
     config_file = ConfigFile()

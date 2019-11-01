@@ -215,9 +215,6 @@ class CarState():
     self.enableALCA = True
     self.enableDasEmulation = True
     self.enableRadarEmulation = True
-    self.enableSpeedVariableDesAngle = False
-    self.enableRollAngleCorrection = False
-    self.enableFeedForwardAngleCorrection = True
     self.enableDriverMonitor = True
     self.enableShowCar = True
     self.enableShowLogo = True
@@ -240,9 +237,9 @@ class CarState():
     self.radarEpasType = 0
     self.fix1916 = False
     self.forceFingerprintTesla = False
-    self.eonToFront = 0.1
     self.spinnerText = ""
-    self.enableParamLearner = False
+    self.hsoNumbPeriod = 1.5
+    self.ldwNumbPeriod = 1.5
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

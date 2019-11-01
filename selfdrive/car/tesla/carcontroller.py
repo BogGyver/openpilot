@@ -25,10 +25,6 @@ ANGLE_MAX_V = [410., 92., 36.]
 ANGLE_DELTA_BP = [0., 5., 15.]
 ANGLE_DELTA_V = [5., .8, .25]     # windup limit
 ANGLE_DELTA_VU = [5., 3.5, 0.8]   # unwind limit
-#steering adjustment with speed
-DES_ANGLE_ADJUST_FACTOR_BP = [0.,13., 44.]
-DES_ANGLE_ADJUST_FACTOR = [1.0, 1.0, 1.0]
-
 #LDW WARNING LEVELS
 LDW_WARNING_1 = 0.9
 LDW_WARNING_2 = 0.5
@@ -196,8 +192,7 @@ class CarController():
     self.prev_ldwStatus = 0
 
     self.radarVin_idx = 0
-    
-    self.LDW_NUMB_PERIOD = 200 # 4 seconds at 50Hz 
+     
     self.should_ldw = False
     self.ldw_numb_frame_start = 0
     self.prev_changing_lanes = False
@@ -323,8 +318,8 @@ class CarController():
     # Basic highway lane change logic
     changing_lanes = CS.right_blinker_on or CS.left_blinker_on
     
-    if (frame % 25 == 0):
-      if (self.prev_changing_lanes and not changing_lanes): #we have a transition from blinkers on to blinkers off, save the frame
+    if (frame % 5 == 0):
+      if (changing_lanes and not self.prev_changing_lanes): #we have a transition from blinkers off to blinkers on, save the frame
         self.ldw_numb_frame_start = frame
         print("LDW Transition detected, frame (%d)", frame)
 
@@ -332,7 +327,7 @@ class CarController():
       self.prev_changing_lanes = changing_lanes
 
       #Determine if we should have LDW or not
-      self.should_ldw = (frame > (self.ldw_numb_frame_start + self.LDW_NUMB_PERIOD))
+      self.should_ldw = (frame > (self.ldw_numb_frame_start + int( 50 * CS.ldwNumbPeriod)))
 
     #upodate custom UI buttons and alerts
     CS.UE.update_custom_ui()
@@ -415,11 +410,8 @@ class CarController():
     else:
       angle_rate_lim = interp(CS.v_ego, ANGLE_DELTA_BP, ANGLE_DELTA_VU)
 
-    des_angle_factor = interp(CS.v_ego, DES_ANGLE_ADJUST_FACTOR_BP, DES_ANGLE_ADJUST_FACTOR )
-    if self.alca_enabled or not CS.enableSpeedVariableDesAngle:
-      des_angle_factor = 1.
     #BB disable limits to test 0.5.8
-    # apply_angle = clip(apply_angle * des_angle_factor, self.last_angle - angle_rate_lim, self.last_angle + angle_rate_lim) 
+    # apply_angle = clip(apply_angle , self.last_angle - angle_rate_lim, self.last_angle + angle_rate_lim) 
     # If human control, send the steering angle as read at steering wheel.
     if human_control:
       apply_angle = CS.angle_steers

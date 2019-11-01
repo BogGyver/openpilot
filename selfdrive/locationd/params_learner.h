@@ -20,7 +20,6 @@ class ParamsLearner {
   double min_sr, max_sr, min_sr_th, max_sr_th;
   double alpha1, alpha2, alpha3, alpha4;
   double cs_sr;
-  bool learnerEnabled;
 
 public:
   double ao;
