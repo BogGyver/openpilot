@@ -323,8 +323,8 @@ class CarController():
     # Basic highway lane change logic
     changing_lanes = CS.right_blinker_on or CS.left_blinker_on
     
-    if (frame % 25 == 0):
-      if (self.prev_changing_lanes and not changing_lanes): #we have a transition from blinkers on to blinkers off, save the frame
+    if (frame % 5 == 0):
+      if (not self.prev_changing_lanes and changing_lanes): #we have a transition from blinkers off to blinkers on, save the frame
         self.ldw_numb_frame_start = frame
         print("LDW Transition detected, frame (%d)", frame)
 
@@ -334,6 +334,9 @@ class CarController():
       #Determine if we should have LDW or not
       self.should_ldw = (frame > (self.ldw_numb_frame_start + self.LDW_NUMB_PERIOD))
 
+      if self.should_ldw:
+        self.ldw_numb_frame_start = 0
+      
     #upodate custom UI buttons and alerts
     CS.UE.update_custom_ui()
       
@@ -755,7 +758,6 @@ class CarController():
         self.curv0 = clip(self.curv0, -3.5, 3.5)
       else:
         if self.should_ldw and (CS.enableLdw and (not CS.blinker_on) and (CS.v_ego > 15.6) and (turn_signal_needed == 0)):
-          self.ldw_numb_frame_start = 0 #reset frame_start for the transition
           if pp.lProb > LDW_LANE_PROBAB:
             lLaneC0 = -pp.lPoly[3]
             if abs(lLaneC0) < LDW_WARNING_2:
