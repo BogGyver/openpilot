@@ -177,6 +177,31 @@ class PCCController():
     self.params = Params()
     self.average_speed_over_x_suggestions = 3 #10x a second
     self.maxsuggestedspeed_avg = MovingAverage(self.average_speed_over_x_suggestions)
+    
+  def load_pid(self):
+    try:
+      v_pid_json = open(V_PID_FILE)
+      data = json.load(v_pid_json)
+      if (self.LoC):
+        self.LoC.pid.p = data['p']
+        self.LoC.pid.i = data['i']
+        self.LoC.pid.f = data['f']
+      else:
+        print("self.LoC not initialized!")
+    except IOError:
+      print("file not present, creating at next reset")
+
+    #Helper function for saving the PCC pid constants across drives
+  def save_pid(self, pid):
+    data = {}
+    data['p'] = pid.p
+    data['i'] = pid.i
+    data['f'] = pid.f
+    try:
+      with open(V_PID_FILE , 'w') as outfile :
+        json.dump(data, outfile)
+    except IOError:
+      print("PDD pid parameters could not be saved to file")
 
   def max_v_by_speed_limit(self,pedal_set_speed_ms ,speed_limit_ms, CS):
     # if more than 10 kph / 2.78 ms, consider we have speed limit
@@ -195,6 +220,9 @@ class PCCController():
       return pedal_set_speed_ms
 
   def reset(self, v_pid):
+    #save the pid parameters to params file
+    self.save_pid(self.LoC.pid)
+    
     if self.LoC and RESET_PID_ON_DISENGAGE:
       self.LoC.reset(v_pid)
 
@@ -378,7 +406,12 @@ class PCCController():
     # how much accel and break we have to do
     ####################################################################
     if PCCModes.is_selected(FollowMode(), CS.cstm_btns):
-      self.v_pid = self.calc_follow_speed_ms(CS,alca_enabled)
+      # Get v_id from the stored file, only the first activation where v_pid eq 0
+      if (not RESET_PID_ON_DISENGAGE and self.v_pid == 0.): 
+        self.load_pid()
+      else:
+        self.v_pid = self.calc_follow_speed_ms(CS,alca_enabled)
+      
       if mapd is not None:
         v_curve = max_v_in_mapped_curve_ms(mapd.liveMapData, self.pedal_speed_kph)
         if v_curve:
