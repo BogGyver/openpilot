@@ -46,17 +46,17 @@ class Publisher():
             data_dict = self.__generate_airtable_user_info_dict(info)
 
         # Early return if no changes
-        if self.latest_info_dict != None:
+        if self.latest_info_dict is not None:
             print(LOG_PREFIX + "latest_info. data=%s" % (self.latest_info_dict)) 
             if data_dict == self.latest_info_dict:
                 print(LOG_PREFIX + "send_info no update necessary*")
                 return
 
         print(LOG_PREFIX + "Sending info. data=%s" % (data_dict))
-        if self.userRecordId != None:
+        if self.userRecordId is not None:
             await self.__update_user(data_dict)
 
-        if info.openPilotId != None and info.openPilotId != '':
+        if (info.openPilotId is not None) and info.openPilotId != '':
             self.openPilotId = info.openPilotId
 
         response = await self.at.get(USERS_TABLE, limit=1, filter_by_formula=("{openPilotId} = '%s'" % (self.openPilotId)))
@@ -76,7 +76,7 @@ class Publisher():
         print(LOG_PREFIX + "*send_info competed*")
 
     async def send_event(self, event):
-        if self.openPilotId is None and self.latest_info_dict != None:
+        if self.openPilotId is None and self.latest_info_dict is not None:
             self.openPilotId = self.latest_info_dict[self.userKeys.openPilotId]
 
         event_dict = self.__generate_airtable_user_event_dict(event)
@@ -103,7 +103,7 @@ class Publisher():
             value = event.value.intValue
         elif value == self.eventValueTypes.floatValue:
             value = event.value.floatValue
-        openPilotId = event.openPilotId if (event.openPilotId != None) else (self.openPilotId if (self.openPilotId != None) else "")
+        openPilotId = event.openPilotId if (event.openPilotId is not None) else (self.openPilotId if (self.openPilotId is not None) else "")
         dictionary = event.to_dict()
         dictionary[self.eventKeys.value] = value
         dictionary[self.eventKeys.openPilotId] = openPilotId
@@ -118,14 +118,14 @@ class Publisher():
 
     def __is_notfound_response(self, response):
         try:
-            return response["error"] != None and response["error"]["code"] == 422
+            return response["error"] is not None and response["error"]["code"] == 422
         except: # pylint: disable=bare-except 
             count = response["records"].__len__()
             return count == 0
 
     def __is_error_response(self, response):
         try:
-            return response["error"] != None
+            return response["error"] is not None
         except: # pylint: disable=bare-except 
             return False
 
@@ -179,7 +179,7 @@ def create_payload(data):
     return {'fields': data}
 
 
-class Airtable(object):
+class Airtable():
     def __init__(self, base_id, api_key, dict_class=OrderedDict):
         """Create a client to connect to an Airtable Base.
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from cereal import car, tesla
 from common.numpy_fast import clip, interp
-from common.realtime import sec_since_boot, DT_CTRL
+from common.realtime import DT_CTRL
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.drive_helpers import create_event, EventTypes as ET, get_events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
@@ -451,10 +451,10 @@ class CarInterface():
       # NO_ENTRY events, so controlsd will display alerts. Also not send enable events
       # too close in time, so a no_entry will not be followed by another one.
       # TODO: button press should be the only thing that triggers enble
-      if ((cur_time - self.last_enable_pressed) < 0.2 and
+      if ((cur_time - self.last_enable_pressed) < 0.2 and # pylint: disable=chained-comparison
           (cur_time - self.last_enable_sent) > 0.2 and
           ret.cruiseState.enabled) or \
-         (enable_pressed and get_events(events, [ET.NO_ENTRY])):
+         (enable_pressed and get_events(events, [ET.NO_ENTRY])): 
         if ret.seatbeltUnlatched:
           self.CC.DAS_211_accNoSeatBelt = 1
           self.CC.warningCounter = 300

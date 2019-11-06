@@ -56,6 +56,7 @@ class RadarInterface(RadarInterfaceBase):
   tinklaClient = TinklaClient()
 
   def __init__(self,CP):
+    super().__init__(self)
     # radar
     self.pts = {}
     self.extPts = {}
@@ -84,7 +85,7 @@ class RadarInterface(RadarInterfaceBase):
       time.sleep(0.05)
       return car.RadarData.new_message(),self.extPts.values()
 
-    if can_strings != None:
+    if can_strings is not None:
       vls = self.rcp.update_strings(can_strings)
       self.updated_messages.update(vls)
 

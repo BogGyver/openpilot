@@ -357,7 +357,7 @@ class ACCController():
       print ("Ratio: {0:.1f}%  lead: {1:.1f}m  avail: {2:.1f}kph  vRel: {3:.1f}kph  Angle: {4:.1f}deg".format(
         ratio, lead_dist_m, available_speed_kph, lead_car.vRel * CV.MS_TO_KPH, CS.angle_steers))
       self.last_update_time = current_time_ms
-      if msg != None:
+      if msg is not None:
         print ("ACC: " + msg)
     return button
     
@@ -371,7 +371,7 @@ class ACCController():
                     and CS.v_ego >= self.MIN_CRUISE_SPEED_MS
                     and _current_time_millis() > self.fast_decel_time + 2000)
                     
-    slow_lead = lead_car and lead_car.dRel > 0 and lead_car.vRel < 0 or self._fast_decel_required(CS, lead_car)
+    slow_lead = lead_car and lead_car.dRel > 0 and lead_car.vRel < 0 or self._fast_decel_required(CS, lead_car) # pylint: disable=chained-comparison
     
     # "Autoresume" mode allows cruise to engage even after brake events, but
     # shouldn't trigger DURING braking.
