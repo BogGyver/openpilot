@@ -409,3 +409,4 @@ class CarSettings():
 def read_config_file(into, config_path = default_config_file_path):
   config_file = ConfigFile()
   config_file.read(into, config_path)
+  

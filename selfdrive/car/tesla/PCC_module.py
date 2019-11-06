@@ -534,7 +534,7 @@ class PCCController():
         elif lead_dist_m < MIN_SAFE_DIST_M:
           new_speed_kph = MIN_PCC_V_KPH
         # In a 10 meter cruise zone, lets match the car in front 
-        elif lead_dist_m > MIN_SAFE_DIST_M and lead_dist_m < safe_dist_m + 2: # BB we might want to try this and rel_speed_kph > 0: 
+        elif safe_dist_m + 2 > lead_dist_m > MIN_SAFE_DIST_M: # BB we might want to try this and rel_speed_kph > 0: 
           min_vrel_kph_map = OrderedDict([
             # (distance in m, min allowed relative kph)
             (0.5 * safe_dist_m, 3.0),
@@ -592,7 +592,7 @@ class PCCController():
       # Don't accelerate during manual turns, curves or ALCA.
       new_speed_kph = min(new_speed_kph, self.last_speed_kph)
     #BB Last safety check. Zero if below MIN_SAFE_DIST_M
-    if (lead_dist_m > 0) and (lead_dist_m < MIN_SAFE_DIST_M) and (rel_speed_kph < 3.):
+    if (MIN_SAFE_DIST_M > lead_dist_m > 0) and (rel_speed_kph < 3.):
       new_speed_kph = MIN_PCC_V_KPH
     self.last_speed_kph = new_speed_kph
     return new_speed_kph * CV.KPH_TO_MS
