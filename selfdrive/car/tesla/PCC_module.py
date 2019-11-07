@@ -229,6 +229,10 @@ class PCCController():
   def update_stat(self, CS, enabled):
     if not self.LoC:
       self.LoC = LongControl(CS.CP, tesla_compute_gb)
+      # Get v_id from the stored file when initiating the LoC and reset_on_disengage==false
+      if (not RESET_PID_ON_DISENGAGE): 
+        self.load_pid()
+
 
     can_sends = []
     if CS.pedal_interceptor_available and not CS.cstm_btns.get_button_status("pedal"):
@@ -406,11 +410,7 @@ class PCCController():
     # how much accel and break we have to do
     ####################################################################
     if PCCModes.is_selected(FollowMode(), CS.cstm_btns):
-      # Get v_id from the stored file, only the first activation where v_pid eq 0
-      if (not RESET_PID_ON_DISENGAGE and self.v_pid == 0.): 
-        self.load_pid()
-      else:
-        self.v_pid = self.calc_follow_speed_ms(CS,alca_enabled)
+      self.v_pid = self.calc_follow_speed_ms(CS,alca_enabled)
       
       if mapd is not None:
         v_curve = max_v_in_mapped_curve_ms(mapd.liveMapData, self.pedal_speed_kph)
