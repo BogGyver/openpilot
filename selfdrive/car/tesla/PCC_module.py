@@ -15,6 +15,7 @@ import math
 from collections import OrderedDict
 from common.params import Params
 from selfdrive.car.tesla.movingaverage import MovingAverage
+import json
 
 _DT = 0.05    # 10Hz in our case, since we don't want to process more than once the same radarState message
 _DT_MPC = _DT
@@ -185,9 +186,10 @@ class PCCController():
       v_pid_json = open(V_PID_FILE)
       data = json.load(v_pid_json)
       if (self.LoC):
-        self.LoC.pid.p = data['p']
-        self.LoC.pid.i = data['i']
-        self.LoC.pid.f = data['f']
+        if self.LoC.pid:
+          self.LoC.pid.p = data['p']
+          self.LoC.pid.i = data['i']
+          self.LoC.pid.f = data['f']
       else:
         print("self.LoC not initialized!")
     except IOError:
@@ -286,7 +288,7 @@ class PCCController():
       if ready and double_pull:
         # A double pull enables ACC. updating the max ACC speed if necessary.
         self.enable_pedal_cruise = True
-        self.LoC.reset(CS.v_ego)
+        self.reset(CS.v_ego)
         # Increase PCC speed to match current, if applicable.
         self.pedal_speed_kph = max(CS.v_ego * CV.MS_TO_KPH, self.speed_limit_kph)
     # Handle pressing the cancel button.
@@ -429,7 +431,7 @@ class PCCController():
       self.pedal_state = CS.pedal_interceptor_value > 10
       #reset PID if we just lifted foot of accelerator
       if (not self.pedal_state) and self.prev_pedal_state:
-        self.LoC.reset(v_pid=CS.v_ego)
+        self.reset(v_pid=CS.v_ego)
 
       if self.enable_pedal_cruise and  (not self.pedal_state):
         jerk_min, jerk_max = _jerk_limits(CS.v_ego, self.lead_1, self.v_pid * CV.MS_TO_KPH, self.lead_last_seen_time_ms, CS)
@@ -467,7 +469,7 @@ class PCCController():
         output_gb = t_go - t_brake
         #print ("Output GB Follow:", output_gb)
       else:
-        self.LoC.reset(v_pid=CS.v_ego)
+        self.reset(v_pid=CS.v_ego)
         #print ("PID reset")
         output_gb = 0.
         starting = self.LoC.long_control_state == LongCtrlState.starting
