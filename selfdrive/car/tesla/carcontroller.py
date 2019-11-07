@@ -4,6 +4,7 @@ from common.params import Params
 from collections import namedtuple
 from common.numpy_fast import clip, interp
 from common.realtime import DT_CTRL
+from common import realtime
 from selfdrive.car.tesla import teslacan
 from selfdrive.car.tesla.values import AH, CM
 from selfdrive.can.packer import CANPacker
@@ -348,11 +349,11 @@ class CarController():
           self.speed_limit_offset = 0.
         if not self.isMetric:
           self.speed_limit_offset = self.speed_limit_offset * CV.MPH_TO_MS
-    if CS.useTeslaGPS:
+    if CS.useTeslaGPS and frame % 10 == 0:
       if self.gpsLocationExternal is None:
         self.gpsLocationExternal = messaging.pub_sock(service_list['gpsLocationExternal'].port)
       sol = gen_solution(CS)
-      sol.logMonoTime = int(frame * DT_CTRL * 1e9)
+      sol.logMonoTime = int(realtime.sec_since_boot() * 1e9)
       self.gpsLocationExternal.send(sol.to_bytes())
 
     #get pitch/roll/yaw every 0.1 sec
@@ -391,7 +392,7 @@ class CarController():
     else:
       CS.v_cruise_pcm = max(0.,CS.v_ego * CV.MS_TO_KPH  +0.5) * speed_uom_kph
     # Get the turn signal from ALCA.
-    turn_signal_needed, self.alca_enabled = self.ALCA.update(enabled, CS, actuators)
+    turn_signal_needed, self.alca_enabled = self.ALCA.update(enabled, CS, actuators,self.alcaStateData)
     apply_angle = -actuators.steerAngle  # Tesla is reversed vs OP.
     human_control,turn_signal_needed_hso = self.HSO.update_stat(self,CS, enabled, actuators, frame)
     if turn_signal_needed == 0:
@@ -738,8 +739,6 @@ class CarController():
       self.visionCurvC0 = self.curv0
       self.prev_ldwStatus = self.ldwStatus
       self.ldwStatus = 0
-      if (self.ALCA.laneChange_direction != 0) and alcaStateData.alcaError:
-        self.ALCA.stop_ALCA(CS)
       if self.alca_enabled:
         #exagerate position a little during ALCA to make lane change look smoother on IC
         if self.ALCA.laneChange_over_the_line:

@@ -51,10 +51,10 @@ class HSOController():
           #if steering but not by ALCA
           if (CS.right_blinker_on or CS.left_blinker_on) and (self.CC.ALCA.laneChange_enabled <= 1):# and (self.last_blinker_on != self.blinker_on):
             self.frame_humanSteered = frame
-          if (CS.steer_override > 0) and (frame - self.frame_humanSteered > 50): 
+          if (CS.steer_override > 0): # and (frame - self.frame_humanSteered > 50): #let's try with human touch only
             self.frame_humanSteered = frame
           else:
-            if (frame - self.frame_humanSteered < 50): # Need more human testing of handoff timing
+            if (self.CC.ALCA.laneChange_enabled <= 1) and (frame - self.frame_humanSteered < 50): # Need more human testing of handoff timing
               # Find steering difference between visiond model and human (no need to do every frame if we run out of CPU):
               steer_current=(CS.angle_steers)  # Formula to convert current steering angle to match apply_steer calculated number
               apply_steer = int(-actuators.steerAngle)

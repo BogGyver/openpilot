@@ -50,7 +50,7 @@ MIN_CAN_SPEED = 0.3  #TODO: parametrize this in car interface
 # Pull the cruise stalk twice in this many ms for a 'double pull'
 STALK_DOUBLE_PULL_MS = 750
 
-V_PID_FILE = '/data/params/d/pidParams'
+V_PID_FILE = '/data/params/pidParams'
 
 class Mode():
   label = None

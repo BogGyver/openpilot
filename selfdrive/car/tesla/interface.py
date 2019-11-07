@@ -35,8 +35,6 @@ class CarInterface():
     self.gas_pressed_prev = False
     self.brake_pressed_prev = False
     self.can_invalid_count = 0
-    self.alca = messaging.pub_sock(service_list['alcaStatus'].port)
-
     
 
     # *** init the major players ***
@@ -495,15 +493,6 @@ class CarInterface():
     self.gas_pressed_prev = ret.gasPressed
     self.brake_pressed_prev = self.CS.brake_pressed != 0
 
-    #pass ALCA status
-    alca_status = tesla.ALCAStatus.new_message()
-
-    alca_status.alcaEnabled = bool(self.CS.ALCA_enabled)
-    alca_status.alcaTotalSteps = int(self.CS.ALCA_total_steps)
-    alca_status.alcaDirection = int(self.CS.ALCA_direction)
-    alca_status.alcaError = bool(self.CS.ALCA_error)
-
-    self.alca.send(alca_status.to_bytes())
 
     # cast to reader so it can't be modified
     return ret.as_reader()
