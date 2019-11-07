@@ -194,6 +194,7 @@ class CarController():
     self.radarVin_idx = 0
      
     self.should_ldw = False
+    self.ldw_enable_speed_ms = 16
     self.ldw_numb_frame_start = 0
     self.prev_changing_lanes = False
     
@@ -321,14 +322,20 @@ class CarController():
     if (frame % 5 == 0):
       if (changing_lanes and not self.prev_changing_lanes): #we have a transition from blinkers off to blinkers on, save the frame
         self.ldw_numb_frame_start = frame
-        print("LDW Transition detected, frame (%d)", frame)
-
+        if (CS.v_ego > self.ldw_enable_speed_ms):
+          CS.UE.custom_alert_message(3, "LDW Disabled", 150, 4)
+          
       # update the previous state of the blinkers (chaning_lanes)
       self.prev_changing_lanes = changing_lanes
 
       #Determine if we should have LDW or not
-      self.should_ldw = (frame > (self.ldw_numb_frame_start + int( 50 * CS.ldwNumbPeriod)))
+      self.should_ldw = (frame > (self.ldw_numb_frame_start + int(50 * CS.ldwNumbPeriod))) and (CS.v_ego > self.ldw_enable_speed_ms)
 
+      if self.should_ldw and self.ldw_numb_frame_start != 0:
+        self.ldw_numb_frame_start = 0
+        CS.UE.custom_alert_message(2, "LDW Enabled", 150, 4)
+        
+        
     #upodate custom UI buttons and alerts
     CS.UE.update_custom_ui()
       
@@ -746,8 +753,7 @@ class CarController():
           self.curv0 = self.ALCA.laneChange_direction * self.laneWidth - self.curv0
         self.curv0 = clip(self.curv0, -3.5, 3.5)
       else:
-        if self.should_ldw and (CS.enableLdw and (not CS.blinker_on) and (CS.v_ego > 15.6) and (turn_signal_needed == 0)):
-          self.ldw_numb_frame_start = 0 #reset frame_start for the transition
+        if self.should_ldw and (CS.enableLdw and (not CS.blinker_on) and (turn_signal_needed == 0)):
           if pp.lProb > LDW_LANE_PROBAB:
             lLaneC0 = -pp.lPoly[3]
             if abs(lLaneC0) < LDW_WARNING_2:
