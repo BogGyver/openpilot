@@ -113,7 +113,8 @@ class TinklaServer():
             await self.publisher.send_info(info)
             self.userInfoCache.task_done()
         except Exception as error: # pylint: disable=broad-except 
-            print(LOG_PREFIX + "Error attempting to publish user info (%s)" % (error))
+            self.userInfoCache.push(info)
+            print(LOG_PREFIX + "Error attempting to publish user info (%s) (Cache has %d elements)" % (error, self.userInfoCache.count()))
 
     async def logUserEvent(self, event, **kwargs):
         self.eventCache.push(event)
