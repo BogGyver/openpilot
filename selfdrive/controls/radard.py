@@ -72,7 +72,10 @@ def get_lead(v_ego, ready, clusters, lead_msg, low_speed_override=True,use_tesla
     cluster = None
 
   lead_dict = {'status': False}
-  lead_dict_ext = {'trackId': 1, 'oClass': 0, 'length': 0.}
+  lead_dict_ext = {'trackId': 1, 'oClass': 1, 'length': 0.}
+  # temporary for development purposes: we set the default lead vehicle type to truck (=0) to distinguish between vision (truck) and radar leads (car) in IC
+  if use_tesla_radar:
+    lead_dict_ext.oClass = 0
   if cluster is not None:
     lead_dict,lead_dict_ext = cluster.get_RadarState(lead_msg.prob)
   elif (cluster is None) and ready and (lead_msg.prob > .5):
