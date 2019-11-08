@@ -63,7 +63,7 @@ ALCA_release_distance = 0.3
 ALCA_line_prob_low = 0.1
 ALCA_line_prob_high = 0.4
 ALCA_zero_line = 2.5 #meters in front where to check for distance vs line
-ESTIMATE_CURV_AT = .33 #% of full distance to estimate curvature
+ESTIMATE_CURV_AT = .15 #% of full distance to estimate curvature
 
 ALCA_DEBUG = True
 DEBUG_INFO = "step {step} of {total_steps}: direction = {ALCA_direction} | using visual = {ALCA_use_visual} | over line = {ALCA_over_line} | lane width = {ALCA_lane_width} | left to move = {left_to_move} | from center = {from_center} | C2 offset = {ALCA_OFFSET_C2} | C1 offset = {ALCA_OFFSET_C1} | Prob Low = {prob_low} | Prob High = {prob_high}"
@@ -439,7 +439,7 @@ class ALCAModelParser():
     ltm = left_to_move #sin * left_to_move
     #compute offsets
     self.ALCA_OFFSET_C1 = 0.
-    self.ALCA_OFFSET_C2 = 0.7 * float(self.ALCA_direction * ltm) / (distance_left )
+    self.ALCA_OFFSET_C2 = 0.8 * float(self.ALCA_direction * ltm) / (distance_left )
     self.prev_distance_to_line_R = self.distance_to_line_R
     self.prev_distance_to_line_L = self.distance_to_line_L
     if ALCA_DEBUG:

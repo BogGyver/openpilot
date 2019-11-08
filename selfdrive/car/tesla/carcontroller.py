@@ -324,11 +324,12 @@ class CarController():
         self.ldw_numb_frame_start = frame
         print("LDW Transition detected, frame (%d)", frame)
 
-      # update the previous state of the blinkers (chaning_lanes)
+      # update the previous state of the blinkers (chaning_lanes      if (self.ALCA.laneChange_enabled > 1):
+        self.ldw_numb_frame_start = frame 
       self.prev_changing_lanes = changing_lanes
 
       #Determine if we should have LDW or not
-      self.should_ldw = (frame > (self.ldw_numb_frame_start + int( 50 * CS.ldwNumbPeriod)))
+      self.should_ldw = (frame > (self.ldw_numb_frame_start + int( 50 * CS.ldwNumbPeriod))) 
 
     #upodate custom UI buttons and alerts
     CS.UE.update_custom_ui()
