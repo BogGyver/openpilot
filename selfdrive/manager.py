@@ -369,7 +369,7 @@ def manager_thread():
   logger_dead = False
 
   # Tinkla interface
-  last_loop_iteration_time = 0
+  last_tinklad_send_attempt_time = 0
   tinklaClient = TinklaClient()
   sendUserInfoToTinkla(params=params, tinklaClient=tinklaClient)
 
@@ -385,9 +385,9 @@ def manager_thread():
     # Attempt to send pending messages if there's any that queued while offline
     # Seems this loop runs every second or so, throttle to once every 30s
     now = time.time()
-    if now - last_loop_iteration_time >= 30:
+    if now - last_tinklad_send_attempt_time >= 30:
       tinklaClient.attemptToSendPendingMessages()
-    last_loop_iteration_time = now
+      last_tinklad_send_attempt_time = now
 
     if msg.thermal.freeSpace < 0.05:
       logger_dead = True
