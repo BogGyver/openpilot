@@ -381,7 +381,7 @@ class ALCAModelParser():
       self.send_state()
       return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width,np.array(p_poly)
 
-    self.hit_prob_low = (self.ALCA_direction != 0) and (self.hit_prob_low or ((self.ALCA_direction == 1) and (l_prob < ALCA_line_prob_low)) or ((self.ALCA_direction == -1) and (r_prob < ALCA_line_prob_low)))
+    self.hit_prob_low = self.hit_prob_low and ((self.ALCA_direction != 0) and (self.hit_prob_low or ((self.ALCA_direction == 1) and (l_prob < ALCA_line_prob_low)) or ((self.ALCA_direction == -1) and (r_prob < ALCA_line_prob_low))))
     self.hit_prob_high = (self.ALCA_direction != 0) and (self.hit_prob_low) and (self.hit_prob_high or ((self.ALCA_direction == 1) and (r_prob > ALCA_line_prob_high)) or ((self.ALCA_direction == -1) and (l_prob < ALCA_line_prob_high)))
 
     if self.hit_prob_high:
@@ -431,15 +431,15 @@ class ALCAModelParser():
         self.reset_alca(v_ego)
         return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
     distance_left = ESTIMATE_CURV_AT * float((self.ALCA_total_steps) * 0.05 * (self.ALCA_vego_prev + v_ego) / 2.) #5m + distance left
-    d1 = np.polyval(p_poly,distance_left)
+    d1 = np.polyval(p_poly,distance_left -1)
     d2 = np.polyval(p_poly,distance_left + 1)
-    cos = 1.
+    sin = 1.
     if abs(d2 - d1) > 0.1:
-      cos = abs(np.cos(np.arctan(1/abs(d2-d1))))
-    ltm = cos * left_to_move
+      sin = abs(np.sin(np.arctan(2/abs(d2-d1))))
+    ltm = left_to_move #sin * left_to_move
     #compute offsets
     self.ALCA_OFFSET_C1 = 0.
-    self.ALCA_OFFSET_C2 = 0.6 * float(self.ALCA_direction * ltm) / (distance_left )
+    self.ALCA_OFFSET_C2 = 0.7 * float(self.ALCA_direction * ltm) / (distance_left )
     self.prev_distance_to_line_R = self.distance_to_line_R
     self.prev_distance_to_line_L = self.distance_to_line_L
     if ALCA_DEBUG:
