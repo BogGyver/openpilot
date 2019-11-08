@@ -349,7 +349,7 @@ class CarController():
           self.speed_limit_offset = 0.
         if not self.isMetric:
           self.speed_limit_offset = self.speed_limit_offset * CV.MPH_TO_MS
-    if CS.useTeslaGPS and frame % 10 == 0:
+    if CS.useTeslaGPS and (frame % 10 == 0):
       if self.gpsLocationExternal is None:
         self.gpsLocationExternal = messaging.pub_sock(service_list['gpsLocationExternal'].port)
       sol = gen_solution(CS)
@@ -363,7 +363,6 @@ class CarController():
 
     # Update statuses for custom buttons every 0.1 sec.
     if (frame % 10 == 0):
-      #self.ALCA.update_status(False) 
       self.ALCA.update_status((CS.cstm_btns.get_button_status("alca") > 0) and ((CS.enableALCA and not CS.hasTeslaIcIntegration) or (CS.hasTeslaIcIntegration and CS.alcaEnabled)))
     
     pedal_can_sends = []
@@ -392,7 +391,7 @@ class CarController():
     else:
       CS.v_cruise_pcm = max(0.,CS.v_ego * CV.MS_TO_KPH  +0.5) * speed_uom_kph
     # Get the turn signal from ALCA.
-    turn_signal_needed, self.alca_enabled = self.ALCA.update(enabled, CS, actuators,self.alcaStateData)
+    turn_signal_needed, self.alca_enabled = self.ALCA.update(enabled, CS, actuators, self.alcaStateData, frame)
     apply_angle = -actuators.steerAngle  # Tesla is reversed vs OP.
     human_control,turn_signal_needed_hso = self.HSO.update_stat(self,CS, enabled, actuators, frame)
     if turn_signal_needed == 0:

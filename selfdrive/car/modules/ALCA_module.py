@@ -72,6 +72,7 @@ DEBUG_INFO = "step {step} of {total_steps}: direction = {ALCA_direction} | using
 class ALCAController():
   def __init__(self,carcontroller,alcaEnabled,steerByAngle):
     #import settings
+    self.frame = 0
     self.CC = carcontroller  # added to start, will see if we need it actually
     # variables for lane change
     self.angle_offset = 0. #added when one needs to compensate for missalignment
@@ -106,7 +107,20 @@ class ALCAController():
     self.last_time_enabled = 0
     self.alcaStatusSocket = messaging.pub_sock(service_list['alcaStatus'].port)
 
+  def debug_alca(self,message):
+    if ALCA_DEBUG:
+      print (message)
+
   def send_status(self,CS):
+    alca_mode = 2 #CS.cstm_btns.get_button_label2_index("alca")
+    CS.ALCA_enabled = (self.laneChange_enabled > 1) and self.alcaEnabled
+    CS.ALCA_total_steps = int(20 * self.alca_duration[alca_mode])
+    if self.laneChange_enabled == 3:
+      CS.ALCA_direction = -self.laneChange_direction
+    else:
+      CS.ALCA_direction = 0
+    if not (self.frame % 20 == 0):
+        return
     alca_status = tesla.ALCAStatus.new_message()
     alca_status.alcaEnabled = bool(CS.ALCA_enabled)
     alca_status.alcaTotalSteps = int(CS.ALCA_total_steps)
@@ -121,6 +135,7 @@ class ALCAController():
 
   def stop_ALCA(self, CS, isDone):
     # something is not right; ALCAModelParser is not engaged; cancel
+    self.debug_alca("ALCA canceled: stop_ALCA called")
     if not isDone:
       CS.UE.custom_alert_message(3,"Auto Lane Change Canceled! (d)",200,5)
       self.laneChange_cancelled = True
@@ -135,12 +150,14 @@ class ALCAController():
     self.send_status(CS)
 
 
-  def update(self,enabled,CS,actuators,alcaStateData):
+  def update(self,enabled,CS,actuators,alcaStateData,frame):
     cl_min_v = CS.CL_MIN_V
     cl_max_a = CS.CL_MAX_A
-    alca_mode = CS.cstm_btns.get_button_label2_index("alca")
+    self.frame = frame
+    alca_mode = 2 # CS.cstm_btns.get_button_label2_index("alca")
 
     if (alcaStateData is not None) and (((self.laneChange_direction != 0) and alcaStateData.alcaError) or (alcaStateData.alcaDirection == 100)):
+      self.debug_alca("ALCA canceled: stop_ALCA called (1)")
       self.stop_ALCA(CS,alcaStateData.alcaDirection == 100)
       return 0, False
 
@@ -156,6 +173,7 @@ class ALCAController():
 
     if (not CS.right_blinker_on) and (not CS.left_blinker_on) and \
     (self.laneChange_enabled == 4):
+        self.debug_alca("ALCA reset: resetting 4 -> 1")
         self.laneChange_enabled =1
         self.laneChange_counter =0
         self.laneChange_direction =0
@@ -174,55 +192,53 @@ class ALCAController():
     if (CS.cstm_btns.get_button_status("alca") > 0) and self.alcaEnabled and (self.laneChange_enabled == 1):
       if ((CS.v_ego < cl_min_v) or (abs(actuators.steerAngle) >= cl_max_a) or \
       (abs(CS.angle_steers)>= cl_max_a)  or (not enabled)): 
+        #self.debug_alca("ALCA Unavailable (1)")
         CS.cstm_btns.set_button_status("alca",9)
       else:
         CS.cstm_btns.set_button_status("alca",1)
 
-    if self.alcaEnabled and enabled and (((not self.prev_right_blinker_on) and CS.right_blinker_on) or \
-      ((not self.prev_left_blinker_on) and CS.left_blinker_on)) and \
+    if self.alcaEnabled and enabled and (self.laneChange_enabled > 1) and \
       ((CS.v_ego < cl_min_v) or (abs(actuators.steerAngle) >= cl_max_a) or (abs(CS.angle_steers) >=cl_max_a)):
       # something is not right, the speed or angle is limitting
+      self.debug_alca("ALCA Unavailable (2)")
       CS.UE.custom_alert_message(3,"Auto Lane Change Unavailable!",500,3)
       CS.cstm_btns.set_button_status("alca",9)
+      self.stop_ALCA(CS, False)
+      return 0, False
 
     if self.alcaEnabled and enabled and (((not self.prev_right_blinker_on) and CS.right_blinker_on) or \
       ((not self.prev_left_blinker_on) and CS.left_blinker_on))  and \
-      (CS.v_ego >= cl_min_v) and (abs(actuators.steerAngle) < cl_max_a):
+      (CS.v_ego >= cl_min_v) and (abs(actuators.steerAngle) < cl_max_a) and (self.laneChange_enabled == 1):
       # start blinker, speed and angle is within limits, let's go
       laneChange_direction = 1
       # changing lanes
       if CS.left_blinker_on:
         laneChange_direction = -1
+      self.debug_alca("ALCA blinker on detected")
 
-      if (self.laneChange_enabled > 1) and (self.laneChange_direction != laneChange_direction):
-        # something is not right; signal in oposite direction; cancel
-        CS.UE.custom_alert_message(3,"Auto Lane Change Canceled! (s)",200,5)
-        self.laneChange_cancelled = True
-        self.laneChange_cancelled_counter = 200
-        self.laneChange_enabled = 1
-        self.laneChange_counter = 0
-        self.laneChange_direction = 0
-        CS.cstm_btns.set_button_status("alca",1)
-      elif (self.laneChange_enabled == 1) :
-        # compute angle delta for lane change
-        CS.UE.custom_alert_message(2,"Auto Lane Change Engaged!",100)
-        self.laneChange_enabled = 2
-        self.laneChange_counter = 1
-        self.laneChange_direction = laneChange_direction
-        CS.cstm_btns.set_button_status("alca",2)
+      CS.UE.custom_alert_message(2,"Auto Lane Change Engaged!",100)
+      self.debug_alca("ALCA engaged")
+      self.laneChange_enabled = 2
+      self.laneChange_counter = 1
+      self.laneChange_direction = laneChange_direction
+      CS.cstm_btns.set_button_status("alca",2)
 
     self.prev_right_blinker_on = CS.right_blinker_on
     self.prev_left_blinker_on = CS.left_blinker_on
 
     if (not self.alcaEnabled) and self.laneChange_enabled > 1:
+      self.debug_alca("ALCA canceled: not enabled")
       self.laneChange_enabled = 1
       self.laneChange_counter = 0
       self.laneChange_direction = 0
+      self.stop_ALCA(CS, False)
+      return 0, False
 
     # lane change in progress
     if self.laneChange_enabled > 1:
       if (CS.steer_override or (CS.v_ego < cl_min_v)):
         CS.UE.custom_alert_message(4,"Auto Lane Change Canceled! (u)",200,3)
+        self.debug_alca("ALCA canceled: steer override")
         self.laneChange_cancelled = True
         self.laneChange_cancelled_counter = 200
         # if any steer override cancel process or if speed less than min speed
@@ -230,10 +246,13 @@ class ALCAController():
         self.laneChange_enabled = 1
         self.laneChange_direction = 0
         CS.cstm_btns.set_button_status("alca",1)
+        self.stop_ALCA(CS, False)
+        return 0, False
       if self.laneChange_enabled == 2:
         if self.laneChange_counter == 1:
           CS.UE.custom_alert_message(2,"Auto Lane Change Engaged! (1)",self.laneChange_wait * 100)
         self.laneChange_counter += 1
+        self.debug_alca("ALCA phase 2: " + str(self.laneChange_counter))
         if self.laneChange_counter == self.laneChange_wait * 100:
           self.laneChange_enabled = 3
           self.laneChange_counter = 0
@@ -241,21 +260,19 @@ class ALCAController():
         if self.laneChange_counter == 1:
           CS.UE.custom_alert_message(2,"Auto Lane Change Engaged! (2)",int(self.alca_duration[alca_mode] * 100))
         self.laneChange_counter += 1
+        self.debug_alca("ALCA phase 3: " + str(self.laneChange_counter))
         if self.laneChange_counter >= self.alca_duration[alca_mode] * 100:
           self.laneChange_enabled = 4
           self.laneChange_counter = 0
       if self.laneChange_enabled == 4:
+        self.debug_alca("ALCA phase 4: " +str(self.laneChange_counter))
         if self.laneChange_counter == 1:
           CS.UE.custom_alert_message(2,"Auto Lane Change Complete!",100)
           self.laneChange_enabled = 1
           self.laneChange_counter = 0
+          self.stop_ALCA(CS, True)
+          return 0, False
 
-    CS.ALCA_enabled = (self.laneChange_enabled > 1) and self.alcaEnabled
-    CS.ALCA_total_steps = int(20 * self.alca_duration[alca_mode])
-    if self.laneChange_enabled == 3:
-      CS.ALCA_direction = -self.laneChange_direction
-    else:
-      CS.ALCA_direction = 0
     self.send_status(CS)
     return turn_signal_needed, self.laneChange_enabled > 1
 
@@ -289,7 +306,7 @@ class ALCAModelParser():
     self.prev_distance_to_line_R = 100.
 
 
-  def reset_alca (self):
+  def reset_alca (self,v_ego):
     self.ALCA_step = 0
     self.ALCA_direction = 100
     self.ALCA_cancelling = False
@@ -300,7 +317,7 @@ class ALCAModelParser():
     self.ALCA_OFFSET_C1 = 0.
     self.ALCA_over_line = False
     self.ALCA_use_visual = True
-    self.ALCA_vego_prev = 0.
+    self.ALCA_vego_prev = v_ego
     self.alcas = None
     self.hit_prob_low = False
     self.hit_prob_high = False
@@ -308,6 +325,7 @@ class ALCAModelParser():
     self.prev_distance_to_line_L = 100.
     self.distance_to_line_R = 100.
     self.prev_distance_to_line_R = 100.
+    self.send_state()
 
   def debug_alca(self,message):
     if ALCA_DEBUG:
@@ -348,120 +366,115 @@ class ALCAModelParser():
       self.ALCA_error = self.ALCA_error or (self.alcas.alcaError and not self.prev_CS_ALCA_error)
       self.prev_CS_ALCA_error = self.alcas.alcaError
 
-    if (not self.ALCA_enabled) or (self.ALCA_direction == 100):
-      self.send_state()
-      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width,np.array(p_poly)
-
-    #if error but no direction, the carcontroller component is fine and we need to reset
-    if self.ALCA_error and (self.ALCA_direction == 0):
-      self.ALCA_error = False
-
-    self.hit_prob_low = (self.ALCA_direction != 0) and (self.hit_prob_low or ((self.ALCA_direction == 1) and (l_prob < ALCA_line_prob_low)) or ((self.ALCA_direction == -1) and (r_prob < ALCA_line_prob_low)))
-    self.hit_prob_high = (self.ALCA_direction != 0) and (self.hit_prob_low) and (self.hit_prob_high or ((self.ALCA_direction == 1) and (r_prob > ALCA_line_prob_high)) or ((self.ALCA_direction == -1) and (l_prob < ALCA_line_prob_high)))
-
-    if self.hit_prob_high:
-      self.debug_alca("Hit high probability for line, ALCA done, releasing...")
-      self.reset_alca()
-
-    #where are we in alca as %
-    ALCA_perc_complete = float(self.ALCA_step) / float(self.ALCA_total_steps)
-    if self.ALCA_error and self.ALCA_cancelling:
-      self.debug_alca(" Error and Cancelling -> resetting...")
-      self.reset_alca()
-    if self.ALCA_error and not self.ALCA_cancelling:
-      if (ALCA_perc_complete < 0.1) or (ALCA_perc_complete > 0.9):
-        self.debug_alca(" Error and less than 10% -> resetting...")
-        self.reset_alca()
-      else:
-        self.debug_alca(" Error and not Cancelling -> rewinding...")
-        self.ALCA_cancelling = True
-        self.ALCA_error = False
-
-    if self.ALCA_enabled and not (self.ALCA_direction == 0):
-
-      self.ALCA_step += 1 #ALCA_increment
-  
-
-      if (self.ALCA_step < 0) or (self.ALCA_step >= self.ALCA_total_steps):
-        #done so end ALCA
-        self.debug_alca(" step out of bounds -> resetting...")
-        self.reset_alca()
-
-      #compute offset
-      from_center = 0.
-      left_to_move = 0.
-      if self.ALCA_enabled and not (self.ALCA_direction == 0):
-        #compute distances to lines
-        self.distance_to_line_L = abs(l_poly[3]) #abs(np.polyval(l_poly,ALCA_zero_line))
-        self.distance_to_line_R = abs(r_poly[3]) #abs(np.polyval(r_poly,ALCA_zero_line))
-        if ((self.ALCA_direction == 1) and ((self.distance_to_line_L > 1.1 * self.prev_distance_to_line_L) or (self.distance_to_line_R < self.ALCA_lane_width / 3.))) or \
-          ((self.ALCA_direction == -1) and ((self.distance_to_line_R > 1.1 * self.prev_distance_to_line_R) or (self.distance_to_line_L < self.ALCA_lane_width / 3.))):
-          self.ALCA_over_line = True
-        left_to_move = self.ALCA_lane_width * ESTIMATE_CURV_AT #we will estimate at a ESTIMATE_CURV_AT of the distance
-        if self.ALCA_over_line:
-          left_to_move = self.ALCA_lane_width / 2. - (self.distance_to_line_L if self.ALCA_direction == 1 else self.distance_to_line_R)
-          if left_to_move < ALCA_release_distance:
-            self.reset_alca()
-            self.send_state()
-            return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
-        distance_left = ESTIMATE_CURV_AT * float((self.ALCA_total_steps) * 0.05 * (self.ALCA_vego_prev + v_ego) / 2.) #5m + distance left
-        d1 = np.polyval(p_poly,distance_left)
-        d2 = np.polyval(p_poly,distance_left + 1)
-        cos = 1.
-        if abs(d2 - d1) > 0.1:
-          cos = abs(np.cos(np.arctan(1/abs(d2-d1))))
-        ltm = cos * left_to_move
-        #compute offsets
-        self.ALCA_OFFSET_C1 = 0.
-        self.ALCA_OFFSET_C2 = float(self.ALCA_direction * ltm) / (distance_left )
-        self.prev_distance_to_line_R = self.distance_to_line_R
-        self.prev_distance_to_line_L = self.distance_to_line_L
-        if ALCA_DEBUG:
-          debug_string = DEBUG_INFO.format(step=self.ALCA_step,total_steps=self.ALCA_total_steps,ALCA_direction=self.ALCA_direction,ALCA_use_visual=self.ALCA_use_visual,ALCA_over_line=self.ALCA_over_line,ALCA_lane_width=self.ALCA_lane_width, left_to_move=left_to_move/ESTIMATE_CURV_AT, from_center=from_center, ALCA_OFFSET_C2=self.ALCA_OFFSET_C2, ALCA_OFFSET_C1=self.ALCA_OFFSET_C1,prob_low=self.hit_prob_low,prob_high=self.hit_prob_high)
-          self.debug_alca(debug_string)
-      else:
-        self.ALCA_OFFSET_C2 = 0.
-        self.ALCA_OFFSET_C1 = 0.
-      
-      
-      if (not self.ALCA_error) and self.ALCA_use_visual:
-        if self.ALCA_over_line:
-          if (self.ALCA_total_steps - self.ALCA_step <= 1) or (self.ALCA_over_line and ((self.ALCA_direction == 1) and (r_poly[3] < -ALCA_release_distance)) or ((self.ALCA_direction == -1) and (l_poly[3] > ALCA_release_distance))):
-            self.reset_alca()
-            self.ALCA_error = False
-
-      if l_prob > r_prob:
-        r_poly = np.array(l_poly)
-        if l_prob > ALCA_line_prob_low:
-          l_prob = 1
-        r_prob = l_prob
-      else:
-        l_poly = np.array(r_poly)
-        if r_prob > ALCA_line_prob_low:
-          r_prob = 1
-        l_prob = r_prob     
-      l_poly[3] = self.ALCA_lane_width / 2
-      r_poly[3] = -self.ALCA_lane_width / 2
-      l_poly[2] += self.ALCA_OFFSET_C2
-      r_poly[2] += self.ALCA_OFFSET_C2
-      l_poly[1] += self.ALCA_OFFSET_C1
-      r_poly[1] += self.ALCA_OFFSET_C1
-      p_poly[3] = 0
-      p_poly[2] += self.ALCA_OFFSET_C2
-      p_poly[1] += self.ALCA_OFFSET_C1
-
-    else:
-      self.reset_alca()
-      self.ALCA_error = False
-
-    self.ALCA_vego_prev = v_ego
-
     if self.ALCA_enabled:
       if self.ALCA_direction == 0:
         self.ALCA_lane_width = lane_width
       else:
         lane_width = self.ALCA_lane_width
 
+    #if error but no direction, the carcontroller component is fine and we need to reset
+    if self.ALCA_error and (self.ALCA_direction == 0):
+      self.ALCA_error = False
+
+    if (not self.ALCA_enabled) or (self.ALCA_direction == 100) or (self.ALCA_direction == 0):
+      self.ALCA_vego_prev = v_ego
+      self.send_state()
+      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width,np.array(p_poly)
+
+    self.hit_prob_low = (self.ALCA_direction != 0) and (self.hit_prob_low or ((self.ALCA_direction == 1) and (l_prob < ALCA_line_prob_low)) or ((self.ALCA_direction == -1) and (r_prob < ALCA_line_prob_low)))
+    self.hit_prob_high = (self.ALCA_direction != 0) and (self.hit_prob_low) and (self.hit_prob_high or ((self.ALCA_direction == 1) and (r_prob > ALCA_line_prob_high)) or ((self.ALCA_direction == -1) and (l_prob < ALCA_line_prob_high)))
+
+    if self.hit_prob_high:
+      self.debug_alca("Hit high probability for line, ALCA done, releasing...")
+      self.reset_alca(v_ego)
+      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width,np.array(p_poly)
+
+    #where are we in alca as %
+    ALCA_perc_complete = float(self.ALCA_step) / float(self.ALCA_total_steps)
+    if self.ALCA_error and self.ALCA_cancelling:
+      self.debug_alca(" Error and Cancelling -> resetting...")
+      self.reset_alca(v_ego)
+      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width,np.array(p_poly)
+    if self.ALCA_error and not self.ALCA_cancelling:
+      if (ALCA_perc_complete < 0.1) or (ALCA_perc_complete > 0.9):
+        self.debug_alca(" Error and less than 10% -> resetting...")
+        self.reset_alca(v_ego)
+        return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width,np.array(p_poly)
+      else:
+        self.debug_alca(" Error and not Cancelling -> rewinding...")
+        self.ALCA_cancelling = True
+        self.ALCA_error = False
+
+    self.ALCA_step += 1 #ALCA_increment
+
+
+    if (self.ALCA_step < 0) or (self.ALCA_step >= self.ALCA_total_steps):
+      #done so end ALCA
+      self.debug_alca(" step out of bounds -> resetting...")
+      self.reset_alca(v_ego)
+      return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width,np.array(p_poly)
+
+    #compute offset
+    from_center = 0.
+    left_to_move = 0.
+
+    #compute distances to lines
+    self.distance_to_line_L = abs(l_poly[3]) #abs(np.polyval(l_poly,ALCA_zero_line))
+    self.distance_to_line_R = abs(r_poly[3]) #abs(np.polyval(r_poly,ALCA_zero_line))
+    if ((self.ALCA_direction == 1) and ((self.distance_to_line_L > 1.1 * self.prev_distance_to_line_L) or (self.distance_to_line_R < self.ALCA_lane_width / 3.))) or \
+      ((self.ALCA_direction == -1) and ((self.distance_to_line_R > 1.1 * self.prev_distance_to_line_R) or (self.distance_to_line_L < self.ALCA_lane_width / 3.))):
+      self.ALCA_over_line = True
+    left_to_move = self.ALCA_lane_width * ESTIMATE_CURV_AT #we will estimate at a ESTIMATE_CURV_AT of the distance
+    if self.ALCA_over_line:
+      left_to_move = self.ALCA_lane_width / 2. - (self.distance_to_line_L if self.ALCA_direction == 1 else self.distance_to_line_R)
+      if left_to_move < ALCA_release_distance:
+        self.reset_alca(v_ego)
+        return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
+    distance_left = ESTIMATE_CURV_AT * float((self.ALCA_total_steps) * 0.05 * (self.ALCA_vego_prev + v_ego) / 2.) #5m + distance left
+    d1 = np.polyval(p_poly,distance_left)
+    d2 = np.polyval(p_poly,distance_left + 1)
+    cos = 1.
+    if abs(d2 - d1) > 0.1:
+      cos = abs(np.cos(np.arctan(1/abs(d2-d1))))
+    ltm = cos * left_to_move
+    #compute offsets
+    self.ALCA_OFFSET_C1 = 0.
+    self.ALCA_OFFSET_C2 = 0.6 * float(self.ALCA_direction * ltm) / (distance_left )
+    self.prev_distance_to_line_R = self.distance_to_line_R
+    self.prev_distance_to_line_L = self.distance_to_line_L
+    if ALCA_DEBUG:
+      debug_string = DEBUG_INFO.format(step=self.ALCA_step,total_steps=self.ALCA_total_steps,ALCA_direction=self.ALCA_direction,ALCA_use_visual=self.ALCA_use_visual,ALCA_over_line=self.ALCA_over_line,ALCA_lane_width=self.ALCA_lane_width, left_to_move=left_to_move/ESTIMATE_CURV_AT, from_center=from_center, ALCA_OFFSET_C2=self.ALCA_OFFSET_C2, ALCA_OFFSET_C1=self.ALCA_OFFSET_C1,prob_low=self.hit_prob_low,prob_high=self.hit_prob_high)
+      self.debug_alca(debug_string)
+    
+    
+    if (not self.ALCA_error) and self.ALCA_use_visual:
+      if self.ALCA_over_line:
+        if (self.ALCA_total_steps - self.ALCA_step <= 1) or (self.ALCA_over_line and ((self.ALCA_direction == 1) and (r_poly[3] < -ALCA_release_distance)) or ((self.ALCA_direction == -1) and (l_poly[3] > ALCA_release_distance))):
+          self.ALCA_error = False
+          self.reset_alca(v_ego)
+          return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
+
+    if l_prob > r_prob:
+      r_poly = np.array(l_poly)
+      if l_prob > ALCA_line_prob_low:
+        l_prob = 1
+      r_prob = l_prob
+    else:
+      l_poly = np.array(r_poly)
+      if r_prob > ALCA_line_prob_low:
+        r_prob = 1
+      l_prob = r_prob     
+    l_poly[3] = self.ALCA_lane_width / 2
+    r_poly[3] = -self.ALCA_lane_width / 2
+    l_poly[2] += self.ALCA_OFFSET_C2
+    r_poly[2] += self.ALCA_OFFSET_C2
+    l_poly[1] += self.ALCA_OFFSET_C1
+    r_poly[1] += self.ALCA_OFFSET_C1
+    p_poly[3] = 0
+    p_poly[2] += self.ALCA_OFFSET_C2
+    p_poly[1] += self.ALCA_OFFSET_C1
+
+    self.ALCA_vego_prev = v_ego
     self.send_state()
     return np.array(r_poly),np.array(l_poly),r_prob, l_prob, self.ALCA_lane_width, np.array(p_poly)
  

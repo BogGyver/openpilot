@@ -12,6 +12,9 @@
 #define MIN_SR_TH  0.55
 #define MAX_SR_TH  1.9
 
+#define FREQUENCY 100.0 //BB learner is called at 100 Hz
+#define MAX_ACCEL 0.2 //BB maximum acceleration m/s^2 accepted before ignoring the calculations 
+
 class ParamsLearner {
   double cF0, cR0;
   double aR, aF;

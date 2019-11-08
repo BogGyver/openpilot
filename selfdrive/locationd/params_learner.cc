@@ -55,19 +55,16 @@ bool ParamsLearner::update(double psi, double u, double sa) {
 
     double slow_ao_diff = 2.0*cF0*cR0*l*u*x*(1.0*cF0*cR0*l*u*x*(slow_ao - sa) + psi*sR*(cF0*cR0*pow(l, 2)*x - m*pow(u, 2)*(aF*cF0 - aR*cR0)))/(pow(sR, 2)*pow(cF0*cR0*pow(l, 2)*x - m*pow(u, 2)*(aF*cF0 - aR*cR0), 2));
     double new_slow_ao = slow_ao - alpha2 * slow_ao_diff;
-
+  
     double new_x = x - alpha3 * (-2.0*cF0*cR0*l*m*pow(u, 3)*(slow_ao - sa)*(aF*cF0 - aR*cR0)*(1.0*cF0*cR0*l*u*x*(slow_ao - sa) + psi*sR*(cF0*cR0*pow(l, 2)*x - m*pow(u, 2)*(aF*cF0 - aR*cR0)))/(pow(sR, 2)*pow(cF0*cR0*pow(l, 2)*x - m*pow(u, 2)*(aF*cF0 - aR*cR0), 3)));
     double new_sR = sR - alpha4 * (-2.0*cF0*cR0*l*u*x*(slow_ao - sa)*(1.0*cF0*cR0*l*u*x*(slow_ao - sa) + psi*sR*(cF0*cR0*pow(l, 2)*x - m*pow(u, 2)*(aF*cF0 - aR*cR0)))/(pow(sR, 3)*pow(cF0*cR0*pow(l, 2)*x - m*pow(u, 2)*(aF*cF0 - aR*cR0), 2)));
 
 
-    //only consider learning angle offset when less than 1% change in velocity
-    if (abs(prev_u - u)/u < 0.001) {
+    //only consider if acceleration [abs(prev_speed - speed) * frequency] is less than MAX_ACCEL
+    double a = abs(prev_u - u) * FREQUENCY;
+    if (a < MAX_ACCEL) {
       ao = new_ao;
       slow_ao = new_slow_ao;
-    }
-
-    //only consider learning steerRatio and stiffness coefficient when less than 0.5% change in velocity
-    if (abs(prev_u - u)/u < 0.0005) {
       x = new_x;
       sR = new_sR;
     }
