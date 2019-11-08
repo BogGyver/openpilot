@@ -65,7 +65,7 @@ ALCA_line_prob_high = 0.4
 ALCA_zero_line = 2.5 #meters in front where to check for distance vs line
 ESTIMATE_CURV_AT = .15 #% of full distance to estimate curvature
 
-ALCA_DEBUG = True
+ALCA_DEBUG = False
 DEBUG_INFO = "step {step} of {total_steps}: direction = {ALCA_direction} | using visual = {ALCA_use_visual} | over line = {ALCA_over_line} | lane width = {ALCA_lane_width} | left to move = {left_to_move} | from center = {from_center} | C2 offset = {ALCA_OFFSET_C2} | C1 offset = {ALCA_OFFSET_C1} | Prob Low = {prob_low} | Prob High = {prob_high}"
 
 
@@ -112,7 +112,7 @@ class ALCAController():
       print (message)
 
   def send_status(self,CS):
-    alca_mode = 2 #CS.cstm_btns.get_button_label2_index("alca")
+    alca_mode = 2 #FIXED TO Calm was CS.cstm_btns.get_button_label2_index("alca")
     CS.ALCA_enabled = (self.laneChange_enabled > 1) and self.alcaEnabled
     CS.ALCA_total_steps = int(20 * self.alca_duration[alca_mode])
     if self.laneChange_enabled == 3:
@@ -154,7 +154,7 @@ class ALCAController():
     cl_min_v = CS.CL_MIN_V
     cl_max_a = CS.CL_MAX_A
     self.frame = frame
-    alca_mode = 2 # CS.cstm_btns.get_button_label2_index("alca")
+    alca_mode = 2 #FIXED TO Calm was CS.cstm_btns.get_button_label2_index("alca")
 
     if (alcaStateData is not None) and (((self.laneChange_direction != 0) and alcaStateData.alcaError) or (alcaStateData.alcaDirection == 100)):
       self.debug_alca("ALCA canceled: stop_ALCA called (1)")
@@ -419,12 +419,12 @@ class ALCAModelParser():
     left_to_move = 0.
 
     #compute distances to lines
-    self.distance_to_line_L = abs(l_poly[3]) #abs(np.polyval(l_poly,ALCA_zero_line))
-    self.distance_to_line_R = abs(r_poly[3]) #abs(np.polyval(r_poly,ALCA_zero_line))
+    self.distance_to_line_L = abs(l_poly[3]) 
+    self.distance_to_line_R = abs(r_poly[3]) 
     if ((self.ALCA_direction == 1) and ((self.distance_to_line_L > 1.1 * self.prev_distance_to_line_L) or (self.distance_to_line_R < self.ALCA_lane_width / 3.))) or \
       ((self.ALCA_direction == -1) and ((self.distance_to_line_R > 1.1 * self.prev_distance_to_line_R) or (self.distance_to_line_L < self.ALCA_lane_width / 3.))):
       self.ALCA_over_line = True
-    left_to_move = self.ALCA_lane_width * ESTIMATE_CURV_AT #we will estimate at a ESTIMATE_CURV_AT of the distance
+    left_to_move = self.ALCA_lane_width * ESTIMATE_CURV_AT 
     if self.ALCA_over_line:
       left_to_move = self.ALCA_lane_width / 2. - (self.distance_to_line_L if self.ALCA_direction == 1 else self.distance_to_line_R)
       if left_to_move < ALCA_release_distance:
@@ -433,10 +433,15 @@ class ALCAModelParser():
     distance_left = ESTIMATE_CURV_AT * float((self.ALCA_total_steps) * 0.05 * (self.ALCA_vego_prev + v_ego) / 2.) #5m + distance left
     d1 = np.polyval(p_poly,distance_left -1)
     d2 = np.polyval(p_poly,distance_left + 1)
-    sin = 1.
-    if abs(d2 - d1) > 0.1:
-      sin = abs(np.sin(np.arctan(2/abs(d2-d1))))
-    ltm = left_to_move #sin * left_to_move
+    cos = 0.
+    if abs(d2 - d1) > 0.001:
+      cos = abs(np.cos(np.arctan(2/abs(d2-d1))))
+    d0 = (d2 + d1) / 2.0 - np.polyval(p_poly,distance_left)
+    #ltm = left_to_move * (1 - cos)
+    ltm = left_to_move * (1 - cos * self.ALCA_direction)
+    #ltm = left_to_move * (1 - cos * self.ALCA_direction) + d0 * self.ALCA_direction
+    #ltm = left_to_move + d0 * self.ALCA_direction
+    #ltm = left_to_move
     #compute offsets
     self.ALCA_OFFSET_C1 = 0.
     self.ALCA_OFFSET_C2 = 0.8 * float(self.ALCA_direction * ltm) / (distance_left )
