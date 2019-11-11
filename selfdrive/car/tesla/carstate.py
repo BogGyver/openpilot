@@ -240,6 +240,7 @@ class CarState():
     self.spinnerText = ""
     self.hsoNumbPeriod = 1.5
     self.ldwNumbPeriod = 1.5
+    self.hsoBlinkerExtender = 1.0
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

@@ -158,7 +158,7 @@ class CarController():
     self.curv2 = 0. 
     self.curv3 = 0. 
     self.visionCurvC0 = 0.
-    self.laneRange = 90  #max is 160m but OP has issues with precision beyond 50
+    self.laneRange = 75  #max is 160m but OP has issues with precision beyond 50
 
     self.laneWidth = 0.
 
@@ -478,8 +478,6 @@ class CarController():
           can_messages = self.handleTrafficEvents(trafficEventsSocket = socket)
           can_sends.extend(can_messages)
 
-    self.laneRange = 90
-
     op_status = 0x02
     hands_on_state = 0x00
     forward_collision_warning = 0 #1 if needed
@@ -694,14 +692,13 @@ class CarController():
       self.curv2 = -clip(pp.dPoly[1],-0.0025,0.0025) #self.curv2Matrix.add(-clip(pp.cPoly[1],-0.0025,0.0025))
       self.curv3 = -clip(pp.dPoly[0],-0.00003,0.00003) #self.curv3Matrix.add(-clip(pp.cPoly[0],-0.00003,0.00003))
       self.laneWidth = pp.laneWidth
-      self.laneRange = 50 # it is fixed in OP at 50m pp.viewRange
       self.visionCurvC0 = self.curv0
       self.prev_ldwStatus = self.ldwStatus
       self.ldwStatus = 0
-      if self.alca_enabled:
+      if alcaStateData.alcaEnabled:
         #exagerate position a little during ALCA to make lane change look smoother on IC
-        if self.ALCA.laneChange_over_the_line:
-          self.curv0 = self.ALCA.laneChange_direction * self.laneWidth - self.curv0
+        self.curv1 = 0.0 #straighten the turn for ALCA
+        self.curv0 = -self.ALCA.laneChange_direction * alcaStateData.alcaLaneWidth * alcaStateData.alcaStep / alcaStateData.alcaTotalSteps #animas late change on IC
         self.curv0 = clip(self.curv0, -3.5, 3.5)
       else:
         if self.should_ldw and (CS.enableLdw and (not CS.blinker_on) and (CS.v_ego > 15.6) and (turn_signal_needed == 0)):

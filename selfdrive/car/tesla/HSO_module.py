@@ -1,7 +1,6 @@
 #human steer override module
 import time
 
-MAX_TIME_BLINKER_ON = 150 # in 0.01 seconds
 TIME_REMEMBER_LAST_BLINKER = 50 # in 0.01 seconds
 
 def _current_time_millis():
@@ -41,7 +40,7 @@ class HSOController():
                 self.blinker_on = self.last_human_blinker_on
             else:
                 self.last_human_blinker_on = 0
-        if frame - self.frame_human_blinker_on > MAX_TIME_BLINKER_ON:
+        if frame - self.frame_human_blinker_on > 100 * CS.hsoBlinkerExtender:
           self.blinker_on = 0
           self.turn_signal_needed = 0
           self.last_blinker_on = 0

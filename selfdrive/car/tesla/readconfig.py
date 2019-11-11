@@ -293,6 +293,15 @@ class ConfigFile():
       )
       file_changed |= didUpdate
 
+      #hso_blinker_extender -> hsoBlinkerExtender
+      into.hsoBlinkerExtender, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = pref_section,
+        entry = 'hso_blinker_extender', entry_type = float,
+        default_value = 0.0,
+        comment = 'Period to keep the blinker on (in seconds). Time starts when the turn signal is turned off. If LKA is reengaged, the signal is turned off automatically.'
+      )
+      file_changed |= didUpdate
+
       #enable_show_car -> enableShowCar
       into.enableShowCar, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = pref_section,
@@ -397,6 +406,7 @@ class CarSettings():
   shouldLogCanErrors = None
   hsoNumbPeriod = None
   ldwNumbPeriod = None
+  hsoBlinkerExtender = None
 
   def __init__(self, optional_config_file_path = default_config_file_path):
     config_file = ConfigFile()
