@@ -158,11 +158,8 @@ class CarController():
     self.curv2 = 0. 
     self.curv3 = 0. 
     self.visionCurvC0 = 0.
-    self.laneRange = 50  #max is 160m but OP has issues with precision beyond 50
-    self.useZeroC0 = False
-    self.useMap = False
-    self.clipC0 = False
-    self.useMapOnly = False
+    self.laneRange = 90  #max is 160m but OP has issues with precision beyond 50
+
     self.laneWidth = 0.
 
     self.stopSign_visible = False
@@ -327,9 +324,10 @@ class CarController():
       # update the previous state of the blinkers (chaning_lanes      if (self.ALCA.laneChange_enabled > 1):
         self.ldw_numb_frame_start = frame 
       self.prev_changing_lanes = changing_lanes
-
+      if self.alca_enabled:
+        self.ldw_numb_frame_start = frame + 200 #we don't want LDW for 2 seconds after ALCA finishes
       #Determine if we should have LDW or not
-      self.should_ldw = (frame > (self.ldw_numb_frame_start + int( 50 * CS.ldwNumbPeriod))) 
+      self.should_ldw = (frame > (self.ldw_numb_frame_start + int( 100 * CS.ldwNumbPeriod))) 
 
     #upodate custom UI buttons and alerts
     CS.UE.update_custom_ui()
@@ -374,8 +372,7 @@ class CarController():
       self.ACC.enable_adaptive_cruise = False
     else:
       # Update ACC module info.
-      if  frame % 5 == 0:
-        self.ACC.update_stat(CS, True)
+      self.ACC.update_stat(CS, True)
       self.PCC.enable_pedal_cruise = False
     
     # Update HSO module info.
@@ -481,46 +478,8 @@ class CarController():
           can_messages = self.handleTrafficEvents(trafficEventsSocket = socket)
           can_sends.extend(can_messages)
 
-    if (CS.roadCurvRange > 20) and self.useMap:
-      if self.useZeroC0:
-        self.curv0 = 0.
-      elif self.clipC0:
-        self.curv0 = -clip(CS.roadCurvC0,-0.5,0.5)
-      #else:
-      #  self.curv0 = -CS.roadCurvC0
-      #if CS.v_ego > 9:
-      #  self.curv1 = -CS.roadCurvC1
-      #else:
-      #  self.curv1 = 0.
-      self.curv2 = -CS.roadCurvC2
-      self.curv3 = -CS.roadCurvC3
-      self.laneRange = CS.roadCurvRange
-    #else:
-    #  self.curv0 = 0.
-    #  self.curv1 = 0.
-    #  self.curv2 = 0.
-    #  self.curv3 = 0.
-    #  self.laneRange = 0
-    
-    if (CS.csaRoadCurvRange > 2.) and self.useMap and not self.useMapOnly:
-      self.curv2 = -CS.csaRoadCurvC2
-      self.curv3 = -CS.csaRoadCurvC3
-      #if self.laneRange > 0:
-      #  self.laneRange = min(self.laneRange,CS.csaRoadCurvRange)
-      #else:
-      self.laneRange = CS.csaRoadCurvRange
-    elif (CS.csaOfframpCurvRange > 2.) and self.useMap and not self.useMapOnly:
-      #self.curv2 = -CS.csaOfframpCurvC2
-      #self.curv3 = -CS.csaOfframpCurvC3
-      #self.curv0 = 0.
-      #self.curv1 = 0.
-      #if self.laneRange > 0:
-      #  self.laneRange = min(self.laneRange,CS.csaOfframpCurvRange)
-      #else:
-      self.laneRange = CS.csaOfframpCurvRange
-    else:
-      self.laneRange = 50
-    self.laneRange = int(clip(self.laneRange,0,159))
+    self.laneRange = 90
+
     op_status = 0x02
     hands_on_state = 0x00
     forward_collision_warning = 0 #1 if needed

@@ -201,7 +201,7 @@ class CarState():
     self.CL_MIN_V = 8.9
     self.CL_MAX_A = 20.
     # labels for buttons
-    self.btns_init = [["alca",                "ALC",                      ["MadMax", "Normal", "Calm"]],
+    self.btns_init = [["alca",                "ALC",                      [""]],
                       [ACCMode.BUTTON_NAME,   ACCMode.BUTTON_ABREVIATION, ACCMode.labels()],
                       ["dsp",               "DSP",                      ["OP","MIN","OFF","GYRO"]],
                       ["",               "",                      [""]],
