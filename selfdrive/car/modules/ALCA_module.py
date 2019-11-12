@@ -460,4 +460,9 @@ class ALCAModelParser():
     r_poly[1] += self.ALCA_OFFSET_C1
     p_poly[3] = 0
     p_poly[2] += self.ALCA_OFFSET_C2
-    p_poly[1
+    p_poly[1] += self.ALCA_OFFSET_C1
+
+    self.ALCA_vego_prev = v_ego	
+    self.send_state()	
+    return np.array(r_poly),np.array(l_poly),r_prob, l_prob, self.ALCA_lane_width, np.array(p_poly)
+    
