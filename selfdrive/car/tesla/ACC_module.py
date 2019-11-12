@@ -62,7 +62,7 @@ class ACCController():
     self.human_cruise_action_time = 0
     self.automated_cruise_action_time = 0
     self.poller = zmq.Poller()
-    self.radarState = messaging.sub_sock(service_list['radarState'].port, conflate=True, poller=self.poller)
+    self.radarState = messaging.sub_sock('radarState', conflate=True, poller=self.poller)
     self.last_update_time = 0
     self.enable_adaptive_cruise = False
     self.prev_enable_adaptive_cruise = False

@@ -32,7 +32,7 @@ def get_rrext_by_trackId(rrext,trackId):
 if __name__ == "__main__":
   CP = None
   RI = RadarInterface(CP)
-  can_sock = messaging.sub_sock(service_list['can'].port)
+  can_sock = messaging.sub_sock('can')
   can_poller = zmq.Poller()
   can_poller.register(can_sock)
   while 1:

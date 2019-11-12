@@ -274,8 +274,8 @@ class ALCAModelParser():
     self.ALCA_vego = 0.
     self.ALCA_vego_prev = 0.
     self.poller = zmq.Poller()
-    self.alcaStatus = messaging.sub_sock(service_list['alcaStatus'].port, conflate=True, poller=self.poller)
-    self.alcaState = messaging.pub_sock(service_list['alcaState'].port)
+    self.alcaStatus = messaging.sub_sock('alcaStatus', conflate=True, poller=self.poller)
+    self.alcaState = messaging.pub_sock('alcaState')
     self.alcas = None
     self.hit_prob_low = False
     self.hit_prob_high = False
@@ -460,9 +460,4 @@ class ALCAModelParser():
     r_poly[1] += self.ALCA_OFFSET_C1
     p_poly[3] = 0
     p_poly[2] += self.ALCA_OFFSET_C2
-    p_poly[1] += self.ALCA_OFFSET_C1
-
-    self.ALCA_vego_prev = v_ego
-    self.send_state()
-    return np.array(r_poly),np.array(l_poly),r_prob, l_prob, self.ALCA_lane_width, np.array(p_poly)
- 
+    p_poly[1

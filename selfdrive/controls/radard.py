@@ -112,13 +112,13 @@ class RadarD():
     self.icCarLR = None
     self.use_tesla_radar = use_tesla_radar
     if (RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE) and self.use_tesla_radar:
-      self.icCarLR = messaging.pub_sock(service_list['uiIcCarLR'].port)
+      self.icCarLR = messaging.pub_sock('uiIcCarLR')
     
     self.lane_width = 3.0
     #only used for left and right lanes
     self.path_x = np.arange(0.0, 160.0, 0.1)    # 160 meters is max
     self.poller = zmq.Poller()
-    self.pathPlanSocket = messaging.sub_sock(service_list['pathPlan'].port, conflate=True, poller=self.poller)
+    self.pathPlanSocket = messaging.sub_sock('pathPlan', conflate=True, poller=self.poller)
     self.dPoly = [0.,0.,0.,0.]
 
   def update(self, frame, sm, rr, has_radar,rrext):
@@ -388,7 +388,7 @@ def radard_thread(sm=None, pm=None, can_sock=None):
   # *** publish radarState and liveTracks
   if pm is None:
     pm = messaging.PubMaster(['radarState', 'liveTracks'])
-    icLeads = messaging.pub_sock(service_list['uiIcLeads'].port)
+    icLeads = messaging.pub_sock('uiIcLeads')
 
   RI = RadarInterface(CP)
 
@@ -437,8 +437,4 @@ def radard_thread(sm=None, pm=None, can_sock=None):
 
 
 def main(sm=None, pm=None, can_sock=None):
-  radard_thread(sm, pm, can_sock)
-
-
-if __name__ == "__main__":
-  main()
+  radard_thread

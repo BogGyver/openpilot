@@ -1,19 +1,18 @@
 from cereal import ui
 from common import realtime
 import selfdrive.messaging as messaging
-from selfdrive.services import service_list
 import zmq
 
 class UIEvents():
     def __init__(self,carstate):
         self.CS = carstate
         self.buttons_poller = zmq.Poller()
-        self.uiCustomAlert = messaging.pub_sock(service_list['uiCustomAlert'].port)
-        self.uiButtonInfo = messaging.pub_sock(service_list['uiButtonInfo'].port)
-        self.uiSetCar = messaging.pub_sock(service_list['uiSetCar'].port)
-        self.uiPlaySound = messaging.pub_sock(service_list['uiPlaySound'].port)
-        self.uiGyroInfo = messaging.pub_sock(service_list['uiGyroInfo'].port)
-        self.uiButtonStatus = messaging.sub_sock(service_list['uiButtonStatus'].port, conflate=True, poller=self.buttons_poller)
+        self.uiCustomAlert = messaging.pub_sock('uiCustomAlert')
+        self.uiButtonInfo = messaging.pub_sock('uiButtonInfo')
+        self.uiSetCar = messaging.pub_sock('uiSetCar')
+        self.uiPlaySound = messaging.pub_sock('uiPlaySound')
+        self.uiGyroInfo = messaging.pub_sock('uiGyroInfo')
+        self.uiButtonStatus = messaging.sub_sock('uiButtonStatus', conflate=True, poller=self.buttons_poller)
         self.prev_cstm_message = ""
         self.prev_cstm_status = -1
 

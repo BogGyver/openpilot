@@ -17,7 +17,6 @@ from selfdrive.car.tesla.HSO_module import HSOController
 from selfdrive.car.tesla.movingaverage import MovingAverage
 import zmq
 import selfdrive.messaging as messaging
-from selfdrive.services import service_list
 
 # Steer angle limits
 ANGLE_MAX_BP = [0., 27., 36.]
@@ -95,12 +94,12 @@ class CarController():
     self.sent_DAS_bootID = False
     self.poller = zmq.Poller()
     self.speedlimit = None
-    self.trafficevents = messaging.sub_sock(service_list['trafficEvents'].port, conflate=True, poller=self.poller)
-    self.pathPlan = messaging.sub_sock(service_list['pathPlan'].port, conflate=True, poller=self.poller)
-    self.radarState = messaging.sub_sock(service_list['radarState'].port, conflate=True, poller=self.poller)
-    self.icLeads = messaging.sub_sock(service_list['uiIcLeads'].port, conflate=True, poller=self.poller)
-    self.icCarLR = messaging.sub_sock(service_list['uiIcCarLR'].port, conflate=True, poller=self.poller)
-    self.alcaState = messaging.sub_sock(service_list['alcaState'].port, conflate=True, poller=self.poller)
+    self.trafficevents = messaging.sub_sock('trafficEvents', conflate=True, poller=self.poller)
+    self.pathPlan = messaging.sub_sock('pathPlan', conflate=True, poller=self.poller)
+    self.radarState = messaging.sub_sock('radarState', conflate=True, poller=self.poller)
+    self.icLeads = messaging.sub_sock('uiIcLeads', conflate=True, poller=self.poller)
+    self.icCarLR = messaging.sub_sock('uiIcCarLR', conflate=True, poller=self.poller)
+    self.alcaState = messaging.sub_sock('alcaState', conflate=True, poller=self.poller)
     self.gpsLocationExternal = None 
     self.speedlimit_ms = 0.
     self.speedlimit_valid = False
@@ -268,7 +267,7 @@ class CarController():
 
     if not CS.useTeslaMapData:
       if self.speedlimit is None:
-        self.speedlimit = messaging.sub_sock(service_list['liveMapData'].port, conflate=True, poller=self.poller)
+        self.speedlimit = messaging.sub_sock('liveMapData', conflate=True, poller=self.poller)
 
 
     # *** no output if not enabled ***
@@ -355,7 +354,7 @@ class CarController():
           self.speed_limit_offset = self.speed_limit_offset * CV.MPH_TO_MS
     if CS.useTeslaGPS and (frame % 10 == 0):
       if self.gpsLocationExternal is None:
-        self.gpsLocationExternal = messaging.pub_sock(service_list['gpsLocationExternal'].port)
+        self.gpsLocationExternal = messaging.pub_sock('gpsLocationExternal')
       sol = gen_solution(CS)
       sol.logMonoTime = int(realtime.sec_since_boot() * 1e9)
       self.gpsLocationExternal.send(sol.to_bytes())

@@ -23,7 +23,7 @@ EPSILON = 0.0000001
 class GYROController:
   def __init__(self):
     self.poller = zmq.Poller()
-    self.sensorEvents = messaging.sub_sock(service_list['sensorEvents'].port, conflate=True, poller=self.poller)
+    self.sensorEvents = messaging.sub_sock('sensorEvents', conflate=True, poller=self.poller)
     self.roll = 0.
     self.pitch = 0.01
     self.yaw = 9.8

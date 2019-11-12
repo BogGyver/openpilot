@@ -135,8 +135,8 @@ class PCCController():
     self.automated_cruise_action_time = 0
     self.last_angle = 0.
     self.poller = zmq.Poller()
-    self.radarState = messaging.sub_sock(service_list['radarState'].port, conflate=True, poller=self.poller)
-    self.live_map_data = messaging.sub_sock(service_list['liveMapData'].port, conflate=True, poller=self.poller)
+    self.radarState = messaging.sub_sock('radarState', conflate=True, poller=self.poller)
+    self.live_map_data = messaging.sub_sock('liveMapData', conflate=True, poller=self.poller)
     self.lead_1 = None
     self.last_update_time = 0
     self.enable_pedal_cruise = False
