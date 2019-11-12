@@ -8,7 +8,6 @@ except ValueError:
 from cereal import car
 import time
 import os
-import zmq
 from selfdrive.can.parser import CANParser
 from common.realtime import sec_since_boot
 from selfdrive.services import service_list
@@ -33,10 +32,8 @@ if __name__ == "__main__":
   CP = None
   RI = RadarInterface(CP)
   can_sock = messaging.sub_sock('can')
-  can_poller = zmq.Poller()
-  can_poller.register(can_sock)
   while 1:
-    can_strings = messaging.drain_sock_raw_poller(can_poller, can_sock, wait_for_one=True)
+    can_strings = messaging.drain_sock_raw(can_sock, wait_for_one=True)
     rr,rrext = RI.update(can_strings)
 
     if (rr is None) or (rrext is None):

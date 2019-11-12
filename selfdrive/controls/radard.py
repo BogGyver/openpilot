@@ -117,8 +117,7 @@ class RadarD():
     self.lane_width = 3.0
     #only used for left and right lanes
     self.path_x = np.arange(0.0, 160.0, 0.1)    # 160 meters is max
-    self.poller = zmq.Poller()
-    self.pathPlanSocket = messaging.sub_sock('pathPlan', conflate=True, poller=self.poller)
+    self.pathPlanSocket = messaging.sub_sock('pathPlan', conflate=True)
     self.dPoly = [0.,0.,0.,0.]
 
   def update(self, frame, sm, rr, has_radar,rrext):
@@ -131,11 +130,11 @@ class RadarD():
     if sm.updated['model']:
       self.ready = True
 
-    for socket, _ in self.poller.poll(0):
-      if socket is self.pathPlanSocket:
-        pp = messaging.recv_one(self.pathPlanSocket).pathPlan
-        self.lane_width = pp.laneWidth
-        self.dPoly = pp.dPoly
+    ppMsg = messaging.recv_sock(self.pathPlanSocket)
+    if ppMsg is not None:
+      pp = ppMsg.pathPlan
+      self.lane_width = pp.laneWidth
+      self.dPoly = pp.dPoly
 
     path_y = np.polyval(self.dPoly, self.path_x)
 

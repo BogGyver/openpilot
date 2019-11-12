@@ -1,18 +1,16 @@
 from cereal import ui
 from common import realtime
 import selfdrive.messaging as messaging
-import zmq
 
 class UIEvents():
     def __init__(self,carstate):
         self.CS = carstate
-        self.buttons_poller = zmq.Poller()
         self.uiCustomAlert = messaging.pub_sock('uiCustomAlert')
         self.uiButtonInfo = messaging.pub_sock('uiButtonInfo')
         self.uiSetCar = messaging.pub_sock('uiSetCar')
         self.uiPlaySound = messaging.pub_sock('uiPlaySound')
         self.uiGyroInfo = messaging.pub_sock('uiGyroInfo')
-        self.uiButtonStatus = messaging.sub_sock('uiButtonStatus', conflate=True, poller=self.buttons_poller)
+        self.uiButtonStatus = messaging.sub_sock('uiButtonStatus', conflate=True)
         self.prev_cstm_message = ""
         self.prev_cstm_status = -1
 
@@ -89,9 +87,7 @@ class UIEvents():
 
     def update_custom_ui(self):
         btn_message = None
-        for socket, event in self.buttons_poller.poll(0):
-            if socket is self.uiButtonStatus:
-                btn_message = ui.UIButtonStatus.from_bytes(socket.recv())
+        btn_message = messaging.recv_sock(self.uiButtonStatus) #ui.UIButtonStatus.from_bytes(sock.recv())
         if btn_message is not None:
             btn_id = btn_message.btnId
             self.CS.cstm_btns.set_button_status_from_ui(btn_id,btn_message.btnStatus)

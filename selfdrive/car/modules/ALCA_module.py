@@ -49,7 +49,6 @@ from selfdrive.controls.lib.pid import PIController
 from common.realtime import sec_since_boot
 from selfdrive.services import service_list
 import selfdrive.messaging as messaging
-import zmq
 import numpy as np
 from cereal import tesla
 
@@ -88,7 +87,7 @@ class ALCAController():
     self.prev_left_blinker_on = False # local variable for prev position
     self.laneChange_cancelled = False
     self.laneChange_cancelled_counter = 0
-    self.alcaStatusSocket = messaging.pub_sock(service_list['alcaStatus'].port)
+    self.alcaStatusSocket = messaging.pub_sock('alcaStatus')
 
   def debug_alca(self,message):
     if ALCA_DEBUG:
@@ -273,8 +272,7 @@ class ALCAModelParser():
     self.ALCA_use_visual = True
     self.ALCA_vego = 0.
     self.ALCA_vego_prev = 0.
-    self.poller = zmq.Poller()
-    self.alcaStatus = messaging.sub_sock('alcaStatus', conflate=True, poller=self.poller)
+    self.alcaStatus = messaging.sub_sock('alcaStatus', conflate=True)
     self.alcaState = messaging.pub_sock('alcaState')
     self.alcas = None
     self.hit_prob_low = False
@@ -324,9 +322,9 @@ class ALCAModelParser():
 
   def update(self, v_ego, md, r_poly, l_poly, r_prob, l_prob, lane_width, p_poly):
 
-    for socket, _ in self.poller.poll(0):
-      if socket is self.alcaStatus:
-        self.alcas = tesla.ALCAStatus.from_bytes(socket.recv())
+    alcaStatusMsg = messaging.recv_one(self.alcaStatus)
+    if alcaStatusMsg is not None:
+      self.alcas = alcaStatusMsg
 
     #if we don't have yet ALCA status, return same values
     if self.alcas is None:

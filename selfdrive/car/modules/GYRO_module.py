@@ -1,7 +1,6 @@
 from selfdrive.services import service_list
 from collections import deque
 import selfdrive.messaging as messaging
-import zmq
 import cereal
 import math
 from common.realtime import sec_since_boot
@@ -22,8 +21,7 @@ EPSILON = 0.0000001
 
 class GYROController:
   def __init__(self):
-    self.poller = zmq.Poller()
-    self.sensorEvents = messaging.sub_sock('sensorEvents', conflate=True, poller=self.poller)
+    self.sensorEvents = messaging.sub_sock('sensorEvents', conflate=True)
     self.roll = 0.
     self.pitch = 0.01
     self.yaw = 9.8
@@ -105,9 +103,7 @@ class GYROController:
       d = str_angl / abs(str_angl)
       r = wb / math.sqrt(2-2*math.cos(2*str_angl/str_ratio))
       lat_a = d * v * v /  r
-    for socket, _ in self.poller.poll(0):
-        if socket is self.sensorEvents:
-          se_list = messaging.recv_sock(socket)
+    se_list = messaging.recv_sock(self.sensorEvents)
     if se_list is not None:
         for se in se_list.sensorEvents:
             if se.which == cereal_SensorEventData_acceleration:

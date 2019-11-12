@@ -4,7 +4,6 @@ from selfdrive.config import Conversions as CV
 import selfdrive.messaging as messaging
 import sys
 import time
-import zmq
 from selfdrive.car.tesla.movingaverage import MovingAverage
  
 
@@ -61,8 +60,7 @@ class ACCController():
     self.CC = carcontroller
     self.human_cruise_action_time = 0
     self.automated_cruise_action_time = 0
-    self.poller = zmq.Poller()
-    self.radarState = messaging.sub_sock('radarState', conflate=True, poller=self.poller)
+    self.radarState = messaging.sub_sock('radarState', conflate=True)
     self.last_update_time = 0
     self.enable_adaptive_cruise = False
     self.prev_enable_adaptive_cruise = False
@@ -218,9 +216,9 @@ class ACCController():
       button_to_press = CruiseButtons.CANCEL 
     lead_1 = None
     #if enabled:
-    for socket, _ in self.poller.poll(0):
-      if socket is self.radarState:
-        lead_1 = messaging.recv_one(socket).radarState.leadOne
+    lead = messaging.recv_one(self.radarState)
+    if lead is not None:
+        lead_1 = lead.radarState.leadOne
         if lead_1.dRel:
           self.lead_last_seen_time_ms = current_time_ms
     if self.enable_adaptive_cruise and enabled: # and (button_to_press == None):

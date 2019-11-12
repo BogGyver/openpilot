@@ -15,7 +15,6 @@ from selfdrive.car.tesla.ACC_module import ACCController
 from selfdrive.car.tesla.PCC_module import PCCController
 from selfdrive.car.tesla.HSO_module import HSOController
 from selfdrive.car.tesla.movingaverage import MovingAverage
-import zmq
 import selfdrive.messaging as messaging
 
 # Steer angle limits
@@ -92,14 +91,13 @@ class CarController():
     self.HSO = HSOController(self)
     self.GYRO = GYROController()
     self.sent_DAS_bootID = False
-    self.poller = zmq.Poller()
     self.speedlimit = None
-    self.trafficevents = messaging.sub_sock('trafficEvents', conflate=True, poller=self.poller)
-    self.pathPlan = messaging.sub_sock('pathPlan', conflate=True, poller=self.poller)
-    self.radarState = messaging.sub_sock('radarState', conflate=True, poller=self.poller)
-    self.icLeads = messaging.sub_sock('uiIcLeads', conflate=True, poller=self.poller)
-    self.icCarLR = messaging.sub_sock('uiIcCarLR', conflate=True, poller=self.poller)
-    self.alcaState = messaging.sub_sock('alcaState', conflate=True, poller=self.poller)
+    self.trafficevents = messaging.sub_sock('trafficEvents', conflate=True)
+    self.pathPlan = messaging.sub_sock('pathPlan', conflate=True)
+    self.radarState = messaging.sub_sock('radarState', conflate=True)
+    self.icLeads = messaging.sub_sock('uiIcLeads', conflate=True)
+    self.icCarLR = messaging.sub_sock('uiIcCarLR', conflate=True)
+    self.alcaState = messaging.sub_sock('alcaState', conflate=True)
     self.gpsLocationExternal = None 
     self.speedlimit_ms = 0.
     self.speedlimit_valid = False
@@ -267,7 +265,7 @@ class CarController():
 
     if not CS.useTeslaMapData:
       if self.speedlimit is None:
-        self.speedlimit = messaging.sub_sock('liveMapData', conflate=True, poller=self.poller)
+        self.speedlimit = messaging.sub_sock('liveMapData', conflate=True)
 
 
     # *** no output if not enabled ***
@@ -454,32 +452,40 @@ class CarController():
         self.speedlimit_valid = False
       self.speedlimit_units = self.speedUnits(fromMetersPerSecond = self.speedlimit_ms)
     if frame % 10 == 0:
-      for socket, _ in self.poller.poll(1):
-        if socket is self.speedlimit and not CS.useTeslaMapData:
+        speedlimitMsg = messaging.recv_one(self.speedlimit)
+        icLeadsMsg = messaging.recv_one(self.icLeads)
+        radarStateMsg = messaging.recv_one(self.radarState)
+        alcaStateMsg = messaging.recv_one(self.alcaState)
+        pathPlanMsg = messaging.recv_one(self.pathPlan)
+        icCarLRMsg = messaging.recv_one(self.icCarLR)
+        trafficeventsMsgs = None
+        if self.trafficevents is not None:
+          trafficeventsMsgs = messaging.recv_sock(self.self.trafficevents)
+        if (speedlimitMsg is not None) and not CS.useTeslaMapData:
           #get speed limit
-          lmd = messaging.recv_one(socket).liveMapData
+          lmd = speedlimitMsg.liveMapData
           self.speedlimit_ms = lmd.speedLimit
           self.speedlimit_valid = lmd.speedLimitValid
           self.speedlimit_units = self.speedUnits(fromMetersPerSecond = self.speedlimit_ms)
           self.speed_limit_for_cc = self.speedlimit_ms * CV.MS_TO_KPH
-        elif socket is self.icLeads:
-          self.icLeadsData = tesla.ICLeads.from_bytes(socket.recv())
-        elif socket is self.radarState:
+        if icLeadsMsg is not None:
+          self.icLeadsData = icLeadsMsg
+        if radarStateMsg is not None:
           #to show lead car on IC
           if self.icLeadsData is not None:
-            can_messages = self.showLeadCarOnICCanMessage(radarSocket = socket)
+            can_messages = self.showLeadCarOnICCanMessage(radarStateMsg = radarStateMsg)
             can_sends.extend(can_messages)
-        elif socket is self.alcaState:
-          self.alcaStateData = tesla.ALCAState.from_bytes(socket.recv())
-        elif socket is self.pathPlan:
+        if alcaStateMsg is not None:
+          self.alcaStateData = alcaStateMsg
+        if pathPlanMsg is not None:
           #to show curvature and lanes on IC
           if self.alcaStateData is not None:
-            self.handlePathPlanSocketForCurvatureOnIC(pathPlanSocket = socket, alcaStateData = self.alcaStateData,CS = CS, turn_signal_needed = turn_signal_needed)
-        elif socket is self.icCarLR:
-          can_messages = self.showLeftAndRightCarsOnICCanMessages(icCarLRSocket = socket)
+            self.handlePathPlanSocketForCurvatureOnIC(pathPlanMsg = pathPlanMsg, alcaStateData = self.alcaStateData,CS = CS, turn_signal_needed = turn_signal_needed)
+        if icCarLRMsg is not None:
+          can_messages = self.showLeftAndRightCarsOnICCanMessages(icCarLRMsg = icCarLRMsg)
           can_sends.extend(can_messages)
-        elif socket is self.trafficevents:
-          can_messages = self.handleTrafficEvents(trafficEventsSocket = socket)
+        if trafficeventsMsg is not None:
+          can_messages = self.handleTrafficEvents(trafficEventsMsgs = trafficeventsMsgs)
           can_sends.extend(can_messages)
 
     op_status = 0x02
@@ -631,9 +637,9 @@ class CarController():
     return pedal_can_sends + can_sends
 
   #to show lead car on IC
-  def showLeadCarOnICCanMessage(self, radarSocket):
+  def showLeadCarOnICCanMessage(self, radarStateMsg):
     messages = []
-    leads = messaging.recv_one(radarSocket).radarState
+    leads = radarStateMsg.radarState
     if leads is None:
       return messages
     lead_1 = leads.leadOne
@@ -671,8 +677,8 @@ class CarController():
           self.lead2Id,self.lead2Dx,self.lead2Dy,self.lead2Vx))
     return messages
 
-  def handlePathPlanSocketForCurvatureOnIC(self, pathPlanSocket, alcaStateData, CS, turn_signal_needed):
-    pp = messaging.recv_one(pathPlanSocket).pathPlan
+  def handlePathPlanSocketForCurvatureOnIC(self, pathPlanMsg, alcaStateData, CS, turn_signal_needed):
+    pp = pathPlanMsg.pathPlan
     if pp.paramsValid:
       if pp.lProb > 0.75:
         self.lLine = 3
@@ -731,9 +737,9 @@ class CarController():
       self.curv3 = self.curv3Matrix.add(0.)
 
   # Generates IC messages for the Left and Right radar identified cars from radard
-  def showLeftAndRightCarsOnICCanMessages(self, icCarLRSocket):
+  def showLeftAndRightCarsOnICCanMessages(self, icCarLRMsg):
     messages = []
-    icCarLR_msg = tesla.ICCarsLR.from_bytes(icCarLRSocket.recv())
+    icCarLR_msg = icCarLRMsg
     if icCarLR_msg is not None:
       #for icCarLR_msg in icCarLR_list:
       messages.append(teslacan.create_DAS_LR_object_msg(1,icCarLR_msg.v1Type,icCarLR_msg.v1Id,
@@ -744,10 +750,10 @@ class CarController():
           icCarLR_msg.v4Id,icCarLR_msg.v4Dx,icCarLR_msg.v4Dy,icCarLR_msg.v4Vrel))
     return messages
 
-  def handleTrafficEvents(self, trafficEventsSocket):
+  def handleTrafficEvents(self, trafficEventsMsgs):
     messages = []
     self.reset_traffic_events()
-    tr_ev_list = messaging.recv_sock(trafficEventsSocket)
+    tr_ev_list = trafficEventsMsgs
     if tr_ev_list is not None:
       for tr_ev in tr_ev_list.trafficEvents:
         if tr_ev.type == 0x00:
