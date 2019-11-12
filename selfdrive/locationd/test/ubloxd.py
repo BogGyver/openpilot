@@ -10,7 +10,6 @@ import sys
 from cereal import log
 from common import realtime
 import selfdrive.messaging as messaging
-from selfdrive.services import service_list
 from selfdrive.locationd.test.ephemeris import EphemerisData, GET_FIELD_U
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 
@@ -271,8 +270,9 @@ def main(gctx=None):
     nav_frame_buffer[0][i] = {}
 
   if not CarSettings().get_value("useTeslaGPS"):
-    gpsLocationExternal = messaging.pub_sock(service_list['gpsLocationExternal'].port)
-    ubloxGnss = messaging.pub_sock(service_list['ubloxGnss'].port)
+
+    gpsLocationExternal = messaging.pub_sock('gpsLocationExternal')
+    ubloxGnss = messaging.pub_sock('ubloxGnss')
 
     dev = init_reader()
     while True:
@@ -287,6 +287,6 @@ def main(gctx=None):
   else:
     while True:
       time.sleep(1.1)
-
+      
 if __name__ == "__main__":
   main()

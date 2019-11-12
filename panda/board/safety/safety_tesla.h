@@ -1613,10 +1613,6 @@ static void tesla_init(int16_t param)
   //uja1023_init();
 }
 
-static int tesla_ign_hook(void)
-{
-  return tesla_ignition_started;
-}
 
 static void tesla_fwd_to_radar_as_is(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   if ((enable_radar_emulation == 0) || (tesla_radar_vin_complete !=7) || (tesla_radar_should_send==0) ) {
@@ -1927,6 +1923,5 @@ const safety_hooks tesla_hooks = {
   .rx = tesla_rx_hook,
   .tx = tesla_tx_hook,
   .tx_lin = nooutput_tx_lin_hook,
-  .ignition = tesla_ign_hook,
   .fwd = tesla_fwd_hook,
 };

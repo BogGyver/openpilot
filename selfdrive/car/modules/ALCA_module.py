@@ -437,7 +437,7 @@ class ALCAModelParser():
     
     if (not self.ALCA_error) and self.ALCA_use_visual:
       if self.ALCA_over_line:
-        if (self.ALCA_total_steps - self.ALCA_step <= 1) or (self.ALCA_over_line and ((self.ALCA_direction == 1) and (r_poly[3] < -ALCA_release_distance)) or ((self.ALCA_direction == -1) and (l_poly[3] > ALCA_release_distance))):
+        if (self.ALCA_total_steps - self.ALCA_step <= 1) or (self.ALCA_over_line and ((self.ALCA_direction == 1) and ((r_poly[3] < -ALCA_release_distance) or (l_poly[3] < self.ALCA_lane_width / 2. - ALCA_release_distance))) or ((self.ALCA_direction == -1) and ((l_poly[3] > ALCA_release_distance) or (r_poly[3] > -(self.ALCA_lane_width / 2. - ALCA_release_distance))))):
           self.ALCA_error = False
           self.reset_alca(v_ego)
           return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly

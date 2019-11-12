@@ -46,7 +46,13 @@ openpilot
 notebooks
 xx
 
+<<<<<<< HEAD
 /selfdrive/tinklad/params
 /selfdrive/tinklad/bb_openpilot.cfg
 /selfdrive/tinklad/tinklad-cache
 /selfdrive/tinklad/bb_openpilot_config.cfg
+=======
+.coverage*
+htmlcov
+
+>>>>>>> d4eb5a6eafdd4803d09e6f3963918216cca5a81f

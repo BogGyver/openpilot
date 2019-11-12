@@ -2,8 +2,11 @@
 import importlib
 import math
 from collections import defaultdict, deque
+<<<<<<< HEAD
 import numpy as np
 import zmq
+=======
+>>>>>>> d4eb5a6eafdd4803d09e6f3963918216cca5a81f
 
 import selfdrive.messaging as messaging
 from cereal import car,log,tesla
@@ -13,7 +16,6 @@ from selfdrive.config import RADAR_TO_CAMERA
 from selfdrive.controls.lib.cluster.fastcluster_py import \
   cluster_points_centroid
 from selfdrive.controls.lib.radar_helpers import Cluster, Track
-from selfdrive.services import service_list
 from selfdrive.swaglog import cloudlog
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 
@@ -381,11 +383,8 @@ def radard_thread(sm=None, pm=None, can_sock=None):
   cloudlog.info("radard is importing %s", CP.carName)
   RadarInterface = importlib.import_module('selfdrive.car.%s.radar_interface' % CP.carName).RadarInterface
 
-  can_poller = zmq.Poller()
-
   if can_sock is None:
-    can_sock = messaging.sub_sock(service_list['can'].port)
-    can_poller.register(can_sock)
+    can_sock = messaging.sub_sock('can')
 
   if sm is None:
     sm = messaging.SubMaster(['model', 'controlsState', 'liveParameters'])
@@ -405,7 +404,7 @@ def radard_thread(sm=None, pm=None, can_sock=None):
   v_ego = 0.
 
   while 1:
-    can_strings = messaging.drain_sock_raw_poller(can_poller, can_sock, wait_for_one=True)
+    can_strings = messaging.drain_sock_raw(can_sock, wait_for_one=True)
     rr,rrext = RI.update(can_strings)
 
     if rr is None:
