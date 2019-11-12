@@ -1,7 +1,6 @@
 #human steer override module
 import time
 
-MAX_TIME_BLINKER_ON = 150 # in 0.01 seconds
 TIME_REMEMBER_LAST_BLINKER = 50 # in 0.01 seconds
 
 def _current_time_millis():
@@ -9,7 +8,6 @@ def _current_time_millis():
 
 class HSOController():
     def __init__(self,carcontroller):
-        self.CC = carcontroller
         self.human_control = False
         self.frame_humanSteered = 0
         self.turn_signal_needed = 0 # send 1 for left, 2 for right 0 for not needed
@@ -18,6 +16,7 @@ class HSOController():
         self.frame_blinker_on = 0
         self.last_human_blinker_on = 0
         self.frame_human_blinker_on = 0
+        self.HSO_frame_blinker_on = 0
     
 
     def update_stat(self,CC,CS,enabled,actuators,frame):
@@ -29,6 +28,10 @@ class HSOController():
         elif CS.left_blinker_on:
           self.blinker_on = 1
           self.frame_human_blinker_on = frame
+        if (self.last_blinker_on == 0) and (self.blinker_on > 0) and (CC.ALCA.laneChange_enabled <= 1):
+          self.HSO_frame_blinker_on = frame
+        if (self.last_blinker_on == 0) and (self.blinker_on == 0):  
+          self.HSO_frame_blinker_on = 0
         if self.blinker_on > 0:
             self.frame_blinker_on = frame
             self.last_human_blinker_on = self.blinker_on
@@ -37,24 +40,24 @@ class HSOController():
                 self.blinker_on = self.last_human_blinker_on
             else:
                 self.last_human_blinker_on = 0
-        if frame - self.frame_human_blinker_on > MAX_TIME_BLINKER_ON:
+        if frame - self.frame_human_blinker_on > 100 * CS.hsoBlinkerExtender:
           self.blinker_on = 0
           self.turn_signal_needed = 0
           self.last_blinker_on = 0
 
         if CS.enableHSO and enabled:
           #if steering but not by ALCA
-          if (CS.right_blinker_on or CS.left_blinker_on) and (self.CC.ALCA.laneChange_enabled <= 1):# and (self.last_blinker_on != self.blinker_on):
+          if (CS.right_blinker_on or CS.left_blinker_on) and (CC.ALCA.laneChange_enabled <= 1):# and (self.last_blinker_on != self.blinker_on):
             self.frame_humanSteered = frame
-          if (CS.steer_override > 0) and (frame - self.frame_humanSteered > 50): 
+          if (CS.steer_override > 0): # and (frame - self.frame_humanSteered > 50): #let's try with human touch only
             self.frame_humanSteered = frame
           else:
-            if (frame - self.frame_humanSteered < 50): # Need more human testing of handoff timing
+            if (CC.ALCA.laneChange_enabled <= 1) and (frame - self.frame_humanSteered < 50): # Need more human testing of handoff timing
               # Find steering difference between visiond model and human (no need to do every frame if we run out of CPU):
               steer_current=(CS.angle_steers)  # Formula to convert current steering angle to match apply_steer calculated number
               apply_steer = int(-actuators.steerAngle)
               angle = abs(apply_steer-steer_current)
-              if angle > 15.:
+              if frame < (self.HSO_frame_blinker_on + int(100 * CS.hsoNumbPeriod)) or angle > 15.:
                 self.frame_humanSteered = frame
         if enabled:
             if CS.enableHSO:
@@ -74,7 +77,7 @@ class HSOController():
           CC.DAS_219_lcTempUnavailableSpeed = 0
           CC.warningNeeded = 1
           self.turn_signal_needed = 0
-        if (self.CC.ALCA.laneChange_enabled > 1):
+        if (CC.ALCA.laneChange_enabled > 1):
           self.turn_signal_needed = 0
           self.blinker_on = 0
           self.last_blinker_on = 0

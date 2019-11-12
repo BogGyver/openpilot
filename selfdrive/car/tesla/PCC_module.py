@@ -15,6 +15,7 @@ import math
 from collections import OrderedDict
 from common.params import Params
 from selfdrive.car.tesla.movingaverage import MovingAverage
+import json
 
 _DT = 0.05    # 10Hz in our case, since we don't want to process more than once the same radarState message
 _DT_MPC = _DT
@@ -48,6 +49,8 @@ MIN_CAN_SPEED = 0.3  #TODO: parametrize this in car interface
 
 # Pull the cruise stalk twice in this many ms for a 'double pull'
 STALK_DOUBLE_PULL_MS = 750
+
+V_PID_FILE = '/data/params/pidParams'
 
 class Mode():
   label = None
@@ -177,6 +180,32 @@ class PCCController():
     self.params = Params()
     self.average_speed_over_x_suggestions = 3 #10x a second
     self.maxsuggestedspeed_avg = MovingAverage(self.average_speed_over_x_suggestions)
+    
+  def load_pid(self):
+    try:
+      v_pid_json = open(V_PID_FILE)
+      data = json.load(v_pid_json)
+      if (self.LoC):
+        if self.LoC.pid:
+          self.LoC.pid.p = data['p']
+          self.LoC.pid.i = data['i']
+          self.LoC.pid.f = data['f']
+      else:
+        print("self.LoC not initialized!")
+    except IOError:
+      print("file not present, creating at next reset")
+
+    #Helper function for saving the PCC pid constants across drives
+  def save_pid(self, pid):
+    data = {}
+    data['p'] = pid.p
+    data['i'] = pid.i
+    data['f'] = pid.f
+    try:
+      with open(V_PID_FILE , 'w') as outfile :
+        json.dump(data, outfile)
+    except IOError:
+      print("PDD pid parameters could not be saved to file")
 
   def max_v_by_speed_limit(self,pedal_set_speed_ms ,speed_limit_ms, CS):
     # if more than 10 kph / 2.78 ms, consider we have speed limit
@@ -195,12 +224,19 @@ class PCCController():
       return pedal_set_speed_ms
 
   def reset(self, v_pid):
+    #save the pid parameters to params file
+    self.save_pid(self.LoC.pid)
+    
     if self.LoC and RESET_PID_ON_DISENGAGE:
       self.LoC.reset(v_pid)
 
   def update_stat(self, CS, enabled):
     if not self.LoC:
       self.LoC = LongControl(CS.CP, tesla_compute_gb)
+      # Get v_id from the stored file when initiating the LoC and reset_on_disengage==false
+      if (not RESET_PID_ON_DISENGAGE): 
+        self.load_pid()
+
 
     can_sends = []
     if CS.pedal_interceptor_available and not CS.cstm_btns.get_button_status("pedal"):
@@ -252,7 +288,7 @@ class PCCController():
       if ready and double_pull:
         # A double pull enables ACC. updating the max ACC speed if necessary.
         self.enable_pedal_cruise = True
-        self.LoC.reset(CS.v_ego)
+        self.reset(CS.v_ego)
         # Increase PCC speed to match current, if applicable.
         self.pedal_speed_kph = max(CS.v_ego * CV.MS_TO_KPH, self.speed_limit_kph)
     # Handle pressing the cancel button.
@@ -379,6 +415,7 @@ class PCCController():
     ####################################################################
     if PCCModes.is_selected(FollowMode(), CS.cstm_btns):
       self.v_pid = self.calc_follow_speed_ms(CS,alca_enabled)
+      
       if mapd is not None:
         v_curve = max_v_in_mapped_curve_ms(mapd.liveMapData, self.pedal_speed_kph)
         if v_curve:
@@ -394,7 +431,7 @@ class PCCController():
       self.pedal_state = CS.pedal_interceptor_value > 10
       #reset PID if we just lifted foot of accelerator
       if (not self.pedal_state) and self.prev_pedal_state:
-        self.LoC.reset(v_pid=CS.v_ego)
+        self.reset(v_pid=CS.v_ego)
 
       if self.enable_pedal_cruise and  (not self.pedal_state):
         jerk_min, jerk_max = _jerk_limits(CS.v_ego, self.lead_1, self.v_pid * CV.MS_TO_KPH, self.lead_last_seen_time_ms, CS)
@@ -432,7 +469,7 @@ class PCCController():
         output_gb = t_go - t_brake
         #print ("Output GB Follow:", output_gb)
       else:
-        self.LoC.reset(v_pid=CS.v_ego)
+        self.reset(v_pid=CS.v_ego)
         #print ("PID reset")
         output_gb = 0.
         starting = self.LoC.long_control_state == LongCtrlState.starting
@@ -534,7 +571,7 @@ class PCCController():
         elif lead_dist_m < MIN_SAFE_DIST_M:
           new_speed_kph = MIN_PCC_V_KPH
         # In a 10 meter cruise zone, lets match the car in front 
-        elif lead_dist_m > MIN_SAFE_DIST_M and lead_dist_m < safe_dist_m + 2: # BB we might want to try this and rel_speed_kph > 0: 
+        elif safe_dist_m + 2 > lead_dist_m > MIN_SAFE_DIST_M: # BB we might want to try this and rel_speed_kph > 0: 
           min_vrel_kph_map = OrderedDict([
             # (distance in m, min allowed relative kph)
             (0.5 * safe_dist_m, 3.0),
@@ -592,7 +629,7 @@ class PCCController():
       # Don't accelerate during manual turns, curves or ALCA.
       new_speed_kph = min(new_speed_kph, self.last_speed_kph)
     #BB Last safety check. Zero if below MIN_SAFE_DIST_M
-    if (lead_dist_m > 0) and (lead_dist_m < MIN_SAFE_DIST_M) and (rel_speed_kph < 3.):
+    if (MIN_SAFE_DIST_M > lead_dist_m > 0) and (rel_speed_kph < 3.):
       new_speed_kph = MIN_PCC_V_KPH
     self.last_speed_kph = new_speed_kph
     return new_speed_kph * CV.KPH_TO_MS

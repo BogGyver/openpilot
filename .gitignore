@@ -46,3 +46,7 @@ openpilot
 notebooks
 xx
 
+/selfdrive/tinklad/params
+/selfdrive/tinklad/bb_openpilot.cfg
+/selfdrive/tinklad/tinklad-cache
+/selfdrive/tinklad/bb_openpilot_config.cfg

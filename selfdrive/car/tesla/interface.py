@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from cereal import car, tesla
 from common.numpy_fast import clip, interp
-from common.realtime import sec_since_boot, DT_CTRL
+from common.realtime import DT_CTRL
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.drive_helpers import create_event, EventTypes as ET, get_events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
@@ -35,8 +35,6 @@ class CarInterface():
     self.gas_pressed_prev = False
     self.brake_pressed_prev = False
     self.can_invalid_count = 0
-    self.alca = messaging.pub_sock(service_list['alcaStatus'].port)
-
     
 
     # *** init the major players ***
@@ -217,6 +215,7 @@ class CarInterface():
     ret.steerLimitAlert = False
     ret.startAccel = 0.5
     ret.steerRateCost = 1.0
+
     ret.radarOffCan = not CarSettings().get_value("useTeslaRadar")
 
     return ret
@@ -450,10 +449,10 @@ class CarInterface():
       # NO_ENTRY events, so controlsd will display alerts. Also not send enable events
       # too close in time, so a no_entry will not be followed by another one.
       # TODO: button press should be the only thing that triggers enble
-      if ((cur_time - self.last_enable_pressed) < 0.2 and
+      if ((cur_time - self.last_enable_pressed) < 0.2 and # pylint: disable=chained-comparison
           (cur_time - self.last_enable_sent) > 0.2 and
           ret.cruiseState.enabled) or \
-         (enable_pressed and get_events(events, [ET.NO_ENTRY])):
+         (enable_pressed and get_events(events, [ET.NO_ENTRY])): 
         if ret.seatbeltUnlatched:
           self.CC.DAS_211_accNoSeatBelt = 1
           self.CC.warningCounter = 300
@@ -494,15 +493,6 @@ class CarInterface():
     self.gas_pressed_prev = ret.gasPressed
     self.brake_pressed_prev = self.CS.brake_pressed != 0
 
-    #pass ALCA status
-    alca_status = tesla.ALCAStatus.new_message()
-
-    alca_status.alcaEnabled = bool(self.CS.ALCA_enabled)
-    alca_status.alcaTotalSteps = int(self.CS.ALCA_total_steps)
-    alca_status.alcaDirection = int(self.CS.ALCA_direction)
-    alca_status.alcaError = bool(self.CS.ALCA_error)
-
-    self.alca.send(alca_status.to_bytes())
 
     # cast to reader so it can't be modified
     return ret.as_reader()

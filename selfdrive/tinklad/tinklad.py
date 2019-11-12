@@ -1,4 +1,5 @@
-#!/usr/bin/env python3.7
+#!/usr/bin/env python3
+# Created by Raf 5/2019
 
 import zmq
 import cereal
@@ -6,7 +7,8 @@ from selfdrive.tinklad.pqueue import Queue
 from selfdrive.tinklad.airtable_publisher import Publisher
 import requests
 import time
-import os 
+import os
+import asyncio
 
 LOG_PREFIX = "tinklad: "
 
@@ -73,7 +75,7 @@ class TinklaServer():
 
     last_attempt_time = 0
 
-    def attemptToSendPendingMessages(self):
+    async def attemptToSendPendingMessages(self):
         # Throttle to once per minute
         now = time.time()
         if now - self.last_attempt_time < 60:
@@ -85,14 +87,15 @@ class TinklaServer():
         if not self.isOnline():
             return
         print(LOG_PREFIX + "Attempting to send pending messages")
-        self.publish_pending_userinfo()
-        self.publish_pending_events()
+        await self.publish_pending_userinfo()
+        await self.publish_pending_events()
 
-    def setUserInfo(self, info, **kwargs):
+    async def setUserInfo(self, info, **kwargs):
+        print(LOG_PREFIX + "Pushing user info to cache")
         self.userInfoCache.push(info)
-        self.publish_pending_userinfo()
+        await self.publish_pending_userinfo()
 
-    def publish_pending_userinfo(self):
+    async def publish_pending_userinfo(self):
         if self.userInfoCache.count() == 0:
             return
 
@@ -107,15 +110,17 @@ class TinklaServer():
         print(LOG_PREFIX + "Sending info to publisher: %s" % (info.to_dict()))
         self.info = info
         try:
-            self.publisher.send_info(info)
+            await self.publisher.send_info(info)
+            self.userInfoCache.task_done()
         except Exception as error: # pylint: disable=broad-except 
-            print(LOG_PREFIX + "Error attempting to publish user info (%s)" % (error))
+            self.userInfoCache.push(info)
+            print(LOG_PREFIX + "Error attempting to publish user info (%s) (Cache has %d elements)" % (error, self.userInfoCache.count()))
 
-    def logUserEvent(self, event, **kwargs):
+    async def logUserEvent(self, event, **kwargs):
         self.eventCache.push(event)
-        self.publish_pending_events()
+        await self.publish_pending_events()
 
-    def publish_pending_events(self):
+    async def publish_pending_events(self):
         if self.eventCache.count() > 0:
             print(LOG_PREFIX + 'Cache has %d elements, attempting to publish...' %(self.eventCache.count()))
 
@@ -126,7 +131,7 @@ class TinklaServer():
                 return
             try:
                 print(LOG_PREFIX + "Sending event to publisher: %s" % (event.to_dict()))
-                self.publisher.send_event(event)
+                await self.publisher.send_event(event)
                 self.eventCache.task_done()
             except AssertionError as error:
                 self.eventCache.push(event)
@@ -147,41 +152,51 @@ class TinklaServer():
             return False
         return False
 
+    async def messageLoop(self, sock):
+        messageKeys = TinklaInterfaceMessageKeys()
+        actions = TinklaInterfaceActions()
+
+        while True:
+            data = b''.join(sock.recv_multipart())
+            #print(LOG_PREFIX + "Received Data: " + repr(data) + "'")
+            tinklaInterface = cereal.tinkla.Interface.from_bytes(data)
+            if tinklaInterface.version != cereal.tinkla.interfaceVersion:
+                print(LOG_PREFIX + "Unsupported message version: %0.2f (supported version: %0.2f)" % (tinklaInterface.version, cereal.tinkla.interfaceVersion))
+                continue
+            messageType = tinklaInterface.message.which()
+            #if messageType != messageKeys.action:
+            print(LOG_PREFIX + "> Received message. Type: '%s'" % messageType)
+            if messageType == messageKeys.userInfo:
+                info = tinklaInterface.message.userInfo
+                await self.setUserInfo(info)
+            elif messageType == messageKeys.event:
+                event = tinklaInterface.message.event
+                await self.logUserEvent(event)
+            elif messageType == messageKeys.action:
+                if tinklaInterface.message.action == actions.attemptToSendPendingMessages:
+                    await self.attemptToSendPendingMessages()
+                else:
+                    print(LOG_PREFIX + "Unsupported action: %s" % tinklaInterface.message.action)
+
     def __init__(self):
+        loop = asyncio.get_event_loop()
         self.publisher = Publisher()
         # set persitent cache for bad network / offline
         self.eventCache = Cache("events")
         self.userInfoCache = Cache("user_info")
-        self.publish_pending_userinfo()
-        self.publish_pending_events()
-        messageKeys = TinklaInterfaceMessageKeys()
-        actions = TinklaInterfaceActions()
+        tasks = [
+            self.publish_pending_userinfo(),
+            self.publish_pending_events()
+        ]
+        loop.run_until_complete(asyncio.wait(tasks))
 
         # Start server:
         ctx = zmq.Context()
         sock = ctx.socket(zmq.PULL)
         sock.bind("ipc:///tmp/tinklad")
         context = zmq.Context()
-        
-        while True:
-            tmp = sock.recv_multipart()
-            data = b''.join(sock.recv_multipart())
-            tinklaInterface = cereal.tinkla.Interface.from_bytes(data)
-            if tinklaInterface.version != cereal.tinkla.interfaceVersion:
-                print(LOG_PREFIX + "Unsupported message version: %0.2f (supported version: %0.2f)" % (tinklaInterface.version, cereal.tinkla.interfaceVersion))
-                continue
-            messageType = tinklaInterface.message.which()
-            if messageType == messageKeys.userInfo:
-                info = tinklaInterface.message.userInfo
-                self.setUserInfo(info)
-            elif messageType == messageKeys.event:
-                event = tinklaInterface.message.event
-                self.logUserEvent(event)
-            elif messageType == messageKeys.action:
-                if tinklaInterface.message.action == actions.attemptToSendPendingMessages:
-                    self.attemptToSendPendingMessages()
-                else:
-                    print(LOG_PREFIX + "Unsupported action: %s" % tinklaInterface.message.action)
+
+        loop.run_until_complete(self.messageLoop(sock=sock))
 
 
 def main(gctx=None):
@@ -190,5 +205,4 @@ def main(gctx=None):
 
 
 if __name__ == "__main__":
-  main()
-  
+    main()

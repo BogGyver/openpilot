@@ -5,6 +5,7 @@ import fcntl
 import errno
 import signal
 import subprocess
+import time
 from selfdrive.tinklad.tinkla_interface import TinklaClient
 from cereal import tinkla
 from selfdrive.car.tesla.readconfig import CarSettings
@@ -321,7 +322,7 @@ def system(cmd):
       output=e.output[-1024:],
       returncode=e.returncode)
 
-def sendUserInfoToTinkla(params):
+def sendUserInfoToTinkla(params, tinklaClient):
   carSettings = CarSettings()
   gitRemote = params.get("GitRemote")
   gitBranch = params.get("GitBranch")
@@ -368,9 +369,9 @@ def manager_thread():
   logger_dead = False
 
   # Tinkla interface
-  global tinklaClient
+  last_tinklad_send_attempt_time = 0
   tinklaClient = TinklaClient()
-  sendUserInfoToTinkla(params)
+  sendUserInfoToTinkla(params=params, tinklaClient=tinklaClient)
 
   while 1:
     msg = messaging.recv_sock(thermal_sock, wait=True)
@@ -382,7 +383,11 @@ def manager_thread():
       start_managed_process("uploader")
 
     # Attempt to send pending messages if there's any that queued while offline
-    tinklaClient.attemptToSendPendingMessages()
+    # Seems this loop runs every second or so, throttle to once every 30s
+    now = time.time()
+    if now - last_tinklad_send_attempt_time >= 30:
+      tinklaClient.attemptToSendPendingMessages()
+      last_tinklad_send_attempt_time = now
 
     if msg.thermal.freeSpace < 0.05:
       logger_dead = True

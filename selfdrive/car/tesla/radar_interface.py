@@ -47,6 +47,7 @@ def _create_radard_can_parser():
 
   checks = list(zip(RADAR_A_MSGS + RADAR_B_MSGS, [6]*(msg_a_n + msg_b_n)))
 
+
   return CANParser(os.path.splitext(dbc_f)[0].encode('utf8'), signals, checks, 1)
 
 
@@ -55,6 +56,7 @@ class RadarInterface(RadarInterfaceBase):
   tinklaClient = TinklaClient()
 
   def __init__(self,CP):
+    super().__init__(self)
     # radar
     self.pts = {}
     self.extPts = {}
@@ -82,7 +84,8 @@ class RadarInterface(RadarInterfaceBase):
     if not self.useTeslaRadar:
       time.sleep(0.05)
       return car.RadarData.new_message(),self.extPts.values()
-    if can_strings != None:
+
+    if can_strings is not None:
       vls = self.rcp.update_strings(can_strings)
       self.updated_messages.update(vls)
 

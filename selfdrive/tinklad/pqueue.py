@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.7
+#!/usr/bin/env python3
 
 # 
 # https://github.com/balena/python-pqueue
@@ -73,7 +73,7 @@ class Queue(SyncQ):
             shutil.rmtree(self.path)
             os.makedirs(self.path)
 
-    def _qsize(self, len=len): # pylint: disable=redefined-builtin
+    def _qsize(self, len=len): # pylint: disable=redefined-builtin,arguments-differ
         return self.info['size']
 
     def _put(self, item):

@@ -4,6 +4,7 @@ from common.params import Params
 from collections import namedtuple
 from common.numpy_fast import clip, interp
 from common.realtime import DT_CTRL
+from common import realtime
 from selfdrive.car.tesla import teslacan
 from selfdrive.car.tesla.values import AH, CM
 from selfdrive.can.packer import CANPacker
@@ -25,10 +26,6 @@ ANGLE_MAX_V = [410., 92., 36.]
 ANGLE_DELTA_BP = [0., 5., 15.]
 ANGLE_DELTA_V = [5., .8, .25]     # windup limit
 ANGLE_DELTA_VU = [5., 3.5, 0.8]   # unwind limit
-#steering adjustment with speed
-DES_ANGLE_ADJUST_FACTOR_BP = [0.,13., 44.]
-DES_ANGLE_ADJUST_FACTOR = [1.0, 1.0, 1.0]
-
 #LDW WARNING LEVELS
 LDW_WARNING_1 = 0.9
 LDW_WARNING_2 = 0.5
@@ -161,11 +158,8 @@ class CarController():
     self.curv2 = 0. 
     self.curv3 = 0. 
     self.visionCurvC0 = 0.
-    self.laneRange = 50  #max is 160m but OP has issues with precision beyond 50
-    self.useZeroC0 = False
-    self.useMap = False
-    self.clipC0 = False
-    self.useMapOnly = False
+    self.laneRange = 75  #max is 160m but OP has issues with precision beyond 50
+
     self.laneWidth = 0.
 
     self.stopSign_visible = False
@@ -196,7 +190,11 @@ class CarController():
     self.prev_ldwStatus = 0
 
     self.radarVin_idx = 0
-
+    self.LDW_ENABLE_SPEED = 16 
+    self.should_ldw = False
+    self.ldw_numb_frame_start = 0
+    self.prev_changing_lanes = False
+    
     self.isMetric = (self.params.get("IsMetric") == "1")
 
   def reset_traffic_events(self):
@@ -317,7 +315,25 @@ class CarController():
     
     # Basic highway lane change logic
     changing_lanes = CS.right_blinker_on or CS.left_blinker_on
+    
+    if (frame % 5 == 0):
+      if (changing_lanes and not self.prev_changing_lanes): #we have a transition from blinkers off to blinkers on, save the frame
+        self.ldw_numb_frame_start = frame
+        if  (CS.v_ego > self.LDW_ENABLE_SPEED):
+          CS.UE.custom_alert_message(3, "LDW Disabled", 150, 4)
+          
+      # update the previous state of the blinkers (chaning_lanes      if (self.ALCA.laneChange_enabled > 1):
+        self.ldw_numb_frame_start = frame 
+      self.prev_changing_lanes = changing_lanes
+      if self.alca_enabled:
+        self.ldw_numb_frame_start = frame + 200 #we don't want LDW for 2 seconds after ALCA finishes
+      #Determine if we should have LDW or not
+      self.should_ldw = (frame > (self.ldw_numb_frame_start + int( 50 * CS.ldwNumbPeriod)) and CS.v_ego > self.LDW_ENABLE_SPEED)
 
+      if self.should_ldw and self.ldw_numb_frame_start != 0:
+        self.ldw_numb_frame_start = 0
+        CS.UE.custom_alert_message(2, "LDW Enabled", 150, 4)
+        
     #upodate custom UI buttons and alerts
     CS.UE.update_custom_ui()
       
@@ -337,11 +353,11 @@ class CarController():
           self.speed_limit_offset = 0.
         if not self.isMetric:
           self.speed_limit_offset = self.speed_limit_offset * CV.MPH_TO_MS
-    if CS.useTeslaGPS:
+    if CS.useTeslaGPS and (frame % 10 == 0):
       if self.gpsLocationExternal is None:
         self.gpsLocationExternal = messaging.pub_sock(service_list['gpsLocationExternal'].port)
       sol = gen_solution(CS)
-      sol.logMonoTime = int(frame * DT_CTRL * 1e9)
+      sol.logMonoTime = int(realtime.sec_since_boot() * 1e9)
       self.gpsLocationExternal.send(sol.to_bytes())
 
     #get pitch/roll/yaw every 0.1 sec
@@ -351,7 +367,6 @@ class CarController():
 
     # Update statuses for custom buttons every 0.1 sec.
     if (frame % 10 == 0):
-      #self.ALCA.update_status(False) 
       self.ALCA.update_status((CS.cstm_btns.get_button_status("alca") > 0) and ((CS.enableALCA and not CS.hasTeslaIcIntegration) or (CS.hasTeslaIcIntegration and CS.alcaEnabled)))
     
     pedal_can_sends = []
@@ -362,8 +377,7 @@ class CarController():
       self.ACC.enable_adaptive_cruise = False
     else:
       # Update ACC module info.
-      if  frame % 5 == 0:
-        self.ACC.update_stat(CS, True)
+      self.ACC.update_stat(CS, True)
       self.PCC.enable_pedal_cruise = False
     
     # Update HSO module info.
@@ -380,7 +394,7 @@ class CarController():
     else:
       CS.v_cruise_pcm = max(0.,CS.v_ego * CV.MS_TO_KPH  +0.5) * speed_uom_kph
     # Get the turn signal from ALCA.
-    turn_signal_needed, self.alca_enabled = self.ALCA.update(enabled, CS, actuators)
+    turn_signal_needed, self.alca_enabled = self.ALCA.update(enabled, CS, actuators, self.alcaStateData, frame)
     apply_angle = -actuators.steerAngle  # Tesla is reversed vs OP.
     human_control,turn_signal_needed_hso = self.HSO.update_stat(self,CS, enabled, actuators, frame)
     if turn_signal_needed == 0:
@@ -399,11 +413,8 @@ class CarController():
     else:
       angle_rate_lim = interp(CS.v_ego, ANGLE_DELTA_BP, ANGLE_DELTA_VU)
 
-    des_angle_factor = interp(CS.v_ego, DES_ANGLE_ADJUST_FACTOR_BP, DES_ANGLE_ADJUST_FACTOR )
-    if self.alca_enabled or not CS.enableSpeedVariableDesAngle:
-      des_angle_factor = 1.
     #BB disable limits to test 0.5.8
-    # apply_angle = clip(apply_angle * des_angle_factor, self.last_angle - angle_rate_lim, self.last_angle + angle_rate_lim) 
+    # apply_angle = clip(apply_angle , self.last_angle - angle_rate_lim, self.last_angle + angle_rate_lim) 
     # If human control, send the steering angle as read at steering wheel.
     if human_control:
       apply_angle = CS.angle_steers
@@ -472,46 +483,6 @@ class CarController():
           can_messages = self.handleTrafficEvents(trafficEventsSocket = socket)
           can_sends.extend(can_messages)
 
-    if (CS.roadCurvRange > 20) and self.useMap:
-      if self.useZeroC0:
-        self.curv0 = 0.
-      elif self.clipC0:
-        self.curv0 = -clip(CS.roadCurvC0,-0.5,0.5)
-      #else:
-      #  self.curv0 = -CS.roadCurvC0
-      #if CS.v_ego > 9:
-      #  self.curv1 = -CS.roadCurvC1
-      #else:
-      #  self.curv1 = 0.
-      self.curv2 = -CS.roadCurvC2
-      self.curv3 = -CS.roadCurvC3
-      self.laneRange = CS.roadCurvRange
-    #else:
-    #  self.curv0 = 0.
-    #  self.curv1 = 0.
-    #  self.curv2 = 0.
-    #  self.curv3 = 0.
-    #  self.laneRange = 0
-    
-    if (CS.csaRoadCurvRange > 2.) and self.useMap and not self.useMapOnly:
-      self.curv2 = -CS.csaRoadCurvC2
-      self.curv3 = -CS.csaRoadCurvC3
-      #if self.laneRange > 0:
-      #  self.laneRange = min(self.laneRange,CS.csaRoadCurvRange)
-      #else:
-      self.laneRange = CS.csaRoadCurvRange
-    elif (CS.csaOfframpCurvRange > 2.) and self.useMap and not self.useMapOnly:
-      #self.curv2 = -CS.csaOfframpCurvC2
-      #self.curv3 = -CS.csaOfframpCurvC3
-      #self.curv0 = 0.
-      #self.curv1 = 0.
-      #if self.laneRange > 0:
-      #  self.laneRange = min(self.laneRange,CS.csaOfframpCurvRange)
-      #else:
-      self.laneRange = CS.csaOfframpCurvRange
-    else:
-      self.laneRange = 50
-    self.laneRange = int(clip(self.laneRange,0,159))
     op_status = 0x02
     hands_on_state = 0x00
     forward_collision_warning = 0 #1 if needed
@@ -726,19 +697,16 @@ class CarController():
       self.curv2 = -clip(pp.dPoly[1],-0.0025,0.0025) #self.curv2Matrix.add(-clip(pp.cPoly[1],-0.0025,0.0025))
       self.curv3 = -clip(pp.dPoly[0],-0.00003,0.00003) #self.curv3Matrix.add(-clip(pp.cPoly[0],-0.00003,0.00003))
       self.laneWidth = pp.laneWidth
-      self.laneRange = 50 # it is fixed in OP at 50m pp.viewRange
       self.visionCurvC0 = self.curv0
       self.prev_ldwStatus = self.ldwStatus
       self.ldwStatus = 0
-      if (self.ALCA.laneChange_direction != 0) and alcaStateData.alcaError:
-        self.ALCA.stop_ALCA(CS)
-      if self.alca_enabled:
+      if alcaStateData.alcaEnabled:
         #exagerate position a little during ALCA to make lane change look smoother on IC
-        if self.ALCA.laneChange_over_the_line:
-          self.curv0 = self.ALCA.laneChange_direction * self.laneWidth - self.curv0
+        self.curv1 = 0.0 #straighten the turn for ALCA
+        self.curv0 = -self.ALCA.laneChange_direction * alcaStateData.alcaLaneWidth * alcaStateData.alcaStep / alcaStateData.alcaTotalSteps #animas late change on IC
         self.curv0 = clip(self.curv0, -3.5, 3.5)
       else:
-        if CS.enableLdw and (not CS.blinker_on) and (CS.v_ego > 15.6) and (turn_signal_needed == 0):
+        if self.should_ldw and (CS.enableLdw and (not CS.blinker_on) and (turn_signal_needed == 0)):
           if pp.lProb > LDW_LANE_PROBAB:
             lLaneC0 = -pp.lPoly[3]
             if abs(lLaneC0) < LDW_WARNING_2:
