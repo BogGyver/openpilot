@@ -382,8 +382,8 @@ class PCCController():
     radSt = None
     mapd = None
     #if enabled: do it always
-    radSt = messaging.recv_one(self.radarState)
-    mapd = messaging.recv_one(self.live_map_data)
+    radSt = messaging.recv_one_or_none(self.radarState)
+    mapd = messaging.recv_one_or_none(self.live_map_data)
     if radSt is not None:
       self.lead_1 = radSt.radarState.leadOne
       if _is_present(self.lead_1):

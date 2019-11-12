@@ -322,9 +322,9 @@ class ALCAModelParser():
 
   def update(self, v_ego, md, r_poly, l_poly, r_prob, l_prob, lane_width, p_poly):
 
-    alcaStatusMsg = messaging.recv_one(self.alcaStatus)
+    alcaStatusMsg = self.alcaStatus.receive(non_blocking=True)
     if alcaStatusMsg is not None:
-      self.alcas = alcaStatusMsg
+      self.alcas = tesla.ALCAStatus.from_bytes(alcaStatusMsg)
 
     #if we don't have yet ALCA status, return same values
     if self.alcas is None:

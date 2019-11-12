@@ -87,7 +87,9 @@ class UIEvents():
 
     def update_custom_ui(self):
         btn_message = None
-        btn_message = messaging.recv_sock(self.uiButtonStatus) #ui.UIButtonStatus.from_bytes(sock.recv())
+        btn_messageMsg = self.uiButtonStatus.receive(non_blocking=True)
+        if btn_messageMsg is not None:
+            btn_message = ui.UIButtonStatus.from_bytes(btn_messageMsg)
         if btn_message is not None:
             btn_id = btn_message.btnId
             self.CS.cstm_btns.set_button_status_from_ui(btn_id,btn_message.btnStatus)

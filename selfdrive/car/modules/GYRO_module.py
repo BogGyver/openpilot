@@ -103,7 +103,7 @@ class GYROController:
       d = str_angl / abs(str_angl)
       r = wb / math.sqrt(2-2*math.cos(2*str_angl/str_ratio))
       lat_a = d * v * v /  r
-    se_list = messaging.recv_sock(self.sensorEvents)
+    se_list = messaging.recv_sock(self.sensorEvents,wait=False)
     if se_list is not None:
         for se in se_list.sensorEvents:
             if se.which == cereal_SensorEventData_acceleration:

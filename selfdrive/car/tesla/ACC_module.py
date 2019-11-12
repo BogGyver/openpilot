@@ -216,7 +216,7 @@ class ACCController():
       button_to_press = CruiseButtons.CANCEL 
     lead_1 = None
     #if enabled:
-    lead = messaging.recv_one(self.radarState)
+    lead = messaging.recv_one_or_none(self.radarState)
     if lead is not None:
         lead_1 = lead.radarState.leadOne
         if lead_1.dRel:
