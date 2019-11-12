@@ -1670,7 +1670,7 @@ void handle_message(UIState *s, Message * msg) {
   cereal_read_Event(&eventd, eventp);
   double t = millis_since_boot();
 
-  int bts = bb_get_button_status(s,"sound");
+  int bts = bb_get_button_status(s,(char *)"sound");
   if (eventd.which == cereal_Event_controlsState) {
     struct cereal_ControlsState datad;
     cereal_read_ControlsState(&datad, eventd.controlsState);
@@ -2283,7 +2283,10 @@ int main(int argc, char* argv[]) {
     int touched = 0;
     int touch_x = -1, touch_y = -1;
     int dc_touch_x = -1, dc_touch_y = -1;
-    s->b.touch_timeout = max(s->b.touch_timeout -1,0);
+    s->b.touch_timeout --;
+    if (s->b.touch_timeout < 0) {
+      s->b.touch_timeout = 0;
+    }
     if (!s->vision_connected) {
       // Car is not started, keep in idle state and awake on touch events
       zmq_pollitem_t polls[1] = {{0}};

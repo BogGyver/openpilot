@@ -2,11 +2,7 @@
 import importlib
 import math
 from collections import defaultdict, deque
-<<<<<<< HEAD
 import numpy as np
-import zmq
-=======
->>>>>>> d4eb5a6eafdd4803d09e6f3963918216cca5a81f
 
 import selfdrive.messaging as messaging
 from cereal import car,log,tesla
