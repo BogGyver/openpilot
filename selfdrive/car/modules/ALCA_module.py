@@ -239,7 +239,8 @@ class ALCAController():
           CS.UE.custom_alert_message(2,"Auto Lane Change Engaged! (2)",int(ALCA_duration_seconds * 100))
         self.laneChange_counter += 1
         self.debug_alca("ALCA phase 3: " + str(self.laneChange_counter))
-        if self.laneChange_counter >= ALCA_duration_seconds * 100.:
+        if self.laneChange_counter >= (ALCA_duration_seconds + 2) * 100.:
+          self.debug_alca("ALCA phase 3: Canceled due to time restriction")
           self.laneChange_enabled = 4
           self.laneChange_counter = 0
       if self.laneChange_enabled == 4:
@@ -418,11 +419,15 @@ class ALCAModelParser():
     d1 = np.polyval(p_poly,distance_estimate -1)
     d2 = np.polyval(p_poly,distance_estimate + 1)
     cos = 0.
+    turn_mult = 0.
     if abs(d2 - d1) > 0.001:
-      #cos = abs(np.cos(np.arctan(2/abs(d2-d1))))
-      cos = np.cos(np.arctan(2/(d2-d1)))
+      cos = abs(np.cos(np.arctan(2/abs(d2-d1))))
+      # turn mult is used to detect if we move in the same direction as the turn or oposite direction
+      # should be + if we move in the same direction and - if opposite
+      # it will increase or decrease the turn angle by cos(angle)
+      turn_mult = max (0, self.ALCA_direction * (d2-d1)/abs(d2-d1))
     d0 = (d2 + d1) / 2.0 - np.polyval(p_poly,distance_estimate)
-    ltm = left_to_move # * (1 - cos * self.ALCA_direction)
+    ltm = left_to_move  * (1 +  cos * turn_mult)
     #compute offsets
     self.ALCA_OFFSET_C1 = 0.
     lane_multiplier = 1. if self.ALCA_direction == 1 else ALCA_right_lane_multiplier
