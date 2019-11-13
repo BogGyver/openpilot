@@ -17,7 +17,7 @@ from selfdrive.car.tesla.radar_interface import RadarInterface
 
 #for calibration we only want fixed objects within 1 m of the center line and between 2.5 and 4.5 m far from radar
 MINX = 2.5 
-MAXX = 4.5
+MAXX = 14.5
 MINY = -1.0
 MAXY = 1.0
 

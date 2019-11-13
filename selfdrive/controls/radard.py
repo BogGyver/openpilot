@@ -117,7 +117,6 @@ class RadarD():
     self.lane_width = 3.0
     #only used for left and right lanes
     self.path_x = np.arange(0.0, 160.0, 0.1)    # 160 meters is max
-    self.pathPlanSocket = messaging.sub_sock('pathPlan', conflate=True)
     self.dPoly = [0.,0.,0.,0.]
 
   def update(self, frame, sm, rr, has_radar,rrext):
@@ -129,12 +128,9 @@ class RadarD():
       self.v_ego_hist.append(self.v_ego)
     if sm.updated['model']:
       self.ready = True
-
-    ppMsg = messaging.recv_sock(self.pathPlanSocket)
-    if ppMsg is not None:
-      pp = ppMsg.pathPlan
-      self.lane_width = pp.laneWidth
-      self.dPoly = pp.dPoly
+    if sm.updated['pathPlan']:
+      self.lane_width = sm['pathPlan'].laneWidth
+      self.dPoly = sm['pathPlan'].dPoly
 
     path_y = np.polyval(self.dPoly, self.path_x)
 
@@ -382,7 +378,7 @@ def radard_thread(sm=None, pm=None, can_sock=None):
     can_sock = messaging.sub_sock('can')
 
   if sm is None:
-    sm = messaging.SubMaster(['model', 'controlsState', 'liveParameters'])
+    sm = messaging.SubMaster(['model', 'controlsState', 'liveParameters', 'pathPlan'])
 
   # *** publish radarState and liveTracks
   if pm is None:
@@ -436,4 +432,7 @@ def radard_thread(sm=None, pm=None, can_sock=None):
 
 
 def main(sm=None, pm=None, can_sock=None):
-  radard_thread
+  radard_thread(sm,pm,can_sock)
+
+if __name__ == "__main__":
+    main()

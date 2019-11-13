@@ -71,7 +71,6 @@ class RadarInterface(RadarInterfaceBase):
       self.extPts = {}
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
       self.rcp = _create_radard_can_parser()
-      self.logcan = messaging.sub_sock('can')
       self.radarOffset = CarSettings().get_value("radarOffset")
       self.trackId = 1
       self.trigger_start_msg = RADAR_A_MSGS[0]
