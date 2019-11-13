@@ -61,10 +61,10 @@ ALCA_release_distance = 0.3
 ALCA_line_prob_low = 0.2
 ALCA_line_prob_high = 0.4
 ALCA_distance_jump = 1.1
-ALCA_lane_change_coefficient = 0.8
+ALCA_lane_change_coefficient = 0.65
 ITERATIONS_AHEAD_TO_ESTIMATE = 4
 ALCA_duration_seconds = 5.
-ALCA_right_lane_multiplier = 1.1
+ALCA_right_lane_multiplier = 1.
 
 ALCA_DEBUG = False
 DEBUG_INFO = "step {step} of {total_steps}: direction = {ALCA_direction} | using visual = {ALCA_use_visual} | over line = {ALCA_over_line} | lane width = {ALCA_lane_width} | left to move = {left_to_move} | from center = {from_center} | C2 offset = {ALCA_OFFSET_C2} | C1 offset = {ALCA_OFFSET_C1} | Prob Low = {prob_low} | Prob High = {prob_high}"

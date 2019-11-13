@@ -1268,8 +1268,6 @@ void bb_ui_set_car( UIState *s, char *model, char *folder) {
 }
 
 void  bb_ui_poll_update( UIState *s) {
-    auto polls = s->poller->poll(0);
-
 
     int err;
     
@@ -1277,7 +1275,7 @@ void  bb_ui_poll_update( UIState *s) {
     bb_ui_read_triState_switch(s);
     
     while (true) {
-      auto polls = s->poller->poll(0);
+      auto polls = s->b.poller->poll(0);
       if (polls.size() == 0)
         return;
 
