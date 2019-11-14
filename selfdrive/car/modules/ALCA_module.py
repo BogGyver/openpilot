@@ -62,7 +62,7 @@ ALCA_line_prob_low = 0.2
 ALCA_line_prob_high = 0.4
 ALCA_distance_jump = 1.1
 ALCA_lane_change_coefficient = 0.65
-ITERATIONS_AHEAD_TO_ESTIMATE = 4
+ITERATIONS_AHEAD_TO_ESTIMATE = 2
 ALCA_duration_seconds = 5.
 ALCA_right_lane_multiplier = 1.
 
