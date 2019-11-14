@@ -44,7 +44,7 @@ v2.0 - detection of lane crossing
 v1.0 - fixed angle move
 """
 
-from common.numpy_fast import interp
+from common.numpy_fast import interp,clip
 from selfdrive.controls.lib.pid import PIController
 from common.realtime import sec_since_boot
 from selfdrive.services import service_list
@@ -61,10 +61,11 @@ ALCA_release_distance = 0.3
 ALCA_line_prob_low = 0.2
 ALCA_line_prob_high = 0.4
 ALCA_distance_jump = 1.1
-ALCA_lane_change_coefficient = 0.65
+ALCA_lane_change_coefficient = 0.7
 ITERATIONS_AHEAD_TO_ESTIMATE = 2
 ALCA_duration_seconds = 5.
 ALCA_right_lane_multiplier = 1.
+ALCA_distance_left_min = 0.7
 
 ALCA_DEBUG = False
 DEBUG_INFO = "step {step} of {total_steps}: direction = {ALCA_direction} | using visual = {ALCA_use_visual} | over line = {ALCA_over_line} | lane width = {ALCA_lane_width} | left to move = {left_to_move} | from center = {from_center} | C2 offset = {ALCA_OFFSET_C2} | C1 offset = {ALCA_OFFSET_C1} | Prob Low = {prob_low} | Prob High = {prob_high}"
@@ -399,7 +400,9 @@ class ALCAModelParser():
     #compute distances to lines
     self.distance_to_line_L = abs(l_poly[3]) 
     self.distance_to_line_R = abs(r_poly[3]) 
-    distance_left = float((self.ALCA_total_steps) * 0.05 * (self.ALCA_vego_prev + v_ego) / 2.) #5m + distance left
+    percent_completed = float(self.ALCA_total_steps - self.ALCA_step) / float(self.ALCA_total_steps)
+    percent_completed = clip(percent_completed, ALCA_distance_left_min, 1.0)
+    distance_left = float((self.ALCA_total_steps) * 0.05 * percent_completed * (self.ALCA_vego_prev + v_ego) / 2.) #5m + distance left
     distance_estimate = float(ITERATIONS_AHEAD_TO_ESTIMATE * 0.05 * (self.ALCA_vego_prev + v_ego) / 2.) 
     estimate_curv_at = distance_estimate / distance_left
     left_to_move = self.ALCA_lane_width * estimate_curv_at
