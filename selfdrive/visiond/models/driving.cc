@@ -37,7 +37,7 @@ void model_init(ModelState* s, cl_device_id device_id, cl_context context, int t
   const int output_size = OUTPUT_SIZE + TEMPORAL_SIZE;
   s->output = (float*)malloc(output_size * sizeof(float));
   memset(s->output, 0, output_size * sizeof(float));
-  s->m = new DefaultRunModel("../../models/driving_model.dlc", s->output, output_size);
+  s->m = new DefaultRunModel("../../models/driving_model.dlc", s->output, output_size, USE_GPU_RUNTIME);
 #ifdef TEMPORAL
   assert(temporal);
   s->m->addRecurrent(&s->output[OUTPUT_SIZE], TEMPORAL_SIZE);
@@ -198,6 +198,7 @@ void poly_fit(float *in_pts, float *in_stds, float *out, int dx0, int dx1) {
   Eigen::Map<Eigen::Matrix<float, POLYFIT_DEGREE - 1, 1> > p(out, POLYFIT_DEGREE - 1);
 
   float y0 = pts[dx0];
+
   pts = pts.array() - y0;
 
   // Build Least Squares equations
@@ -223,6 +224,14 @@ void poly_fit(float *in_pts, float *in_stds, float *out, int dx0, int dx1) {
 }
 
 void fill_path(cereal::ModelData::PathData::Builder path, const PathData path_data) {
+  if (std::getenv("DEBUG")){
+    kj::ArrayPtr<const float> stds(&path_data.stds[0], ARRAYSIZE(path_data.stds));
+    path.setStds(stds);
+
+    kj::ArrayPtr<const float> points(&path_data.points[0], ARRAYSIZE(path_data.points));
+    path.setPoints(points);
+  }
+
   kj::ArrayPtr<const float> poly(&path_data.poly[0], ARRAYSIZE(path_data.poly));
   path.setPoly(poly);
   path.setProb(path_data.prob);
@@ -241,7 +250,7 @@ void fill_lead(cereal::ModelData::LeadData::Builder lead, const LeadData lead_da
   lead.setRelAStd(lead_data.rel_a_std);
 }
 
-void model_publish(void* sock, uint32_t frame_id,
+void model_publish(PubSocket *sock, uint32_t frame_id,
                    const ModelData data, uint64_t timestamp_eof) {
         // make msg
         capnp::MallocMessageBuilder msg;
@@ -254,8 +263,8 @@ void model_publish(void* sock, uint32_t frame_id,
 
         kj::ArrayPtr<const float> speed(&data.speed[0], ARRAYSIZE(data.speed));
         framed.setSpeed(speed);
-        
-        
+
+
         auto lpath = framed.initPath();
         fill_path(lpath, data.path);
         auto left_lane = framed.initLeftLane();
@@ -272,7 +281,7 @@ void model_publish(void* sock, uint32_t frame_id,
         // send message
         auto words = capnp::messageToFlatArray(msg);
         auto bytes = words.asBytes();
-        zmq_send(sock, bytes.begin(), bytes.size(), ZMQ_DONTWAIT);
+        sock->send((char*)bytes.begin(), bytes.size());
       }
 
 

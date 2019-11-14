@@ -8,7 +8,6 @@ except ValueError:
 from cereal import car
 import time
 import os
-import zmq
 from selfdrive.can.parser import CANParser
 from common.realtime import sec_since_boot
 from selfdrive.services import service_list
@@ -18,7 +17,7 @@ from selfdrive.car.tesla.radar_interface import RadarInterface
 
 #for calibration we only want fixed objects within 1 m of the center line and between 2.5 and 4.5 m far from radar
 MINX = 2.5 
-MAXX = 4.5
+MAXX = 14.5
 MINY = -1.0
 MAXY = 1.0
 
@@ -32,11 +31,9 @@ def get_rrext_by_trackId(rrext,trackId):
 if __name__ == "__main__":
   CP = None
   RI = RadarInterface(CP)
-  can_sock = messaging.sub_sock(service_list['can'].port)
-  can_poller = zmq.Poller()
-  can_poller.register(can_sock)
+  can_sock = messaging.sub_sock('can')
   while 1:
-    can_strings = messaging.drain_sock_raw_poller(can_poller, can_sock, wait_for_one=True)
+    can_strings = messaging.drain_sock_raw(can_sock, wait_for_one=True)
     rr,rrext = RI.update(can_strings)
 
     if (rr is None) or (rrext is None):

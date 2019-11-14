@@ -10,7 +10,6 @@ from selfdrive.controls.lib.planner import calc_cruise_accel_limits
 from common.realtime import sec_since_boot
 import selfdrive.messaging as messaging
 import time
-import zmq
 import math
 from collections import OrderedDict
 from common.params import Params
@@ -134,9 +133,8 @@ class PCCController():
     self.prev_pedal_state = False
     self.automated_cruise_action_time = 0
     self.last_angle = 0.
-    self.poller = zmq.Poller()
-    self.radarState = messaging.sub_sock(service_list['radarState'].port, conflate=True, poller=self.poller)
-    self.live_map_data = messaging.sub_sock(service_list['liveMapData'].port, conflate=True, poller=self.poller)
+    self.radarState = messaging.sub_sock('radarState', conflate=True)
+    self.live_map_data = messaging.sub_sock('liveMapData', conflate=True)
     self.lead_1 = None
     self.last_update_time = 0
     self.enable_pedal_cruise = False
@@ -384,11 +382,8 @@ class PCCController():
     radSt = None
     mapd = None
     #if enabled: do it always
-    for socket, _ in self.poller.poll(0):
-      if socket is self.radarState:
-        radSt = messaging.recv_one(socket)
-      elif socket is self.live_map_data:
-        mapd = messaging.recv_one(socket)
+    radSt = messaging.recv_one_or_none(self.radarState)
+    mapd = messaging.recv_one_or_none(self.live_map_data)
     if radSt is not None:
       self.lead_1 = radSt.radarState.leadOne
       if _is_present(self.lead_1):

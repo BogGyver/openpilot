@@ -41,7 +41,6 @@ int current_car_time = -1;
 int time_at_last_stalk_pull = -1;
 int eac_status = 0;
 
-int tesla_ignition_started = 0;
 
 /* <-- revB giraffe GPIO */
 #include "../drivers/uja1023.h"
@@ -1006,10 +1005,9 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   if (current_car_time - time_last_EPAS_data > 2) {
     //no message in the last 2 seconds, car is off
     // GTW_status
-    tesla_ignition_started = 0;
     time_last_EPAS_data = -10;
   } else {
-    tesla_ignition_started = 1;
+
   }
 
   //see if cruise is enabled [Enabled, standstill or Override] and cancel if using pedal
@@ -1164,12 +1162,6 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   // Detect drive rail on (ignition) (start recording)
   if ((addr == 0x348)  && (bus_number == 0))
   {
-    
-    if ((tesla_ignition_started * DAS_present * tesla_radar_should_send ) == 1) {
-      //set_uja1023_output_bits(1 << 7);
-    } else {
-      //clear_uja1023_output_bits(1 << 7);
-    }
     //ALSO use this for radar timeout, this message is always on
     uint32_t ts = TIM2->CNT;
     uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_last_radar_signal);
@@ -1607,16 +1599,10 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
 static void tesla_init(int16_t param)
 {
   UNUSED(param);
-  controls_allowed = 0;
-  tesla_ignition_started = 0;
   gmlan_switch_init(1); //init the gmlan switch with 1s timeout enabled
   //uja1023_init();
 }
 
-static int tesla_ign_hook(void)
-{
-  return tesla_ignition_started;
-}
 
 static void tesla_fwd_to_radar_as_is(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   if ((enable_radar_emulation == 0) || (tesla_radar_vin_complete !=7) || (tesla_radar_should_send==0) ) {
@@ -1927,6 +1913,5 @@ const safety_hooks tesla_hooks = {
   .rx = tesla_rx_hook,
   .tx = tesla_tx_hook,
   .tx_lin = nooutput_tx_lin_hook,
-  .ignition = tesla_ign_hook,
   .fwd = tesla_fwd_hook,
 };
