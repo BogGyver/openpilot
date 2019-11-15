@@ -71,8 +71,8 @@ class AHBController():
     #if moving below 10mph take no decision, then return undecided
     if CS.v_ego < 4.47:
       _debug("moving too slow for decision")
-      highLowBeamStatus = AHBDecision.DAS_HIGH_BEAM_UNDECIDED
-      highLowBeamReason = AHBReason.HIGH_BEAM_OFF_REASON_SNA
+      highLowBeamStatus = self.prev_highLowBeamStatus
+      highLowBeamReason = self.prev_highLowBeamReason
       return self.set_and_return(CS,frame,highLowBeamStatus,highLowBeamReason)
     if self.ahbInfoData is None:
       _debug("No radar info")
