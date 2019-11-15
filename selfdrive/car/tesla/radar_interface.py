@@ -20,9 +20,11 @@ CLASS_MIN_PROBABILITY = 20.
 RADAR_MESSAGE_FREQUENCY = 0.050 * 1e9 #time in ns, radar sends data at 0.06 s
 VALID_MESSAGE_COUNT_THRESHOLD = 4
 #these are settings for Auto High Beam
-AHB_VALID_MESSAGE_COUNT_THRESHOLD = -1 
-AHB_OBJECT_MIN_PROBABILITY = 0.
-AHB_CLASS_MIN_PROBABILITY = 0.
+#they are use to detect objects that are moving either in the same direction with us or towards us
+AHB_VALID_MESSAGE_COUNT_THRESHOLD = -1 # -1 to use any point
+AHB_OBJECT_MIN_PROBABILITY = 0. # 0. to use any point
+AHB_CLASS_MIN_PROBABILITY = 0. # 0. to use any point
+AHB_INCOMING_CAR_SPEED_FACTOR = -1.3 # needs to be negative, moving towards us, and more than our speed
 
 
 # Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
@@ -83,7 +85,7 @@ class RadarInterface(RadarInterfaceBase):
 
 
 
-  def update(self, can_strings):
+  def update(self, can_strings,v_ego):
     # radard at 20Hz and return no points
     if not self.useTeslaRadar:
       time.sleep(0.05)
@@ -99,12 +101,12 @@ class RadarInterface(RadarInterfaceBase):
     if self.trigger_end_msg not in self.updated_messages:
       return None,None,self.AHB_car_detected
 
-    rr,rrext,self.AHB_car_detected = self._update(self.updated_messages)
+    rr,rrext,self.AHB_car_detected = self._update(self.updated_messages,v_ego)
     self.updated_messages.clear()
     return rr,rrext,self.AHB_car_detected
 
 
-  def _update(self, updated_messages):
+  def _update(self, updated_messages,v_ego):
     ret = car.RadarData.new_message()
     AHB_car_detected = False
     for message in updated_messages:
@@ -133,13 +135,12 @@ class RadarInterface(RadarInterfaceBase):
           del self.pts[message]
           del self.extPts[message]
 
-      # radar point only valid if it's a valid measurement and score is above 50
-      # bosch radar data needs to match Index and Index2 for validity
-      # also for now ignore construction elements
+      # this is the logic used for Auto High Beam (AHB) car detection
       if (True or  cpt['Tracked']) and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
           (self.valid_cnt[message] > AHB_VALID_MESSAGE_COUNT_THRESHOLD) and (cpt['ProbExist'] >= AHB_OBJECT_MIN_PROBABILITY) and \
           (cpt2['Class'] < 4) and (cpt2['ProbClass'] >= AHB_CLASS_MIN_PROBABILITY):
-        if cpt2['MovingState'] <= 1:
+        # if moving or the relative speed is x% larger than our speed then use to turn high beam off
+        if (cpt2['MovingState'] <= 1) or (cpt['LongSpeed'] < AHB_INCOMING_CAR_SPEED_FACTOR * v_ego):
           AHB_car_detected = True
       # radar point only valid if it's a valid measurement and score is above 50
       # bosch radar data needs to match Index and Index2 for validity
@@ -200,6 +201,6 @@ if __name__ == "__main__":
   CP = None
   RI = RadarInterface(CP)
   while 1:
-    ret,retext = RI.update(can_strings = None)
+    ret,retext,ahb = RI.update(can_strings = None, v_ego = 0.)
     print(chr(27) + "[2J")
     print(ret,retext)
