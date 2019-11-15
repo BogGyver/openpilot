@@ -12,7 +12,7 @@ from selfdrive.tinklad.tinkla_interface import TinklaClient
 
 #RADAR_A_MSGS = list(range(0x371, 0x37F , 3))
 #RADAR_B_MSGS = list(range(0x372, 0x37F, 3))
-BOSCH_MAX_DIST = 150. #max distance for radar
+BOSCH_MAX_DIST = 250. #max distance for radar
 RADAR_A_MSGS = list(range(0x310, 0x36F , 3))
 RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
 OBJECT_MIN_PROBABILITY = 20.
@@ -21,9 +21,9 @@ RADAR_MESSAGE_FREQUENCY = 0.050 * 1e9 #time in ns, radar sends data at 0.06 s
 VALID_MESSAGE_COUNT_THRESHOLD = 4
 #these are settings for Auto High Beam
 #they are use to detect objects that are moving either in the same direction with us or towards us
-AHB_VALID_MESSAGE_COUNT_THRESHOLD = -1 # -1 to use any point
-AHB_OBJECT_MIN_PROBABILITY = 0. # 0. to use any point
-AHB_CLASS_MIN_PROBABILITY = 0. # 0. to use any point
+AHB_VALID_MESSAGE_COUNT_THRESHOLD = 1 # -1 to use any point
+AHB_OBJECT_MIN_PROBABILITY = 5. # 0. to use any point
+AHB_CLASS_MIN_PROBABILITY = 5. # 0. to use any point
 AHB_INCOMING_CAR_SPEED_FACTOR = -1.3 # needs to be negative, moving towards us, and more than our speed
 
 
@@ -136,7 +136,7 @@ class RadarInterface(RadarInterfaceBase):
           del self.extPts[message]
 
       # this is the logic used for Auto High Beam (AHB) car detection
-      if (True or  cpt['Tracked']) and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
+      if (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
           (self.valid_cnt[message] > AHB_VALID_MESSAGE_COUNT_THRESHOLD) and (cpt['ProbExist'] >= AHB_OBJECT_MIN_PROBABILITY) and \
           (cpt2['Class'] < 4) and (cpt2['ProbClass'] >= AHB_CLASS_MIN_PROBABILITY):
         # if moving or the relative speed is x% larger than our speed then use to turn high beam off
