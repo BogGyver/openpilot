@@ -320,6 +320,15 @@ class ConfigFile():
       )
       file_changed |= didUpdate
 
+      #ahb_off_duration -> ahbOffDuration
+      into.ahbOffDuration, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = pref_section,
+        entry = 'ahb_off_duration', entry_type = int,
+        default_value = 5,
+        comment = 'Duration Auto High Beams should be off after last detecting a vehicle'
+      )
+      file_changed |= didUpdate
+
       into.shouldLogCanErrors, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = logging_section,
         entry = 'should_log_can_errors', entry_type = bool,
@@ -407,6 +416,7 @@ class CarSettings():
   hsoNumbPeriod = None
   ldwNumbPeriod = None
   hsoBlinkerExtender = None
+  ahbOffDuration = None
 
   def __init__(self, optional_config_file_path = default_config_file_path):
     config_file = ConfigFile()

@@ -190,7 +190,7 @@ class PCCController():
           self.LoC.pid.f = data['f']
       else:
         print("self.LoC not initialized!")
-    except IOError:
+    except :
       print("file not present, creating at next reset")
 
     #Helper function for saving the PCC pid constants across drives

@@ -47,7 +47,7 @@ def get_can_signals(CP):
       ("MCU_ldwEnable", "MCU_chassisControl", 0),
       ("MCU_aebEnable", "MCU_chassisControl", 0),
       ("MCU_pedalSafetyEnable", "MCU_chassisControl", 0),
-      #("StW_AnglHP", "STW_ANGLHP_STAT", 0),
+      ("MCU_ahlbEnable", "MCU_chassisControl", 0),
       ("DI_gear", "DI_torque2", 3),
       ("DI_brakePedal", "DI_torque2", 0),
       ("DI_vehicleSpeed", "DI_torque2", 0),
@@ -55,13 +55,11 @@ def get_can_signals(CP):
       ("DOOR_STATE_FR", "GTW_carState", 1),
       ("DOOR_STATE_RL", "GTW_carState", 1),
       ("DOOR_STATE_RR", "GTW_carState", 1),
-      #("DI_stateCounter", "DI_state", 0),
-      #("GTW_driverPresent", "GTW_status", 0),
       ("DI_cruiseSet", "DI_state", 0),
       ("DI_cruiseState", "DI_state", 0),
-      #("TSL_P_Psd_StW","SBW_RQ_SCCM" , 0),
-      #("DI_motorRPM", "DI_torque1", 0),
-      #("DI_pedalPos", "DI_torque1", 0),
+      ("LoBm_On_Rq","BODY_R1" , 0),
+      ("HiBm_On", "BODY_R1", 0),
+      ("LgtSens_Night", "BODY_R1", 0),
       ("DI_torqueMotor", "DI_torque1",0),
       ("DI_speedUnits", "DI_state", 0),
       # Steering wheel stalk signals (useful for managing cruise control)
@@ -137,16 +135,11 @@ def get_can_signals(CP):
   ]
 
   checks = [
-      #("STW_ANGLHP_STAT",  200), #JCT Actual message freq is 40 Hz (0.025 sec)
       ("STW_ACTN_RQ",  20), #JCT Actual message freq is 3.5 Hz (0.285 sec)
-      #("SBW_RQ_SCCM", 175), #JCT Actual message freq is 35 Hz (0.0286 sec)
       ("DI_torque1", 59), #JCT Actual message freq is 11.8 Hz (0.084 sec)
       ("DI_torque2", 18), #JCT Actual message freq is 3.7 Hz (0.275 sec)
-      #("MCU_gpsVehicleSpeed", 2), #JCT Actual message freq is 0.487 Hz (2.05 sec)
       ("GTW_carState", 20), #JCT Actual message freq is 3.3 Hz (0.3 sec)
-      #("GTW_status", 2), #JCT Actual message freq is 0.5 Hz (2 sec)
       ("DI_state", 7), #JCT Actual message freq is 1 Hz (1 sec)
-      #("MCU_locationStatus", 5), #JCT Actual message freq is 1.3 Hz (0.76 sec)
       ("GTW_carConfig", 7), #BB Actual message freq  is 1 Hz (1 sec)
   ]
 
@@ -241,6 +234,7 @@ class CarState():
     self.hsoNumbPeriod = 1.5
     self.ldwNumbPeriod = 1.5
     self.hsoBlinkerExtender = 1.0
+    self.ahbOffDuration = 5
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
@@ -413,6 +407,13 @@ class CarState():
     self.angle_offset = 0.
     self.init_angle_offset = False
     self.speedLimitToIc = 0
+
+    #AHB params
+    self.ahbHighBeamStalkPosition = 0
+    self.ahbEnabled = 0
+    self.ahbLoBeamOn = 0
+    self.ahbHiBeamOn = 0
+    self.ahbNightMode = 0
    
   def config_ui_buttons(self, pedalPresent):
     if pedalPresent:
@@ -524,6 +525,12 @@ class CarState():
       self.keepEonOff = cp.vl["MCU_chassisControl"]["MCU_ldwEnable"] == 1
       self.alcaEnabled = cp.vl["MCU_chassisControl"]["MCU_pedalSafetyEnable"] == 1
       self.mapAwareSpeed = cp.vl["MCU_chassisControl"]["MCU_aebEnable"] == 1
+      #AHB info
+      self.ahbHighBeamStalkPosition = cp.vl["STW_ACTN_RQ"]["HiBmLvr_Stat"]
+      self.ahbEnabled = cp.vl["MCU_chassisControl"]["MCU_ahlbEnable"]
+      self.ahbLoBeamOn = cp.vl["BODY_R1"]["LoBm_On_Rq"]
+      self.ahbHiBeamOn = cp.vl["BODY_R1"]["HiBm_On"]
+      self.ahbNightMode = cp.vl["BODY_R1"]["LgtSens_Night"]
 
     usu = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffsetUnits"]
     if usu == 1:

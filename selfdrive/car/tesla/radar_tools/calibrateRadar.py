@@ -34,7 +34,7 @@ if __name__ == "__main__":
   can_sock = messaging.sub_sock('can')
   while 1:
     can_strings = messaging.drain_sock_raw(can_sock, wait_for_one=True)
-    rr,rrext = RI.update(can_strings)
+    rr,rrext,ahb = RI.update(can_strings)
 
     if (rr is None) or (rrext is None):
       continue

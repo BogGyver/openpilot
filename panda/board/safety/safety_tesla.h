@@ -213,6 +213,10 @@ int DAS_208_rackDetected = 0x00;
 int DAS_025_steeringOverride = 0x00;
 int DAS_221_lcAborting = 0x00;
 
+//fake DAS - high beam request
+int DAS_high_low_beam_request = 0x00;
+int DAS_high_low_beam_reason = 0x00;
+
 
 static int add_tesla_crc(uint32_t MLB, uint32_t MHB , int msg_len) {
   //"""Calculate CRC8 using 1D poly, FF start, FF end"""
@@ -347,6 +351,8 @@ static void reset_DAS_data(void) {
   DAS_telLeftMarkerColor = 1; //0-unknown, 1-white, 2-yellow, 3-blue
   DAS_telRightMarkerColor = 1; //0-unknown, 1-white, 2-yellow, 3-blue
   DAS_turn_signal_request = 0;
+  DAS_high_low_beam_request = 0;
+  DAS_high_low_beam_reason = 0;
   DAS_steeringAngle = 0x4000;
   DAS_steeringEnabled = 0;
   DAS_usingPedal = 0;
@@ -814,7 +820,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
   if (fake_DAS_counter % 50 == 9) {
     //send DAS_bodyControls - 0x3E9
     //0xf1,0x0c + turn_signal_request,0x00,0x00,0x00,0x00,(idx << 4)
-    MLB = 0x00000CF1 + (DAS_turn_signal_request << 8);
+    MLB = 0x000000F1 + (DAS_turn_signal_request << 8) + (DAS_high_low_beam_request << 10) + (DAS_high_low_beam_reason << 12);
     MHB = 0x00 + (DAS_bodyControls_idx << 20);
     int cksm = add_tesla_cksm2(MLB, MHB, 0x3E9, 7);
     MHB = MHB + (cksm << 24);
@@ -1528,6 +1534,16 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     return false;
   }
 
+  //capture message for AHB and parse 
+  if (addr == 0x65A) {
+    int b0 = (to_send->RDLR & 0xFF);
+    int b1 = ((to_send->RDLR >> 8) & 0xFF);
+    DAS_high_low_beam_request = b0;
+    DAS_high_low_beam_reason = b1;
+    //intercept and do not forward
+    return false;
+  }
+
   //capture message for fake DAS and parse
   if (addr == 0x659) { //0x553) {
     int b0 = (to_send->RDLR & 0xFF);
@@ -1549,7 +1565,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_turn_signal_request = ((b2 & 0xC0) >> 6);
     DAS_forward_collision_warning = ((b2 & 0x10) >> 4);
     DAS_units_included = ((b2 & 0x20) >> 5);
-    DAS_hands_on_state = (b2 & 0x0F);
+    DAS_hands_on_state = (b2 & 0x07);
     DAS_cc_state = ((b3 & 0xC0)>>6);
     DAS_usingPedal = ((b3 & 0x20) >> 5);
     DAS_alca_state = (b3 & 0x1F);
