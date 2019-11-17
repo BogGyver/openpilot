@@ -321,7 +321,7 @@ static void set_brightness(UIState *s, int brightness) {
 static void set_awake(UIState *s, bool awake) {
   if (awake) {
     // 30 second timeout at 30 fps
-    if ((s->b.tri_state_switch == 3) || (s->b.keepEonOff)) {
+    if (((s->b.tri_state_switch == 3) || (s->b.keepEonOff)) && !s->b.recording) {
       s->awake_timeout = 3*30;
     } else {
       s->awake_timeout = 30*30;
@@ -2024,7 +2024,7 @@ static void ui_update(UIState *s) {
       delete msg;
     }
 
-    if ((awake) && (s->b.tri_state_switch != 3) && (!s->b.keepEonOff)){
+    f (((awake) && (s->b.tri_state_switch != 3) && (!s->b.keepEonOff)) || (s->b.recording)){
       set_awake(s, true);
     }
   }
