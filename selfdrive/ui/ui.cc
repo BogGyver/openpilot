@@ -2029,7 +2029,7 @@ static void ui_update(UIState *s) {
       delete msg;
     }
 
-    f (((awake) && (s->b.tri_state_switch != 3) && (!s->b.keepEonOff)) || (s->b.recording)){
+    if (((awake) && (s->b.tri_state_switch != 3) && (!s->b.keepEonOff)) || (s->b.recording)){
       set_awake(s, true);
     }
   }
