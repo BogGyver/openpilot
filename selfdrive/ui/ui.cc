@@ -347,6 +347,7 @@ static void set_awake(UIState *s, bool awake) {
 
 #include "dashcam.h"
 #include "bbui.h"
+#include "tbui.h"
 
 static void set_volume(UIState *s, int volume) {
   char volume_change_cmd[64];
@@ -1465,7 +1466,11 @@ static void ui_draw_vision_footer(UIState *s) {
 #ifdef SHOW_SPEEDLIMIT
   // ui_draw_vision_map(s);
 #endif
+	
+  ui_draw_infobar(s);
 }
+
+
 
 static void ui_draw_vision_alert(UIState *s, int va_size, int va_color,
                                   const char* va_text1, const char* va_text2) {
