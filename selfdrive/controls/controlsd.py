@@ -578,7 +578,6 @@ def controlsd_thread(sm=None, pm=None, can_sock=None):
                                 LoC, read_only, start_time, v_acc, a_acc, lac_log, events_prev)
     prof.checkpoint("Sent")
 
-    rk.monitor_time()
     prof.display()
 
 

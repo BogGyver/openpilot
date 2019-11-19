@@ -331,7 +331,7 @@ class CarController():
       if self.alca_enabled:
         self.ldw_numb_frame_start = frame + 200 #we don't want LDW for 2 seconds after ALCA finishes
       #Determine if we should have LDW or not
-      self.should_ldw = (frame > (self.ldw_numb_frame_start + int( 50 * CS.ldwNumbPeriod)) and CS.v_ego > self.LDW_ENABLE_SPEED)
+      self.should_ldw = (frame > (self.ldw_numb_frame_start + int(100 * CS.ldwNumbPeriod)) and CS.v_ego > self.LDW_ENABLE_SPEED)
 
       if self.should_ldw and self.ldw_numb_frame_start != 0:
         self.ldw_numb_frame_start = 0
@@ -592,7 +592,7 @@ class CarController():
       self.warningNeeded = 1
     if CS.useTeslaRadar and CS.hasTeslaIcIntegration:
       highLowBeamStatus,highLowBeamReason = self.AHB.update(CS,frame)
-      if frame % 5 == 0:
+      if frame % 10 == 0:
         can_sends.append(teslacan.create_fake_DAS_msg2(highLowBeamStatus,highLowBeamReason))
     if send_fake_msg:
       if enable_steer_control and op_status == 3:
@@ -619,8 +619,7 @@ class CarController():
     if frame % 100 == 0: # and CS.hasTeslaIcIntegration:
         #IF WE HAVE softPanda RUNNING, send a message every second to say we are still awake
         can_sends.append(teslacan.create_fake_IC_msg())
-    idx = frame % 16
-    cruise_btn = None
+
     # send enabled ethernet every 0.2 sec
     if frame % 20 == 0:
         can_sends.append(teslacan.create_enabled_eth_msg(1))
@@ -814,11 +813,11 @@ class CarController():
       return 0
     if CS.blinker_on and not CS.prev_blinker_on and self.blinker_extension_frame_end == 0:
       self.blinker_on_frame_start = frame
-    elif not CS.blinker_on and CS.prev_blinker_on: # blinker just stopped
-      is_blinker_tap = frame - self.blinker_on_frame_start < 30 # stalk signal for less than 300ms means it was tapped
+    elif not CS.blinker_on and CS.prev_blinker_on: # turn signal stalk just turned off
+      is_blinker_tap = frame - self.blinker_on_frame_start < 60 # stalk signal for less than 600ms means it was tapped
       if is_blinker_tap:
         blink_duration_frames = 65 # one blink takes ~650ms
-        self.blinker_extension_frame_end = frame + blink_duration_frames * CS.tapBlinkerExtension
+        self.blinker_extension_frame_end = self.blinker_on_frame_start + blink_duration_frames * (3 + CS.tapBlinkerExtension)
         self.blinker_extension_blinker_type = 1 if CS.prev_left_blinker_on else 2
 
     if 0 < self.blinker_extension_frame_end < frame:
