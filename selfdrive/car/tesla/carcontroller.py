@@ -188,6 +188,10 @@ class CarController():
     self.ldwStatus = 0
     self.prev_ldwStatus = 0
 
+    self.blinker_on_frame_start = 0
+    self.blinker_extension_frame_end = 0
+    self.blinker_extension_blinker_type = 0
+
     self.radarVin_idx = 0
     self.LDW_ENABLE_SPEED = 16 
     self.should_ldw = False
@@ -379,9 +383,6 @@ class CarController():
       self.ACC.update_stat(CS, True)
       self.PCC.enable_pedal_cruise = False
     
-    # Update HSO module info.
-    human_control = False
-
     # update CS.v_cruise_pcm based on module selected.
     speed_uom_kph = 1.
     if CS.imperial_speed_units:
@@ -395,9 +396,10 @@ class CarController():
     # Get the turn signal from ALCA.
     turn_signal_needed, self.alca_enabled = self.ALCA.update(enabled, CS, actuators, self.alcaStateData, frame)
     apply_angle = -actuators.steerAngle  # Tesla is reversed vs OP.
-    human_control,turn_signal_needed_hso = self.HSO.update_stat(self,CS, enabled, actuators, frame)
+    # Update HSO module info.
+    human_control = self.HSO.update_stat(self,CS, enabled, actuators, frame)
     if turn_signal_needed == 0:
-      turn_signal_needed = turn_signal_needed_hso
+      turn_signal_needed = self._should_extend_blinker(CS, frame)
     human_lane_changing = changing_lanes and not self.alca_enabled
     enable_steer_control = (enabled
                             and not human_lane_changing
@@ -806,3 +808,23 @@ class CarController():
   # Returns speed as it needs to be displayed on the IC
   def speedUnits(self, fromMetersPerSecond):
     return fromMetersPerSecond * (CV.MS_TO_KPH if self.isMetric else CV.MS_TO_MPH) + 0.5
+
+  def _should_extend_blinker(self, CS, frame):
+    if CS.tapBlinkerExtension <= 0:
+      return 0
+    if CS.blinker_on and not CS.prev_blinker_on and self.blinker_extension_frame_end == 0:
+      self.blinker_on_frame_start = frame
+    elif not CS.blinker_on and CS.prev_blinker_on: # blinker just stopped
+      is_blinker_tap = frame - self.blinker_on_frame_start < 30 # stalk signal for less than 300ms means it was tapped
+      if is_blinker_tap:
+        blink_duration_frames = 65 # one blink takes ~650ms
+        self.blinker_extension_frame_end = frame + blink_duration_frames * CS.tapBlinkerExtension
+        self.blinker_extension_blinker_type = 1 if CS.prev_left_blinker_on else 2
+
+    if 0 < self.blinker_extension_frame_end < frame:
+      self.blinker_extension_frame_end = 0
+      self.blinker_extension_blinker_type = 0
+    if self.blinker_on_frame_start > 0 and not CS.blinker_on and self.blinker_extension_frame_end == 0:
+      self.blinker_on_frame_start = 0
+
+    return self.blinker_extension_blinker_type
