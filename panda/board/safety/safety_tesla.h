@@ -216,6 +216,7 @@ int DAS_221_lcAborting = 0x00;
 //fake DAS - high beam request
 int DAS_high_low_beam_request = 0x00;
 int DAS_high_low_beam_reason = 0x00;
+int DAS_ahb_is_enabled = 0;
 
 
 static int add_tesla_crc(uint32_t MLB, uint32_t MHB , int msg_len) {
@@ -1538,8 +1539,10 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
   if (addr == 0x65A) {
     int b0 = (to_send->RDLR & 0xFF);
     int b1 = ((to_send->RDLR >> 8) & 0xFF);
+    int b2 = ((to_send->RDLR >> 16) & 0xFF);
     DAS_high_low_beam_request = b0;
     DAS_high_low_beam_reason = b1;
+    DAS_ahb_is_enabled = b2;
     //intercept and do not forward
     return false;
   }
@@ -1777,6 +1780,10 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
     int32_t speed_kph = (((0xFFF0000 & to_send.RDLR) >> 16) * 0.05 -25) * 1.609;
     if (speed_kph < 0) {
       speed_kph = 0;
+    }
+    // is AHB is enabled, use low apeed to spread radar angle
+    if ((speed_kph > 2 ) && (DAS_ahb_is_enabled == 1)) {
+      speed_kph = 2;
     }
     if (((0xFFF0000 & to_send.RDLR) >> 16) == 0xFFF) {
       speed_kph = 0x1FFF; //0xFFF is signal not available for DI_Torque2 speed 0x118; should be SNA or 0x1FFF for 0x169

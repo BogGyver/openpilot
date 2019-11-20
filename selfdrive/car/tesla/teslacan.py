@@ -130,11 +130,11 @@ def create_DAS_LR_object_msg(lane,v1Class,v1Id,v1Dx,v1Dy,v1V,v2Class,v2Id,v2Dx,v
     int((v2y >> 5) & 0x03) + ((v2Id << 2) & 0xFC))
   return [msg_id, 0, msg.raw, 0]
 
-def create_fake_DAS_msg2(hiLoBeamStatus,hiLoBeamReason):
+def create_fake_DAS_msg2(hiLoBeamStatus,hiLoBeamReason,ahbIsEnabled):
   msg_id = 0x65A
-  msg_len = 2
+  msg_len = 3
   msg = create_string_buffer(msg_len)
-  struct.pack_into('BB', msg, 0, hiLoBeamStatus, hiLoBeamReason)
+  struct.pack_into('BBB', msg, 0, hiLoBeamStatus, hiLoBeamReason,1 if ahbIsEnabled else 0)
   return [msg_id, 0, msg.raw, 0]
 
 
