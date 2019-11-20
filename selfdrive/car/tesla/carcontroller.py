@@ -814,9 +814,9 @@ class CarController():
     if CS.blinker_on and not CS.prev_blinker_on and self.blinker_extension_frame_end == 0:
       self.blinker_on_frame_start = frame
     elif not CS.blinker_on and CS.prev_blinker_on: # turn signal stalk just turned off
-      is_blinker_tap = frame - self.blinker_on_frame_start < 60 # stalk signal for less than 600ms means it was tapped
+      is_blinker_tap = frame - self.blinker_on_frame_start < 55 # stalk signal for less than 550ms means it was tapped
       if is_blinker_tap:
-        blink_duration_frames = 65 # one blink takes ~650ms
+        blink_duration_frames = 58 # one blink takes ~580ms
         self.blinker_extension_frame_end = self.blinker_on_frame_start + blink_duration_frames * (3 + CS.tapBlinkerExtension)
         self.blinker_extension_blinker_type = 1 if CS.prev_left_blinker_on else 2
 
