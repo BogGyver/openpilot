@@ -10,22 +10,27 @@ from selfdrive.car.interfaces import RadarInterfaceBase
 from selfdrive.car.tesla.readconfig import CarSettings
 from selfdrive.tinklad.tinkla_interface import TinklaClient
 
+BOSCH_MAX_DIST = 250. #max distance for radar
+#use these for tracks (5 tracks)
 #RADAR_A_MSGS = list(range(0x371, 0x37F , 3))
 #RADAR_B_MSGS = list(range(0x372, 0x37F, 3))
-BOSCH_MAX_DIST = 250. #max distance for radar
+#use these for point cloud  (32 points)
 RADAR_A_MSGS = list(range(0x310, 0x36F , 3))
 RADAR_B_MSGS = list(range(0x311, 0x36F, 3))
-OBJECT_MIN_PROBABILITY = 20.
-CLASS_MIN_PROBABILITY = 20.
+OBJECT_MIN_PROBABILITY = 50.
+CLASS_MIN_PROBABILITY = 50.
 RADAR_MESSAGE_FREQUENCY = 0.050 * 1e9 #time in ns, radar sends data at 0.06 s
 VALID_MESSAGE_COUNT_THRESHOLD = 4
 #these are settings for Auto High Beam
 #they are use to detect objects that are moving either in the same direction with us or towards us
-AHB_VALID_MESSAGE_COUNT_THRESHOLD = 1 # -1 to use any point
-AHB_OBJECT_MIN_PROBABILITY = 5. # 0. to use any point
-AHB_CLASS_MIN_PROBABILITY = 5. # 0. to use any point
-AHB_INCOMING_CAR_SPEED_FACTOR = -1.3 # needs to be negative, moving towards us, and more than our speed
-
+#for AHB radar is forced in low speed mode that widents the angle and reduces distance
+#in these cases at night we will rely on visual radar to detect the lead car
+AHB_VALID_MESSAGE_COUNT_THRESHOLD = 4 # -1 to use any point
+AHB_OBJECT_MIN_PROBABILITY = 10. # 0. to use any point
+AHB_CLASS_MIN_PROBABILITY = 10. # 0. to use any point
+AHB_STATIONARY_MARGIN = 1.8 # m/s
+AHB_DEBUG = False
+AHB_MAX_DISTANCE = 100 # ignore if more than 100m
 
 # Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
 # definetly switch to all objects when calibrating but most likely use select set of 5 for normal use
@@ -136,18 +141,20 @@ class RadarInterface(RadarInterfaceBase):
           del self.extPts[message]
 
       # this is the logic used for Auto High Beam (AHB) car detection
-      if (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
+      if  (cpt['Valid'] or cpt['Tracked']) and (abs(cpt['LongSpeed']) < 80) and (cpt['LongDist']>0) and  (cpt['LongDist'] < AHB_MAX_DISTANCE) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
           (self.valid_cnt[message] > AHB_VALID_MESSAGE_COUNT_THRESHOLD) and (cpt['ProbExist'] >= AHB_OBJECT_MIN_PROBABILITY) and \
           (cpt2['Class'] < 4) and (cpt2['ProbClass'] >= AHB_CLASS_MIN_PROBABILITY):
         # if moving or the relative speed is x% larger than our speed then use to turn high beam off
-        if (cpt2['MovingState'] <= 1) or (cpt['LongSpeed'] < AHB_INCOMING_CAR_SPEED_FACTOR * v_ego):
+        if ((cpt['LongSpeed'] <= - AHB_STATIONARY_MARGIN - v_ego) or (cpt['LongSpeed'] >= AHB_STATIONARY_MARGIN - v_ego)):
           AHB_car_detected = True
+          if AHB_DEBUG:
+              print(cpt,cpt2)
       # radar point only valid if it's a valid measurement and score is above 50
       # bosch radar data needs to match Index and Index2 for validity
       # also for now ignore construction elements
       if (cpt['Valid'] or cpt['Tracked'])and (cpt['LongDist']>0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
           (self.valid_cnt[message] > VALID_MESSAGE_COUNT_THRESHOLD) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and \
-          (cpt2['Class'] < 4): 
+          (cpt2['Class'] < 4) and ((cpt['LongSpeed'] >= AHB_STATIONARY_MARGIN - v_ego) or (v_ego < 2)): 
         if message not in self.pts and ( cpt['Tracked']):
           self.pts[message] = car.RadarData.RadarPoint.new_message()
           self.pts[message].trackId = self.trackId 

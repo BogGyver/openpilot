@@ -199,6 +199,8 @@ class CarController():
     self.prev_changing_lanes = False
     
     self.isMetric = (self.params.get("IsMetric") == "1")
+  
+    self.ahbLead1 = None
 
   def reset_traffic_events(self):
     self.stopSign_visible = False
@@ -591,9 +593,9 @@ class CarController():
       self.warningCounter = 300
       self.warningNeeded = 1
     if CS.useTeslaRadar and CS.hasTeslaIcIntegration:
-      highLowBeamStatus,highLowBeamReason = self.AHB.update(CS,frame)
-      if frame % 10 == 0:
-        can_sends.append(teslacan.create_fake_DAS_msg2(highLowBeamStatus,highLowBeamReason))
+      highLowBeamStatus,highLowBeamReason,ahbIsEnabled = self.AHB.update(CS,frame,self.ahbLead1)
+      if frame % 5 == 0:
+        can_sends.append(teslacan.create_fake_DAS_msg2(highLowBeamStatus,highLowBeamReason,ahbIsEnabled))
     if send_fake_msg:
       if enable_steer_control and op_status == 3:
         op_status = 0x5
@@ -650,10 +652,12 @@ class CarController():
     messages = []
     leads = radarStateMsg.radarState
     if leads is None:
+      self.ahbLead1 = None
       return messages
     lead_1 = leads.leadOne
     lead_2 = leads.leadTwo
     if (lead_1 is not None) and lead_1.status:
+      self.ahbLead1 = lead_1
       self.leadDx = lead_1.dRel
       self.leadDy = self.curv0-lead_1.yRel
       self.leadId = self.icLeadsData.lead1trackId

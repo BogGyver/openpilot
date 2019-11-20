@@ -82,7 +82,7 @@ class ALCAController():
     self.laneChange_over_the_line = 0 # did we cross the line?
     self.laneChange_enabled = 1 # set to zero for no lane change
     self.laneChange_counter = 0 # used to count frames during lane change
-    self.laneChange_wait = 1 # how many seconds to wait before it starts the change
+    self.laneChange_wait = 2 # how many seconds to wait before it starts the change
     self.laneChange_direction = 0 # direction of the lane change 
     self.prev_right_blinker_on = False # local variable for prev position
     self.prev_left_blinker_on = False # local variable for prev position

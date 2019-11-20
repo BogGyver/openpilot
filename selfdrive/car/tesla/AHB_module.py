@@ -39,6 +39,7 @@ class AHBController():
     self.prev_lights_on = False
     self.ahbInfo = messaging.sub_sock('ahbInfo', conflate=True)
     self.ahbInfoData = None
+    self.ahbIsEnabled = False
 
   def set_and_return(self,CS,frame,highLowBeamStatus,highLowBeamReason):
     self.prev_light_stalk_position = CS.ahbHighBeamStalkPosition
@@ -48,9 +49,10 @@ class AHBController():
     self.prev_highLowBeamReason = highLowBeamReason
     self.prev_high_beam_on = CS.ahbHiBeamOn
     self.prev_lights_on = CS.ahbLoBeamOn
-    return highLowBeamStatus,highLowBeamReason
+    self.ahbIsEnabled = self.ahbIsEnabled and CS.ahbEnabled
+    return highLowBeamStatus,highLowBeamReason,self.ahbIsEnabled
 
-  def update(self, CS, frame):
+  def update(self, CS, frame,ahbLead1):
     tms_now = _current_time_millis()
     ahbInfoMsg = self.ahbInfo.receive(non_blocking=True)
     if ahbInfoMsg is not None:
@@ -67,7 +69,10 @@ class AHBController():
       _debug("High Beam not on")
       highLowBeamStatus = AHBDecision.DAS_HIGH_BEAM_UNDECIDED
       highLowBeamReason = AHBReason.HIGH_BEAM_OFF_REASON_SNA
+      self.ahbIsEnabled = False
       return self.set_and_return(CS,frame,highLowBeamStatus,highLowBeamReason) 
+    else :
+      self.ahbIsEnabled = True
     #if moving below 10mph take no decision, then return undecided
     if CS.v_ego < 4.47:
       _debug("moving too slow for decision")
@@ -78,6 +83,13 @@ class AHBController():
       _debug("No radar info")
       highLowBeamStatus = AHBDecision.DAS_HIGH_BEAM_UNDECIDED
       highLowBeamReason = AHBReason.HIGH_BEAM_OFF_REASON_SNA
+      return self.set_and_return(CS,frame,highLowBeamStatus,highLowBeamReason)
+    #if lead car detected by radarD, i.e. OP has Lead, then reset timer and return OFF
+    if ahbLead1 is not None:
+      _debug("OP detected car")
+      self.time_last_car_detected = tms_now
+      highLowBeamStatus = AHBDecision.DAS_HIGH_BEAM_OFF
+      highLowBeamReason = AHBReason.HIGH_BEAM_OFF_REASON_MOVING_RADAR_TARGET
       return self.set_and_return(CS,frame,highLowBeamStatus,highLowBeamReason)
     #if lead car detected by radar, then reset timer and return OFF
     if self.ahbInfoData.radarCarDetected:
