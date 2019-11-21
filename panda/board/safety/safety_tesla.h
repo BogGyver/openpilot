@@ -1783,7 +1783,7 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
     }
     // is AHB is enabled, use low apeed to spread radar angle
     if ((speed_kph > 2 ) && (DAS_ahb_is_enabled == 1)) {
-      speed_kph = 2;
+    //  speed_kph = 2;
     }
     if (((0xFFF0000 & to_send.RDLR) >> 16) == 0xFFF) {
       speed_kph = 0x1FFF; //0xFFF is signal not available for DI_Torque2 speed 0x118; should be SNA or 0x1FFF for 0x169

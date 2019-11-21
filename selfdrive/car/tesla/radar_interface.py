@@ -26,7 +26,7 @@ VALID_MESSAGE_COUNT_THRESHOLD = 4
 #for AHB radar is forced in low speed mode that widents the angle and reduces distance
 #in these cases at night we will rely on visual radar to detect the lead car
 AHB_VALID_MESSAGE_COUNT_THRESHOLD = 4 # -1 to use any point
-AHB_OBJECT_MIN_PROBABILITY = 10. # 0. to use any point
+AHB_OBJECT_MIN_PROBABILITY = 20. # 0. to use any point
 AHB_CLASS_MIN_PROBABILITY = 10. # 0. to use any point
 AHB_STATIONARY_MARGIN = 1.8 # m/s
 AHB_DEBUG = False
