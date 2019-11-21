@@ -157,7 +157,7 @@ class CarController():
     self.curv2 = 0. 
     self.curv3 = 0. 
     self.visionCurvC0 = 0.
-    self.laneRange = 75  #max is 160m but OP has issues with precision beyond 50
+    self.laneRange = 30  #max is 160m but OP has issues with precision beyond 50
 
     self.laneWidth = 0.
 
