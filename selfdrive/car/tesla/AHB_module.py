@@ -85,7 +85,7 @@ class AHBController():
       highLowBeamReason = AHBReason.HIGH_BEAM_OFF_REASON_SNA
       return self.set_and_return(CS,frame,highLowBeamStatus,highLowBeamReason)
     #if lead car detected by radarD, i.e. OP has Lead, then reset timer and return OFF
-    if ahbLead1 is not None:
+    if False and ahbLead1 is not None:
       _debug("OP detected car")
       self.time_last_car_detected = tms_now
       highLowBeamStatus = AHBDecision.DAS_HIGH_BEAM_OFF

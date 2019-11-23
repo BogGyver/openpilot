@@ -16,24 +16,26 @@ class ACCState():
   NOT_READY = 9   # Not ready to be engaged due to the state of the car.
   
 class _Mode():
-  def __init__(self, label, autoresume, state):
+  def __init__(self, label, autoresume, state,adaptive):
     self.label = label
     self.autoresume = autoresume
     self.state = state
+    self.adaptive = adaptive
     self.next = None
   
 class ACCMode():
   # Possible ACC modes, controlling how ACC behaves.
   # This is separate from ACC state. For example, you could
   # have ACC in "Autoresume" mode in "Standby" state.
-  FOLLOW = _Mode(label="follow",   autoresume=False, state=ACCState.STANDBY)
-  AUTO =   _Mode(label="auto", autoresume=True,  state=ACCState.STANDBY)
+  FOLLOW = _Mode(label="follow",   autoresume=False, state=ACCState.STANDBY, adaptive=True)
+  AUTO =   _Mode(label="auto", autoresume=True,  state=ACCState.STANDBY, adaptive=True)
+  PLAINCC = _Mode(label="cc",   autoresume=False, state=ACCState.STANDBY, adaptive=False)
   
   BUTTON_NAME = 'acc'
   BUTTON_ABREVIATION = 'ACC'
   
   # Toggle order: OFF -> ON -> AUTO -> OFF
-  _all_modes = [FOLLOW, AUTO]
+  _all_modes = [FOLLOW, AUTO,PLAINCC]
   for index, mode in enumerate(_all_modes):
     mode.next = _all_modes[(index + 1) % len(_all_modes)]
     
@@ -67,6 +69,7 @@ class ACCController():
     # Whether to re-engage automatically after being paused due to low speed or
     # user-initated deceleration.
     self.autoresume = False
+    self.adaptive = False
     self.last_brake_press_time = 0
     self.last_cruise_stalk_pull_time = 0
     self.prev_cruise_buttons = CruiseButtons.IDLE
@@ -95,33 +98,37 @@ class ACCController():
     acc_mode = ACCMode.from_label(acc_string)
     CS.cstm_btns.get_button(ACCMode.BUTTON_NAME).btn_label2 = acc_mode.label
     self.autoresume = acc_mode.autoresume
+    self.adaptive = acc_mode.adaptive
     curr_time_ms = _current_time_millis()
     # Handle pressing the enable button.
-    if (CS.cruise_buttons == CruiseButtons.MAIN and
-        self.prev_cruise_buttons != CruiseButtons.MAIN):
+    if (CS.cruise_buttons == CruiseButtons.MAIN  or CS.cruise_buttons == CruiseButtons.DECEL_SET) and self.prev_cruise_buttons != CS.cruise_buttons:
       double_pull = curr_time_ms - self.last_cruise_stalk_pull_time < 750
       self.last_cruise_stalk_pull_time = curr_time_ms
       ready = (CS.cstm_btns.get_button_status(ACCMode.BUTTON_NAME) > ACCState.OFF
-               and enabled
+               and (enabled or (CS.cruise_buttons == CruiseButtons.DECEL_SET and not self.adaptive))
                and CruiseState.is_enabled_or_standby(CS.pcm_acc_status)
                and CS.v_ego > self.MIN_CRUISE_SPEED_MS)
-      if ready and double_pull:
+      if ready and double_pull and ((self.adaptive and CS.cruise_buttons == CruiseButtons.MAIN) or ((not self.adaptive) and CS.cruise_buttons == CruiseButtons.DECEL_SET)):
         # A double pull enables ACC. updating the max ACC speed if necessary.
         self.enable_adaptive_cruise = True
         # Increase ACC speed to match current, if applicable.
-        self.acc_speed_kph = max(CS.v_ego_raw * CV.MS_TO_KPH, self.speed_limit_kph)
+        if self.adaptive:
+          self.acc_speed_kph = max(CS.v_ego_raw * CV.MS_TO_KPH, self.speed_limit_kph)
+        else:
+          self.acc_speed_kph = CS.v_ego_raw * CV.MS_TO_KPH
         self.user_has_braked = False
         self.has_gone_below_min_speed = False
       else:
         # A single pull disables ACC (falling back to just steering).
-        self.enable_adaptive_cruise = False
+        if CS.cruise_buttons == CruiseButtons.MAIN:
+          self.enable_adaptive_cruise = False
     # Handle pressing the cancel button.
-    elif CS.cruise_buttons == CruiseButtons.CANCEL:
+    if CS.cruise_buttons == CruiseButtons.CANCEL:
       self.enable_adaptive_cruise = False
       self.acc_speed_kph = 0. 
       self.last_cruise_stalk_pull_time = 0
     # Handle pressing up and down buttons.
-    elif (self.enable_adaptive_cruise and
+    elif (CS.cruise_buttons != CruiseButtons.MAIN and self.enable_adaptive_cruise and
           CS.cruise_buttons != self.prev_cruise_buttons):
       self._update_max_acc_speed(CS)
       
@@ -134,9 +141,9 @@ class ACCController():
     if CS.v_ego < self.MIN_CRUISE_SPEED_MS:
       self.has_gone_below_min_speed = True
     
-    # If autoresume is not enabled, manually steering or slowing disables ACC.
+    # If autoresume is not enabled and not in standard CC, disable if we hit the brakes or gone below 18mph
     if not self.autoresume:
-      if not enabled or self.user_has_braked or self.has_gone_below_min_speed:
+      if (self.adaptive and not enabled) or self.user_has_braked or self.has_gone_below_min_speed:
         self.enable_adaptive_cruise = False
     
     # Notify if ACC was toggled
@@ -150,7 +157,7 @@ class ACCController():
 
     # Update the UI to show whether the current car state allows ACC.
     if CS.cstm_btns.get_button_status(ACCMode.BUTTON_NAME) in [ACCState.STANDBY, ACCState.NOT_READY]:
-      if (enabled
+      if ((enabled or not self.adaptive)
           and CruiseState.is_enabled_or_standby(CS.pcm_acc_status)
           and CS.v_ego > self.MIN_CRUISE_SPEED_MS):
         CS.cstm_btns.set_button_status(ACCMode.BUTTON_NAME, ACCState.STANDBY)
@@ -210,6 +217,15 @@ class ACCController():
     if((self.prev_enable_adaptive_cruise) and (not self.enable_adaptive_cruise)
         and (CS.pcm_acc_status == CruiseState.ENABLED)):
       button_to_press = CruiseButtons.CANCEL
+
+    #if non addaptive and we just engaged ACC but pcm is not engaged, then engage
+    if (not self.adaptive) and self.enable_adaptive_cruise and (CS.pcm_acc_status != CruiseState.ENABLED):
+      button_to_press = CruiseButtons.MAIN
+
+    #if plain cc, not adaptive, then just return None or Cancel
+    if not self.adaptive and self.enable_adaptive_cruise:
+      self.acc_speed_kph = CS.v_cruise_actual #if not CS.imperial_speed_units else CS.v_cruise_actual * CV.MPH_TO_KPH
+      return button_to_press
 
     #disengage if cruise is canceled
     if (not self.enable_adaptive_cruise) and (CS.pcm_acc_status >= 2) and (CS.pcm_acc_status <= 4):

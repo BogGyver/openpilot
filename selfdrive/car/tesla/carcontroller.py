@@ -556,12 +556,17 @@ class CarController():
       if (CS.pedal_interceptor_available and self.PCC.enable_pedal_cruise) or (self.ACC.enable_adaptive_cruise):
         speed_control_enabled = 1
         cc_state = 2
+        if not self.ACC.adaptive:
+            cc_state = 3
         CS.speed_control_enabled = 1
       else:
         CS.speed_control_enabled = 0
         if (CS.pcm_acc_status == 4):
           #car CC enabled but not OP, display the HOLD message
           cc_state = 3
+    else:
+      if (CS.pcm_acc_status == 4):
+        cc_state = 3
 
     send_fake_msg = False
     send_fake_warning = False
@@ -593,7 +598,7 @@ class CarController():
     if CS.useTeslaRadar and CS.hasTeslaIcIntegration:
       highLowBeamStatus,highLowBeamReason,ahbIsEnabled = self.AHB.update(CS,frame,self.ahbLead1)
       if frame % 5 == 0:
-        can_sends.append(teslacan.create_fake_DAS_msg2(highLowBeamStatus,highLowBeamReason,ahbIsEnabled))
+        can_sends.append(teslacan.create_fake_DAS_msg2(highLowBeamStatus,highLowBeamReason,ahbIsEnabled,(not CS.pedal_interceptor_available) and (not self.ACC.adaptive)))
     if send_fake_msg:
       if enable_steer_control and op_status == 3:
         op_status = 0x5
@@ -722,6 +727,8 @@ class CarController():
         self.curv1 = 0.0 #straighten the turn for ALCA
         self.curv0 = -self.ALCA.laneChange_direction * alcaStateData.alcaLaneWidth * alcaStateData.alcaStep / alcaStateData.alcaTotalSteps #animas late change on IC
         self.curv0 = clip(self.curv0, -3.5, 3.5)
+        self.lLine = 3
+        self.rLine = 3
       else:
         if self.should_ldw and (CS.enableLdw and (not CS.blinker_on) and (turn_signal_needed == 0)):
           if pp.lProb > LDW_LANE_PROBAB:
