@@ -223,7 +223,7 @@ class ACCController():
       button_to_press = CruiseButtons.MAIN
 
     #if plain cc, not adaptive, then just return None or Cancel
-    if not self.adaptive and self.enable_adaptive_cruise:
+    if (not self.adaptive) and self.enable_adaptive_cruise:
       self.acc_speed_kph = CS.v_cruise_actual #if not CS.imperial_speed_units else CS.v_cruise_actual * CV.MPH_TO_KPH
       return button_to_press
 

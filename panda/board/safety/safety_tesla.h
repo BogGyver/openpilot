@@ -1549,7 +1549,6 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_high_low_beam_request = b0;
     DAS_high_low_beam_reason = b1;
     DAS_ahb_is_enabled = b2 & 0x01;
-    DAS_plain_cc_enabled = (b2 >> 1) & 0x01;
     //intercept and do not forward
     return false;
   }
@@ -1575,6 +1574,11 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_turn_signal_request = ((b2 & 0xC0) >> 6);
     DAS_forward_collision_warning = ((b2 & 0x10) >> 4);
     DAS_units_included = ((b2 & 0x20) >> 5);
+    if (((b2 >> 3) & 0x01) == 0) {
+      DAS_plain_cc_enabled = 1;
+    } else {
+      DAS_plain_cc_enabled = 0;
+    }
     DAS_hands_on_state = (b2 & 0x07);
     DAS_cc_state = ((b3 & 0xC0)>>6);
     DAS_usingPedal = ((b3 & 0x20) >> 5);

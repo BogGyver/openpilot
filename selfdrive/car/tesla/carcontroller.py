@@ -598,13 +598,14 @@ class CarController():
     if CS.useTeslaRadar and CS.hasTeslaIcIntegration:
       highLowBeamStatus,highLowBeamReason,ahbIsEnabled = self.AHB.update(CS,frame,self.ahbLead1)
       if frame % 5 == 0:
-        can_sends.append(teslacan.create_fake_DAS_msg2(highLowBeamStatus,highLowBeamReason,ahbIsEnabled,(not CS.pedal_interceptor_available) and (not self.ACC.adaptive)))
+        can_sends.append(teslacan.create_fake_DAS_msg2(highLowBeamStatus,highLowBeamReason,ahbIsEnabled))
     if send_fake_msg:
       if enable_steer_control and op_status == 3:
         op_status = 0x5
+      adaptive_cruise = 1 if   (not CS.pedal_interceptor_available and self.ACC.adaptive) or CS.pedal_interceptor_available else 0
       can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,speed_override,self.DAS_206_apUnavailable, collision_warning, op_status, \
             acc_speed_kph, \
-            turn_signal_needed,forward_collision_warning,  hands_on_state, \
+            turn_signal_needed,forward_collision_warning, adaptive_cruise,  hands_on_state, \
             cc_state, 1 if (CS.pedal_interceptor_available) else 0,alca_state, \
             CS.v_cruise_pcm, #acc_speed_limit_mph,
             CS.speedLimitToIc, #speed_limit_to_car,
