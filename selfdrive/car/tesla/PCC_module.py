@@ -620,7 +620,7 @@ class PCCController():
     # Enforce limits on speed
     new_speed_kph = clip(new_speed_kph, MIN_PCC_V_KPH, MAX_PCC_V_KPH)
     new_speed_kph = clip(new_speed_kph, MIN_PCC_V_KPH, self.pedal_speed_kph)
-    if CS.blinker_on or (abs(CS.angle_steers) > ANGLE_STOP_ACCEL) or alca_enabled:
+    if CS.turn_signal_blinking or (abs(CS.angle_steers) > ANGLE_STOP_ACCEL) or alca_enabled:
       # Don't accelerate during manual turns, curves or ALCA.
       new_speed_kph = min(new_speed_kph, self.last_speed_kph)
     #BB Last safety check. Zero if below MIN_SAFE_DIST_M

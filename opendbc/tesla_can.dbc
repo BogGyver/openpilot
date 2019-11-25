@@ -172,22 +172,26 @@ BO_ 532 EPB_epasControl: 3 EPB
  SG_ EPB_epasEACAllow : 2|3@0+ (1,0) [4|7] ""  NEO,EPAS
 
 BO_ 792 GTW_carState: 8 GTW
- SG_ BOOT_STATE : 47|2@0+ (1,0) [-1|4] ""  NEO
- SG_ CERRD : 7|1@0+ (1,0) [-1|2] ""  NEO
- SG_ DAY : 36|5@0+ (1,0) [2|31] ""  NEO
- SG_ DOOR_STATE_FL : 13|2@0+ (1,0) [-1|4] ""  NEO
- SG_ DOOR_STATE_FR : 15|2@0+ (1,0) [-1|4] ""  NEO
- SG_ DOOR_STATE_FrontTrunk : 51|2@0+ (1,0) [-1|4] ""  NEO
- SG_ DOOR_STATE_RL : 23|2@0+ (1,0) [-1|4] ""  NEO
- SG_ DOOR_STATE_RR : 30|2@0+ (1,0) [-1|4] ""  NEO
- SG_ GTW_updateInProgress : 49|2@0+ (1,0) [-1|4] ""  NEO
- SG_ Hour : 28|5@0+ (1,0) [0|29] "h"  NEO
- SG_ MCU_factoryMode : 52|1@0+ (1,0) [-1|2] ""  NEO
- SG_ MCU_transportModeOn : 53|1@0+ (1,0) [1|1] ""  NEO
- SG_ MINUTE : 45|6@0+ (1,0) [0|61] "min"  NEO
- SG_ MONTH : 11|4@0+ (1,0) [0|14] "Month"  NEO
- SG_ SECOND : 21|6@0+ (1,0) [0|61] "s"  NEO
- SG_ YEAR : 6|7@0+ (1,2000) [2000|2125] "Year"  NEO
+ SG_ YEAR : 0|7@1+ (1,2000) [2000|2127] "Year" NEO
+ SG_ CERRD : 7|1@1+ (1,0) [0|1] "" NEO
+ SG_ MONTH : 8|4@1+ (1,0) [1|12] "Month" NEO
+ SG_ DOOR_STATE_FL : 12|2@1+ (1,0) [0|3] "" NEO
+ SG_ DOOR_STATE_FR : 14|2@1+ (1,0) [0|3] "" NEO
+ SG_ SECOND : 16|6@1+ (1,0) [0|59] "s" NEO
+ SG_ DOOR_STATE_RL : 22|2@1+ (1,0) [0|3] "" NEO
+ SG_ Hour : 24|5@1+ (1,0) [0|23] "h" NEO
+ SG_ DOOR_STATE_RR : 29|2@1+ (1,0) [0|3] "" NEO
+ SG_ DAY : 32|5@1+ (1,0) [0|31] "" NEO
+ SG_ MINUTE : 40|6@1+ (1,0) [0|59] "min" NEO
+ SG_ BOOT_STATE : 46|2@1+ (1,0) [0|3] "" NEO
+ SG_ GTW_updateInProgress : 48|2@1+ (1,0) [0|3] "" NEO
+ SG_ DOOR_STATE_FrontTrunk : 50|2@1+ (1,0) [0|3] "" NEO
+ SG_ MCU_factoryMode : 52|1@1+ (1,0) [0|1] "" NEO
+ SG_ MCU_transportModeOn : 53|1@0+ (1,0) [0|1] "" NEO
+ SG_ BC_headLightLStatus : 55|2@0+ (1,0) [0|3] "" NEO
+ SG_ BC_headLightRStatus : 57|2@0+ (1,0) [0|3] "" NEO
+ SG_ BC_indicatorLStatus : 59|2@0+ (1,0) [0|3] "" NEO
+ SG_ BC_indicatorRStatus : 61|2@0+ (1,0) [0|3] "" NEO
 
 BO_ 872 DI_state: 8 DI
  SG_ DI_systemState : 0|3@1+ (1,0) [0|0] ""  NEO

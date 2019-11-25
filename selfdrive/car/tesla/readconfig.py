@@ -280,7 +280,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = pref_section,
         entry = 'enable_ldw', entry_type = bool,
         default_value = True,
-        comment = 'Enable the Lane Departure Warning (LDW) feature; this feature warns the driver is the car gets too close to one of the lines when driving above 45 MPH (72 km/h) without touching the steering wheel and when the turn signal is off'
+        comment = 'Enable the Lane Departure Warning (LDW) feature; this feature warns the driver is the car gets too close to one of the lines when driving above 35 MPH (57 km/h) without touching the steering wheel or when the turn signal is off'
       )
       file_changed |= didUpdate
 
@@ -289,7 +289,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = pref_section,
         entry = 'ldw_numb_period', entry_type = float,
         default_value = 1.5,
-        comment = 'Period to delay (in seconds) the LDW warnings after human turn signal has been used. Time starts when the turn signal is turned on.'
+        comment = 'Period (in seconds) to disable LDW after the blinker stops blinking.'
       )
       file_changed |= didUpdate
 

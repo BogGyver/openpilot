@@ -283,24 +283,24 @@ class CarInterface():
 
     # TODO: button presses
     buttonEvents = []
-    ret.leftBlinker = bool(self.CS.left_blinker_on)
-    ret.rightBlinker = bool(self.CS.right_blinker_on)
+    ret.leftBlinker = bool(self.CS.turn_signal_state_left == 1)
+    ret.rightBlinker = bool(self.CS.turn_signal_state_right == 1)
 
 
     ret.doorOpen = not self.CS.door_all_closed
     ret.seatbeltUnlatched = not self.CS.seatbelt
 
-    if self.CS.left_blinker_on != self.CS.prev_left_blinker_on:
-      be = car.CarState.ButtonEvent.new_message()
-      be.type = 'leftBlinker'
-      be.pressed = self.CS.left_blinker_on != 0
-      buttonEvents.append(be)
-
-    if self.CS.right_blinker_on != self.CS.prev_right_blinker_on:
-      be = car.CarState.ButtonEvent.new_message()
-      be.type = 'rightBlinker'
-      be.pressed = self.CS.right_blinker_on != 0
-      buttonEvents.append(be)
+    if self.CS.prev_turn_signal_stalk_state != self.CS.turn_signal_stalk_state:
+      if self.CS.turn_signal_stalk_state == 1 or self.CS.prev_turn_signal_stalk_state == 1:
+        be = car.CarState.ButtonEvent.new_message()
+        be.type = 'leftBlinker'
+        be.pressed = self.CS.turn_signal_stalk_state == 1
+        buttonEvents.append(be)
+      if self.CS.turn_signal_stalk_state == 2 or self.CS.prev_turn_signal_stalk_state == 2:
+        be = car.CarState.ButtonEvent.new_message()
+        be.type = 'rightBlinker'
+        be.pressed = self.CS.turn_signal_stalk_state == 2
+        buttonEvents.append(be)
 
     if self.CS.cruise_buttons != self.CS.prev_cruise_buttons:
       be = car.CarState.ButtonEvent.new_message()

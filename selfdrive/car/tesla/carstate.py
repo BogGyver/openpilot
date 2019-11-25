@@ -10,7 +10,7 @@ from selfdrive.car.tesla.readconfig import read_config_file
 import os
 import subprocess
 from common.params import read_db, write_db
- 
+
 def parse_gear_shifter(can_gear_shifter, car_fingerprint):
 
   # TODO: Use VAL from DBC to parse this field
@@ -55,6 +55,8 @@ def get_can_signals(CP):
       ("DOOR_STATE_FR", "GTW_carState", 1),
       ("DOOR_STATE_RL", "GTW_carState", 1),
       ("DOOR_STATE_RR", "GTW_carState", 1),
+      ("BC_indicatorLStatus", "GTW_carState", 0),
+      ("BC_indicatorRStatus", "GTW_carState", 0),
       ("DI_cruiseSet", "DI_state", 0),
       ("DI_cruiseState", "DI_state", 0),
       ("LoBm_On_Rq","BODY_R1" , 0),
@@ -131,7 +133,7 @@ def get_can_signals(CP):
       ("UI_bottomQrtlFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
       ("UI_rampType", "UI_driverAssistRoadSign", 0),
 
-      
+
   ]
 
   checks = [
@@ -145,7 +147,7 @@ def get_can_signals(CP):
 
   #checks = []
   return signals, checks
-  
+
 def get_epas_can_signals(CP):
 # this function generates lists for signal, messages and initial values
   signals = [
@@ -175,7 +177,7 @@ def get_pedal_can_signals(CP):
 
   checks = []
   return signals, checks
-  
+
 def get_can_parser(CP,mydbc):
   signals, checks = get_can_signals(CP)
   return CANParser(mydbc, signals, checks, 0)
@@ -200,11 +202,11 @@ class CarState():
                       ["",               "",                      [""]],
                       ["msg",                 "MSG",                      [""]],
                       ["sound",               "SND",                      [""]]]
-    
+
     ### START OF MAIN CONFIG OPTIONS ###
     ### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
     self.forcePedalOverCC = True
-    self.enableHSO = True 
+    self.enableHSO = True
     self.enableALCA = True
     self.enableDasEmulation = True
     self.enableRadarEmulation = True
@@ -310,12 +312,16 @@ class CarState():
     self.brake_switch_ts = 0
 
     self.cruise_buttons = 0
-    self.blinker_on = 0
 
-    self.left_blinker_on = 0
-    self.right_blinker_on = 0
+    self.turn_signal_state_left = 0 # 0 = off, 1 = on (blinking), 2 = failed, 3 = default
+    self.turn_signal_state_right = 0 # 0 = off, 1 = on (blinking), 2 = failed, 3 = default
+    self.prev_turn_signal_blinking = False
+    self.turn_signal_blinking = False
+    self.prev_turn_signal_stalk_state = 0
+    self.turn_signal_stalk_state = 0 # 0 = off, 1 = indicate left (stalk down), 2 = indicate right (stalk up)
+
     self.steer_warning = 0
-    
+
     self.stopped = 0
 
     # variables used for the fake DAS creation
@@ -371,15 +377,15 @@ class CarState():
 
     #BB steering_wheel_stalk last position, used by ACC and ALCA
     self.steering_wheel_stalk = None
-    
+
     #BB carConfig data used to change IC info
     self.real_carConfig = None
     self.real_dasHw = 0
 
     #BB visiond last type
     self.last_visiond = self.cstm_btns.btns[3].btn_label2
-    
-     
+
+
     # vEgo kalman filter
     dt = 0.01
     # Q = np.matrix([[10.0, 0.0], [0.0, 100.0]])
@@ -414,7 +420,7 @@ class CarState():
     self.ahbLoBeamOn = 0
     self.ahbHiBeamOn = 0
     self.ahbNightMode = 0
-   
+
   def config_ui_buttons(self, pedalPresent):
     if pedalPresent:
       self.btns_init[1] = [PCCModes.BUTTON_NAME, PCCModes.BUTTON_ABREVIATION, PCCModes.labels()]
@@ -426,7 +432,7 @@ class CarState():
     btn.btn_label = self.btns_init[1][1]
     btn.btn_label2 = self.btns_init[1][2][0]
     btn.btn_status = 1
-    self.cstm_btns.update_ui_buttons(1, 1)    
+    self.cstm_btns.update_ui_buttons(1, 1)
 
   def compute_speed(self):
     # if one of them is zero, select max of the two
@@ -461,20 +467,10 @@ class CarState():
 
   def update(self, cp, epas_cp, pedal_cp):
 
-    # car params
-    v_weight_v = [0., 1.]  # don't trust smooth speed at low values to avoid premature zero snapping
-    v_weight_bp = [1., 6.]   # smooth blending, below ~0.6m/s the smooth speed snaps to zero
-
-    # update prevs, update must run once per loop
-    self.prev_cruise_buttons = self.cruise_buttons
-    self.prev_blinker_on = self.blinker_on
-
-    self.prev_left_blinker_on = self.left_blinker_on
-    self.prev_right_blinker_on = self.right_blinker_on
-
     self.steering_wheel_stalk = cp.vl["STW_ACTN_RQ"]
     self.real_carConfig = cp.vl["GTW_carConfig"]
     self.real_dasHw = cp.vl["GTW_carConfig"]['GTW_dasHw']
+    self.prev_cruise_buttons = self.cruise_buttons
     self.cruise_buttons = cp.vl["STW_ACTN_RQ"]['SpdCtrlLvr_Stat']
 
 
@@ -543,7 +539,7 @@ class CarState():
     else:
       self.userSpeedLimitKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_mppSpeedLimit"] * CV.MPH_TO_KPH
 
-    speed_limit_tesla_lookup = [0,5,7,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,130,140,150,160,170,0] 
+    speed_limit_tesla_lookup = [0,5,7,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,130,140,150,160,170,0]
     self.speedLimitUnits = cp.vl["UI_driverAssistMapData"]["UI_mapSpeedUnits"]
     self.speedLimitKph = speed_limit_tesla_lookup[int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])] * (1 + 0.609 * (1 - self.speedLimitUnits))
     self.speedLimitToIc = int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])
@@ -564,13 +560,13 @@ class CarState():
       self.medianFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_medianFleetSpeedMPS"]
       self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
       self.rampType = cp.vl["UI_driverAssistRoadSign"]["UI_rampType"]
-      
+
     if rdSignMsg == 3:
       self.topQrtlFleetSplineSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_topQrtlFleetSpeedMPS"]
       self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
       self.baseMapSpeedLimitMPS = cp.vl["UI_driverAssistRoadSign"]["UI_baseMapSpeedLimitMPS"]
       self.bottomQrtlFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_bottomQrtlFleetSpeedMPS"]
-    
+
     self.compute_speed()
 
     # 2 = temporary 3= TBD 4 = temporary, hit a bump 5 (permanent) 6 = temporary 7 (permanent)
@@ -607,22 +603,19 @@ class CarState():
     self.pedal_interceptor_value2 = pedal_cp.vl["GAS_SENSOR"]['INTERCEPTOR_GAS2']
 
     can_gear_shifter = cp.vl["DI_torque2"]['DI_gear']
-    self.gear = 0 # JCT
 
     # self.angle_steers  = -(cp.vl["STW_ANGLHP_STAT"]['StW_AnglHP']) #JCT polarity reversed from Honda/Acura
     self.angle_steers = -(epas_cp.vl["EPAS_sysStatus"]['EPAS_internalSAS'])  #BB see if this works better than STW_ANGLHP_STAT for angle
-    
+
     self.angle_steers_rate = 0 #JCT
 
-    self.blinker_on = (cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'] == 1) or (cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'] == 2)
-    self.left_blinker_on = cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'] == 1
-    self.right_blinker_on = cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'] == 2
+    self.turn_signal_state_left = cp.vl["GTW_carState"]['BC_indicatorLStatus']
+    self.turn_signal_state_right = cp.vl["GTW_carState"]['BC_indicatorRStatus']
+    self.prev_turn_signal_blinking = self.turn_signal_blinking
+    self.turn_signal_blinking = self.turn_signal_state_left == 1 or self.turn_signal_state_right == 1
+    self.prev_turn_signal_stalk_state = self.turn_signal_stalk_state
+    self.turn_signal_stalk_state = cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat']
 
-    #if self.CP.carFingerprint in (CAR.CIVIC, CAR.ODYSSEY):
-    #  self.park_brake = cp.vl["EPB_STATUS"]['EPB_STATE'] != 0
-    #  self.brake_hold = cp.vl["VSA_STATUS"]['BRAKE_HOLD_ACTIVE']
-    #  self.main_on = cp.vl["SCM_FEEDBACK"]['MAIN_ON']
-    #else:
     self.park_brake = 0  # TODO
     self.brake_hold = 0  # TODO
 
@@ -650,9 +643,9 @@ class CarState():
     self.standstill = cp.vl["DI_torque2"]['DI_vehicleSpeed'] == 0
     self.torqueMotor = cp.vl["DI_torque1"]['DI_torqueMotor']
     self.pcm_acc_status = cp.vl["DI_state"]['DI_cruiseState']
-    
+
     self.regenLight = cp.vl["DI_state"]['DI_regenLight'] == 1
-    
+
     self.prev_pedal_interceptor_available = self.pedal_interceptor_available
     pedal_has_value = bool(self.pedal_interceptor_value) or bool(self.pedal_interceptor_value2)
     pedal_interceptor_present = self.pedal_interceptor_state in [0, 5] and pedal_has_value
