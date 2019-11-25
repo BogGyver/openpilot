@@ -415,8 +415,8 @@ class CarState():
     self.ahbHiBeamOn = 0
     self.ahbNightMode = 0
    
-  def config_ui_buttons(self, pedalPresent):
-    if pedalPresent:
+  def config_ui_buttons(self, pedalAvailable,  pedalPresent):
+    if pedalAvailable:
       self.btns_init[1] = [PCCModes.BUTTON_NAME, PCCModes.BUTTON_ABREVIATION, PCCModes.labels()]
     else:
       # we don't have pedal interceptor
@@ -426,7 +426,9 @@ class CarState():
     btn.btn_label = self.btns_init[1][1]
     btn.btn_label2 = self.btns_init[1][2][0]
     btn.btn_status = 1
-    self.cstm_btns.update_ui_buttons(1, 1)    
+    if (not pedalAvailable) and pedalPresent:
+      btn.btn_label2 = self.btns_init[1][2][1]
+    self.cstm_btns.update_ui_buttons(1, 1)
 
   def compute_speed(self):
     # if one of them is zero, select max of the two
@@ -667,7 +669,7 @@ class CarState():
     # Mark pedal unavailable while traditional cruise is on.
     self.pedal_interceptor_available = pedal_interceptor_present and (self.forcePedalOverCC or not bool(self.pcm_acc_status))
     if self.pedal_interceptor_available != self.prev_pedal_interceptor_available:
-        self.config_ui_buttons(self.pedal_interceptor_available)
+        self.config_ui_buttons(self.pedal_interceptor_available, pedal_interceptor_present)
 
     self.v_cruise_actual = self.DI_cruiseSet
     self.hud_lead = 0 #JCT
