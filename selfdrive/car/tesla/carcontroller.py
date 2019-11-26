@@ -816,9 +816,4 @@ class CarController():
     if CS.prev_turn_signal_blinking and not CS.turn_signal_blinking:
       self.ldw_numb_frame_end = frame + int(100 * CS.ldwNumbPeriod)
 
-    should_ldw = CS.v_ego >= self.LDW_ENABLE_SPEED and not CS.turn_signal_blinking and frame > self.ldw_numb_frame_end
-
-    if self.should_ldw != should_ldw:
-      CS.UE.custom_alert_message(2 if should_ldw else 3, "LDW Enabled" if should_ldw else "LDW Disabled", 150)
-
-    return should_ldw
+    return CS.v_ego >= self.LDW_ENABLE_SPEED and not CS.turn_signal_blinking and frame > self.ldw_numb_frame_end
