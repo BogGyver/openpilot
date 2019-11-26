@@ -617,7 +617,7 @@ class CarState():
     self.prev_turn_signal_blinking = self.turn_signal_blinking
     self.turn_signal_blinking = self.turn_signal_state_left == 1 or self.turn_signal_state_right == 1
     self.prev_turn_signal_stalk_state = self.turn_signal_stalk_state
-    self.turn_signal_stalk_state = cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat']
+    self.turn_signal_stalk_state = 0 if cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'] == 3 else int(cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'])
 
     self.park_brake = 0  # TODO
     self.brake_hold = 0  # TODO
