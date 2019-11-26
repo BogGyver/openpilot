@@ -157,7 +157,7 @@ class CarController():
     self.curv2 = 0. 
     self.curv3 = 0. 
     self.visionCurvC0 = 0.
-    self.laneRange = 75  #max is 160m but OP has issues with precision beyond 50
+    self.laneRange = 30  #max is 160m but OP has issues with precision beyond 50
 
     self.laneWidth = 0.
 
@@ -536,12 +536,17 @@ class CarController():
       if (CS.pedal_interceptor_available and self.PCC.enable_pedal_cruise) or (self.ACC.enable_adaptive_cruise):
         speed_control_enabled = 1
         cc_state = 2
+        if not self.ACC.adaptive:
+            cc_state = 3
         CS.speed_control_enabled = 1
       else:
         CS.speed_control_enabled = 0
         if (CS.pcm_acc_status == 4):
           #car CC enabled but not OP, display the HOLD message
           cc_state = 3
+    else:
+      if (CS.pcm_acc_status == 4):
+        cc_state = 3
 
     send_fake_msg = False
     send_fake_warning = False
@@ -577,9 +582,10 @@ class CarController():
     if send_fake_msg:
       if enable_steer_control and op_status == 3:
         op_status = 0x5
+      adaptive_cruise = 1 if   (not CS.pedal_interceptor_available and self.ACC.adaptive) or CS.pedal_interceptor_available else 0
       can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,speed_override,self.DAS_206_apUnavailable, collision_warning, op_status, \
             acc_speed_kph, \
-            turn_signal_needed,forward_collision_warning,  hands_on_state, \
+            turn_signal_needed,forward_collision_warning, adaptive_cruise,  hands_on_state, \
             cc_state, 1 if (CS.pedal_interceptor_available) else 0,alca_state, \
             CS.v_cruise_pcm, #acc_speed_limit_mph,
             CS.speedLimitToIc, #speed_limit_to_car,
@@ -701,6 +707,8 @@ class CarController():
         self.curv1 = 0.0 #straighten the turn for ALCA
         self.curv0 = -self.ALCA.laneChange_direction * alcaStateData.alcaLaneWidth * alcaStateData.alcaStep / alcaStateData.alcaTotalSteps #animas late change on IC
         self.curv0 = clip(self.curv0, -3.5, 3.5)
+        self.lLine = 3
+        self.rLine = 3
       else:
         if self.should_ldw:
           if pp.lProb > LDW_LANE_PROBAB:

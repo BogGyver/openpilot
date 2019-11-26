@@ -134,13 +134,13 @@ def create_fake_DAS_msg2(hiLoBeamStatus,hiLoBeamReason,ahbIsEnabled):
   msg_id = 0x65A
   msg_len = 3
   msg = create_string_buffer(msg_len)
-  struct.pack_into('BBB', msg, 0, hiLoBeamStatus, hiLoBeamReason,1 if ahbIsEnabled else 0)
+  struct.pack_into('BBB', msg, 0, hiLoBeamStatus, hiLoBeamReason,(1 if ahbIsEnabled else 0))
   return [msg_id, 0, msg.raw, 0]
 
 
 def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, collision_warning, op_status, \
                  acc_speed_kph, \
-                 turn_signal_needed,forward_collission_warning,hands_on_state, \
+                 turn_signal_needed,forward_collission_warning,adaptive_cruise, hands_on_state, \
                  cc_state, pedal_state, alca_state, \
                  acc_speed_limit_mph,
                  legal_speed_limit,
@@ -153,7 +153,7 @@ def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, coll
   c_apply_steer = int(((int( apply_angle * 10 + 0x4000 )) & 0x7FFF) + (enable_steer_control << 15))
   struct.pack_into('BBBBBBBB', msg, 0,int((speed_control_enabled << 7) + (speed_override << 6) + (apUnavailable << 5) + (collision_warning << 4) + op_status), \
       int(acc_speed_kph), \
-      int((turn_signal_needed << 6) + (units_included << 5) + (forward_collission_warning << 4)  + hands_on_state), \
+      int((turn_signal_needed << 6) + (units_included << 5) + (forward_collission_warning << 4)  + (adaptive_cruise << 3) + hands_on_state), \
       int((cc_state << 6) + (pedal_state << 5) + alca_state), \
       int(acc_speed_limit_mph),
       int(legal_speed_limit),

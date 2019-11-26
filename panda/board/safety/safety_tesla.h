@@ -218,6 +218,9 @@ int DAS_high_low_beam_request = 0x00;
 int DAS_high_low_beam_reason = 0x00;
 int DAS_ahb_is_enabled = 0;
 
+//fake DAS - plain CC condition
+int DAS_plain_cc_enabled = 0x00;
+
 
 static int add_tesla_crc(uint32_t MLB, uint32_t MHB , int msg_len) {
   //"""Calculate CRC8 using 1D poly, FF start, FF end"""
@@ -381,6 +384,7 @@ static void reset_DAS_data(void) {
   DAS_LEFT_OBJECT_MHB = 0x03FFFF83;
   DAS_RIGHT_OBJECT_MLB = 0xFFFFFF02;
   DAS_RIGHT_OBJECT_MHB = 0x03FFFF83;
+  DAS_plain_cc_enabled = 0x00;
 }
 
 
@@ -1033,7 +1037,9 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     if ((EON_is_connected == 1) && (DAS_usingPedal == 0) && (DAS_cc_state != 2) && ( acc_state >= 2) && ( acc_state <= 4)) {
       //disable if more than two seconds since last pull, or there was never a stalk pull
       if (((current_car_time >= time_at_last_stalk_pull + 2) && (current_car_time != -1) && (time_at_last_stalk_pull != -1)) || (time_at_last_stalk_pull == -1)) {
-        do_fake_stalk_cancel(to_push->RIR, to_push->RDTR);
+        if (DAS_plain_cc_enabled == 0) {
+          do_fake_stalk_cancel(to_push->RIR, to_push->RDTR);
+        }
       }
     }
   }
@@ -1542,7 +1548,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     int b2 = ((to_send->RDLR >> 16) & 0xFF);
     DAS_high_low_beam_request = b0;
     DAS_high_low_beam_reason = b1;
-    DAS_ahb_is_enabled = b2;
+    DAS_ahb_is_enabled = b2 & 0x01;
     //intercept and do not forward
     return false;
   }
@@ -1568,6 +1574,11 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_turn_signal_request = ((b2 & 0xC0) >> 6);
     DAS_forward_collision_warning = ((b2 & 0x10) >> 4);
     DAS_units_included = ((b2 & 0x20) >> 5);
+    if (((b2 >> 3) & 0x01) == 0) {
+      DAS_plain_cc_enabled = 1;
+    } else {
+      DAS_plain_cc_enabled = 0;
+    }
     DAS_hands_on_state = (b2 & 0x07);
     DAS_cc_state = ((b3 & 0xC0)>>6);
     DAS_usingPedal = ((b3 & 0x20) >> 5);
@@ -1783,7 +1794,7 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
     }
     // is AHB is enabled, use low apeed to spread radar angle
     if ((speed_kph > 2 ) && (DAS_ahb_is_enabled == 1)) {
-      speed_kph = 2;
+    //  speed_kph = 2;
     }
     if (((0xFFF0000 & to_send.RDLR) >> 16) == 0xFFF) {
       speed_kph = 0x1FFF; //0xFFF is signal not available for DI_Torque2 speed 0x118; should be SNA or 0x1FFF for 0x169
