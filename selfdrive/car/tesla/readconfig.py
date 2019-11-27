@@ -280,7 +280,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = pref_section,
         entry = 'enable_ldw', entry_type = bool,
         default_value = True,
-        comment = 'Enable the Lane Departure Warning (LDW) feature; this feature warns the driver is the car gets too close to one of the lines when driving above 45 MPH (72 km/h) without touching the steering wheel and when the turn signal is off'
+        comment = 'Enable the Lane Departure Warning (LDW) feature; this feature warns the driver is the car gets too close to one of the lines when driving above 35 MPH (57 km/h) without touching the steering wheel or when the turn signal is off'
       )
       file_changed |= didUpdate
 
@@ -289,16 +289,16 @@ class ConfigFile():
         config, configr, prev_file_contents, section = pref_section,
         entry = 'ldw_numb_period', entry_type = float,
         default_value = 1.5,
-        comment = 'Period to delay (in seconds) the LDW warnings after human turn signal has been used. Time starts when the turn signal is turned on.'
+        comment = 'Period (in seconds) to disable LDW after the blinker stops blinking.'
       )
       file_changed |= didUpdate
 
-      #hso_blinker_extender -> hsoBlinkerExtender
-      into.hsoBlinkerExtender, didUpdate = self.read_config_entry(
+      #tap_blinker_extension -> tapBlinkerExtension
+      into.tapBlinkerExtension, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = pref_section,
-        entry = 'hso_blinker_extender', entry_type = float,
-        default_value = 0.0,
-        comment = 'Period to keep the blinker on (in seconds). Time starts when the turn signal is turned off. If LKA is reengaged, the signal is turned off automatically.'
+        entry = 'tap_blinker_extension', entry_type = int,
+        default_value = 0,
+        comment = 'Number of additional blinks when tapping the turn signal stalk. A value of 2 means 5 blinks total, because the car normally blinks 3 times.'
       )
       file_changed |= didUpdate
 
@@ -415,7 +415,7 @@ class CarSettings():
   shouldLogCanErrors = None
   hsoNumbPeriod = None
   ldwNumbPeriod = None
-  hsoBlinkerExtender = None
+  tapBlinkerExtension = None
   ahbOffDuration = None
 
   def __init__(self, optional_config_file_path = default_config_file_path):
