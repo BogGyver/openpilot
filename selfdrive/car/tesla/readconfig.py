@@ -33,7 +33,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'user_handle', entry_type = str,
         default_value = 'your_tinkla_username',
-        comment = 'Username at tinkla.com, for dashboard data and support. If you don\'t have a username, ask for one on Discord, or just enter your Discord handle here.'
+        comment = 'Username at tinkla.us, for dashboard data and support. If you don\'t have a username, ask for one on Discord, or just enter your Discord handle here.'
       )
       file_changed |= didUpdate
 
@@ -51,7 +51,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'force_pedal_over_cc', entry_type = bool,
         default_value = False,
-        comment = 'Forces the use of Tesla Pedal over ACC completely disabling the Tesla CC'
+        comment = 'Forces the use of Tesla Pedal over ACC completely disabling the Tesla CC.'
       )
       file_changed |= didUpdate
       
@@ -60,7 +60,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'enable_hso', entry_type = bool,
         default_value = True,
-        comment = 'Enables Human Steering Override (HSO) feature which allows you to take control of the steering wheel and correct the course of the car without disengaging OpenPilot lane keep assis (LKS, lateral control)'
+        comment = 'Enables Human Steering Override (HSO) feature which allows you to take control of the steering wheel and correct the course of the car without disengaging OpenPilot lane keep assist (LKS, lateral control).'
       )
       file_changed |= didUpdate
 
@@ -69,7 +69,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'enable_alca', entry_type = bool,
         default_value = True,
-        comment = 'Enables the Adaptive Lane Change Assist (ALCA) feature which will automatically change lanes when driving above 18 MPH (29 km/h) by just pushing 1/2 way on your turn signal stalk; turn signal will remain on for the duration of lane change'
+        comment = 'Enables the Adaptive Lane Change Assist (ALCA) feature which will automatically change lanes when driving above 18 MPH (29 km/h) by just pushing 1/2 way on your turn signal stalk; turn signal will remain on for the duration of lane change.'
       )
       file_changed |= didUpdate
 
@@ -78,7 +78,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'enable_das_emulation', entry_type = bool,
         default_value = False,
-        comment = 'The secret sauce of IC/CID integration; this feature makes the Panda generate all the CAN messages needed for IC/CID integration that mimiinto the AP interface'
+        comment = 'The secret sauce of IC/CID integration; this feature makes the Panda generate all the CAN messages needed for IC/CID integration that mimic the AP interface.'
       )
       file_changed |= didUpdate
 
@@ -87,7 +87,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'enable_radar_emulation', entry_type = bool,
         default_value = False,
-        comment = 'The secret sauce to make the Tesla Radar work; this feature make the Panda generate all the CAN messages needed by the Tesla Bosch Radar to operate'
+        comment = 'The secret sauce to make the Tesla Radar work; this feature makes the Panda generate all the CAN messages needed by the Tesla Bosch Radar to operate.'
       )
       file_changed |= didUpdate
 
@@ -96,7 +96,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'enable_driver_monitor', entry_type = bool,
         default_value = True,
-        comment = 'When turned off, the OpenPilot is tricked into thinking you have the hands on the sterring wheel all the time'
+        comment = 'When turned off, the OpenPilot is tricked into thinking you have your hands on the sterring wheel all the time.'
       )
       file_changed |= didUpdate
 
@@ -105,7 +105,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'has_noctua_fan', entry_type = bool,
         default_value = False,
-        comment = 'Enables control of Noctua fan (at higher RPMS) when you have a Noctua fan installed'
+        comment = 'Enables control of Noctua fan (at higher RPMS) when you have a Noctua fan installed on an offcial EON fan control module. (Doesn\'t work for FrEONs with Noctua fans.)'
       )
       file_changed |= didUpdate
 
@@ -114,7 +114,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'limit_battery_minmax', entry_type = bool,
         default_value = True,
-        comment = 'Enables battery charging limits; the battery will start charging when battery percentage is below limit_battery_min and will stop charging when battery percentage is above limit_battery_max'
+        comment = 'Enables battery charging limits; the battery will start charging when battery percentage is below limit_battery_min and will stop charging when battery percentage is above limit_battery_max.'
       )
       file_changed |= didUpdate
 
@@ -123,7 +123,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'limit_battery_min', entry_type = int,
         default_value = 60,
-        comment = 'See limit_battery_minmax'
+        comment = 'See limit_battery_minmax.'
       )
       file_changed |= didUpdate
 
@@ -132,7 +132,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'limit_battery_max', entry_type = int,
         default_value = 80,
-        comment = 'See limit_battery_minmax'
+        comment = 'See limit_battery_minmax.'
       )
       file_changed |= didUpdate
 
@@ -141,7 +141,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'block_upload_while_tethering', entry_type = bool,
         default_value = False,
-        comment = 'This setting will block uploading OP videos to Comma when you are tethering through the phone. You should set the tether_ip to the first 3 values that your phone provides as IP when you tether. This is phone/carrier specific. For example iPhone give addresses like 172.20.10.x so you would enter 172.20.10.'
+        comment = 'This setting will block uploading OP videos to Comma when you are tethering through a phone or specified network address. You should set the tether_ip to the first 3 values that your phone provides as IP when you tether. This is phone/carrier specific. For example iPhone addresses start with 172.20.10.x so you would enter 172.20.10.'
       )
       file_changed |= didUpdate
 
@@ -150,7 +150,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'tether_ip', entry_type = str,
         default_value = "127.0.0.",
-        comment = 'See block_upload_while_tethering'
+        comment = 'See block_upload_while_tethering.'
       )
       file_changed |= didUpdate
 
@@ -159,7 +159,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'use_tesla_gps', entry_type = bool,
         default_value = False,
-        comment = 'This setting makes OP to use Tesla GPS data instead of the GPS that comes with the gray panda; both GPS systems use Ublox and both are very close in accuracy; this also allows one to use a White Panda and still have map integration'
+        comment = 'This setting forces OP to use Tesla GPS data instead of the GPS that comes with the gray panda; both GPS systems use Ublox and both are very close in accuracy; this also allows one to use a White Panda and still have map integration.'
       )
       file_changed |= didUpdate
 
@@ -168,7 +168,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'use_tesla_map_data', entry_type = bool,
         default_value = False,
-        comment = 'This setting (which requires root) allows OP to use Tesla navigation map data (under development)'
+        comment = 'This setting (which requires root) allows OP to use Tesla navigation map data. (under development)'
       )
       file_changed |= didUpdate
 
@@ -186,7 +186,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'use_tesla_radar', entry_type = bool,
         default_value = False,
-        comment = 'Set this setting to True if you have a Tesla Bosch Radar installed (works in conjunction with enable_radar_emulation)'
+        comment = 'Set this setting to True if you have a Tesla Bosch Radar installed (works in conjunction with enable_radar_emulation).'
       )
       file_changed |= didUpdate
 
@@ -195,7 +195,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'use_without_harness', entry_type = bool,
         default_value = False,
-        comment = 'Not used at the moment; should be False'
+        comment = 'Not used at the moment; should be False.'
       )
       file_changed |= didUpdate
 
@@ -205,7 +205,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'radar_vin', entry_type = str,
         default_value = default_radar_vin,
-        comment = 'If you used an aftermarket Tesla Bosch Radar that already has a coded VIN, you will have to enter that VIN value here'
+        comment = 'If you used an aftermarket Tesla Bosch Radar that already has a coded VIN, you will have to enter that VIN value here.'
       )
       file_changed |= didUpdate
       if into.radarVIN == '':
@@ -217,7 +217,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'radar_offset', entry_type = float,
         default_value = 0,
-        comment = 'If your Tesla Bosch Radar is not centered on the car, this value will allow to enter a correction offset'
+        comment = 'If your Tesla Bosch Radar is not centered on the car, this value will allow to enter a correction offset.'
       )
       file_changed |= didUpdate
 
@@ -226,7 +226,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'radar_epas_type', entry_type = int,
         default_value = 0,
-        comment = 'Depending on the source of your Tesla Bosch Radar (older or newer Model S or Model X), this setting has to match what the radar was programmed to recognize as EPAS; values are between 0 and 4; finding the right one is trial and error'
+        comment = 'Depending on the source of your Tesla Bosch Radar (older or newer Model S or Model X), this setting has to match what the radar was programmed to recognize as EPAS; values are between 0 and 4; finding the right one is trial and error.'
       )
       file_changed |= didUpdate
 
@@ -235,7 +235,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'radar_position', entry_type = int,
         default_value = 0,
-        comment = 'Depending on the source of your Tesla Bosch Radar (older or newer Model S or Model X), this setting has to match what the radar was programmed to have a position (Model S, Model S facelift, Model X); values are between 0 and 3; finding the right one is trial and error'
+        comment = 'Depending on the source of your Tesla Bosch Radar (older or newer Model S or Model X), this setting has to match what the radar was programmed to have a position (Model S, Model S facelift, Model X); values are between 0 and 3; finding the right one is trial and error.'
       )
       file_changed |= didUpdate
 
@@ -244,7 +244,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'fix_1916', entry_type = bool,
         default_value = False,
-        comment = 'Set this value to True if you are running Tesla software v2019.16 and above. This fixes the DI_state can message change for DI_cruiseSet which changed from 9 bits to 8 bits'
+        comment = 'Set this value to True if you are running Tesla software v2019.16 and above. This fixes the DI_state can message change for DI_cruiseSet which changed from 9 bits to 8 bits.'
       )
       file_changed |= didUpdate
 
@@ -253,7 +253,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'do_auto_update', entry_type = bool,
         default_value = True,
-        comment = 'Set this setting to False if you do not want OP to autoupdate every time you reboot and there is a change on the repo'
+        comment = 'Set this setting to False if you do not want OP to autoupdate every time you reboot and there is a change on the repo.'
       )
       file_changed |= didUpdate
       
@@ -262,7 +262,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = pref_section,
         entry = 'spinner_text', entry_type = str,
         default_value = '%d',
-        comment = 'The text that is shown for the spinner when spawning the managed services.'
+        comment = 'Here you can customize the text that is shown for the spinner when OP is loading from boot. %d is the current loading percentage.'
       )
       file_changed |= didUpdate
 
@@ -271,7 +271,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = pref_section,
         entry = 'hso_numb_period', entry_type = float,
         default_value = 1.5,
-        comment = 'Period to delay (in seconds) the reengagement of LKAS after human turn signal has been used. Time starts when the turn signal is turned on.'
+        comment = 'Seconds to delay the reengagement of LKAS after turn signal has been used. Time starts when the turn signal is turned on.'
       )
       file_changed |= didUpdate
 
@@ -280,7 +280,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = pref_section,
         entry = 'enable_ldw', entry_type = bool,
         default_value = True,
-        comment = 'Enable the Lane Departure Warning (LDW) feature; this feature warns the driver is the car gets too close to one of the lines when driving above 35 MPH (57 km/h) without touching the steering wheel or when the turn signal is off'
+        comment = 'Enable the Lane Departure Warning (LDW) feature; this feature warns the driver if the car gets too close to one of the lane lines when driving above 35 MPH (57 km/h) without touching the steering wheel or when the turn signal is off.'
       )
       file_changed |= didUpdate
 
@@ -289,7 +289,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = pref_section,
         entry = 'ldw_numb_period', entry_type = float,
         default_value = 1.5,
-        comment = 'Period (in seconds) to disable LDW after the blinker stops blinking.'
+        comment = 'Seconds to disable LDW after the blinker stops blinking.'
       )
       file_changed |= didUpdate
 
@@ -307,7 +307,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = pref_section,
         entry = 'enable_show_car', entry_type = bool,
         default_value = True,
-        comment = 'Shows a Tesla car in the limitted UI mode instead of the triangle that identifies the lead car; this is only used if you do not have IC/CID integration'
+        comment = 'Shows a Tesla car in OP\'s limitted UI mode instead of the triangle that identifies the lead car; this is only used if you do not have IC/CID integration.'
       )
       file_changed |= didUpdate
 
@@ -316,7 +316,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = pref_section,
         entry = 'enable_show_logo', entry_type = bool,
         default_value = True,
-        comment = 'Shows a Tesla red logo on the EON screen when OP is not enabled'
+        comment = 'Shows a Tesla red logo on the EON screen when OP is not engaged.'
       )
       file_changed |= didUpdate
 
@@ -325,7 +325,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = pref_section,
         entry = 'ahb_off_duration', entry_type = int,
         default_value = 5,
-        comment = 'Duration Auto High Beams should be off after last detecting a vehicle'
+        comment = 'Duration Auto High Beams (AHB) should be off after last detecting a vehicle. Radar is required to use AHB.'
       )
       file_changed |= didUpdate
 
@@ -333,7 +333,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = logging_section,
         entry = 'should_log_can_errors', entry_type = bool,
         default_value = False,
-        comment = 'Enable to log CAN errors to Tinkla'
+        comment = 'Enable CAN error logging to Tinkla'
       )
       file_changed |= didUpdate
 
@@ -341,7 +341,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = logging_section,
         entry = 'should_log_process_comm_errors', entry_type = bool,
         default_value = False,
-        comment = 'Enable to log Process Comm errors to Tinkla'
+        comment = 'Enable Process Comm error logging to Tinkla'
       )
       file_changed |= didUpdate
 
