@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import time
 import struct
 from enum import IntEnum
-from Queue import Queue, Empty
+from queue import Queue, Empty
 import threading
 from binascii import hexlify
 
@@ -134,7 +134,7 @@ def _isotp_thread(panda, bus, tx_addr, tx_queue, rx_queue):
           # send flow control message (send all bytes)
           msg = "\x30\x00\x00".ljust(8, "\x00")
           if (DEBUG): print("S: {} {}".format(hex(tx_addr), hexlify(msg)))
-          panda.can_send(tx_addr, msg, bus)
+          panda.can_send(tx_addr, msg.encode('utf-8'), bus)
         elif rx_data[0] >> 4 == 0x2:
           # consecutive rx frame
           assert rx_frame["done"] == False, "rx: no active frame"
@@ -160,7 +160,7 @@ def _isotp_thread(panda, bus, tx_addr, tx_queue, rx_queue):
             # consecutive tx frames
             msg = (chr(0x20 | (tx_frame["idx"] & 0xF)) + tx_frame["data"][i:i+7]).ljust(8, "\x00")
             if (DEBUG): print("S: {} {}".format(hex(tx_addr), hexlify(msg)))
-            panda.can_send(tx_addr, msg, bus)
+            panda.can_send(tx_addr, msg.encode('utf-8'), bus)
           tx_frame["done"] = True
 
       if not tx_queue.empty():
@@ -173,13 +173,13 @@ def _isotp_thread(panda, bus, tx_addr, tx_queue, rx_queue):
           tx_frame["done"] = True
           msg = (chr(tx_frame["size"]) + tx_frame["data"]).ljust(8, "\x00")
           if (DEBUG): print("S: {} {}".format(hex(tx_addr), hexlify(msg)))
-          panda.can_send(tx_addr, msg, bus)
+          panda.can_send(tx_addr, msg.encode('utf-8'), bus)
         else:
           # first rx_frame
           tx_frame["done"] = False
           msg = (struct.pack("!H", 0x1000 | tx_frame["size"]) + tx_frame["data"][:6]).ljust(8, "\x00")
           if (DEBUG): print("S: {} {}".format(hex(tx_addr), hexlify(msg)))
-          panda.can_send(tx_addr, msg, bus)
+          panda.can_send(tx_addr, msg.encode('utf-8'), bus)
       else:
         time.sleep(0.01)
   finally:
