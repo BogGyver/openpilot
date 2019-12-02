@@ -187,11 +187,11 @@ def _isotp_thread(panda, bus, tx_addr, tx_queue, rx_queue):
 
 # generic uds request
 def _uds_request(address, service_type, subfunction=None, data=None):
-  req = chr(service_type)
+  req = chr(service_type).encode('utf-8')
   if subfunction is not None:
-    req += chr(subfunction)
+    req += chr(subfunction).encode('utf-8')
   if data is not None:
-    req += data.decode("utf-8")
+    req += data
   tx_queue.put(req)
 
   while True:
