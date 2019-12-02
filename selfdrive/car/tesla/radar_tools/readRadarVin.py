@@ -191,7 +191,7 @@ def _uds_request(address, service_type, subfunction=None, data=None):
   if subfunction is not None:
     req += chr(subfunction)
   if data is not None:
-    req += data.encode('utf-8')
+    req += data.decode("utf-8")
   tx_queue.put(req)
 
   while True:
