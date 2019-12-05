@@ -297,7 +297,7 @@ class ConfigFile():
       into.tapBlinkerExtension, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = pref_section,
         entry = 'tap_blinker_extension', entry_type = int,
-        default_value = 0,
+        default_value = 2,
         comment = 'Number of additional blinks when tapping the turn signal stalk. A value of 2 means 5 blinks total, because the car normally blinks 3 times.'
       )
       file_changed |= didUpdate
