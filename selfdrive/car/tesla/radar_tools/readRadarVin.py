@@ -158,7 +158,7 @@ def _isotp_thread(panda, bus, tx_addr, tx_queue, rx_queue):
           for i in range(start, end, 7):
             tx_frame["idx"] += 1
             # consecutive tx frames
-            msg = (chr(0x20 | (tx_frame["idx"] & 0xF)) + tx_frame["data"][i:i+7]).ljust(8, "\x00")
+            msg = (chr(0x20 | (tx_frame["idx"] & 0xF)) + tx_frame["data"][i:i+7]).ljust(8, b'\0')
             if (DEBUG): print("S: {} {}".format(hex(tx_addr), hexlify(msg)))
             panda.can_send(tx_addr, msg.encode('utf-8'), bus)
           tx_frame["done"] = True
@@ -171,13 +171,13 @@ def _isotp_thread(panda, bus, tx_addr, tx_queue, rx_queue):
         if tx_frame["size"] < 8:
           # single frame
           tx_frame["done"] = True
-          msg = (chr(tx_frame["size"]) + tx_frame["data"]).ljust(8, "\x00")
+          msg = (chr(tx_frame["size"]).encode("utf-8") + tx_frame["data"]).ljust(8, b'\0')
           if (DEBUG): print("S: {} {}".format(hex(tx_addr), hexlify(msg)))
-          panda.can_send(tx_addr, msg.encode('utf-8'), bus)
+          panda.can_send(tx_addr, msg, bus)
         else:
           # first rx_frame
           tx_frame["done"] = False
-          msg = (struct.pack("!H", 0x1000 | tx_frame["size"]) + tx_frame["data"][:6]).ljust(8, "\x00")
+          msg = (struct.pack("!H", 0x1000 | tx_frame["size"]) + tx_frame["data"][:6]).ljust(8, b'\0')
           if (DEBUG): print("S: {} {}".format(hex(tx_addr), hexlify(msg)))
           panda.can_send(tx_addr, msg.encode('utf-8'), bus)
       else:
@@ -198,7 +198,8 @@ def _uds_request(address, service_type, subfunction=None, data=None):
     try:
       resp = rx_queue.get(block=True, timeout=10)
     except Empty:
-      raise MessageTimeoutError("timeout waiting for response")
+      print("** Timeout waiting for response. Make sure ignition line is on.")
+      exit(1)
     resp_sid = resp[0] if len(resp) > 0 else None
 
     # negative response
