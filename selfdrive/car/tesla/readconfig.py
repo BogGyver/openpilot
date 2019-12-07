@@ -307,7 +307,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = pref_section,
         entry = 'enable_show_car', entry_type = bool,
         default_value = True,
-        comment = 'Shows a Tesla car in OP\'s limitted UI mode instead of the triangle that identifies the lead car; this is only used if you do not have IC/CID integration.'
+        comment = 'Shows a Tesla car in OP\'s limited UI mode instead of the triangle that identifies the lead car; this is only used if you do not have IC/CID integration.'
       )
       file_changed |= didUpdate
 
