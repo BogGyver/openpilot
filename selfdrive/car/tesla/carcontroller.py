@@ -495,6 +495,7 @@ class CarController():
     acc_speed_kph = 0
     if enabled:
       #self.opState  0-disabled, 1-enabled, 2-disabling, 3-unavailable, 5-warning
+      alca_state = 0x01
       if self.opState == 0:
         op_status = 0x02
       if self.opState == 1:
@@ -505,13 +506,25 @@ class CarController():
         op_status = 0x01
       if self.opState == 5:
         op_status = 0x03
-      alca_state = 0x08 + turn_signal_needed
+      if turn_signal_needed > 0:
+        alca_state = 0x08 + turn_signal_needed
+      elif (self.lLine > 1) and (self.rLine > 1):
+        alca_state = 0x08
+      elif (self.lLine > 1):
+        alca_state = 0x06
+      elif (self.rLine > 1): 
+        alca_state = 0x07
+      else:
+        alca_state = 0x01
       #canceled by user
       if self.ALCA.laneChange_cancelled and (self.ALCA.laneChange_cancelled_counter > 0):
         alca_state = 0x14
       #min speed for ALCA
-      if CS.CL_MIN_V > CS.v_ego:
+      if (CS.CL_MIN_V > CS.v_ego):
         alca_state = 0x05
+      #max angle for ALCA
+      if (abs(actuators.steerAngle) >= CS.CL_MAX_A):
+        alca_state = 0x15
       if not enable_steer_control:
         #op_status = 0x08
         hands_on_state = 0x02
@@ -578,10 +591,18 @@ class CarController():
     if CS.useTeslaRadar and CS.hasTeslaIcIntegration:
       highLowBeamStatus,highLowBeamReason,ahbIsEnabled = self.AHB.update(CS,frame,self.ahbLead1)
       if frame % 5 == 0:
-        can_sends.append(teslacan.create_fake_DAS_msg2(highLowBeamStatus,highLowBeamReason,ahbIsEnabled))
+        fleet_speed_state = 0x00 #fleet speed unavailable
+        if CS.medianFleetSpeedMPS > 0:
+          fleet_speed_state = 0x01 #fleet speed available
+        if (CS.maxdrivespeed > 0) and CS.useTeslaMapData and (CS.mapAwareSpeed or (CS.baseMapSpeedLimitMPS <2.7)):
+          fleet_speed_state = 0x02 #fleet speed active
+        can_sends.append(teslacan.create_fake_DAS_msg2(highLowBeamStatus,highLowBeamReason,ahbIsEnabled,fleet_speed_state))
     if send_fake_msg:
       if enable_steer_control and op_status == 3:
         op_status = 0x5
+      park_brake_request = int(CS.ahbEnabled)
+      if park_brake_request == 1:
+        print("Park Brake Request received")
       adaptive_cruise = 1 if   (not CS.pedal_interceptor_available and self.ACC.adaptive) or CS.pedal_interceptor_available else 0
       can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,speed_override,self.DAS_206_apUnavailable, collision_warning, op_status, \
             acc_speed_kph, \
@@ -590,7 +611,8 @@ class CarController():
             CS.v_cruise_pcm, #acc_speed_limit_mph,
             CS.speedLimitToIc, #speed_limit_to_car,
             apply_angle,
-            1 if enable_steer_control else 0))
+            1 if enable_steer_control else 0,
+            park_brake_request))
     if send_fake_warning or (self.opState == 2) or (self.opState == 5) or (self.stopSignWarning != self.stopSignWarning_last) or (self.stopLightWarning != self.stopLightWarning_last) or (self.warningNeeded == 1) or (frame % 100 == 0):
       #if it's time to send OR we have a warning or emergency disable
       can_sends.append(teslacan.create_fake_DAS_warning(self.DAS_211_accNoSeatBelt, CS.DAS_canErrors, \

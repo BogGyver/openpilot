@@ -130,11 +130,11 @@ def create_DAS_LR_object_msg(lane,v1Class,v1Id,v1Dx,v1Dy,v1V,v2Class,v2Id,v2Dx,v
     int((v2y >> 5) & 0x03) + ((v2Id << 2) & 0xFC))
   return [msg_id, 0, msg.raw, 0]
 
-def create_fake_DAS_msg2(hiLoBeamStatus,hiLoBeamReason,ahbIsEnabled):
+def create_fake_DAS_msg2(hiLoBeamStatus,hiLoBeamReason,ahbIsEnabled,fleet_speed_state):
   msg_id = 0x65A
   msg_len = 3
   msg = create_string_buffer(msg_len)
-  struct.pack_into('BBB', msg, 0, hiLoBeamStatus, hiLoBeamReason,(1 if ahbIsEnabled else 0))
+  struct.pack_into('BBB', msg, 0, hiLoBeamStatus, hiLoBeamReason,(1 if ahbIsEnabled else 0) + (fleet_speed_state << 1))
   return [msg_id, 0, msg.raw, 0]
 
 
@@ -145,8 +145,9 @@ def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, coll
                  acc_speed_limit_mph,
                  legal_speed_limit,
                  apply_angle,
-                 enable_steer_control):
-  msg_id = 0x659 #0x553 //we will try to use DAS_udsRequest to send this info to IC
+                 enable_steer_control, 
+                 park_brake_request):
+  msg_id = 0x659 #we will use DAS_udsRequest to send this info to IC
   msg_len = 8
   msg = create_string_buffer(msg_len)
   units_included = 1
@@ -156,7 +157,7 @@ def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, coll
       int((turn_signal_needed << 6) + (units_included << 5) + (forward_collission_warning << 4)  + (adaptive_cruise << 3) + hands_on_state), \
       int((cc_state << 6) + (pedal_state << 5) + alca_state), \
       int(acc_speed_limit_mph),
-      int(legal_speed_limit),
+      int((legal_speed_limit & 0x1F) + ((park_brake_request << 5) & 0x20)), #positions 7 and 6 not used yet
       int(c_apply_steer & 0xFF),
       int((c_apply_steer >> 8) & 0xFF))
   return [msg_id, 0, msg.raw, 0]

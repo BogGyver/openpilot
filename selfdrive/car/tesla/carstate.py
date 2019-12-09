@@ -132,8 +132,7 @@ def get_can_signals(CP):
       ("UI_baseMapSpeedLimitMPS", "UI_driverAssistRoadSign", 0),
       ("UI_bottomQrtlFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
       ("UI_rampType", "UI_driverAssistRoadSign", 0),
-
-
+      ("UI_autoSummonEnable","UI_driverAssistControl",0),
   ]
 
   checks = [
@@ -354,6 +353,8 @@ class CarState():
     self.DAS_doorOpen = 0
     self.DAS_notInDrive = 0
 
+    self.summonButton = 0
+
 
 
     #BB variables for pedal CC
@@ -520,6 +521,7 @@ class CarState():
 
     if (self.hasTeslaIcIntegration):
       self.apEnabled = (cp.vl["MCU_chassisControl"]["MCU_latControlEnable"] == 1)
+      self.summonButton = int(cp.vl["UI_driverAssistControl"]["UI_autoSummonEnable"])
       self.apFollowTimeInS =  1 + cp.vl["MCU_chassisControl"]["MCU_fcwSensitivity"] * 0.5
       self.keepEonOff = cp.vl["MCU_chassisControl"]["MCU_ldwEnable"] == 1
       self.alcaEnabled = cp.vl["MCU_chassisControl"]["MCU_pedalSafetyEnable"] == 1

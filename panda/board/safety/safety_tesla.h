@@ -221,6 +221,10 @@ int DAS_ahb_is_enabled = 0;
 //fake DAS - plain CC condition
 int DAS_plain_cc_enabled = 0x00;
 
+//fake DAS - emergency brakes use
+int DAS_emergency_brake_request = 0x00;
+int DAS_fleet_speed_state = 0x00;
+
 
 static int add_tesla_crc(uint32_t MLB, uint32_t MHB , int msg_len) {
   //"""Calculate CRC8 using 1D poly, FF start, FF end"""
@@ -385,6 +389,8 @@ static void reset_DAS_data(void) {
   DAS_RIGHT_OBJECT_MLB = 0xFFFFFF02;
   DAS_RIGHT_OBJECT_MHB = 0x03FFFF83;
   DAS_plain_cc_enabled = 0x00;
+  DAS_emergency_brake_request = 0x00;
+  DAS_fleet_speed_state = 0x00;
 }
 
 
@@ -786,7 +792,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     //send DAS_status - 0x399
     MLB = DAS_op_status + 0xF0 + (DAS_speed_limit_kph << 8) + (((DAS_collision_warning << 6) + DAS_speed_limit_kph) << 16);
     MHB = ((DAS_cc_state & 0x03) << 3) + (DAS_ldwStatus << 5) + 
-        (((DAS_hands_on_state << 2) + ((DAS_alca_state & 0x03) << 6)) << 8) +
+        (((DAS_hands_on_state << 2) + ((DAS_alca_state & 0x03) << 6) + DAS_fleet_speed_state) << 8) +
        ((( DAS_status_idx << 4) + (DAS_alca_state >> 2)) << 16);
     int cksm = add_tesla_cksm2(MLB, MHB, 0x399, 7);
     MHB = MHB + (cksm << 24);
@@ -809,10 +815,14 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
         lcw = 0x01;
     }
     int b4 = 0x80;
-    int b5 = 0x13;
+    int b5 = 0x13; 
     if (DAS_cc_state > 1) { //enabled or hold
-        b4 = 0x60;
-        b5 = 0x12;
+        b4 = 0x84;
+        b5 = 0x25; //BB lssState 0x 0x03 should be LSS_STATE_ELK enhanced LK
+        //DAS_RobState active 0x02
+        //DAS_radarTelemetry normal 0x01
+        //DAS_lssState 0x03
+        //DAS_acc_report ACC_report_target_CIPV 0x01
     }
     MLB = MLB + (b4 << 24);
     MHB = 0x8000 + b5 + (DAS_status2_idx << 20) + (lcw << 16);
@@ -1549,6 +1559,7 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_high_low_beam_request = b0;
     DAS_high_low_beam_reason = b1;
     DAS_ahb_is_enabled = b2 & 0x01;
+    DAS_fleet_speed_state = (b2 >> 1) & 0x03;
     //intercept and do not forward
     return false;
   }
@@ -1583,7 +1594,8 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_cc_state = ((b3 & 0xC0)>>6);
     DAS_usingPedal = ((b3 & 0x20) >> 5);
     DAS_alca_state = (b3 & 0x1F);
-    DAS_speed_limit_kph = b5;
+    DAS_speed_limit_kph = (b5 & 0x1F);
+    DAS_emergency_brake_request = ((b5 & 0x20)  >> 5);
     time_last_DAS_data = current_car_time;
     DAS_present = 1;
     DAS_steeringAngle = ((b7 << 8) + b6) & 0x7FFF;
