@@ -129,6 +129,7 @@ def get_can_signals(CP):
       ("UI_medianFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
       ("UI_topQrtlFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
       ("UI_splineLocConfidence", "UI_driverAssistRoadSign", 0),
+      ("UI_splineID", "UI_driverAssistRoadSign", 0),
       ("UI_baseMapSpeedLimitMPS", "UI_driverAssistRoadSign", 0),
       ("UI_bottomQrtlFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
       ("UI_rampType", "UI_driverAssistRoadSign", 0),
@@ -275,6 +276,7 @@ class CarState():
     self.speedLimit = 0
 
     self.meanFleetSplineSpeedMPS = 0.
+    self.UI_splineID = 0
     self.meanFleetSplineAccelMPS2 = 0.
     self.medianFleetSpeedMPS = 0.
     self.topQrtlFleetSplineSpeedMPS = 0.
@@ -564,6 +566,7 @@ class CarState():
       self.meanFleetSplineAccelMPS2  = cp.vl["UI_driverAssistRoadSign"]["UI_meanFleetSplineAccelMPS2"]
       self.medianFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_medianFleetSpeedMPS"]
       self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
+      self.UI_splineID = cp.vl["UI_driverAssistRoadSign"]["UI_splineID"]
       self.rampType = cp.vl["UI_driverAssistRoadSign"]["UI_rampType"]
 
     if rdSignMsg == 3:

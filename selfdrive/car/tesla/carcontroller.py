@@ -76,6 +76,9 @@ HUDData = namedtuple("HUDData",
 
 class CarController():
   def __init__(self, dbc_name):
+    self.fleet_speed_state = 0
+    self.cc_counter = 0
+    self.UI_splineID = -1
     self.alcaStateData = None
     self.icLeadsData = None
     self.params = Params()
@@ -493,6 +496,8 @@ class CarController():
     accel_min = -15
     accel_max = 5
     acc_speed_kph = 0
+    send_fake_warning = False
+    send_fake_msg = False
     if enabled:
       #self.opState  0-disabled, 1-enabled, 2-disabling, 3-unavailable, 5-warning
       alca_state = 0x01
@@ -560,10 +565,6 @@ class CarController():
     else:
       if (CS.pcm_acc_status == 4):
         cc_state = 3
-
-    send_fake_msg = False
-    send_fake_warning = False
-
     if enabled:
       if frame % 2 == 0:
         send_fake_msg = True
@@ -588,15 +589,27 @@ class CarController():
       self.DAS_221_lcAborting = 1
       self.warningCounter = 300
       self.warningNeeded = 1
-    if CS.useTeslaRadar and CS.hasTeslaIcIntegration:
+    if CS.hasTeslaIcIntegration:
       highLowBeamStatus,highLowBeamReason,ahbIsEnabled = self.AHB.update(CS,frame,self.ahbLead1)
       if frame % 5 == 0:
-        fleet_speed_state = 0x00 #fleet speed unavailable
-        if CS.medianFleetSpeedMPS > 0:
-          fleet_speed_state = 0x01 #fleet speed available
-        if (CS.maxdrivespeed > 0) and CS.useTeslaMapData and (CS.mapAwareSpeed or (CS.baseMapSpeedLimitMPS <2.7)):
-          fleet_speed_state = 0x02 #fleet speed active
-        can_sends.append(teslacan.create_fake_DAS_msg2(highLowBeamStatus,highLowBeamReason,ahbIsEnabled,fleet_speed_state))
+        self.cc_counter = (self.cc_counter + 1) % 40 #use this to change status once a second
+        self.fleet_speed_state = 0x00 #fleet speed unavailable
+        if (CS.medianFleetSpeedMPS > 0) and (CS.mapAwareSpeed) and (CS.splineLocConfidence > 60) and (CS.UI_splineID > 0):
+          if CS.speed_control_enabled == 1:
+            self.fleet_speed_state = 0x02 #fleet speed enabled
+          else:
+            self.fleet_speed_state = 0x01 #fleet speed available
+        else:
+          if CS.speed_control_enabled == 1:
+            self.fleet_speed_state = 0x00 #fleet speed hold
+        self.UI_splineID = CS.UI_splineID
+        #print ("Fleet Speed State = ", self.fleet_speed_state)
+        can_sends.append(teslacan.create_fake_DAS_msg2(highLowBeamStatus,highLowBeamReason,ahbIsEnabled,self.fleet_speed_state))
+    if (self.cc_counter < 3) and (self.fleet_speed_state == 0x02):
+      CS.v_cruise_pcm = CS.v_cruise_pcm + 1 
+      send_fake_msg = True
+    if (self.cc_counter == 3):
+      send_fake_msg = True
     if send_fake_msg:
       if enable_steer_control and op_status == 3:
         op_status = 0x5

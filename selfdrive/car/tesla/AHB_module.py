@@ -1,5 +1,5 @@
 from selfdrive.config import Conversions as CV
-from cereal import tesla
+from cereal import tesla,log
 import selfdrive.messaging as messaging
 import time
 
@@ -40,6 +40,9 @@ class AHBController():
     self.ahbInfo = messaging.sub_sock('ahbInfo', conflate=True)
     self.ahbInfoData = None
     self.ahbIsEnabled = False
+    self.frameInfo = messaging.sub_sock('frame', conflate=True)
+    self.frameInfoData = None
+    self.frameInfoGain = 0
 
   def set_and_return(self,CS,frame,highLowBeamStatus,highLowBeamReason):
     self.prev_light_stalk_position = CS.ahbHighBeamStalkPosition
@@ -55,9 +58,17 @@ class AHBController():
   def update(self, CS, frame,ahbLead1):
     tms_now = _current_time_millis()
     ahbInfoMsg = self.ahbInfo.receive(non_blocking=True)
+    frameInfoMsg = messaging.recv_one_or_none(self.frameInfo)
     if ahbInfoMsg is not None:
       self.ahbInfoData = tesla.AHBinfo.from_bytes(ahbInfoMsg)
-
+    if frameInfoMsg is not None:
+      self.frameInfoData = frameInfoMsg.frame
+      frameInfoGain = self.frameInfoData.globalGain
+      exposureTime = self.frameInfoData.androidCaptureResult.exposureTime
+      frameDuration = self.frameInfoData.androidCaptureResult.frameDuration
+      if frameInfoGain != self.frameInfoGain:
+        self.frameInfoGain = frameInfoGain
+      _debug("AHB Camera has new data [ frame - " + str(self.frameInfoData.frameId) + "]  = " + str(frameInfoGain) + ", exposure = " + str(exposureTime) + ", frame duration = " + str(frameDuration))
     #if AHB not enabled, then return OFF
     if CS.ahbEnabled != 1:
       _debug("AHB not enabled in CID")
@@ -83,6 +94,13 @@ class AHBController():
       _debug("No radar info")
       highLowBeamStatus = AHBDecision.DAS_HIGH_BEAM_UNDECIDED
       highLowBeamReason = AHBReason.HIGH_BEAM_OFF_REASON_SNA
+      return self.set_and_return(CS,frame,highLowBeamStatus,highLowBeamReason)
+    # if gain less than max, we might see incoming car
+    if self.frameInfoGain < 510:
+      _debug("OP camera gain < 510")
+      self.time_last_car_detected = tms_now
+      highLowBeamStatus = AHBDecision.DAS_HIGH_BEAM_OFF
+      highLowBeamReason = AHBReason.HIGH_BEAM_OFF_REASON_MOVING_RADAR_TARGET
       return self.set_and_return(CS,frame,highLowBeamStatus,highLowBeamReason)
     #if lead car detected by radarD, i.e. OP has Lead, then reset timer and return OFF
     if False and ahbLead1 is not None:

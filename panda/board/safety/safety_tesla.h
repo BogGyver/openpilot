@@ -791,7 +791,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
   if (fake_DAS_counter % 50 == 0) {
     //send DAS_status - 0x399
     MLB = DAS_op_status + 0xF0 + (DAS_speed_limit_kph << 8) + (((DAS_collision_warning << 6) + DAS_speed_limit_kph) << 16);
-    MHB = ((DAS_cc_state & 0x03) << 3) + (DAS_ldwStatus << 5) + 
+    MHB = ((DAS_fleet_speed_state & 0x03) << 3) + (DAS_ldwStatus << 5) + 
         (((DAS_hands_on_state << 2) + ((DAS_alca_state & 0x03) << 6) + DAS_fleet_speed_state) << 8) +
        ((( DAS_status_idx << 4) + (DAS_alca_state >> 2)) << 16);
     int cksm = add_tesla_cksm2(MLB, MHB, 0x399, 7);
@@ -819,10 +819,15 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
     if (DAS_cc_state > 1) { //enabled or hold
         b4 = 0x84;
         b5 = 0x25; //BB lssState 0x 0x03 should be LSS_STATE_ELK enhanced LK
-        //DAS_RobState active 0x02
-        //DAS_radarTelemetry normal 0x01
-        //DAS_lssState 0x03
-        //DAS_acc_report ACC_report_target_CIPV 0x01
+        int _DAS_RobState = 0x02; //active
+        int _DAS_radarTelemetry = 0x01; // normal 
+        int _DAS_lssState = 0x03;
+        int _DAS_acc_report = 0x01; //ACC_report_target_CIPV
+        if (DAS_fleet_speed_state == 2) {
+          _DAS_acc_report = 0x12; //ACC_report_fleet_speed
+        }
+        b4 = (_DAS_acc_report << 2) + ((_DAS_lssState & 0x01) << 7);
+        b5 =((_DAS_lssState >> 1) & 0x01) + (_DAS_radarTelemetry << 2) + (_DAS_RobState <<4);
     }
     MLB = MLB + (b4 << 24);
     MHB = 0x8000 + b5 + (DAS_status2_idx << 20) + (lcw << 16);
