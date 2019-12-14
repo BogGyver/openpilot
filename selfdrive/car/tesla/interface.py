@@ -103,6 +103,8 @@ class CarInterface():
     ret.isPandaBlack = is_panda_black
 
     teslaModel = read_db('/data/params','TeslaModel')
+    if teslaModel is not None:
+      teslaModel = teslaModel.decode()
     if teslaModel is None:
       teslaModel = "S"
 

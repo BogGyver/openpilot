@@ -250,6 +250,8 @@ class CarState():
     # Tesla Model
     self.teslaModelDetected = 1
     self.teslaModel = read_db('/data/params','TeslaModel')
+    if self.teslaModel is not None:
+      self.teslaModel = self.teslaModel.decode()
     if self.teslaModel is None:
       self.teslaModel = "S"
       self.teslaModelDetected = 0
