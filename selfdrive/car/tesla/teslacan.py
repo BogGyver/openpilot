@@ -141,7 +141,7 @@ def create_fake_DAS_msg2(hiLoBeamStatus,hiLoBeamReason,ahbIsEnabled,fleet_speed_
 def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, collision_warning, op_status, \
                  acc_speed_kph, \
                  turn_signal_needed,forward_collission_warning,adaptive_cruise, hands_on_state, \
-                 cc_state, pedal_state, alca_state, \
+                 cc_state, pcc_available, alca_state, \
                  acc_speed_limit_mph,
                  legal_speed_limit,
                  apply_angle,
@@ -155,7 +155,7 @@ def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, coll
   struct.pack_into('BBBBBBBB', msg, 0,int((speed_control_enabled << 7) + (speed_override << 6) + (apUnavailable << 5) + (collision_warning << 4) + op_status), \
       int(acc_speed_kph), \
       int((turn_signal_needed << 6) + (units_included << 5) + (forward_collission_warning << 4)  + (adaptive_cruise << 3) + hands_on_state), \
-      int((cc_state << 6) + (pedal_state << 5) + alca_state), \
+      int((cc_state << 6) + (pcc_available << 5) + alca_state), \
       int(acc_speed_limit_mph),
       int((legal_speed_limit & 0x1F) + ((park_brake_request << 5) & 0x20)), #positions 7 and 6 not used yet
       int(c_apply_steer & 0xFF),

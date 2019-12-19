@@ -354,11 +354,9 @@ class CarController():
     if (frame % 10 == 0):
       self.ALCA.update_status((CS.cstm_btns.get_button_status("alca") > 0) and ((CS.enableALCA and not CS.hasTeslaIcIntegration) or (CS.hasTeslaIcIntegration and CS.alcaEnabled)))
     
-    pedal_can_sends = []
-    
-    if CS.pedal_interceptor_available:
-      #update PCC module info
-      pedal_can_sends = self.PCC.update_stat(CS, True)
+    # update PCC module info
+    pedal_can_sends = self.PCC.update_stat(CS, frame)
+    if self.PCC.pcc_available:
       self.ACC.enable_adaptive_cruise = False
     else:
       # Update ACC module info.
@@ -539,7 +537,7 @@ class CarController():
         else:
           hands_on_state = 0x05
       acc_speed_limit_mph = max(self.ACC.acc_speed_kph * CV.KPH_TO_MPH,1)
-      if CS.pedal_interceptor_available:
+      if self.PCC.pcc_available:
         acc_speed_limit_mph = max(self.PCC.pedal_speed_kph * CV.KPH_TO_MPH,1)
         acc_speed_kph = self.PCC.pedal_speed_kph
       if hud_alert == AH.FCW:
@@ -551,7 +549,7 @@ class CarController():
         op_status = 0x08
       if self.ACC.enable_adaptive_cruise:
         acc_speed_kph = self.ACC.new_speed #pcm_speed * CV.MS_TO_KPH
-      if (CS.pedal_interceptor_available and self.PCC.enable_pedal_cruise) or (self.ACC.enable_adaptive_cruise):
+      if (self.PCC.pcc_available and self.PCC.enable_pedal_cruise) or (self.ACC.enable_adaptive_cruise):
         speed_control_enabled = 1
         cc_state = 2
         if not self.ACC.adaptive:
@@ -616,11 +614,11 @@ class CarController():
       park_brake_request = int(CS.ahbEnabled)
       if park_brake_request == 1:
         print("Park Brake Request received")
-      adaptive_cruise = 1 if   (not CS.pedal_interceptor_available and self.ACC.adaptive) or CS.pedal_interceptor_available else 0
+      adaptive_cruise = 1 if (not self.PCC.pcc_available and self.ACC.adaptive) or self.PCC.pcc_available else 0
       can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,speed_override,self.DAS_206_apUnavailable, collision_warning, op_status, \
             acc_speed_kph, \
             turn_signal_needed,forward_collision_warning, adaptive_cruise,  hands_on_state, \
-            cc_state, 1 if (CS.pedal_interceptor_available) else 0,alca_state, \
+            cc_state, 1 if self.PCC.pcc_available else 0, alca_state, \
             CS.v_cruise_pcm, #acc_speed_limit_mph,
             CS.speedLimitToIc, #speed_limit_to_car,
             apply_angle,
@@ -644,7 +642,7 @@ class CarController():
     # send enabled ethernet every 0.2 sec
     if frame % 20 == 0:
         can_sends.append(teslacan.create_enabled_eth_msg(1))
-    if (not CS.pedal_interceptor_available) and frame % 5 == 0: # acc processed at 20Hz
+    if (not self.PCC.pcc_available) and frame % 5 == 0: # acc processed at 20Hz
       cruise_btn = self.ACC.update_acc(enabled, CS, frame, actuators, pcm_speed, \
                     self.speed_limit_for_cc, self.speedlimit_valid, \
                     self.set_speed_limit_active, self.speed_limit_offset)
@@ -656,7 +654,7 @@ class CarController():
           # Send this CAN msg first because it is racing against the real stalk.
           can_sends.insert(0, cruise_msg)
     apply_accel = 0.
-    if CS.pedal_interceptor_available and frame % 5 == 0: # pedal processed at 20Hz
+    if self.PCC.pcc_available and frame % 5 == 0: # pedal processed at 20Hz
       apply_accel, accel_needed, accel_idx = self.PCC.update_pdl(enabled, CS, frame, actuators, pcm_speed, \
                     self.speed_limit_for_cc * CV.KPH_TO_MS, self.speedlimit_valid, \
                     self.set_speed_limit_active, self.speed_limit_offset * CV.KPH_TO_MS, self.alca_enabled)
