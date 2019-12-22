@@ -289,7 +289,7 @@ class CarState():
 
     self.mapBasedSuggestedSpeed = 0.
     self.splineBasedSuggestedSpeed = 0.
-    self.maxdrivespeed = 0.
+    self.map_suggested_speed = 0.
 
     self.gpsLongitude = 0.
     self.gpsLatitude = 0.
@@ -453,12 +453,12 @@ class CarState():
     if self.rampType > 0:
       #we are on a ramp, use the spline info if available
       if self.splineBasedSuggestedSpeed > 0:
-        self.maxdrivespeed = self.splineBasedSuggestedSpeed
+        self.map_suggested_speed = self.splineBasedSuggestedSpeed
       else:
-        self.maxdrivespeed = self.mapBasedSuggestedSpeed
+        self.map_suggested_speed = self.mapBasedSuggestedSpeed
     else:
       #we are on a normal road, use max of the two
-      self.maxdrivespeed = max(self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed)
+      self.map_suggested_speed = max(self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed)
 
   def update_ui_buttons(self,btn_id,btn_status):
     # we only focus on btn_id=3, which is for visiond
@@ -525,7 +525,7 @@ class CarState():
       self.apFollowTimeInS =  1 + cp.vl["MCU_chassisControl"]["MCU_fcwSensitivity"] * 0.5
       self.keepEonOff = cp.vl["MCU_chassisControl"]["MCU_ldwEnable"] == 1
       self.alcaEnabled = cp.vl["MCU_chassisControl"]["MCU_pedalSafetyEnable"] == 1
-      self.mapAwareSpeed = cp.vl["MCU_chassisControl"]["MCU_aebEnable"] == 1
+      self.mapAwareSpeed = cp.vl["MCU_chassisControl"]["MCU_aebEnable"] == 1 and self.useTeslaMapData
       #AHB info
       self.ahbHighBeamStalkPosition = cp.vl["STW_ACTN_RQ"]["HiBmLvr_Stat"]
       self.ahbEnabled = cp.vl["MCU_chassisControl"]["MCU_ahlbEnable"]
@@ -550,13 +550,12 @@ class CarState():
     self.speedLimitToIc = int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])
     #BB unsure yet but DBC tells us that the map data has 0x00 as unknown, 0x1E as UNLIMITED and 0x1F as SNA while
     #the DAS_status has 0x00 as UNKNOWN/SNA and 0x1F as UNLIMITED. Needs testing on Autobahn
-    if self.speedLimitToIc >= 2:
-        self.speedLimitToIc -= 1 #map data has 7 in second position
-    if self.speedLimitToIc == 0x1E:
+    if self.speedLimitToIc == 0x1F: # SNA
       self.speedLimitToIc = 0
-    elif self.speedLimitToIc == 0x1D: #no speed limit
+    elif self.speedLimitToIc == 0x1E: # no speed limit
       self.speedLimitToIc = 0x1F
-      self.speedLimitKph = 170.
+    elif self.speedLimitToIc >= 2:
+      self.speedLimitToIc -= 1 #map data has 7 in second position
 
     rdSignMsg = cp.vl["UI_driverAssistRoadSign"]["UI_roadSign"]
     if rdSignMsg == 4:

@@ -202,21 +202,24 @@ class PCCController():
     except IOError:
       print("PDD pid parameters could not be saved to file")
 
-  def max_v_by_speed_limit(self,pedal_set_speed_ms ,speed_limit_ms, CS):
-    # if more than 10 kph / 2.78 ms, consider we have speed limit
-    # if the difference is more than 20 MPH, ignore the speed limit as it is probably wrong (an overpass' speed instead of the current road)
-    if (CS.maxdrivespeed > 0) and CS.useTeslaMapData and (CS.mapAwareSpeed or (CS.baseMapSpeedLimitMPS <2.7)):
-      #do we know the based speed limit?
-      sl1 = 0.
-      if CS.baseMapSpeedLimitMPS >= 2.7:
-        #computer adjusted maxdrive based on set speed
-        sl1 = min (speed_limit_ms *  CS.maxdrivespeed / CS.baseMapSpeedLimitMPS, speed_limit_ms)
-        sl1 = self.maxsuggestedspeed_avg.add(sl1)
+  def max_v_by_map_speed(self, pedal_set_speed_ms, pedal_speed_ms, CS):
+    if CS.mapAwareSpeed and self._has_valid_map_speed(CS):
+      # if set speed is greater than the speed limit, apply a relative offset to map speed
+      if CS.rampType == 0 and pedal_set_speed_ms > CS.baseMapSpeedLimitMPS > CS.map_suggested_speed:
+        sl1 = self.maxsuggestedspeed_avg.add(pedal_set_speed_ms * CS.map_suggested_speed / CS.baseMapSpeedLimitMPS)
       else:
-        sl1 = self.maxsuggestedspeed_avg.add(CS.maxdrivespeed)
-      return min(pedal_set_speed_ms, sl1)
+        sl1 = self.maxsuggestedspeed_avg.add(CS.map_suggested_speed)
+      return min(pedal_speed_ms, sl1)
     else:
-      return pedal_set_speed_ms
+      return pedal_speed_ms
+
+  def _has_valid_map_speed(self, CS):
+    if CS.map_suggested_speed == 0:
+      return False
+    if CS.baseMapSpeedLimitMPS == 0: # no or unknown speed limit
+      if CS.rampType == 0 and CS.map_suggested_speed >= 17: # more than 61 kph / 38 mph, means we may be on a road without speed limit
+        return False
+    return True
 
   def reset(self, v_pid):
     #save the pid parameters to params file
@@ -365,9 +368,6 @@ class PCCController():
     # Alternative speed decision logic that uses the lead car's distance
     # and speed more directly.
     # Bring in the lead car distance from the radarState feed
-    radSt = None
-    mapd = None
-    #if enabled: do it always
     radSt = messaging.recv_one_or_none(self.radarState)
     mapd = messaging.recv_one_or_none(self.live_map_data)
     if radSt is not None:
@@ -402,7 +402,7 @@ class PCCController():
         if v_curve:
           self.v_pid = min(self.v_pid, v_curve)
       # now check and do the limit vs speed limit + offset
-      self.v_pid = self.max_v_by_speed_limit(self.v_pid ,self.pedal_speed_kph * CV.KPH_TO_MS, CS)
+      self.v_pid = self.max_v_by_map_speed(self.pedal_speed_kph * CV.KPH_TO_MS, self.v_pid, CS)
       # cruise speed can't be negative even is user is distracted
       self.v_pid = max(self.v_pid, 0.)
 
