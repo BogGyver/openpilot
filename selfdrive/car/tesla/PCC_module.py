@@ -110,10 +110,9 @@ def max_v_in_mapped_curve_ms(map_data, pedal_set_speed_kph):
 
 
 class PCCState():
-  # Possible state of the ACC system, following the DI_cruiseState naming
-  # scheme.
-  OFF = 0         # Disabled by UI.
-  STANDBY = 1     # Ready to be enaged.
+  # Possible state of the PCC system, following the DI_cruiseState naming scheme.
+  OFF = 0         # Disabled by UI (effectively never happens since button switches over to ACC mode).
+  STANDBY = 1     # Ready to be engaged.
   ENABLED = 2     # Engaged.
   NOT_READY = 9   # Not ready to be engaged due to the state of the car.
 
@@ -238,19 +237,16 @@ class PCCController():
     self._update_pedal_state(CS, frame)
 
     can_sends = []
-    if self.pcc_available and CS.cstm_btns.get_button_status(PCCModes.BUTTON_NAME) == PCCState.OFF:
-      CS.cstm_btns.set_button_status(PCCModes.BUTTON_NAME, PCCState.STANDBY)
-    elif not self.pcc_available:
-      if CS.cstm_btns.get_button_status(PCCModes.BUTTON_NAME) != PCCState.OFF:
-        CS.cstm_btns.set_button_status(PCCModes.BUTTON_NAME, PCCState.OFF)
-        if CS.pedal_interceptor_state > 0:
-          CS.UE.custom_alert_message(4, "Pedal Interceptor fault (state %s)" % CS.pedal_interceptor_state, 200, 4)
-        elif frame >= self.pedal_timeout_frame:
-          CS.UE.custom_alert_message(4, "Pedal Interceptor timed out", 200, 4)
-        # send reset command
-        idx = self.pedal_idx
-        self.pedal_idx = (self.pedal_idx + 1) % 16
-        can_sends.append(teslacan.create_pedal_command_msg(0, 0, idx))
+    if not self.pcc_available:
+      timed_out = frame >= self.pedal_timeout_frame
+      if timed_out or CS.pedal_interceptor_state > 0:
+        if self.prev_pcc_available:
+          CS.UE.custom_alert_message(4, "Pedal Interceptor %s" % ("timed out" if timed_out else "fault (state %s)" % CS.pedal_interceptor_state), 200, 4)
+        if frame % 50 == 0:
+          # send reset command
+          idx = self.pedal_idx
+          self.pedal_idx = (self.pedal_idx + 1) % 16
+          can_sends.append(teslacan.create_pedal_command_msg(0, 0, idx))
       return can_sends
 
     # disable on brake
