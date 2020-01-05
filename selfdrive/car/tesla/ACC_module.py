@@ -82,8 +82,8 @@ class ACCController():
     self.lead_last_seen_time_ms = 0
     # BB speed for testing
     self.new_speed = 0
-    self.average_speed_over_x_suggestions = 20 # 1 second (20x a second)
-    self.fleet_speed = FleetSpeed(self.average_speed_over_x_suggestions)
+    average_speed_over_x_suggestions = 20 # 1 second (20x a second)
+    self.fleet_speed = FleetSpeed(average_speed_over_x_suggestions)
 
   # Updates the internal state of this controller based on user input,
   # specifically the steering wheel mounted cruise control stalk, and OpenPilot
