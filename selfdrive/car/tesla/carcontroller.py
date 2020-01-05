@@ -3,7 +3,6 @@ from cereal import log,tesla
 from common.params import Params
 from collections import namedtuple
 from common.numpy_fast import clip, interp
-from common.realtime import DT_CTRL
 from common import realtime
 from selfdrive.car.tesla import teslacan
 from selfdrive.car.tesla.values import AH, CM
@@ -14,7 +13,7 @@ from selfdrive.car.modules.GYRO_module import GYROController
 from selfdrive.car.tesla.ACC_module import ACCController
 from selfdrive.car.tesla.PCC_module import PCCController
 from selfdrive.car.tesla.HSO_module import HSOController
-from selfdrive.car.tesla.movingaverage import MovingAverage
+from selfdrive.car.tesla.speed_utils.movingaverage import MovingAverage
 from selfdrive.car.tesla.AHB_module import AHBController
 import selfdrive.messaging as messaging
 
