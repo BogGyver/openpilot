@@ -5,6 +5,7 @@ from collections import namedtuple
 from common.numpy_fast import clip, interp
 from common import realtime
 from selfdrive.car.tesla import teslacan
+from selfdrive.car.tesla.speed_utils.fleet_speed import FleetSpeed
 from selfdrive.car.tesla.values import AH, CM
 from selfdrive.can.packer import CANPacker
 from selfdrive.config import Conversions as CV
@@ -77,7 +78,6 @@ class CarController():
   def __init__(self, dbc_name):
     self.fleet_speed_state = 0
     self.cc_counter = 0
-    self.UI_splineID = -1
     self.alcaStateData = None
     self.icLeadsData = None
     self.params = Params()
@@ -591,16 +591,11 @@ class CarController():
       if frame % 5 == 0:
         self.cc_counter = (self.cc_counter + 1) % 40 #use this to change status once a second
         self.fleet_speed_state = 0x00 #fleet speed unavailable
-        if (CS.medianFleetSpeedMPS > 0) and (CS.mapAwareSpeed) and (CS.splineLocConfidence > 60) and (CS.UI_splineID > 0):
-          if CS.speed_control_enabled == 1:
+        if FleetSpeed.is_available(CS):
+          if self.ACC.fleet_speed.is_active(frame) or self.PCC.fleet_speed.is_active(frame):
             self.fleet_speed_state = 0x02 #fleet speed enabled
           else:
             self.fleet_speed_state = 0x01 #fleet speed available
-        else:
-          if CS.speed_control_enabled == 1:
-            self.fleet_speed_state = 0x00 #fleet speed hold
-        self.UI_splineID = CS.UI_splineID
-        #print ("Fleet Speed State = ", self.fleet_speed_state)
         can_sends.append(teslacan.create_fake_DAS_msg2(highLowBeamStatus,highLowBeamReason,ahbIsEnabled,self.fleet_speed_state))
     if (self.cc_counter < 3) and (self.fleet_speed_state == 0x02):
       CS.v_cruise_pcm = CS.v_cruise_pcm + 1 

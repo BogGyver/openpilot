@@ -231,7 +231,7 @@ class ACCController():
         # and speed more directly.
         # Bring in the lead car distance from the radarState feed
         
-        button_to_press = self._calc_follow_button(CS, lead_1,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset)
+        button_to_press = self._calc_follow_button(CS, lead_1, speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset, frame)
     if button_to_press:
       self.automated_cruise_action_time = current_time_ms
       # If trying to slow below the min cruise speed, just cancel cruise.
@@ -247,7 +247,7 @@ class ACCController():
     return button_to_press
 
   # function to calculate the cruise button based on a safe follow distance
-  def _calc_follow_button(self, CS, lead_car,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset):
+  def _calc_follow_button(self, CS, lead_car, speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset, frame):
     if lead_car is None:
       return None
     # Desired gap (in seconds) between cars.
@@ -262,7 +262,7 @@ class ACCController():
     # Relative velocity between the lead car and our set cruise speed.
     future_vrel_kph = lead_speed_kph - CS.v_cruise_actual
     # How much we can accelerate without exceeding the max allowed speed.
-    max_acc_speed_kph = self.fleet_speed.adjust(CS, self.acc_speed_kph * CV.KPH_TO_MS) * CV.MS_TO_KPH
+    max_acc_speed_kph = self.fleet_speed.adjust(CS, self.acc_speed_kph * CV.KPH_TO_MS, frame) * CV.MS_TO_KPH
     available_speed_kph = max_acc_speed_kph - CS.v_cruise_actual
     half_press_kph, full_press_kph = self._get_cc_units_kph(CS.imperial_speed_units)
     # button to issue

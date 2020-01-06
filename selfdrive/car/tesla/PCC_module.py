@@ -370,17 +370,6 @@ class PCCController():
     # how much accel and break we have to do
     ####################################################################
     if PCCModes.is_selected(FollowMode(), CS.cstm_btns):
-      self.v_pid = self.calc_follow_speed_ms(CS,alca_enabled)
-      
-      if mapd is not None:
-        v_curve = max_v_in_mapped_curve_ms(mapd.liveMapData, self.pedal_speed_kph)
-        if v_curve:
-          self.v_pid = min(self.v_pid, v_curve)
-      # now check and do the limit vs speed limit + offset
-      self.v_pid = min(self.v_pid, self.fleet_speed.adjust(CS, self.pedal_speed_kph * CV.KPH_TO_MS))
-      # cruise speed can't be negative even is user is distracted
-      self.v_pid = max(self.v_pid, 0.)
-
       enabled = self.enable_pedal_cruise and self.LoC.long_control_state in [LongCtrlState.pid, LongCtrlState.stopping]
       # determine if pedal is pressed by human
       self.prev_accelerator_pedal_pressed = self.accelerator_pedal_pressed
@@ -390,6 +379,17 @@ class PCCController():
         self.reset(CS.v_ego)
 
       if self.enable_pedal_cruise and not self.accelerator_pedal_pressed:
+        self.v_pid = self.calc_follow_speed_ms(CS,alca_enabled)
+
+        if mapd is not None:
+          v_curve = max_v_in_mapped_curve_ms(mapd.liveMapData, self.pedal_speed_kph)
+          if v_curve:
+            self.v_pid = min(self.v_pid, v_curve)
+        # take fleet speed into consideration
+        self.v_pid = min(self.v_pid, self.fleet_speed.adjust(CS, self.pedal_speed_kph * CV.KPH_TO_MS, frame))
+        # cruise speed can't be negative even if user is distracted
+        self.v_pid = max(self.v_pid, 0.)
+
         jerk_min, jerk_max = _jerk_limits(CS.v_ego, self.lead_1, self.v_pid * CV.MS_TO_KPH, self.lead_last_seen_time_ms, CS)
         self.v_cruise, self.a_cruise = speed_smoother(self.v_acc_start, self.a_acc_start,
                                                       self.v_pid,
