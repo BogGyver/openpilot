@@ -372,7 +372,7 @@ class CarController():
     elif self.PCC.enable_pedal_cruise:
       CS.v_cruise_pcm = self.PCC.pedal_speed_kph * speed_uom_kph
     else:
-      CS.v_cruise_pcm = max(0.,CS.v_ego * CV.MS_TO_KPH  +0.5) * speed_uom_kph
+      CS.v_cruise_pcm = max(0., CS.v_ego * CV.MS_TO_KPH) * speed_uom_kph
     # Get the turn signal from ALCA.
     turn_signal_needed, self.alca_enabled = self.ALCA.update(enabled, CS, actuators, self.alcaStateData, frame)
     if turn_signal_needed == 0:
@@ -418,7 +418,7 @@ class CarController():
     # DAS_speed_kph(8), 
     # DAS_turn_signal_request (2),DAS_forward_collision_warning (2), DAS_hands_on_state (3), 
     # DAS_cc_state (2), DAS_usingPedal(1),DAS_alca_state (5),
-    # DAS_acc_speed_limit_mph (8), 
+    # DAS_acc_speed_limit (8),
     # DAS_speed_limit_units(8)
     #send fake_das data as 0x553
     # TODO: forward collission warning
@@ -489,7 +489,6 @@ class CarController():
     
     speed_override = 0
     collision_warning = 0x00
-    acc_speed_limit_mph = 0
     speed_control_enabled = 0
     accel_min = -15
     accel_max = 5
@@ -536,9 +535,7 @@ class CarController():
           hands_on_state = 0x03
         else:
           hands_on_state = 0x05
-      acc_speed_limit_mph = max(self.ACC.acc_speed_kph * CV.KPH_TO_MPH,1)
       if self.PCC.pcc_available:
-        acc_speed_limit_mph = max(self.PCC.pedal_speed_kph * CV.KPH_TO_MPH,1)
         acc_speed_kph = self.PCC.pedal_speed_kph
       if hud_alert == AH.FCW:
         collision_warning = hud_alert[1]
@@ -619,7 +616,7 @@ class CarController():
             acc_speed_kph, \
             turn_signal_needed,forward_collision_warning, adaptive_cruise,  hands_on_state, \
             cc_state, 1 if self.PCC.pcc_available else 0, alca_state, \
-            CS.v_cruise_pcm, #acc_speed_limit_mph,
+            CS.v_cruise_pcm,
             CS.speedLimitToIc, #speed_limit_to_car,
             apply_angle,
             1 if enable_steer_control else 0,
