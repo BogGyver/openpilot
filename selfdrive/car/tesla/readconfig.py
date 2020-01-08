@@ -177,7 +177,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'has_tesla_ic_integration', entry_type = bool,
         default_value = False,
-        comment = 'This setting (in conjunction with enable_radar_emulation) help create the IC integration'
+        comment = 'This setting (in conjunction with enable_radar_emulation) helps create the IC integration'
       )
       file_changed |= didUpdate
 
@@ -205,7 +205,7 @@ class ConfigFile():
         config, configr, prev_file_contents, section = main_section,
         entry = 'radar_vin', entry_type = str,
         default_value = default_radar_vin,
-        comment = 'If you used an aftermarket Tesla Bosch Radar that already has a coded VIN, you will have to enter that VIN value here.'
+        comment = 'If you use an aftermarket Tesla Bosch Radar that already has a coded VIN, you will have to enter that VIN value here.'
       )
       file_changed |= didUpdate
       if into.radarVIN == '':
@@ -243,8 +243,8 @@ class ConfigFile():
       into.fix1916, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = main_section,
         entry = 'fix_1916', entry_type = bool,
-        default_value = False,
-        comment = 'Set this value to True if you are running Tesla software v2019.16 and above. This fixes the DI_state can message change for DI_cruiseSet which changed from 9 bits to 8 bits.'
+        default_value = True,
+        comment = 'Set this value to False if you are running Tesla software earlier than v2019.16. This fixes the DI_state can message change for DI_cruiseSet which changed in 2019.16 from 9 bits to 8 bits.'
       )
       file_changed |= didUpdate
 
