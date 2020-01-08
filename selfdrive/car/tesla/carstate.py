@@ -64,6 +64,7 @@ def get_can_signals(CP):
       ("LgtSens_Night", "BODY_R1", 0),
       ("DI_torqueMotor", "DI_torque1",0),
       ("DI_speedUnits", "DI_state", 0),
+      ("DI_analogSpeed", "DI_state", 0),
       # Steering wheel stalk signals (useful for managing cruise control)
       ("SpdCtrlLvr_Stat", "STW_ACTN_RQ", 0),
       ("VSL_Enbl_Rq", "STW_ACTN_RQ", 0),
@@ -590,14 +591,14 @@ class CarState():
     self.v_wheel_rr = 0 #JCT
     self.v_wheel = 0 #JCT
     self.v_weight = 0 #JCT
-    speed = (cp.vl["DI_torque2"]['DI_vehicleSpeed']) * CV.MPH_TO_KPH/3.6 #JCT MPH_TO_MS. Tesla is in MPH, v_ego is expected in M/S
-    speed = speed * 1.02 # To match car's displayed speed
+    self.imperial_speed_units = cp.vl["DI_state"]['DI_speedUnits'] == 0
+    speed_ms = cp.vl["DI_state"]['DI_analogSpeed'] * (CV.MPH_TO_MS if self.imperial_speed_units else CV.KPH_TO_MS) # car's displayed speed in m/s
 
-    if abs(speed - self.v_ego) > 2.0:  # Prevent large accelerations when car starts at non zero speed
-      self.v_ego_kf.x = [[speed], [0.0]]
+    if abs(speed_ms - self.v_ego) > 2.0:  # Prevent large accelerations when car starts at non zero speed
+      self.v_ego_kf.x = [[speed_ms], [0.0]]
 
-    self.v_ego_raw = speed
-    v_ego_x = self.v_ego_kf.update(speed)
+    self.v_ego_raw = speed_ms
+    v_ego_x = self.v_ego_kf.update(speed_ms)
     self.v_ego = float(v_ego_x[0])
     self.a_ego = float(v_ego_x[1])
 
@@ -628,7 +629,6 @@ class CarState():
     self.brake_hold = 0  # TODO
 
     self.main_on = 1 #cp.vl["SCM_BUTTONS"]['MAIN_ON']
-    self.imperial_speed_units = cp.vl["DI_state"]['DI_speedUnits'] == 0
     self.DI_cruiseSet = cp.vl["DI_state"]['DI_cruiseSet']
     if self.imperial_speed_units:
       self.DI_cruiseSet = self.DI_cruiseSet * CV.MPH_TO_KPH
