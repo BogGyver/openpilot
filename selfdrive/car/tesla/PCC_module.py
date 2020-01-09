@@ -154,7 +154,7 @@ class PCCController():
     self.v_pid = 0.
     self.a_pid = 0.
     self.last_output_gb = 0.
-    self.last_speed_kph = 0.
+    self.last_speed_kph = None
     #for smoothing the changes in speed
     self.v_acc_start = 0.0
     self.a_acc_start = 0.0
@@ -439,6 +439,7 @@ class PCCController():
         self.v_acc_sol = reset_speed
         self.a_acc_sol = reset_accel
         self.v_pid = reset_speed
+        self.last_speed_kph = None
 
     ##############################################################
     # This mode uses the longitudinal MPC built in OP
@@ -495,7 +496,7 @@ class PCCController():
     # Current speed in kph
     actual_speed_kph = CS.v_ego * CV.MS_TO_KPH
     # speed and brake to issue
-    new_speed_kph = self.last_speed_kph
+    new_speed_kph = self.last_speed_kph if self.last_speed_kph is not None else actual_speed_kph
     ###   Logic to determine best cruise speed ###
     if self.enable_pedal_cruise:
       # If no lead is present, accel up to max speed
