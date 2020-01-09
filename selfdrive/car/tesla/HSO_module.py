@@ -13,7 +13,7 @@ class HSOController():
       if CS.steer_override > 0:
         self.frame_humanSteered = frame
       elif CC.ALCA.laneChange_enabled <= 1:
-        if CS.turn_signal_stalk_state > 0 or frame <= (CC.blinker_on_frame_start + int(100 * CS.hsoNumbPeriod)): # stalk locked or blinker within numbPeriod
+        if CS.turn_signal_stalk_state > 0 or frame <= (CC.blinker.blinker_on_frame_start + int(100 * CS.hsoNumbPeriod)): # stalk locked or blinker within numbPeriod
          self.frame_humanSteered = frame
         elif frame - self.frame_humanSteered < 50:  # Need more human testing of handoff timing
           # Find steering difference between visiond model and human (no need to do every frame if we run out of CPU):
