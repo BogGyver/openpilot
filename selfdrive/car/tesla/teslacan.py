@@ -142,7 +142,7 @@ def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, coll
                  acc_speed_kph, \
                  turn_signal_needed,forward_collission_warning,adaptive_cruise, hands_on_state, \
                  cc_state, pcc_available, alca_state, \
-                 acc_speed_limit_mph,
+                 acc_speed_limit, # IC cruise speed, kph or mph
                  legal_speed_limit,
                  apply_angle,
                  enable_steer_control, 
@@ -156,7 +156,7 @@ def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, coll
       int(acc_speed_kph), \
       int((turn_signal_needed << 6) + (units_included << 5) + (forward_collission_warning << 4)  + (adaptive_cruise << 3) + hands_on_state), \
       int((cc_state << 6) + (pcc_available << 5) + alca_state), \
-      int(acc_speed_limit_mph),
+      int(acc_speed_limit + 0.5), # IC rounds current speed, so we need to round cruise speed the same way
       int((legal_speed_limit & 0x1F) + ((park_brake_request << 5) & 0x20)), #positions 7 and 6 not used yet
       int(c_apply_steer & 0xFF),
       int((c_apply_steer >> 8) & 0xFF))

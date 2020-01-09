@@ -147,13 +147,13 @@ class ACCController():
     
     # Notify if ACC was toggled
     if self.prev_enable_adaptive_cruise and not self.enable_adaptive_cruise:
-      CS.UE.custom_alert_message(3, "ACC Disabled", 150, 4)
+      CS.UE.custom_alert_message(3, "%s Disabled" % ("ACC" if self.adaptive else "CC"), 150, 4)
       CS.cstm_btns.set_button_status(ACCMode.BUTTON_NAME, ACCState.STANDBY)
       self.fleet_speed.reset_averager()
     elif self.enable_adaptive_cruise:
       CS.cstm_btns.set_button_status(ACCMode.BUTTON_NAME, ACCState.ENABLED)
       if not self.prev_enable_adaptive_cruise:
-        CS.UE.custom_alert_message(2, "ACC Enabled", 150)
+        CS.UE.custom_alert_message(2, "%s Enabled" % ("ACC" if self.adaptive else "CC"), 150)
 
     # Update the UI to show whether the current car state allows ACC.
     if CS.cstm_btns.get_button_status(ACCMode.BUTTON_NAME) in [ACCState.STANDBY, ACCState.NOT_READY]:
