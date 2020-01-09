@@ -165,7 +165,6 @@ class PCCController():
     self.a_acc_sol = 0.0
     self.v_cruise = 0.0
     self.a_cruise = 0.0
-    self.had_lead = False
     #Long Control
     self.LoC = None
     #when was radar data last updated?
@@ -481,25 +480,16 @@ class PCCController():
   # function to calculate the cruise speed based on a safe follow distance
   def calc_follow_speed_ms(self, CS, alca_enabled):
     # Make sure we were able to populate lead_1.
-    lead_dist_m = 0.
     if self.lead_1 is None:
       return None, None, None
     # dRel is in meters.
-    if CS.useTeslaRadar:
-      lead_dist_m = self.lead_1.dRel
-    else:
-      lead_dist_m = _visual_radar_adjusted_dist_m(self.lead_1.dRel, CS)
+    lead_dist_m = self.lead_1.dRel
+    if not CS.useTeslaRadar:
+      lead_dist_m = _visual_radar_adjusted_dist_m(lead_dist_m, CS)
     # Grab the relative speed.
-    rel_speed_kph = 0.
-    #if self.had_lead:
-      #avoid inital break when lead just detected
-    self.vRel = 0.
-    self.aRel = 0.
-    if abs(self.lead_1.vRel) > .5:
-      self.vRel = self.lead_1.vRel
-    if abs(self.lead_1.aRel) > .5:
-      self.aRel = self.lead_1.aRel
-    rel_speed_kph = (self.vRel + 0 * CS.apFollowTimeInS * self.aRel) * CV.MS_TO_KPH
+    v_rel = self.lead_1.vRel if abs(self.lead_1.vRel) > .5 else 0
+    a_rel = self.lead_1.aRel if abs(self.lead_1.aRel) > .5 else 0
+    rel_speed_kph = (v_rel + 0 * CS.apFollowTimeInS * a_rel) * CV.MS_TO_KPH
     # v_ego is in m/s, so safe_distance is in meters.
     safe_dist_m = _safe_distance_m(CS.v_ego,CS)
     # Current speed in kph
@@ -511,9 +501,7 @@ class PCCController():
       # If no lead is present, accel up to max speed
       if lead_dist_m == 0 or lead_dist_m > MAX_RADAR_DISTANCE:
         new_speed_kph = self.pedal_speed_kph
-        self.had_lead = False
       elif lead_dist_m > 0:
-        self.had_lead = True
         #BB Use the Kalman lead speed and acceleration
         lead_absolute_speed_kph = actual_speed_kph + rel_speed_kph #(self.lead_1.vLeadK + _DT * self.lead_1.aLeadK) * CV.MS_TO_KPH
         rel_speed_kph = lead_absolute_speed_kph - actual_speed_kph
