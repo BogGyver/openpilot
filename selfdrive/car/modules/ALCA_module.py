@@ -175,7 +175,7 @@ class ALCAController():
       # start blinker, speed and angle is within limits, let's go
       laneChange_direction = -1 if blinker.tap_direction == 1 else 1 # left -1, right 1
       blinker.override_direction = blinker.tap_direction
-      self.debug_alca("ALCA blinker on detected")
+      self.debug_alca("ALCA blinker tap detected")
 
       CS.UE.custom_alert_message(2,"Auto Lane Change Engaged!",100)
       self.debug_alca("ALCA engaged")
@@ -232,7 +232,7 @@ class ALCAController():
           self.stop_ALCA(CS, True)
           return 0, False
       else:
-        blinker.override_frame_end = frame + 25
+        blinker.override_frame_end = max(blinker.override_frame_end, frame + 25)
 
     self.send_status(CS)
     return self.laneChange_enabled > 1
