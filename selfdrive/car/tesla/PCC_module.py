@@ -496,7 +496,9 @@ class PCCController():
     # Current speed in kph
     actual_speed_kph = CS.v_ego * CV.MS_TO_KPH
     # speed and brake to issue
-    new_speed_kph = self.last_speed_kph if self.last_speed_kph is not None else actual_speed_kph
+    if self.last_speed_kph is None:
+      self.last_speed_kph = actual_speed_kph
+    new_speed_kph = self.last_speed_kph
     ###   Logic to determine best cruise speed ###
     if self.enable_pedal_cruise:
       # If no lead is present, accel up to max speed
