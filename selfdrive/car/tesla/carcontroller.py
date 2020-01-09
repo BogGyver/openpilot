@@ -6,6 +6,7 @@ from common.numpy_fast import clip, interp
 from common.realtime import DT_CTRL
 from common import realtime
 from selfdrive.car.tesla import teslacan
+from selfdrive.car.tesla.blinker_module import Blinker
 from selfdrive.car.tesla.values import AH, CM
 from selfdrive.can.packer import CANPacker
 from selfdrive.config import Conversions as CV
@@ -89,6 +90,7 @@ class CarController():
     self.epas_disabled = True
     self.last_angle = 0.
     self.last_accel = 0.
+    self.blinker = Blinker()
     self.ALCA = ALCAController(self,True,True)  # Enabled and SteerByAngle both True
     self.ACC = ACCController(self)
     self.PCC = PCCController(self)
@@ -190,10 +192,6 @@ class CarController():
     self.alca_enabled = False
     self.ldwStatus = 0
     self.prev_ldwStatus = 0
-
-    self.blinker_on_frame_start = 0
-    self.blinker_extension_frame_end = 0
-    self.blinker_extension_blinker_type = 0
 
     self.radarVin_idx = 0
     self.LDW_ENABLE_SPEED = 16 
@@ -353,7 +351,9 @@ class CarController():
     # Update statuses for custom buttons every 0.1 sec.
     if (frame % 10 == 0):
       self.ALCA.update_status((CS.cstm_btns.get_button_status("alca") > 0) and ((CS.enableALCA and not CS.hasTeslaIcIntegration) or (CS.hasTeslaIcIntegration and CS.alcaEnabled)))
-    
+
+    self.blinker.update_state(CS, frame)
+
     # update PCC module info
     pedal_can_sends = self.PCC.update_stat(CS, frame)
     if self.PCC.pcc_available:
@@ -373,10 +373,7 @@ class CarController():
       CS.v_cruise_pcm = self.PCC.pedal_speed_kph * speed_uom_kph
     else:
       CS.v_cruise_pcm = max(0., CS.v_ego * CV.MS_TO_KPH) * speed_uom_kph
-    # Get the turn signal from ALCA.
-    turn_signal_needed, self.alca_enabled = self.ALCA.update(enabled, CS, actuators, self.alcaStateData, frame)
-    if turn_signal_needed == 0:
-      turn_signal_needed = self._should_extend_blinker(CS, frame)
+    self.alca_enabled = self.ALCA.update(enabled, CS, actuators, self.alcaStateData, frame, self.blinker)
     self.should_ldw = self._should_ldw(CS, frame)
     apply_angle = -actuators.steerAngle  # Tesla is reversed vs OP.
     # Update HSO module info.
@@ -508,8 +505,8 @@ class CarController():
         op_status = 0x01
       if self.opState == 5:
         op_status = 0x03
-      if turn_signal_needed > 0:
-        alca_state = 0x08 + turn_signal_needed
+      if self.blinker.override_direction > 0:
+        alca_state = 0x08 + self.blinker.override_direction
       elif (self.lLine > 1) and (self.rLine > 1):
         alca_state = 0x08
       elif (self.lLine > 1):
@@ -614,7 +611,7 @@ class CarController():
       adaptive_cruise = 1 if (not self.PCC.pcc_available and self.ACC.adaptive) or self.PCC.pcc_available else 0
       can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,speed_override,self.DAS_206_apUnavailable, collision_warning, op_status, \
             acc_speed_kph, \
-            turn_signal_needed,forward_collision_warning, adaptive_cruise,  hands_on_state, \
+            self.blinker.override_direction,forward_collision_warning, adaptive_cruise,  hands_on_state, \
             cc_state, 1 if self.PCC.pcc_available else 0, alca_state, \
             CS.v_cruise_pcm,
             CS.speedLimitToIc, #speed_limit_to_car,
@@ -646,7 +643,7 @@ class CarController():
       if cruise_btn:
           cruise_msg = teslacan.create_cruise_adjust_msg(
             spdCtrlLvr_stat=cruise_btn,
-            turnIndLvr_Stat= 0, #turn_signal_needed,
+            turnIndLvr_Stat= 0,
             real_steering_wheel_stalk=CS.steering_wheel_stalk)
           # Send this CAN msg first because it is racing against the real stalk.
           can_sends.insert(0, cruise_msg)
@@ -827,26 +824,6 @@ class CarController():
   # Returns speed as it needs to be displayed on the IC
   def speedUnits(self, fromMetersPerSecond):
     return fromMetersPerSecond * (CV.MS_TO_KPH if self.isMetric else CV.MS_TO_MPH) + 0.5
-
-  def _should_extend_blinker(self, CS, frame):
-    if CS.tapBlinkerExtension <= 0:
-      return 0
-    if CS.turn_signal_stalk_state > 0 and CS.prev_turn_signal_stalk_state == 0 and self.blinker_extension_frame_end == 0:
-      self.blinker_on_frame_start = frame
-    elif CS.turn_signal_stalk_state == 0 and CS.prev_turn_signal_stalk_state > 0: # turn signal stalk just turned off
-      is_blinker_tap = frame - self.blinker_on_frame_start < 55 # stalk signal for less than 550ms means it was tapped
-      if is_blinker_tap:
-        blink_duration_frames = 58 # one blink takes ~580ms
-        self.blinker_extension_frame_end = self.blinker_on_frame_start + blink_duration_frames * (3 + CS.tapBlinkerExtension)
-        self.blinker_extension_blinker_type = CS.prev_turn_signal_stalk_state
-
-    if 0 < self.blinker_extension_frame_end < frame:
-      self.blinker_extension_frame_end = 0
-      self.blinker_extension_blinker_type = 0
-    if self.blinker_on_frame_start > 0 and CS.turn_signal_stalk_state == 0 and not CS.turn_signal_blinking and self.blinker_extension_frame_end == 0:
-      self.blinker_on_frame_start = 0
-
-    return self.blinker_extension_blinker_type
 
   def _should_ldw(self, CS, frame):
     if not CS.enableLdw:

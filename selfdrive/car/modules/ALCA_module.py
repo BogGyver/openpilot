@@ -130,7 +130,7 @@ class ALCAController():
     self.send_status(CS)
 
 
-  def update(self,enabled,CS,actuators,alcaStateData,frame):
+  def update(self,enabled,CS,actuators,alcaStateData,frame,blinker):
     cl_min_v = CS.CL_MIN_V
     cl_max_a = CS.CL_MAX_A
     self.frame = frame
@@ -146,23 +146,13 @@ class ALCAController():
         self.laneChange_cancelled = False
 
     # Basic highway lane change logic
-    turn_signal_needed = 0 # send 1 for left, 2 for right 0 for not needed
 
-    if CS.turn_signal_stalk_state == 0 and \
-    (self.laneChange_enabled == 4):
-        self.debug_alca("ALCA reset: resetting 4 -> 1")
-        self.laneChange_enabled =1
-        self.laneChange_counter =0
-        self.laneChange_direction =0
-        CS.UE.custom_alert_message(-1,"",0)
-    
-    if CS.turn_signal_stalk_state == 0 and \
-      (self.laneChange_enabled > 1):
-      # no blinkers on but we are still changing lane, so we need to send blinker command
-      if self.laneChange_direction == -1:
-        turn_signal_needed = 1
-      elif self.laneChange_direction == 1:
-        turn_signal_needed = 2
+    if self.laneChange_enabled == 4 and frame > blinker.override_frame_end:
+      self.debug_alca("ALCA reset: resetting 4 -> 1")
+      self.laneChange_enabled = 1
+      self.laneChange_counter = 0
+      self.laneChange_direction = 0
+      CS.UE.custom_alert_message(-1, "", 0)
 
     if (CS.cstm_btns.get_button_status("alca") > 0) and self.alcaEnabled and (self.laneChange_enabled == 1):
       if ((CS.v_ego < cl_min_v) or (abs(actuators.steerAngle) >= cl_max_a) or \
@@ -180,10 +170,11 @@ class ALCAController():
       self.stop_ALCA(CS, False)
       return 0, False
 
-    if self.alcaEnabled and enabled and CS.prev_turn_signal_stalk_state == 0 and CS.turn_signal_stalk_state > 0 and \
+    if self.alcaEnabled and enabled and blinker.tap_direction != 0 and \
       (CS.v_ego >= cl_min_v) and (abs(actuators.steerAngle) < cl_max_a) and (self.laneChange_enabled == 1):
       # start blinker, speed and angle is within limits, let's go
-      laneChange_direction = -1 if CS.turn_signal_stalk_state == 1 else 1 # left -1, right 1
+      laneChange_direction = -1 if blinker.tap_direction == 1 else 1 # left -1, right 1
+      blinker.override_direction = blinker.tap_direction
       self.debug_alca("ALCA blinker on detected")
 
       CS.UE.custom_alert_message(2,"Auto Lane Change Engaged!",100)
@@ -215,6 +206,7 @@ class ALCAController():
         CS.cstm_btns.set_button_status("alca",1)
         self.stop_ALCA(CS, False)
         return 0, False
+      blinker.override_frame_end = frame + 25
       if self.laneChange_enabled == 2:
         if self.laneChange_counter == 1:
           CS.UE.custom_alert_message(2,"Auto Lane Change Engaged! (1)",self.laneChange_wait * 100)
@@ -242,7 +234,7 @@ class ALCAController():
           return 0, False
 
     self.send_status(CS)
-    return turn_signal_needed, self.laneChange_enabled > 1
+    return self.laneChange_enabled > 1
 
 class ALCAModelParser():
   def __init__(self):
