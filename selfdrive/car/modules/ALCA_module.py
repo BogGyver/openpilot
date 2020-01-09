@@ -206,7 +206,6 @@ class ALCAController():
         CS.cstm_btns.set_button_status("alca",1)
         self.stop_ALCA(CS, False)
         return 0, False
-      blinker.override_frame_end = frame + 25
       if self.laneChange_enabled == 2:
         if self.laneChange_counter == 1:
           CS.UE.custom_alert_message(2,"Auto Lane Change Engaged! (1)",self.laneChange_wait * 100)
@@ -232,6 +231,8 @@ class ALCAController():
           self.laneChange_counter = 0
           self.stop_ALCA(CS, True)
           return 0, False
+      else:
+        blinker.override_frame_end = frame + 25
 
     self.send_status(CS)
     return self.laneChange_enabled > 1
