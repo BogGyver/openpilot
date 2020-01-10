@@ -249,7 +249,9 @@ class PCCController():
         self.enable_pedal_cruise = True
         self.reset(CS.v_ego)
         # Increase PCC speed to match current, if applicable.
-        self.pedal_speed_kph = max(CS.v_ego * CV.MS_TO_KPH, self.speed_limit_kph)
+        # We round the target speed in the user's units of measurement to avoid jumpy speed readings
+        current_speed_kph_uom_rounded = int(CS.v_ego * CV.MS_TO_KPH / speed_uom_kph + 0.5) * speed_uom_kph
+        self.pedal_speed_kph = max(current_speed_kph_uom_rounded, self.speed_limit_kph)
     # Handle pressing the cancel button.
     elif CS.cruise_buttons == CruiseButtons.CANCEL:
       self.enable_pedal_cruise = False
