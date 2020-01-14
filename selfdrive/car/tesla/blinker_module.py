@@ -1,6 +1,7 @@
 class Blinker:
 
   def __init__(self):
+    self.tap_duration_frames = 55 # stalk signal for less than 550ms means it was tapped
     self.tap_direction = 0 # tap direction lasts for one frame (when it was let go)
     self.blinker_on_frame_start = 0
     self.override_frame_end = 0
@@ -12,7 +13,7 @@ class Blinker:
       if self.override_frame_end == 0:
         self.blinker_on_frame_start = frame
     elif CS.turn_signal_stalk_state == 0 and CS.prev_turn_signal_stalk_state > 0:  # turn signal stalk just turned off
-      if frame - self.blinker_on_frame_start < 55: # stalk signal for less than 550ms means it was tapped
+      if frame - self.blinker_on_frame_start <= self.tap_duration_frames:
         self.tap_direction = CS.prev_turn_signal_stalk_state
         if CS.tapBlinkerExtension > 0 and self.override_frame_end == 0:
           blink_duration_frames = 58  # one blink takes ~580ms
