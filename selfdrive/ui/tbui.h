@@ -19,8 +19,10 @@ static void ui_draw_infobar(UIState *s) {
   time_t t = time(NULL);
   struct tm tm = *localtime(&t);
 
-  char spd[5];
-  snprintf(spd, sizeof(spd), "%.1f ", s->scene.v_ego * 3.6);
+  char uom_str[5];
+  snprintf(uom_str, sizeof(uom_str), s->is_metric ? "km/h" : "mph");
+  char spd[6];
+  snprintf(spd, sizeof(spd), "%.1f ", s->is_metric ? s->scene.v_ego * 3.6 : s->scene.v_ego * 2.2369363);
 
   char ang_steer[9];
   snprintf(ang_steer, sizeof(ang_steer), "%s%03.1f°", s->b.angleSteers < 0? "-" : "+", fabs(s->b.angleSteers));
@@ -32,18 +34,16 @@ static void ui_draw_infobar(UIState *s) {
     snprintf(lead_dist, sizeof(lead_dist), "%3s", "N/A");
   }
 
-  char maxspeed_str[12];
-  float maxspeed = s->scene.v_cruise;
-  bool is_cruise_set = (maxspeed > 5 && maxspeed != 255);
-
-  if (s->scene.engaged && is_cruise_set) {
+  char maxspeed_str[7];
+  if (s->scene.engaged && s->scene.v_cruise > 0) {
+    float maxspeed = s->scene.is_metric ? s->scene.v_cruise : s->scene.v_cruise / 1.609;
     snprintf(maxspeed_str, sizeof(maxspeed_str), "/%.1f", maxspeed);
   }
 
   snprintf(
     infobar,
     sizeof(infobar),
-    "%04d/%02d/%02d %02d:%02d:%02d | %s%s km/h | DST: %s | ANG: %s",
+    "%04d/%02d/%02d %02d:%02d:%02d | %s%s %s | DST: %s | ANG: %s",
     tm.tm_year + 1900,
     tm.tm_mon + 1,
     tm.tm_mday,
@@ -52,6 +52,7 @@ static void ui_draw_infobar(UIState *s) {
     tm.tm_sec,
     spd,
     maxspeed_str,
+    uom_str,
     lead_dist,
     ang_steer
   );
