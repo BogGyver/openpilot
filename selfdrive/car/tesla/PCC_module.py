@@ -310,7 +310,7 @@ class PCCController():
 
     return can_sends
     
-  def update_pdl(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset,alca_enabled):
+  def update_pdl(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_ms, set_speed_limit_active, speed_limit_offset,alca_enabled):
     idx = self.pedal_idx
 
     self.prev_speed_limit_kph = self.speed_limit_kph
@@ -331,12 +331,14 @@ class PCCController():
       #print ("Torque level at detection %s" % (CS.torqueLevel))
       #print ("Speed level at detection %s" % (CS.v_ego * CV.MS_TO_MPH))
 
-    if speed_limit_valid and set_speed_limit_active and (speed_limit_ms > 2.7):
-      self.speed_limit_kph = (speed_limit_ms +  speed_limit_offset) * CV.MS_TO_KPH
-      if not (int(self.prev_speed_limit_kph) == int(self.speed_limit_kph)):
+    if set_speed_limit_active and speed_limit_ms > 0:
+      self.speed_limit_kph = (speed_limit_ms + speed_limit_offset) * CV.MS_TO_KPH
+      if int(self.prev_speed_limit_kph) != int(self.speed_limit_kph):
         self.pedal_speed_kph = self.speed_limit_kph
         # reset MovingAverage for fleet speed when speed limit changes
         self.fleet_speed.reset_averager()
+    else: # reset internal speed limit, so double pull doesn't set higher speed than current (e.g. after leaving the highway)
+      self.speed_limit_kph = 0.
     self.pedal_idx = (self.pedal_idx + 1) % 16
 
     if not self.pcc_available or not enabled:

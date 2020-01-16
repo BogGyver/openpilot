@@ -105,9 +105,6 @@ class CarController():
     self.icCarLR = messaging.sub_sock('uiIcCarLR', conflate=True)
     self.alcaState = messaging.sub_sock('alcaState', conflate=True)
     self.gpsLocationExternal = None 
-    self.speedlimit_ms = 0.
-    self.speedlimit_valid = False
-    self.speedlimit_units = 0
     self.opState = 0 # 0-disabled, 1-enabled, 2-disabling, 3-unavailable, 5-warning
     self.accPitch = 0.
     self.accRoll = 0.
@@ -120,7 +117,7 @@ class CarController():
     self.gyroYaw = 0.
     self.set_speed_limit_active = False
     self.speed_limit_offset = 0.
-    self.speed_limit_for_cc = 0.
+    self.speed_limit_ms = 0.
 
     # for warnings
     self.warningCounter = 0
@@ -325,16 +322,14 @@ class CarController():
       if CS.hasTeslaIcIntegration:
         self.set_speed_limit_active = True
         self.speed_limit_offset = CS.userSpeedLimitOffsetKph
-        self.speed_limit_for_cc = CS.userSpeedLimitKph
-        #print self.speed_limit_for_cc
       else:
         self.set_speed_limit_active = (self.params.get("SpeedLimitOffset") is not None) and (self.params.get("LimitSetSpeed") == "1")
         if self.set_speed_limit_active:
           self.speed_limit_offset = float(self.params.get("SpeedLimitOffset"))
+          if not self.isMetric:
+            self.speed_limit_offset = self.speed_limit_offset * CV.MPH_TO_MS
         else:
           self.speed_limit_offset = 0.
-        if not self.isMetric:
-          self.speed_limit_offset = self.speed_limit_offset * CV.MPH_TO_MS
     if CS.useTeslaGPS and (frame % 10 == 0):
       if self.gpsLocationExternal is None:
         self.gpsLocationExternal = messaging.pub_sock('gpsLocationExternal')
@@ -417,21 +412,8 @@ class CarController():
     # DAS_acc_speed_limit (8),
     # DAS_speed_limit_units(8)
     #send fake_das data as 0x553
-    # TODO: forward collission warning
+    # TODO: forward collision warning
 
-    if CS.hasTeslaIcIntegration:
-        self.set_speed_limit_active = True
-        self.speed_limit_offset = CS.userSpeedLimitOffsetKph
-        # only change the speed limit when we have a valid vaue
-        if CS.userSpeedLimitKph >= 10:
-          self.speed_limit_for_cc = CS.userSpeedLimitKph
-
-    if CS.useTeslaMapData:    
-      self.speedlimit_ms = CS.speedLimitKph * CV.KPH_TO_MS
-      self.speedlimit_valid = True
-      if self.speedlimit_ms == 0:
-        self.speedlimit_valid = False
-      self.speedlimit_units = self.speedUnits(fromMetersPerSecond = self.speedlimit_ms)
     if frame % 10 == 0:
         speedlimitMsg = None
         if self.speedlimit is not None:
@@ -444,13 +426,11 @@ class CarController():
         trafficeventsMsgs = None
         if self.trafficevents is not None:
           trafficeventsMsgs = messaging.recv_sock(self.trafficevents)
+        if CS.hasTeslaIcIntegration:
+          self.speed_limit_ms = CS.speed_limit_ms
         if (speedlimitMsg is not None) and not CS.useTeslaMapData:
-          #get speed limit
           lmd = speedlimitMsg.liveMapData
-          self.speedlimit_ms = lmd.speedLimit
-          self.speedlimit_valid = lmd.speedLimitValid
-          self.speedlimit_units = self.speedUnits(fromMetersPerSecond = self.speedlimit_ms)
-          self.speed_limit_for_cc = self.speedlimit_ms * CV.MS_TO_KPH
+          self.speed_limit_ms = lmd.speedLimit if lmd.speedLimitValid else 0
         if icLeadsMsg is not None:
           self.icLeadsData = tesla.ICLeads.from_bytes(icLeadsMsg)
         if radarStateMsg is not None:
@@ -480,7 +460,6 @@ class CarController():
         forward_collision_warning = 1
     #cruise state: 0 unavailable, 1 available, 2 enabled, 3 hold
     cc_state = 1 
-    speed_limit_to_car = int(self.speedlimit_units)
     alca_state = 0x00 
     
     speed_override = 0
@@ -608,7 +587,7 @@ class CarController():
             self.blinker.override_direction,forward_collision_warning, adaptive_cruise,  hands_on_state, \
             cc_state, 1 if self.PCC.pcc_available else 0, alca_state, \
             CS.v_cruise_pcm,
-            CS.speedLimitToIc, #speed_limit_to_car,
+            CS.DAS_fusedSpeedLimit,
             apply_angle,
             1 if enable_steer_control else 0,
             park_brake_request))
@@ -632,7 +611,7 @@ class CarController():
         can_sends.append(teslacan.create_enabled_eth_msg(1))
     if (not self.PCC.pcc_available) and frame % 5 == 0: # acc processed at 20Hz
       cruise_btn = self.ACC.update_acc(enabled, CS, frame, actuators, pcm_speed, \
-                    self.speed_limit_for_cc, self.speedlimit_valid, \
+                    self.speed_limit_ms * CV.MS_TO_KPH,
                     self.set_speed_limit_active, self.speed_limit_offset)
       if cruise_btn:
           cruise_msg = teslacan.create_cruise_adjust_msg(
@@ -644,7 +623,7 @@ class CarController():
     apply_accel = 0.
     if self.PCC.pcc_available and frame % 5 == 0: # pedal processed at 20Hz
       apply_accel, accel_needed, accel_idx = self.PCC.update_pdl(enabled, CS, frame, actuators, pcm_speed, \
-                    self.speed_limit_for_cc * CV.KPH_TO_MS, self.speedlimit_valid, \
+                    self.speed_limit_ms,
                     self.set_speed_limit_active, self.speed_limit_offset * CV.KPH_TO_MS, self.alca_enabled)
       can_sends.append(teslacan.create_pedal_command_msg(apply_accel, int(accel_needed), accel_idx))
     self.last_angle = apply_angle
@@ -814,10 +793,6 @@ class CarController():
       if not ((self.roadSignType_last == self.roadSignType) and (self.roadSignType == 0xFF)):
           messages.append(teslacan.create_fake_DAS_sign_msg(self.roadSignType,self.roadSignStopDist,self.roadSignColor,self.roadSignControlActive))
     return messages
-
-  # Returns speed as it needs to be displayed on the IC
-  def speedUnits(self, fromMetersPerSecond):
-    return fromMetersPerSecond * (CV.MS_TO_KPH if self.isMetric else CV.MS_TO_MPH) + 0.5
 
   def _should_ldw(self, CS, frame):
     if not CS.enableLdw:
