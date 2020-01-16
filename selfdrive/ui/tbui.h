@@ -36,7 +36,7 @@ static void ui_draw_infobar(UIState *s) {
 
   char maxspeed_str[7];
   if (s->scene.engaged && s->scene.v_cruise > 0) {
-    float maxspeed = s->scene.is_metric ? s->scene.v_cruise : s->scene.v_cruise / 1.609;
+    float maxspeed = s->is_metric ? s->scene.v_cruise : s->scene.v_cruise / 1.609;
     snprintf(maxspeed_str, sizeof(maxspeed_str), "/%.1f", maxspeed);
   }
 
