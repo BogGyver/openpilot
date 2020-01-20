@@ -261,18 +261,16 @@ class PCCController():
     # Handle pressing up and down buttons.
     elif (self.enable_pedal_cruise 
           and CS.cruise_buttons != self.prev_cruise_buttons):
-      # Real stalk command while PCC is already enabled. Adjust the max PCC
-      # speed if necessary. 
-      actual_speed_kph = CS.v_ego * CV.MS_TO_KPH
+      # Real stalk command while PCC is already enabled. Adjust the max PCC speed if necessary.
+      # We round the target speed in the user's units of measurement to avoid jumpy speed readings
+      actual_speed_kph_uom_rounded = int(CS.v_ego * CV.MS_TO_KPH / speed_uom_kph + 0.5) * speed_uom_kph
       if CS.cruise_buttons == CruiseButtons.RES_ACCEL:
-        self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph) + speed_uom_kph
+        self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph_uom_rounded) + speed_uom_kph
       elif CS.cruise_buttons == CruiseButtons.RES_ACCEL_2ND:
-        self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph) + 5 * speed_uom_kph
+        self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph_uom_rounded) + 5 * speed_uom_kph
       elif CS.cruise_buttons == CruiseButtons.DECEL_SET:
-        #self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph) - speed_uom_kph
-        self.pedal_speed_kph =self.pedal_speed_kph - speed_uom_kph
+        self.pedal_speed_kph = self.pedal_speed_kph - speed_uom_kph
       elif CS.cruise_buttons == CruiseButtons.DECEL_2ND:
-        #self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph) - 5 * speed_uom_kph
         self.pedal_speed_kph = self.pedal_speed_kph - 5 * speed_uom_kph
       # Clip PCC speed between 0 and 170 KPH.
       self.pedal_speed_kph = clip(self.pedal_speed_kph, MIN_PCC_V_KPH, MAX_PCC_V_KPH)
