@@ -284,16 +284,15 @@ BO_ 643 BODY_R1: 8 GTW
  SG_ VTA_Alm_Actv : 13|1@0+ (1,0) [0|1] ""  NEO
  SG_ WprOutsdPkPosn : 29|1@0+ (1,0) [0|1] ""  NEO
 
-BO_ 760 MCU_gpsVehicleSpeed: 8 GTW
- SG_ MCU_gpsHDOP : 0|8@1+ (0.1,0) [0|25.5] "1" DAS
- SG_ MCU_gpsVehicleHeading : 8|16@1+ (0.0078125,0) [0|511.9921875] "deg" DAS
- SG_ MCU_gpsVehicleSpeed : 24|16@1+ (0.00390625,0) [0|250.996] "km/hr" DAS
- SG_ MCU_userSpeedOffset : 40|6@1+ (1,-30) [-30|33] "kph/mph" DAS
- SG_ MCU_mapSpeedLimitUnits : 46|1@1+ (1,0) [0|1] "" DAS
- SG_ MCU_userSpeedOffsetUnits : 47|1@1+ (1,0) [0|1] "" DAS
- SG_ MCU_mppSpeedLimit : 48|5@1+ (5,0) [0|155] "kph/mph" DAS
- SG_ MCU_gpsNmeaMIA : 53|1@1+ (1,0) [0|0] "" DAS
- SG_ MCU_gpsAntennaDisconnected : 54|1@1+ (1,0) [0|0] "" DAS
+BO_ 760 UI_gpsVehicleSpeed: 8 GTW
+ SG_ UI_gpsHDOP : 0|8@1+ (0.1,0) [0|25.5] "1" DAS
+ SG_ UI_gpsVehicleHeading : 8|16@1+ (0.0078125,0) [0|511.9921875] "deg" DAS
+ SG_ UI_gpsVehicleSpeed : 24|16@1+ (0.00390625,0) [0|250.996] "km/hr" Vector__XXX
+ SG_ UI_userSpeedOffset : 40|6@1+ (1,-30) [-30|33] "kph/mph" DAS
+ SG_ UI_mapSpeedLimitUnits : 46|1@1+ (1,0) [0|1] "" DAS
+ SG_ UI_userSpeedOffsetUnits : 47|1@1+ (1,0) [0|1] "" DAS
+ SG_ UI_mppSpeedLimit : 48|5@1+ (5,0) [0|155] "kph/mph" DAS
+ SG_ UI_gpsNmeaMIA : 53|1@1+ (1,0) [0|0] "" DAS
 
 BO_ 536 MCU_chassisControl: 8 GTW
  SG_ MCU_dasDebugEnable : 0|1@1+ (1,0) [0|0] "" NEO
@@ -665,8 +664,9 @@ VAL_ 309 ESP_absFaultLamp 0 "OFF" 1 "ON" ;
 VAL_ 309 ESP_espOffLamp 0 "OFF" 1 "ON" ;
 VAL_ 309 ESP_stabilityControlSts 2 "ENGAGED" 3 "FAULTED" 5 "INIT" 4 "NOT_CONFIGURED" 0 "OFF" 1 "ON" ;
 VAL_ 309 ESP_tcLampFlash 1 "FLASH" 0 "OFF" ;
-VAL_ 760 MCU_speedLimitUnits 1 "KPH" 0 "MPH" ;
-VAL_ 760 MCU_userSpeedOffsetUnits 1 "KPH" 0 "MPH" ;
+VAL_ 568 UI_mapSpeedLimit 31 "SNA" 30 "UNLIMITED" 29 "LESS_OR_EQ_160" 28 "LESS_OR_EQ_150" 27 "LESS_OR_EQ_140" 26 "LESS_OR_EQ_130" 25 "LESS_OR_EQ_120" 24 "LESS_OR_EQ_115" 23 "LESS_OR_EQ_110" 22 "LESS_OR_EQ_105" 21 "LESS_OR_EQ_100" 20 "LESS_OR_EQ_95" 19 "LESS_OR_EQ_90" 18 "LESS_OR_EQ_85" 17 "LESS_OR_EQ_80" 16 "LESS_OR_EQ_75" 15 "LESS_OR_EQ_70" 14 "LESS_OR_EQ_65" 13 "LESS_OR_EQ_60" 12 "LESS_OR_EQ_55" 11 "LESS_OR_EQ_50" 10 "LESS_OR_EQ_45" 9 "LESS_OR_EQ_40" 8 "LESS_OR_EQ_35" 7 "LESS_OR_EQ_30" 6 "LESS_OR_EQ_25" 5 "LESS_OR_EQ_20" 4 "LESS_OR_EQ_15" 3 "LESS_OR_EQ_10" 2 "LESS_OR_EQ_7" 1 "LESS_OR_EQ_5" 0 "UNKNOWN" ;
+VAL_ 760 UI_mapSpeedLimitUnits 1 "KPH" 0 "MPH" ;
+VAL_ 760 UI_userSpeedOffsetUnits 1 "KPH" 0 "MPH" ;
 VAL_ 643 AirTemp_Insd 255 "SNA" ;
 VAL_ 643 AirTemp_Outsd 254 "INIT" 255 "SNA" ;
 VAL_ 643 Bckl_Sw_RL_Stat_SAM_R 2 "FLT" 1 "NOT" 0 "OK" 3 "SNA" ;

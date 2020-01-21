@@ -261,18 +261,16 @@ class PCCController():
     # Handle pressing up and down buttons.
     elif (self.enable_pedal_cruise 
           and CS.cruise_buttons != self.prev_cruise_buttons):
-      # Real stalk command while PCC is already enabled. Adjust the max PCC
-      # speed if necessary. 
-      actual_speed_kph = CS.v_ego * CV.MS_TO_KPH
+      # Real stalk command while PCC is already enabled. Adjust the max PCC speed if necessary.
+      # We round the target speed in the user's units of measurement to avoid jumpy speed readings
+      actual_speed_kph_uom_rounded = int(CS.v_ego * CV.MS_TO_KPH / speed_uom_kph + 0.5) * speed_uom_kph
       if CS.cruise_buttons == CruiseButtons.RES_ACCEL:
-        self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph) + speed_uom_kph
+        self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph_uom_rounded) + speed_uom_kph
       elif CS.cruise_buttons == CruiseButtons.RES_ACCEL_2ND:
-        self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph) + 5 * speed_uom_kph
+        self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph_uom_rounded) + 5 * speed_uom_kph
       elif CS.cruise_buttons == CruiseButtons.DECEL_SET:
-        #self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph) - speed_uom_kph
-        self.pedal_speed_kph =self.pedal_speed_kph - speed_uom_kph
+        self.pedal_speed_kph = self.pedal_speed_kph - speed_uom_kph
       elif CS.cruise_buttons == CruiseButtons.DECEL_2ND:
-        #self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph) - 5 * speed_uom_kph
         self.pedal_speed_kph = self.pedal_speed_kph - 5 * speed_uom_kph
       # Clip PCC speed between 0 and 170 KPH.
       self.pedal_speed_kph = clip(self.pedal_speed_kph, MIN_PCC_V_KPH, MAX_PCC_V_KPH)
@@ -310,7 +308,7 @@ class PCCController():
 
     return can_sends
     
-  def update_pdl(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset,alca_enabled):
+  def update_pdl(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_ms, set_speed_limit_active, speed_limit_offset,alca_enabled):
     idx = self.pedal_idx
 
     self.prev_speed_limit_kph = self.speed_limit_kph
@@ -331,12 +329,14 @@ class PCCController():
       #print ("Torque level at detection %s" % (CS.torqueLevel))
       #print ("Speed level at detection %s" % (CS.v_ego * CV.MS_TO_MPH))
 
-    if speed_limit_valid and set_speed_limit_active and (speed_limit_ms > 2.7):
-      self.speed_limit_kph = (speed_limit_ms +  speed_limit_offset) * CV.MS_TO_KPH
-      if not (int(self.prev_speed_limit_kph) == int(self.speed_limit_kph)):
+    if set_speed_limit_active and speed_limit_ms > 0:
+      self.speed_limit_kph = (speed_limit_ms + speed_limit_offset) * CV.MS_TO_KPH
+      if int(self.prev_speed_limit_kph) != int(self.speed_limit_kph):
         self.pedal_speed_kph = self.speed_limit_kph
         # reset MovingAverage for fleet speed when speed limit changes
         self.fleet_speed.reset_averager()
+    else: # reset internal speed limit, so double pull doesn't set higher speed than current (e.g. after leaving the highway)
+      self.speed_limit_kph = 0.
     self.pedal_idx = (self.pedal_idx + 1) % 16
 
     if not self.pcc_available or not enabled:

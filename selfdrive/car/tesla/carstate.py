@@ -32,12 +32,12 @@ def parse_gear_shifter(can_gear_shifter, car_fingerprint):
 def get_can_signals(CP):
 # this function generates lists for signal, messages and initial values
   signals = [
-      ("MCU_gpsVehicleHeading", "MCU_gpsVehicleSpeed", 0),
-      ("MCU_gpsVehicleSpeed", "MCU_gpsVehicleSpeed", 0),
-      ("MCU_userSpeedOffset", "MCU_gpsVehicleSpeed", 0),
-      ("MCU_userSpeedOffsetUnits", "MCU_gpsVehicleSpeed", 0),
-      ("MCU_mppSpeedLimit", "MCU_gpsVehicleSpeed", 0),
-      ("MCU_mapSpeedLimitUnits", "MCU_gpsVehicleSpeed", 0),
+      ("UI_gpsVehicleHeading", "UI_gpsVehicleSpeed", 0),
+      ("UI_gpsVehicleSpeed", "UI_gpsVehicleSpeed", 0),
+      ("UI_userSpeedOffset", "UI_gpsVehicleSpeed", 0),
+      ("UI_userSpeedOffsetUnits", "UI_gpsVehicleSpeed", 0),
+      ("UI_mppSpeedLimit", "UI_gpsVehicleSpeed", 0),
+      ("UI_mapSpeedLimitUnits", "UI_gpsVehicleSpeed", 0),
       ("MCU_gpsAccuracy", "MCU_locationStatus", 0),
       ("MCU_latitude", "MCU_locationStatus", 0),
       ("MCU_longitude", "MCU_locationStatus", 0),
@@ -275,9 +275,6 @@ class CarState():
     self.roadCurvC2 = 0.
     self.roadCurvC3 = 0.
 
-    self.speedLimitUnits = 0
-    self.speedLimit = 0
-
     self.meanFleetSplineSpeedMPS = 0.
     self.UI_splineID = 0
     self.meanFleetSplineAccelMPS2 = 0.
@@ -299,8 +296,9 @@ class CarState():
     self.gpsHeading = 0.
     self.gpsVehicleSpeed = 0.
 
-    self.userSpeedLimitKph = 0.
+    self.speed_limit_ms = 0.
     self.userSpeedLimitOffsetKph = 0.
+    self.DAS_fusedSpeedLimit = 0
 
     self.brake_only = CP.enableCruise
     self.last_cruise_stalk_pull_time = 0
@@ -415,7 +413,6 @@ class CarState():
 
     self.angle_offset = 0.
     self.init_angle_offset = False
-    self.speedLimitToIc = 0
 
     #AHB params
     self.ahbHighBeamStalkPosition = 0
@@ -439,6 +436,16 @@ class CarState():
       btn.btn_label2 = self.btns_init[1][2][1]
     self.cstm_btns.update_ui_buttons(1, 1)
 
+  def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
+    if speed_limit_uom > 0:
+      if speed_limit_type == 0x1E: # Autobahn with no speed limit
+        return 0x1F # no speed limit sign
+      return int(speed_limit_uom / 5 + 0.5) # sign ID in 5 kph/mph increments (7 shows as 5)
+    else:
+      if speed_limit_type == 0x1F: # SNA (parking lot, no public road, etc.)
+        return 0 # no sign
+      return 1 # show 5 kph/mph for unknown limit where we should have one
+
   def compute_speed(self):
     # if one of them is zero, select max of the two
     if self.meanFleetSplineSpeedMPS == 0 or self.medianFleetSpeedMPS == 0:
@@ -450,7 +457,7 @@ class CarState():
     if self.splineLocConfidence > 60:
       self.mapBasedSuggestedSpeed = (self.splineLocConfidence * self.meanFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.bottomQrtlFleetSpeedMPS ) / 100.
     else:
-      self.mapBasedSuggestedSpeed = self.baseMapSpeedLimitMPS
+      self.mapBasedSuggestedSpeed = self.speed_limit_ms
     if self.rampType > 0:
       #we are on a ramp, use the spline info if available
       if self.splineBasedSuggestedSpeed > 0:
@@ -517,8 +524,8 @@ class CarState():
     self.gpsLatitude = cp.vl['MCU_locationStatus']["MCU_latitude"]
     self.gpsAccuracy = cp.vl['MCU_locationStatus']["MCU_gpsAccuracy"]
     self.gpsElevation = cp.vl['MCU_locationStatus2']["MCU_elevation"]
-    self.gpsHeading = cp.vl['MCU_gpsVehicleSpeed']["MCU_gpsVehicleHeading"]
-    self.gpsVehicleSpeed = cp.vl['MCU_gpsVehicleSpeed']["MCU_gpsVehicleSpeed"] * CV.KPH_TO_MS
+    self.gpsHeading = cp.vl['UI_gpsVehicleSpeed']["UI_gpsVehicleHeading"]
+    self.gpsVehicleSpeed = cp.vl['UI_gpsVehicleSpeed']["UI_gpsVehicleSpeed"] * CV.KPH_TO_MS
 
     if (self.hasTeslaIcIntegration):
       self.apEnabled = (cp.vl["MCU_chassisControl"]["MCU_latControlEnable"] == 1)
@@ -534,32 +541,18 @@ class CarState():
       self.ahbHiBeamOn = cp.vl["BODY_R1"]["HiBm_On"]
       self.ahbNightMode = cp.vl["BODY_R1"]["LgtSens_Night"]
 
-    usu = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffsetUnits"]
+    usu = cp.vl['UI_gpsVehicleSpeed']["UI_userSpeedOffsetUnits"]
     if usu == 1:
-      self.userSpeedLimitOffsetKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffset"]
+      self.userSpeedLimitOffsetKph = cp.vl['UI_gpsVehicleSpeed']["UI_userSpeedOffset"]
     else:
-      self.userSpeedLimitOffsetKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffset"] * CV.MPH_TO_KPH
-    msu = cp.vl['MCU_gpsVehicleSpeed']["MCU_mapSpeedLimitUnits"]
-    if msu == 1:
-      self.userSpeedLimitKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_mppSpeedLimit"]
-    else:
-      self.userSpeedLimitKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_mppSpeedLimit"] * CV.MPH_TO_KPH
-
-    speed_limit_tesla_lookup = [0,5,7,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,130,140,150,160,170,0]
-    self.speedLimitUnits = cp.vl["UI_driverAssistMapData"]["UI_mapSpeedUnits"]
-    self.speedLimitKph = speed_limit_tesla_lookup[int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])] * (1 + 0.609 * (1 - self.speedLimitUnits))
-    self.speedLimitToIc = int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])
-    #BB unsure yet but DBC tells us that the map data has 0x00 as unknown, 0x1E as UNLIMITED and 0x1F as SNA while
-    #the DAS_status has 0x00 as UNKNOWN/SNA and 0x1F as UNLIMITED. Needs testing on Autobahn
-    if self.speedLimitToIc == 0x1F: # SNA
-      self.speedLimitToIc = 0
-    elif self.speedLimitToIc == 0x1E: # no speed limit
-      self.speedLimitToIc = 0x1F
-    elif self.speedLimitToIc >= 2:
-      self.speedLimitToIc -= 1 #map data has 7 in second position
+      self.userSpeedLimitOffsetKph = cp.vl['UI_gpsVehicleSpeed']["UI_userSpeedOffset"] * CV.MPH_TO_KPH
+    msu = cp.vl['UI_gpsVehicleSpeed']["UI_mapSpeedLimitUnits"]
+    map_speed_uom_to_ms = CV.KPH_TO_MS if msu == 1 else CV.MPH_TO_MS
+    map_speed_ms_to_uom = CV.MS_TO_KPH if msu == 1 else CV.MS_TO_MPH
+    speed_limit_type = int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])
 
     rdSignMsg = cp.vl["UI_driverAssistRoadSign"]["UI_roadSign"]
-    if rdSignMsg == 4:
+    if rdSignMsg == 4: # ROAD_SIGN_SPEED_SPLINE
       self.meanFleetSplineSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_meanFleetSplineSpeedMPS"]
       self.meanFleetSplineAccelMPS2  = cp.vl["UI_driverAssistRoadSign"]["UI_meanFleetSplineAccelMPS2"]
       self.medianFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_medianFleetSpeedMPS"]
@@ -567,11 +560,19 @@ class CarState():
       self.UI_splineID = cp.vl["UI_driverAssistRoadSign"]["UI_splineID"]
       self.rampType = cp.vl["UI_driverAssistRoadSign"]["UI_rampType"]
 
-    if rdSignMsg == 3:
+    elif rdSignMsg == 3: # ROAD_SIGN_SPEED_LIMIT
       self.topQrtlFleetSplineSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_topQrtlFleetSpeedMPS"]
       self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
       self.baseMapSpeedLimitMPS = cp.vl["UI_driverAssistRoadSign"]["UI_baseMapSpeedLimitMPS"]
+      # we round the speed limit in the map's units of measurement to fix noisy data (there are no signs with a limit of 79.2 kph)
+      self.baseMapSpeedLimitMPS = int(self.baseMapSpeedLimitMPS * map_speed_ms_to_uom + 0.99) / map_speed_ms_to_uom
       self.bottomQrtlFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_bottomQrtlFleetSpeedMPS"]
+
+    if self.baseMapSpeedLimitMPS > 0 and (speed_limit_type != 0x1F or self.baseMapSpeedLimitMPS <= 5.56):
+      self.speed_limit_ms = self.baseMapSpeedLimitMPS # this one is earlier than the actual sign but can also be unreliable, so we ignore it on SNA at higher speeds
+    else:
+      self.speed_limit_ms = cp.vl['UI_gpsVehicleSpeed']["UI_mppSpeedLimit"] * map_speed_uom_to_ms
+    self.DAS_fusedSpeedLimit = self._convert_to_DAS_fusedSpeedLimit(self.speed_limit_ms * map_speed_ms_to_uom, speed_limit_type)
 
     self.compute_speed()
 
