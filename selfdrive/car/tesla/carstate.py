@@ -10,7 +10,7 @@ from selfdrive.car.tesla.readconfig import read_config_file
 import os
 import subprocess
 from common.params import read_db, write_db
- 
+
 def parse_gear_shifter(can_gear_shifter, car_fingerprint):
 
   # TODO: Use VAL from DBC to parse this field
@@ -32,12 +32,12 @@ def parse_gear_shifter(can_gear_shifter, car_fingerprint):
 def get_can_signals(CP):
 # this function generates lists for signal, messages and initial values
   signals = [
-      ("MCU_gpsVehicleHeading", "MCU_gpsVehicleSpeed", 0),
-      ("MCU_gpsVehicleSpeed", "MCU_gpsVehicleSpeed", 0),
-      ("MCU_userSpeedOffset", "MCU_gpsVehicleSpeed", 0),
-      ("MCU_userSpeedOffsetUnits", "MCU_gpsVehicleSpeed", 0),
-      ("MCU_mppSpeedLimit", "MCU_gpsVehicleSpeed", 0),
-      ("MCU_mapSpeedLimitUnits", "MCU_gpsVehicleSpeed", 0),
+      ("UI_gpsVehicleHeading", "UI_gpsVehicleSpeed", 0),
+      ("UI_gpsVehicleSpeed", "UI_gpsVehicleSpeed", 0),
+      ("UI_userSpeedOffset", "UI_gpsVehicleSpeed", 0),
+      ("UI_userSpeedOffsetUnits", "UI_gpsVehicleSpeed", 0),
+      ("UI_mppSpeedLimit", "UI_gpsVehicleSpeed", 0),
+      ("UI_mapSpeedLimitUnits", "UI_gpsVehicleSpeed", 0),
       ("MCU_gpsAccuracy", "MCU_locationStatus", 0),
       ("MCU_latitude", "MCU_locationStatus", 0),
       ("MCU_longitude", "MCU_locationStatus", 0),
@@ -47,7 +47,7 @@ def get_can_signals(CP):
       ("MCU_ldwEnable", "MCU_chassisControl", 0),
       ("MCU_aebEnable", "MCU_chassisControl", 0),
       ("MCU_pedalSafetyEnable", "MCU_chassisControl", 0),
-      #("StW_AnglHP", "STW_ANGLHP_STAT", 0),
+      ("MCU_ahlbEnable", "MCU_chassisControl", 0),
       ("DI_gear", "DI_torque2", 3),
       ("DI_brakePedal", "DI_torque2", 0),
       ("DI_vehicleSpeed", "DI_torque2", 0),
@@ -55,15 +55,16 @@ def get_can_signals(CP):
       ("DOOR_STATE_FR", "GTW_carState", 1),
       ("DOOR_STATE_RL", "GTW_carState", 1),
       ("DOOR_STATE_RR", "GTW_carState", 1),
-      #("DI_stateCounter", "DI_state", 0),
-      #("GTW_driverPresent", "GTW_status", 0),
+      ("BC_indicatorLStatus", "GTW_carState", 0),
+      ("BC_indicatorRStatus", "GTW_carState", 0),
       ("DI_cruiseSet", "DI_state", 0),
       ("DI_cruiseState", "DI_state", 0),
-      #("TSL_P_Psd_StW","SBW_RQ_SCCM" , 0),
-      #("DI_motorRPM", "DI_torque1", 0),
-      #("DI_pedalPos", "DI_torque1", 0),
+      ("LoBm_On_Rq","BODY_R1" , 0),
+      ("HiBm_On", "BODY_R1", 0),
+      ("LgtSens_Night", "BODY_R1", 0),
       ("DI_torqueMotor", "DI_torque1",0),
       ("DI_speedUnits", "DI_state", 0),
+      ("DI_analogSpeed", "DI_state", 0),
       # Steering wheel stalk signals (useful for managing cruise control)
       ("SpdCtrlLvr_Stat", "STW_ACTN_RQ", 0),
       ("VSL_Enbl_Rq", "STW_ACTN_RQ", 0),
@@ -129,30 +130,25 @@ def get_can_signals(CP):
       ("UI_medianFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
       ("UI_topQrtlFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
       ("UI_splineLocConfidence", "UI_driverAssistRoadSign", 0),
+      ("UI_splineID", "UI_driverAssistRoadSign", 0),
       ("UI_baseMapSpeedLimitMPS", "UI_driverAssistRoadSign", 0),
       ("UI_bottomQrtlFleetSpeedMPS", "UI_driverAssistRoadSign", 0),
       ("UI_rampType", "UI_driverAssistRoadSign", 0),
-
-      
+      ("UI_autoSummonEnable","UI_driverAssistControl",0),
   ]
 
   checks = [
-      #("STW_ANGLHP_STAT",  200), #JCT Actual message freq is 40 Hz (0.025 sec)
       ("STW_ACTN_RQ",  20), #JCT Actual message freq is 3.5 Hz (0.285 sec)
-      #("SBW_RQ_SCCM", 175), #JCT Actual message freq is 35 Hz (0.0286 sec)
       ("DI_torque1", 59), #JCT Actual message freq is 11.8 Hz (0.084 sec)
       ("DI_torque2", 18), #JCT Actual message freq is 3.7 Hz (0.275 sec)
-      #("MCU_gpsVehicleSpeed", 2), #JCT Actual message freq is 0.487 Hz (2.05 sec)
       ("GTW_carState", 20), #JCT Actual message freq is 3.3 Hz (0.3 sec)
-      #("GTW_status", 2), #JCT Actual message freq is 0.5 Hz (2 sec)
       ("DI_state", 7), #JCT Actual message freq is 1 Hz (1 sec)
-      #("MCU_locationStatus", 5), #JCT Actual message freq is 1.3 Hz (0.76 sec)
       ("GTW_carConfig", 7), #BB Actual message freq  is 1 Hz (1 sec)
   ]
 
   #checks = []
   return signals, checks
-  
+
 def get_epas_can_signals(CP):
 # this function generates lists for signal, messages and initial values
   signals = [
@@ -182,7 +178,7 @@ def get_pedal_can_signals(CP):
 
   checks = []
   return signals, checks
-  
+
 def get_can_parser(CP,mydbc):
   signals, checks = get_can_signals(CP)
   return CANParser(mydbc, signals, checks, 0)
@@ -207,11 +203,11 @@ class CarState():
                       ["",               "",                      [""]],
                       ["msg",                 "MSG",                      [""]],
                       ["sound",               "SND",                      [""]]]
-    
+
     ### START OF MAIN CONFIG OPTIONS ###
     ### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
     self.forcePedalOverCC = True
-    self.enableHSO = True 
+    self.enableHSO = True
     self.enableALCA = True
     self.enableDasEmulation = True
     self.enableRadarEmulation = True
@@ -240,7 +236,8 @@ class CarState():
     self.spinnerText = ""
     self.hsoNumbPeriod = 1.5
     self.ldwNumbPeriod = 1.5
-    self.hsoBlinkerExtender = 1.0
+    self.tapBlinkerExtension = 2
+    self.ahbOffDuration = 5
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
@@ -254,6 +251,8 @@ class CarState():
     # Tesla Model
     self.teslaModelDetected = 1
     self.teslaModel = read_db('/data/params','TeslaModel')
+    if self.teslaModel is not None:
+      self.teslaModel = self.teslaModel.decode()
     if self.teslaModel is None:
       self.teslaModel = "S"
       self.teslaModelDetected = 0
@@ -276,10 +275,8 @@ class CarState():
     self.roadCurvC2 = 0.
     self.roadCurvC3 = 0.
 
-    self.speedLimitUnits = 0
-    self.speedLimit = 0
-
     self.meanFleetSplineSpeedMPS = 0.
+    self.UI_splineID = 0
     self.meanFleetSplineAccelMPS2 = 0.
     self.medianFleetSpeedMPS = 0.
     self.topQrtlFleetSplineSpeedMPS = 0.
@@ -290,7 +287,7 @@ class CarState():
 
     self.mapBasedSuggestedSpeed = 0.
     self.splineBasedSuggestedSpeed = 0.
-    self.maxdrivespeed = 0.
+    self.map_suggested_speed = 0.
 
     self.gpsLongitude = 0.
     self.gpsLatitude = 0.
@@ -299,8 +296,9 @@ class CarState():
     self.gpsHeading = 0.
     self.gpsVehicleSpeed = 0.
 
-    self.userSpeedLimitKph = 0.
+    self.speed_limit_ms = 0.
     self.userSpeedLimitOffsetKph = 0.
+    self.DAS_fusedSpeedLimit = 0
 
     self.brake_only = CP.enableCruise
     self.last_cruise_stalk_pull_time = 0
@@ -308,20 +306,24 @@ class CarState():
 
     self.user_gas = 0.
     self.user_gas_pressed = False
-    self.pedal_interceptor_state = 0
+    self.pedal_interceptor_state = self.prev_pedal_interceptor_state = 0
     self.pedal_interceptor_value = 0.
     self.pedal_interceptor_value2 = 0.
-    self.pedal_interceptor_missed_counter = 0
+    self.pedal_idx = self.prev_pedal_idx = 0
     self.brake_switch_prev = 0
     self.brake_switch_ts = 0
 
     self.cruise_buttons = 0
-    self.blinker_on = 0
 
-    self.left_blinker_on = 0
-    self.right_blinker_on = 0
+    self.turn_signal_state_left = 0 # 0 = off, 1 = on (blinking), 2 = failed, 3 = default
+    self.turn_signal_state_right = 0 # 0 = off, 1 = on (blinking), 2 = failed, 3 = default
+    self.prev_turn_signal_blinking = False
+    self.turn_signal_blinking = False
+    self.prev_turn_signal_stalk_state = 0
+    self.turn_signal_stalk_state = 0 # 0 = off, 1 = indicate left (stalk down), 2 = indicate right (stalk up)
+
     self.steer_warning = 0
-    
+
     self.stopped = 0
 
     # variables used for the fake DAS creation
@@ -354,13 +356,12 @@ class CarState():
     self.DAS_doorOpen = 0
     self.DAS_notInDrive = 0
 
+    self.summonButton = 0
+
 
 
     #BB variables for pedal CC
     self.pedal_speed_kph = 0.
-    # Pedal mode is ready, i.e. hardware is present and normal cruise is off.
-    self.pedal_interceptor_available = False
-    self.prev_pedal_interceptor_available = False
 
     #BB UIEvents
     self.UE = UIEvents(self)
@@ -377,15 +378,15 @@ class CarState():
 
     #BB steering_wheel_stalk last position, used by ACC and ALCA
     self.steering_wheel_stalk = None
-    
+
     #BB carConfig data used to change IC info
     self.real_carConfig = None
     self.real_dasHw = 0
 
     #BB visiond last type
     self.last_visiond = self.cstm_btns.btns[3].btn_label2
-    
-     
+
+
     # vEgo kalman filter
     dt = 0.01
     # Q = np.matrix([[10.0, 0.0], [0.0, 100.0]])
@@ -412,20 +413,38 @@ class CarState():
 
     self.angle_offset = 0.
     self.init_angle_offset = False
-    self.speedLimitToIc = 0
+
+    #AHB params
+    self.ahbHighBeamStalkPosition = 0
+    self.ahbEnabled = 0
+    self.ahbLoBeamOn = 0
+    self.ahbHiBeamOn = 0
+    self.ahbNightMode = 0
    
-  def config_ui_buttons(self, pedalPresent):
-    if pedalPresent:
+  def config_ui_buttons(self, pcc_available, pcc_blocked_by_acc_mode):
+    if pcc_available:
       self.btns_init[1] = [PCCModes.BUTTON_NAME, PCCModes.BUTTON_ABREVIATION, PCCModes.labels()]
     else:
-      # we don't have pedal interceptor
       self.btns_init[1] = [ACCMode.BUTTON_NAME, ACCMode.BUTTON_ABREVIATION, ACCMode.labels()]
     btn = self.cstm_btns.btns[1]
     btn.btn_name = self.btns_init[1][0]
     btn.btn_label = self.btns_init[1][1]
     btn.btn_label2 = self.btns_init[1][2][0]
     btn.btn_status = 1
-    self.cstm_btns.update_ui_buttons(1, 1)    
+
+    if (not pcc_available) and pcc_blocked_by_acc_mode:
+      btn.btn_label2 = self.btns_init[1][2][1]
+    self.cstm_btns.update_ui_buttons(1, 1)
+
+  def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
+    if speed_limit_uom > 0:
+      if speed_limit_type == 0x1E: # Autobahn with no speed limit
+        return 0x1F # no speed limit sign
+      return int(speed_limit_uom / 5 + 0.5) # sign ID in 5 kph/mph increments (7 shows as 5)
+    else:
+      if speed_limit_type == 0x1F: # SNA (parking lot, no public road, etc.)
+        return 0 # no sign
+      return 1 # show 5 kph/mph for unknown limit where we should have one
 
   def compute_speed(self):
     # if one of them is zero, select max of the two
@@ -438,16 +457,16 @@ class CarState():
     if self.splineLocConfidence > 60:
       self.mapBasedSuggestedSpeed = (self.splineLocConfidence * self.meanFleetSplineSpeedMPS + (100-self.splineLocConfidence) * self.bottomQrtlFleetSpeedMPS ) / 100.
     else:
-      self.mapBasedSuggestedSpeed = self.baseMapSpeedLimitMPS
+      self.mapBasedSuggestedSpeed = self.speed_limit_ms
     if self.rampType > 0:
       #we are on a ramp, use the spline info if available
       if self.splineBasedSuggestedSpeed > 0:
-        self.maxdrivespeed = self.splineBasedSuggestedSpeed
+        self.map_suggested_speed = self.splineBasedSuggestedSpeed
       else:
-        self.maxdrivespeed = self.mapBasedSuggestedSpeed
+        self.map_suggested_speed = self.mapBasedSuggestedSpeed
     else:
       #we are on a normal road, use max of the two
-      self.maxdrivespeed = max(self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed)
+      self.map_suggested_speed = max(self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed)
 
   def update_ui_buttons(self,btn_id,btn_status):
     # we only focus on btn_id=3, which is for visiond
@@ -460,20 +479,10 @@ class CarState():
 
   def update(self, cp, epas_cp, pedal_cp):
 
-    # car params
-    v_weight_v = [0., 1.]  # don't trust smooth speed at low values to avoid premature zero snapping
-    v_weight_bp = [1., 6.]   # smooth blending, below ~0.6m/s the smooth speed snaps to zero
-
-    # update prevs, update must run once per loop
-    self.prev_cruise_buttons = self.cruise_buttons
-    self.prev_blinker_on = self.blinker_on
-
-    self.prev_left_blinker_on = self.left_blinker_on
-    self.prev_right_blinker_on = self.right_blinker_on
-
     self.steering_wheel_stalk = cp.vl["STW_ACTN_RQ"]
     self.real_carConfig = cp.vl["GTW_carConfig"]
     self.real_dasHw = cp.vl["GTW_carConfig"]['GTW_dasHw']
+    self.prev_cruise_buttons = self.cruise_buttons
     self.cruise_buttons = cp.vl["STW_ACTN_RQ"]['SpdCtrlLvr_Stat']
 
 
@@ -515,55 +524,56 @@ class CarState():
     self.gpsLatitude = cp.vl['MCU_locationStatus']["MCU_latitude"]
     self.gpsAccuracy = cp.vl['MCU_locationStatus']["MCU_gpsAccuracy"]
     self.gpsElevation = cp.vl['MCU_locationStatus2']["MCU_elevation"]
-    self.gpsHeading = cp.vl['MCU_gpsVehicleSpeed']["MCU_gpsVehicleHeading"]
-    self.gpsVehicleSpeed = cp.vl['MCU_gpsVehicleSpeed']["MCU_gpsVehicleSpeed"] * CV.KPH_TO_MS
+    self.gpsHeading = cp.vl['UI_gpsVehicleSpeed']["UI_gpsVehicleHeading"]
+    self.gpsVehicleSpeed = cp.vl['UI_gpsVehicleSpeed']["UI_gpsVehicleSpeed"] * CV.KPH_TO_MS
 
     if (self.hasTeslaIcIntegration):
       self.apEnabled = (cp.vl["MCU_chassisControl"]["MCU_latControlEnable"] == 1)
+      self.summonButton = int(cp.vl["UI_driverAssistControl"]["UI_autoSummonEnable"])
       self.apFollowTimeInS =  1 + cp.vl["MCU_chassisControl"]["MCU_fcwSensitivity"] * 0.5
       self.keepEonOff = cp.vl["MCU_chassisControl"]["MCU_ldwEnable"] == 1
       self.alcaEnabled = cp.vl["MCU_chassisControl"]["MCU_pedalSafetyEnable"] == 1
-      self.mapAwareSpeed = cp.vl["MCU_chassisControl"]["MCU_aebEnable"] == 1
+      self.mapAwareSpeed = cp.vl["MCU_chassisControl"]["MCU_aebEnable"] == 1 and self.useTeslaMapData
+      #AHB info
+      self.ahbHighBeamStalkPosition = cp.vl["STW_ACTN_RQ"]["HiBmLvr_Stat"]
+      self.ahbEnabled = cp.vl["MCU_chassisControl"]["MCU_ahlbEnable"]
+      self.ahbLoBeamOn = cp.vl["BODY_R1"]["LoBm_On_Rq"]
+      self.ahbHiBeamOn = cp.vl["BODY_R1"]["HiBm_On"]
+      self.ahbNightMode = cp.vl["BODY_R1"]["LgtSens_Night"]
 
-    usu = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffsetUnits"]
+    usu = cp.vl['UI_gpsVehicleSpeed']["UI_userSpeedOffsetUnits"]
     if usu == 1:
-      self.userSpeedLimitOffsetKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffset"]
+      self.userSpeedLimitOffsetKph = cp.vl['UI_gpsVehicleSpeed']["UI_userSpeedOffset"]
     else:
-      self.userSpeedLimitOffsetKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_userSpeedOffset"] * CV.MPH_TO_KPH
-    msu = cp.vl['MCU_gpsVehicleSpeed']["MCU_mapSpeedLimitUnits"]
-    if msu == 1:
-      self.userSpeedLimitKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_mppSpeedLimit"]
-    else:
-      self.userSpeedLimitKph = cp.vl['MCU_gpsVehicleSpeed']["MCU_mppSpeedLimit"] * CV.MPH_TO_KPH
-
-    speed_limit_tesla_lookup = [0,5,7,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,130,140,150,160,170,0] 
-    self.speedLimitUnits = cp.vl["UI_driverAssistMapData"]["UI_mapSpeedUnits"]
-    self.speedLimitKph = speed_limit_tesla_lookup[int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])] * (1 + 0.609 * (1 - self.speedLimitUnits))
-    self.speedLimitToIc = int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])
-    #BB unsure yet but DBC tells us that the map data has 0x00 as unknown, 0x1E as UNLIMITED and 0x1F as SNA while
-    #the DAS_status has 0x00 as UNKNOWN/SNA and 0x1F as UNLIMITED. Needs testing on Autobahn
-    if self.speedLimitToIc >= 2:
-        self.speedLimitToIc -= 1 #map data has 7 in second position
-    if self.speedLimitToIc == 0x1E:
-      self.speedLimitToIc = 0
-    elif self.speedLimitToIc == 0x1D: #no speed limit
-      self.speedLimitToIc = 0x1F
-      self.speedLimitKph = 170.
+      self.userSpeedLimitOffsetKph = cp.vl['UI_gpsVehicleSpeed']["UI_userSpeedOffset"] * CV.MPH_TO_KPH
+    msu = cp.vl['UI_gpsVehicleSpeed']["UI_mapSpeedLimitUnits"]
+    map_speed_uom_to_ms = CV.KPH_TO_MS if msu == 1 else CV.MPH_TO_MS
+    map_speed_ms_to_uom = CV.MS_TO_KPH if msu == 1 else CV.MS_TO_MPH
+    speed_limit_type = int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])
 
     rdSignMsg = cp.vl["UI_driverAssistRoadSign"]["UI_roadSign"]
-    if rdSignMsg == 4:
+    if rdSignMsg == 4: # ROAD_SIGN_SPEED_SPLINE
       self.meanFleetSplineSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_meanFleetSplineSpeedMPS"]
       self.meanFleetSplineAccelMPS2  = cp.vl["UI_driverAssistRoadSign"]["UI_meanFleetSplineAccelMPS2"]
       self.medianFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_medianFleetSpeedMPS"]
       self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
+      self.UI_splineID = cp.vl["UI_driverAssistRoadSign"]["UI_splineID"]
       self.rampType = cp.vl["UI_driverAssistRoadSign"]["UI_rampType"]
-      
-    if rdSignMsg == 3:
+
+    elif rdSignMsg == 3: # ROAD_SIGN_SPEED_LIMIT
       self.topQrtlFleetSplineSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_topQrtlFleetSpeedMPS"]
       self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
       self.baseMapSpeedLimitMPS = cp.vl["UI_driverAssistRoadSign"]["UI_baseMapSpeedLimitMPS"]
+      # we round the speed limit in the map's units of measurement to fix noisy data (there are no signs with a limit of 79.2 kph)
+      self.baseMapSpeedLimitMPS = int(self.baseMapSpeedLimitMPS * map_speed_ms_to_uom + 0.99) / map_speed_ms_to_uom
       self.bottomQrtlFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_bottomQrtlFleetSpeedMPS"]
-    
+
+    if self.baseMapSpeedLimitMPS > 0 and (speed_limit_type != 0x1F or self.baseMapSpeedLimitMPS <= 5.56):
+      self.speed_limit_ms = self.baseMapSpeedLimitMPS # this one is earlier than the actual sign but can also be unreliable, so we ignore it on SNA at higher speeds
+    else:
+      self.speed_limit_ms = cp.vl['UI_gpsVehicleSpeed']["UI_mppSpeedLimit"] * map_speed_uom_to_ms
+    self.DAS_fusedSpeedLimit = self._convert_to_DAS_fusedSpeedLimit(self.speed_limit_ms * map_speed_ms_to_uom, speed_limit_type)
+
     self.compute_speed()
 
     # 2 = temporary 3= TBD 4 = temporary, hit a bump 5 (permanent) 6 = temporary 7 (permanent)
@@ -582,49 +592,47 @@ class CarState():
     self.v_wheel_rr = 0 #JCT
     self.v_wheel = 0 #JCT
     self.v_weight = 0 #JCT
-    speed = (cp.vl["DI_torque2"]['DI_vehicleSpeed']) * CV.MPH_TO_KPH/3.6 #JCT MPH_TO_MS. Tesla is in MPH, v_ego is expected in M/S
-    speed = speed * 1.01 # To match car's displayed speed
+    self.imperial_speed_units = cp.vl["DI_state"]['DI_speedUnits'] == 0
+    speed_ms = cp.vl["DI_state"]['DI_analogSpeed'] * (CV.MPH_TO_MS if self.imperial_speed_units else CV.KPH_TO_MS) # car's displayed speed in m/s
 
-    if abs(speed - self.v_ego) > 2.0:  # Prevent large accelerations when car starts at non zero speed
-      self.v_ego_kf.x = [[speed], [0.0]]
+    if abs(speed_ms - self.v_ego) > 2.0:  # Prevent large accelerations when car starts at non zero speed
+      self.v_ego_kf.x = [[speed_ms], [0.0]]
 
-    self.v_ego_raw = speed
-    v_ego_x = self.v_ego_kf.update(speed)
+    self.v_ego_raw = speed_ms
+    v_ego_x = self.v_ego_kf.update(speed_ms)
     self.v_ego = float(v_ego_x[0])
     self.a_ego = float(v_ego_x[1])
 
 
     #BB use this set for pedal work as the user_gas_xx is used in other places
+    self.prev_pedal_interceptor_state = self.pedal_interceptor_state
     self.pedal_interceptor_state = pedal_cp.vl["GAS_SENSOR"]['STATE']
     self.pedal_interceptor_value = pedal_cp.vl["GAS_SENSOR"]['INTERCEPTOR_GAS']
     self.pedal_interceptor_value2 = pedal_cp.vl["GAS_SENSOR"]['INTERCEPTOR_GAS2']
+    self.prev_pedal_idx = self.pedal_idx
+    self.pedal_idx = pedal_cp.vl["GAS_SENSOR"]['IDX']
 
     can_gear_shifter = cp.vl["DI_torque2"]['DI_gear']
-    self.gear = 0 # JCT
 
     # self.angle_steers  = -(cp.vl["STW_ANGLHP_STAT"]['StW_AnglHP']) #JCT polarity reversed from Honda/Acura
     self.angle_steers = -(epas_cp.vl["EPAS_sysStatus"]['EPAS_internalSAS'])  #BB see if this works better than STW_ANGLHP_STAT for angle
-    
+
     self.angle_steers_rate = 0 #JCT
 
-    self.blinker_on = (cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'] == 1) or (cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'] == 2)
-    self.left_blinker_on = cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'] == 1
-    self.right_blinker_on = cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'] == 2
+    self.turn_signal_state_left = cp.vl["GTW_carState"]['BC_indicatorLStatus']
+    self.turn_signal_state_right = cp.vl["GTW_carState"]['BC_indicatorRStatus']
+    self.prev_turn_signal_blinking = self.turn_signal_blinking
+    self.turn_signal_blinking = self.turn_signal_state_left == 1 or self.turn_signal_state_right == 1
+    self.prev_turn_signal_stalk_state = self.turn_signal_stalk_state
+    self.turn_signal_stalk_state = 0 if cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'] == 3 else int(cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'])
 
-    #if self.CP.carFingerprint in (CAR.CIVIC, CAR.ODYSSEY):
-    #  self.park_brake = cp.vl["EPB_STATUS"]['EPB_STATE'] != 0
-    #  self.brake_hold = cp.vl["VSA_STATUS"]['BRAKE_HOLD_ACTIVE']
-    #  self.main_on = cp.vl["SCM_FEEDBACK"]['MAIN_ON']
-    #else:
     self.park_brake = 0  # TODO
     self.brake_hold = 0  # TODO
 
     self.main_on = 1 #cp.vl["SCM_BUTTONS"]['MAIN_ON']
-    self.imperial_speed_units = cp.vl["DI_state"]['DI_speedUnits'] == 0
     self.DI_cruiseSet = cp.vl["DI_state"]['DI_cruiseSet']
     if self.imperial_speed_units:
       self.DI_cruiseSet = self.DI_cruiseSet * CV.MPH_TO_KPH
-    self.cruise_speed_offset = 0.
     self.gear_shifter = parse_gear_shifter(can_gear_shifter, self.CP.carFingerprint)
 
     self.pedal_gas = 0. # cp.vl["DI_torque1"]['DI_pedalPos'] / 102 #BB: to make it between 0..1
@@ -643,28 +651,10 @@ class CarState():
     self.standstill = cp.vl["DI_torque2"]['DI_vehicleSpeed'] == 0
     self.torqueMotor = cp.vl["DI_torque1"]['DI_torqueMotor']
     self.pcm_acc_status = cp.vl["DI_state"]['DI_cruiseState']
-    
+
     self.regenLight = cp.vl["DI_state"]['DI_regenLight'] == 1
-    
-    self.prev_pedal_interceptor_available = self.pedal_interceptor_available
-    pedal_has_value = bool(self.pedal_interceptor_value) or bool(self.pedal_interceptor_value2)
-    pedal_interceptor_present = self.pedal_interceptor_state in [0, 5] and pedal_has_value
-    # Add loggic if we just miss some CAN messages so we don't immediately disable pedal
-    if pedal_has_value:
-      self.pedal_interceptor_missed_counter = 0
-    if pedal_interceptor_present:
-      self.pedal_interceptor_missed_counter = 0
-    else:
-      self.pedal_interceptor_missed_counter += 1
-    pedal_interceptor_present = pedal_interceptor_present and (self.pedal_interceptor_missed_counter < 10)
-    # Mark pedal unavailable while traditional cruise is on.
-    self.pedal_interceptor_available = pedal_interceptor_present and (self.forcePedalOverCC or not bool(self.pcm_acc_status))
-    if self.pedal_interceptor_available != self.prev_pedal_interceptor_available:
-        self.config_ui_buttons(self.pedal_interceptor_available)
 
     self.v_cruise_actual = self.DI_cruiseSet
-    self.hud_lead = 0 #JCT
-    self.cruise_speed_offset = 0.
 
 
 # carstate standalone tester

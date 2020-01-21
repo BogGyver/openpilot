@@ -1,19 +1,17 @@
 #!/usr/bin/env python
 from selfdrive.car.tesla import teslacan
+from selfdrive.car.tesla.speed_utils.fleet_speed import FleetSpeed
 from selfdrive.controls.lib.longcontrol import LongControl, LongCtrlState
 from common.numpy_fast import clip, interp
-from selfdrive.services import service_list
 from selfdrive.car.tesla.values import CruiseState, CruiseButtons
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.speed_smoother import speed_smoother
 from selfdrive.controls.lib.planner import calc_cruise_accel_limits
-from common.realtime import sec_since_boot
 import selfdrive.messaging as messaging
 import time
 import math
 from collections import OrderedDict
 from common.params import Params
-from selfdrive.car.tesla.movingaverage import MovingAverage
 import json
 
 _DT = 0.05    # 10Hz in our case, since we don't want to process more than once the same radarState message
@@ -112,10 +110,9 @@ def max_v_in_mapped_curve_ms(map_data, pedal_set_speed_kph):
 
 
 class PCCState():
-  # Possible state of the ACC system, following the DI_cruiseState naming
-  # scheme.
-  OFF = 0         # Disabled by UI.
-  STANDBY = 1     # Ready to be enaged.
+  # Possible state of the PCC system, following the DI_cruiseState naming scheme.
+  OFF = 0         # Disabled by UI (effectively never happens since button switches over to ACC mode).
+  STANDBY = 1     # Ready to be engaged.
   ENABLED = 2     # Engaged.
   NOT_READY = 9   # Not ready to be engaged due to the state of the car.
 
@@ -129,8 +126,9 @@ class PCCController():
   def __init__(self,carcontroller):
     self.CC = carcontroller
     self.human_cruise_action_time = 0
-    self.pedal_state = False
-    self.prev_pedal_state = False
+    self.pcc_available = self.prev_pcc_available = False
+    self.pedal_timeout_frame = 0
+    self.accelerator_pedal_pressed = self.prev_accelerator_pedal_pressed = False
     self.automated_cruise_action_time = 0
     self.last_angle = 0.
     self.radarState = messaging.sub_sock('radarState', conflate=True)
@@ -149,7 +147,6 @@ class PCCController():
     self.pedal_steady = 0.
     self.prev_tesla_accel = 0.
     self.prev_tesla_pedal = 0.
-    self.pedal_interceptor_state = 0
     self.torqueLevel_last = 0.
     self.prev_v_ego = 0.
     self.PedalForZeroTorque = 18. #starting number, works on my S85
@@ -157,11 +154,10 @@ class PCCController():
     self.v_pid = 0.
     self.a_pid = 0.
     self.last_output_gb = 0.
-    self.last_speed_kph = 0.
+    self.last_speed_kph = None
     #for smoothing the changes in speed
     self.v_acc_start = 0.0
     self.a_acc_start = 0.0
-    self.acc_start_time = sec_since_boot()
     self.v_acc = 0.0
     self.v_acc_sol = 0.0
     self.v_acc_future = 0.0
@@ -169,15 +165,14 @@ class PCCController():
     self.a_acc_sol = 0.0
     self.v_cruise = 0.0
     self.a_cruise = 0.0
-    self.had_lead = False
     #Long Control
     self.LoC = None
     #when was radar data last updated?
     self.lead_last_seen_time_ms = 0
     self.continuous_lead_sightings = 0
     self.params = Params()
-    self.average_speed_over_x_suggestions = 3 #10x a second
-    self.maxsuggestedspeed_avg = MovingAverage(self.average_speed_over_x_suggestions)
+    average_speed_over_x_suggestions = 6 # 0.3 seconds (20x a second)
+    self.fleet_speed = FleetSpeed(average_speed_over_x_suggestions)
     
   def load_pid(self):
     try:
@@ -190,7 +185,7 @@ class PCCController():
           self.LoC.pid.f = data['f']
       else:
         print("self.LoC not initialized!")
-    except IOError:
+    except :
       print("file not present, creating at next reset")
 
     #Helper function for saving the PCC pid constants across drives
@@ -205,71 +200,38 @@ class PCCController():
     except IOError:
       print("PDD pid parameters could not be saved to file")
 
-  def max_v_by_speed_limit(self,pedal_set_speed_ms ,speed_limit_ms, CS):
-    # if more than 10 kph / 2.78 ms, consider we have speed limit
-    # if the difference is more than 20 MPH, ignore the speed limit as it is probably wrong (an overpass' speed instead of the current road)
-    if (CS.maxdrivespeed > 0) and CS.useTeslaMapData and (CS.mapAwareSpeed or (CS.baseMapSpeedLimitMPS <2.7)):
-      #do we know the based speed limit?
-      sl1 = 0.
-      if CS.baseMapSpeedLimitMPS >= 2.7:
-        #computer adjusted maxdrive based on set speed
-        sl1 = min (speed_limit_ms *  CS.maxdrivespeed / CS.baseMapSpeedLimitMPS, speed_limit_ms)
-        sl1 = self.maxsuggestedspeed_avg.add(sl1)
-      else:
-        sl1 = self.maxsuggestedspeed_avg.add(CS.maxdrivespeed)
-      return min(pedal_set_speed_ms, sl1)
-    else:
-      return pedal_set_speed_ms
-
   def reset(self, v_pid):
-    #save the pid parameters to params file
-    self.save_pid(self.LoC.pid)
-    
     if self.LoC and RESET_PID_ON_DISENGAGE:
       self.LoC.reset(v_pid)
 
-  def update_stat(self, CS, enabled):
+  def update_stat(self, CS, frame):
     if not self.LoC:
       self.LoC = LongControl(CS.CP, tesla_compute_gb)
       # Get v_id from the stored file when initiating the LoC and reset_on_disengage==false
       if (not RESET_PID_ON_DISENGAGE): 
         self.load_pid()
 
+    self._update_pedal_state(CS, frame)
 
     can_sends = []
-    if CS.pedal_interceptor_available and not CS.cstm_btns.get_button_status("pedal"):
-      # pedal hardware, enable button
-      CS.cstm_btns.set_button_status("pedal", 1)
-      print ("enabling pedal")
-    elif not CS.pedal_interceptor_available:
-      if CS.cstm_btns.get_button_status("pedal"):
-        # no pedal hardware, disable button
-        CS.cstm_btns.set_button_status("pedal", 0)
-        print ("disabling pedal")
-      print ("Pedal unavailable.")
+    if not self.pcc_available:
+      timed_out = frame >= self.pedal_timeout_frame
+      if timed_out or CS.pedal_interceptor_state > 0:
+        if self.prev_pcc_available:
+          CS.UE.custom_alert_message(4, "Pedal Interceptor %s" % ("timed out" if timed_out else "fault (state %s)" % CS.pedal_interceptor_state), 200, 4)
+        if frame % 50 == 0:
+          # send reset command
+          idx = self.pedal_idx
+          self.pedal_idx = (self.pedal_idx + 1) % 16
+          can_sends.append(teslacan.create_pedal_command_msg(0, 0, idx))
       return can_sends
-    
-    # check if we had error before
-    if self.pedal_interceptor_state != CS.pedal_interceptor_state:
-      self.pedal_interceptor_state = CS.pedal_interceptor_state
-      CS.cstm_btns.set_button_status("pedal", 1 if self.pedal_interceptor_state > 0 else 0)
-      if self.pedal_interceptor_state > 0:
-        # send reset command
-        idx = self.pedal_idx
-        self.pedal_idx = (self.pedal_idx + 1) % 16
-        can_sends.append(teslacan.create_pedal_command_msg(0, 0, idx))
-        CS.UE.custom_alert_message(3, "Pedal Interceptor Off (state %s)" % self.pedal_interceptor_state, 150, 3)
-      else:
-        CS.UE.custom_alert_message(3, "Pedal Interceptor On", 150, 3)
+
+    prev_enable_pedal_cruise = self.enable_pedal_cruise
     # disable on brake
     if CS.brake_pressed and self.enable_pedal_cruise:
       self.enable_pedal_cruise = False
       self.reset(0.)
-      CS.UE.custom_alert_message(3, "PCC Disabled", 150, 4)
-      CS.cstm_btns.set_button_status("pedal", 1)
-      print ("brake pressed")
 
-    prev_enable_pedal_cruise = self.enable_pedal_cruise
     # process any stalk movement
     curr_time_ms = _current_time_millis()
     speed_uom_kph = 1.
@@ -280,15 +242,16 @@ class PCCController():
       self.prev_stalk_pull_time_ms = self.stalk_pull_time_ms
       self.stalk_pull_time_ms = curr_time_ms
       double_pull = self.stalk_pull_time_ms - self.prev_stalk_pull_time_ms < STALK_DOUBLE_PULL_MS
-      ready = (CS.cstm_btns.get_button_status("pedal") > PCCState.OFF
-               and enabled
+      ready = (CS.cstm_btns.get_button_status(PCCModes.BUTTON_NAME) > PCCState.OFF
                and (CruiseState.is_off(CS.pcm_acc_status)) or CS.forcePedalOverCC)
       if ready and double_pull:
         # A double pull enables ACC. updating the max ACC speed if necessary.
         self.enable_pedal_cruise = True
         self.reset(CS.v_ego)
         # Increase PCC speed to match current, if applicable.
-        self.pedal_speed_kph = max(CS.v_ego * CV.MS_TO_KPH, self.speed_limit_kph)
+        # We round the target speed in the user's units of measurement to avoid jumpy speed readings
+        current_speed_kph_uom_rounded = int(CS.v_ego * CV.MS_TO_KPH / speed_uom_kph + 0.5) * speed_uom_kph
+        self.pedal_speed_kph = max(current_speed_kph_uom_rounded, self.speed_limit_kph)
     # Handle pressing the cancel button.
     elif CS.cruise_buttons == CruiseButtons.CANCEL:
       self.enable_pedal_cruise = False
@@ -298,18 +261,16 @@ class PCCController():
     # Handle pressing up and down buttons.
     elif (self.enable_pedal_cruise 
           and CS.cruise_buttons != self.prev_cruise_buttons):
-      # Real stalk command while PCC is already enabled. Adjust the max PCC
-      # speed if necessary. 
-      actual_speed_kph = CS.v_ego * CV.MS_TO_KPH
+      # Real stalk command while PCC is already enabled. Adjust the max PCC speed if necessary.
+      # We round the target speed in the user's units of measurement to avoid jumpy speed readings
+      actual_speed_kph_uom_rounded = int(CS.v_ego * CV.MS_TO_KPH / speed_uom_kph + 0.5) * speed_uom_kph
       if CS.cruise_buttons == CruiseButtons.RES_ACCEL:
-        self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph) + speed_uom_kph
+        self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph_uom_rounded) + speed_uom_kph
       elif CS.cruise_buttons == CruiseButtons.RES_ACCEL_2ND:
-        self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph) + 5 * speed_uom_kph
+        self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph_uom_rounded) + 5 * speed_uom_kph
       elif CS.cruise_buttons == CruiseButtons.DECEL_SET:
-        #self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph) - speed_uom_kph
-        self.pedal_speed_kph =self.pedal_speed_kph - speed_uom_kph
+        self.pedal_speed_kph = self.pedal_speed_kph - speed_uom_kph
       elif CS.cruise_buttons == CruiseButtons.DECEL_2ND:
-        #self.pedal_speed_kph = max(self.pedal_speed_kph, actual_speed_kph) - 5 * speed_uom_kph
         self.pedal_speed_kph = self.pedal_speed_kph - 5 * speed_uom_kph
       # Clip PCC speed between 0 and 170 KPH.
       self.pedal_speed_kph = clip(self.pedal_speed_kph, MIN_PCC_V_KPH, MAX_PCC_V_KPH)
@@ -326,17 +287,20 @@ class PCCController():
     # Notify if PCC was toggled
     if prev_enable_pedal_cruise and not self.enable_pedal_cruise:
       CS.UE.custom_alert_message(3, "PCC Disabled", 150, 4)
-      CS.cstm_btns.set_button_status("pedal", PCCState.STANDBY)
+      CS.cstm_btns.set_button_status(PCCModes.BUTTON_NAME, PCCState.STANDBY)
+      self.fleet_speed.reset_averager()
+      #save the pid parameters to params file
+      self.save_pid(self.LoC.pid)
     elif self.enable_pedal_cruise and not prev_enable_pedal_cruise:
       CS.UE.custom_alert_message(2, "PCC Enabled", 150)
-      CS.cstm_btns.set_button_status("pedal", PCCState.ENABLED)
+      CS.cstm_btns.set_button_status(PCCModes.BUTTON_NAME, PCCState.ENABLED)
 
     # Update the UI to show whether the current car state allows PCC.
-    if CS.cstm_btns.get_button_status("pedal") in [PCCState.STANDBY, PCCState.NOT_READY]:
-      if enabled and (CruiseState.is_off(CS.pcm_acc_status) or CS.forcePedalOverCC):
-        CS.cstm_btns.set_button_status("pedal", PCCState.STANDBY)
+    if CS.cstm_btns.get_button_status(PCCModes.BUTTON_NAME) in [PCCState.STANDBY, PCCState.NOT_READY]:
+      if CruiseState.is_off(CS.pcm_acc_status) or CS.forcePedalOverCC:
+        CS.cstm_btns.set_button_status(PCCModes.BUTTON_NAME, PCCState.STANDBY)
       else:
-        CS.cstm_btns.set_button_status("pedal", PCCState.NOT_READY)
+        CS.cstm_btns.set_button_status(PCCModes.BUTTON_NAME, PCCState.NOT_READY)
           
     # Update prev state after all other actions.
     self.prev_cruise_buttons = CS.cruise_buttons
@@ -344,8 +308,7 @@ class PCCController():
 
     return can_sends
     
-  def update_pdl(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_ms, speed_limit_valid, set_speed_limit_active, speed_limit_offset,alca_enabled):
-    cur_time = sec_since_boot()
+  def update_pdl(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_ms, set_speed_limit_active, speed_limit_offset,alca_enabled):
     idx = self.pedal_idx
 
     self.prev_speed_limit_kph = self.speed_limit_kph
@@ -366,22 +329,21 @@ class PCCController():
       #print ("Torque level at detection %s" % (CS.torqueLevel))
       #print ("Speed level at detection %s" % (CS.v_ego * CV.MS_TO_MPH))
 
-    if speed_limit_valid and set_speed_limit_active and (speed_limit_ms > 2.7):
-      self.speed_limit_kph = (speed_limit_ms +  speed_limit_offset) * CV.MS_TO_KPH
-      if not (int(self.prev_speed_limit_kph) == int(self.speed_limit_kph)):
+    if set_speed_limit_active and speed_limit_ms > 0:
+      self.speed_limit_kph = (speed_limit_ms + speed_limit_offset) * CV.MS_TO_KPH
+      if int(self.prev_speed_limit_kph) != int(self.speed_limit_kph):
         self.pedal_speed_kph = self.speed_limit_kph
-        #also reset maxsuggestedspeed_avg
-        self.maxsuggestedspeed_avg.reset()
+        # reset MovingAverage for fleet speed when speed limit changes
+        self.fleet_speed.reset_averager()
+    else: # reset internal speed limit, so double pull doesn't set higher speed than current (e.g. after leaving the highway)
+      self.speed_limit_kph = 0.
     self.pedal_idx = (self.pedal_idx + 1) % 16
 
-    if not CS.pedal_interceptor_available or not enabled:
+    if not self.pcc_available or not enabled:
       return 0., 0, idx
     # Alternative speed decision logic that uses the lead car's distance
     # and speed more directly.
     # Bring in the lead car distance from the radarState feed
-    radSt = None
-    mapd = None
-    #if enabled: do it always
     radSt = messaging.recv_one_or_none(self.radarState)
     mapd = messaging.recv_one_or_none(self.live_map_data)
     if radSt is not None:
@@ -409,26 +371,26 @@ class PCCController():
     # how much accel and break we have to do
     ####################################################################
     if PCCModes.is_selected(FollowMode(), CS.cstm_btns):
-      self.v_pid = self.calc_follow_speed_ms(CS,alca_enabled)
-      
-      if mapd is not None:
-        v_curve = max_v_in_mapped_curve_ms(mapd.liveMapData, self.pedal_speed_kph)
-        if v_curve:
-          self.v_pid = min(self.v_pid, v_curve)
-      # now check and do the limit vs speed limit + offset
-      self.v_pid = self.max_v_by_speed_limit(self.v_pid ,self.pedal_speed_kph * CV.KPH_TO_MS, CS)
-      # cruise speed can't be negative even is user is distracted
-      self.v_pid = max(self.v_pid, 0.)
-
       enabled = self.enable_pedal_cruise and self.LoC.long_control_state in [LongCtrlState.pid, LongCtrlState.stopping]
       # determine if pedal is pressed by human
-      self.prev_pedal_state = self.pedal_state
-      self.pedal_state = CS.pedal_interceptor_value > 10
+      self.prev_accelerator_pedal_pressed = self.accelerator_pedal_pressed
+      self.accelerator_pedal_pressed = CS.pedal_interceptor_value > 10
       #reset PID if we just lifted foot of accelerator
-      if (not self.pedal_state) and self.prev_pedal_state:
-        self.reset(v_pid=CS.v_ego)
+      if (not self.accelerator_pedal_pressed) and self.prev_accelerator_pedal_pressed:
+        self.reset(CS.v_ego)
 
-      if self.enable_pedal_cruise and  (not self.pedal_state):
+      if self.enable_pedal_cruise and not self.accelerator_pedal_pressed:
+        self.v_pid = self.calc_follow_speed_ms(CS,alca_enabled)
+
+        if mapd is not None:
+          v_curve = max_v_in_mapped_curve_ms(mapd.liveMapData, self.pedal_speed_kph)
+          if v_curve:
+            self.v_pid = min(self.v_pid, v_curve)
+        # take fleet speed into consideration
+        self.v_pid = min(self.v_pid, self.fleet_speed.adjust(CS, self.pedal_speed_kph * CV.KPH_TO_MS, frame))
+        # cruise speed can't be negative even if user is distracted
+        self.v_pid = max(self.v_pid, 0.)
+
         jerk_min, jerk_max = _jerk_limits(CS.v_ego, self.lead_1, self.v_pid * CV.MS_TO_KPH, self.lead_last_seen_time_ms, CS)
         self.v_cruise, self.a_cruise = speed_smoother(self.v_acc_start, self.a_acc_start,
                                                       self.v_pid,
@@ -442,7 +404,6 @@ class PCCController():
         self.v_acc = self.v_cruise
         self.a_acc = self.a_cruise
         self.v_acc_future = self.v_pid
-        self.acc_start_time = cur_time
 
         # Interpolation of trajectory
         self.a_acc_sol = self.a_acc_start + (_DT / _DT_MPC) * (self.a_acc - self.a_acc_start)
@@ -464,7 +425,7 @@ class PCCController():
         output_gb = t_go - t_brake
         #print ("Output GB Follow:", output_gb)
       else:
-        self.reset(v_pid=CS.v_ego)
+        self.reset(CS.v_ego)
         #print ("PID reset")
         output_gb = 0.
         starting = self.LoC.long_control_state == LongCtrlState.starting
@@ -480,6 +441,7 @@ class PCCController():
         self.v_acc_sol = reset_speed
         self.a_acc_sol = reset_accel
         self.v_pid = reset_speed
+        self.last_speed_kph = None
 
     ##############################################################
     # This mode uses the longitudinal MPC built in OP
@@ -521,39 +483,30 @@ class PCCController():
   # function to calculate the cruise speed based on a safe follow distance
   def calc_follow_speed_ms(self, CS, alca_enabled):
     # Make sure we were able to populate lead_1.
-    lead_dist_m = 0.
     if self.lead_1 is None:
       return None, None, None
     # dRel is in meters.
-    if CS.useTeslaRadar:
-      lead_dist_m = self.lead_1.dRel
-    else:
-      lead_dist_m = _visual_radar_adjusted_dist_m(self.lead_1.dRel, CS)
+    lead_dist_m = self.lead_1.dRel
+    if not CS.useTeslaRadar:
+      lead_dist_m = _visual_radar_adjusted_dist_m(lead_dist_m, CS)
     # Grab the relative speed.
-    rel_speed_kph = 0.
-    #if self.had_lead:
-      #avoid inital break when lead just detected
-    self.vRel = 0.
-    self.aRel = 0.
-    if abs(self.lead_1.vRel) > .5:
-      self.vRel = self.lead_1.vRel
-    if abs(self.lead_1.aRel) > .5:
-      self.aRel = self.lead_1.aRel
-    rel_speed_kph = (self.vRel + 0 * CS.apFollowTimeInS * self.aRel) * CV.MS_TO_KPH
+    v_rel = self.lead_1.vRel if abs(self.lead_1.vRel) > .5 else 0
+    a_rel = self.lead_1.aRel if abs(self.lead_1.aRel) > .5 else 0
+    rel_speed_kph = (v_rel + 0 * CS.apFollowTimeInS * a_rel) * CV.MS_TO_KPH
     # v_ego is in m/s, so safe_distance is in meters.
     safe_dist_m = _safe_distance_m(CS.v_ego,CS)
     # Current speed in kph
     actual_speed_kph = CS.v_ego * CV.MS_TO_KPH
     # speed and brake to issue
+    if self.last_speed_kph is None:
+      self.last_speed_kph = actual_speed_kph
     new_speed_kph = self.last_speed_kph
     ###   Logic to determine best cruise speed ###
     if self.enable_pedal_cruise:
       # If no lead is present, accel up to max speed
       if lead_dist_m == 0 or lead_dist_m > MAX_RADAR_DISTANCE:
         new_speed_kph = self.pedal_speed_kph
-        self.had_lead = False
       elif lead_dist_m > 0:
-        self.had_lead = True
         #BB Use the Kalman lead speed and acceleration
         lead_absolute_speed_kph = actual_speed_kph + rel_speed_kph #(self.lead_1.vLeadK + _DT * self.lead_1.aLeadK) * CV.MS_TO_KPH
         rel_speed_kph = lead_absolute_speed_kph - actual_speed_kph
@@ -620,7 +573,7 @@ class PCCController():
     # Enforce limits on speed
     new_speed_kph = clip(new_speed_kph, MIN_PCC_V_KPH, MAX_PCC_V_KPH)
     new_speed_kph = clip(new_speed_kph, MIN_PCC_V_KPH, self.pedal_speed_kph)
-    if CS.blinker_on or (abs(CS.angle_steers) > ANGLE_STOP_ACCEL) or alca_enabled:
+    if CS.turn_signal_blinking or (abs(CS.angle_steers) > ANGLE_STOP_ACCEL) or alca_enabled:
       # Don't accelerate during manual turns, curves or ALCA.
       new_speed_kph = min(new_speed_kph, self.last_speed_kph)
     #BB Last safety check. Zero if below MIN_SAFE_DIST_M
@@ -639,6 +592,20 @@ class PCCController():
     elif pedal < self.pedal_steady - PEDAL_HYST_GAP:
       self.pedal_steady = pedal + PEDAL_HYST_GAP
     return self.pedal_steady
+
+  def _update_pedal_state(self, CS, frame):
+    if CS.pedal_idx != CS.prev_pedal_idx:
+      # time out pedal after 500ms without receiving a new CAN message from it
+      self.pedal_timeout_frame = frame + 50
+    self.prev_pcc_available = self.pcc_available
+    pedal_ready = frame < self.pedal_timeout_frame and CS.pedal_interceptor_state == 0
+    acc_disabled = CS.forcePedalOverCC or CruiseState.is_off(CS.pcm_acc_status)
+    # Mark pedal unavailable while traditional cruise is on.
+    self.pcc_available = pedal_ready and acc_disabled
+
+    if self.pcc_available != self.prev_pcc_available:
+      CS.config_ui_buttons(self.pcc_available, pedal_ready and not acc_disabled)
+
 
 def _visual_radar_adjusted_dist_m(m, CS):
   # visual radar sucks at short distances. It rarely shows readings below 7m.

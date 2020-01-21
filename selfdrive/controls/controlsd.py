@@ -570,7 +570,6 @@ def controlsd_thread(sm=None, pm=None, can_sock=None):
       state_control(sm.frame, sm.rcv_frame, sm['plan'], sm['pathPlan'], CS, CP, state, events, v_cruise_kph, v_cruise_kph_last, AM, rk,
                     driver_status, LaC, LoC, read_only, is_metric, cal_perc, dm_enabled)
 
-    rk.keep_time(1. / 10000)  # Run at 100Hz
     prof.checkpoint("State Control")
 
     # Publish data

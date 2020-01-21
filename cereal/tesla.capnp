@@ -70,6 +70,12 @@ struct ICLeads {
   lead2length @5 :Float32;
 }
 
+struct AHBinfo {
+  source @0 :UInt8; #use 0 for radar, 1 for camera, 2 for other
+  radarCarDetected @1 :Bool;
+  cameraCarDetected @2 :Bool;
+}
+
 struct TeslaLeadPoint {
   trackId @0 :UInt8;  # no trackId reuse
   oClass @1 :UInt8; # 0-unknown 1-four wheel vehicle 2-two wheel vehicle 3-pedestrian 4-construction element

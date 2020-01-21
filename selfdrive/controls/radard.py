@@ -384,6 +384,7 @@ def radard_thread(sm=None, pm=None, can_sock=None):
   if pm is None:
     pm = messaging.PubMaster(['radarState', 'liveTracks'])
     icLeads = messaging.pub_sock('uiIcLeads')
+    ahbInfo = messaging.pub_sock('ahbInfo')
 
   RI = RadarInterface(CP)
 
@@ -396,23 +397,29 @@ def radard_thread(sm=None, pm=None, can_sock=None):
 
   while 1:
     can_strings = messaging.drain_sock_raw(can_sock, wait_for_one=True)
-    rr,rrext = RI.update(can_strings)
-
-    if rr is None:
-      continue
 
     sm.update(0)
 
     if sm.updated['controlsState']:
       v_ego = sm['controlsState'].vEgo
 
-    
+    rr,rrext,ahbCarDetected = RI.update(can_strings,v_ego)
+
+    if rr is None:
+      continue    
 
     dat,datext = RD.update(rk.frame, sm, rr, has_radar, rrext)
     dat.radarState.cumLagMs = -rk.remaining*1000.
 
     pm.send('radarState', dat)
     icLeads.send(datext.to_bytes())
+
+    ahbInfoMsg = tesla.AHBinfo.new_message()
+    ahbInfoMsg.source = 0
+    ahbInfoMsg.radarCarDetected = ahbCarDetected
+    ahbInfoMsg.cameraCarDetected = False
+    ahbInfo.send(ahbInfoMsg.to_bytes())
+
 
     # *** publish tracks for UI debugging (keep last) ***
     tracks = RD.tracks

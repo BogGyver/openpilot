@@ -97,6 +97,9 @@ uiIcLeads: [8211, false, 0.]
 alcaStatus: [8209, false, 0.]
 alcaState: [8210, false, 0.]
 
+#auto high beam Events
+ahbInfo: [8212, false, 0.]
+
 # 8080 is reserved for slave testing daemon
 # 8762 is reserved for logserver
 

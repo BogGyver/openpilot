@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import time
 import struct
 from enum import IntEnum
-from Queue import Queue, Empty
+from queue import Queue, Empty
 import threading
 from binascii import hexlify
 
@@ -134,7 +134,7 @@ def _isotp_thread(panda, bus, tx_addr, tx_queue, rx_queue):
           # send flow control message (send all bytes)
           msg = "\x30\x00\x00".ljust(8, "\x00")
           if (DEBUG): print("S: {} {}".format(hex(tx_addr), hexlify(msg)))
-          panda.can_send(tx_addr, msg, bus)
+          panda.can_send(tx_addr, msg.encode('utf-8'), bus)
         elif rx_data[0] >> 4 == 0x2:
           # consecutive rx frame
           assert rx_frame["done"] == False, "rx: no active frame"
@@ -158,9 +158,9 @@ def _isotp_thread(panda, bus, tx_addr, tx_queue, rx_queue):
           for i in range(start, end, 7):
             tx_frame["idx"] += 1
             # consecutive tx frames
-            msg = (chr(0x20 | (tx_frame["idx"] & 0xF)) + tx_frame["data"][i:i+7]).ljust(8, "\x00")
+            msg = (chr(0x20 | (tx_frame["idx"] & 0xF)) + tx_frame["data"][i:i+7]).ljust(8, b'\0')
             if (DEBUG): print("S: {} {}".format(hex(tx_addr), hexlify(msg)))
-            panda.can_send(tx_addr, msg, bus)
+            panda.can_send(tx_addr, msg.encode('utf-8'), bus)
           tx_frame["done"] = True
 
       if not tx_queue.empty():
@@ -171,15 +171,15 @@ def _isotp_thread(panda, bus, tx_addr, tx_queue, rx_queue):
         if tx_frame["size"] < 8:
           # single frame
           tx_frame["done"] = True
-          msg = (chr(tx_frame["size"]) + tx_frame["data"]).ljust(8, "\x00")
+          msg = (chr(tx_frame["size"]).encode("utf-8") + tx_frame["data"]).ljust(8, b'\0')
           if (DEBUG): print("S: {} {}".format(hex(tx_addr), hexlify(msg)))
           panda.can_send(tx_addr, msg, bus)
         else:
           # first rx_frame
           tx_frame["done"] = False
-          msg = (struct.pack("!H", 0x1000 | tx_frame["size"]) + tx_frame["data"][:6]).ljust(8, "\x00")
+          msg = (struct.pack("!H", 0x1000 | tx_frame["size"]) + tx_frame["data"][:6]).ljust(8, b'\0')
           if (DEBUG): print("S: {} {}".format(hex(tx_addr), hexlify(msg)))
-          panda.can_send(tx_addr, msg, bus)
+          panda.can_send(tx_addr, msg.encode('utf-8'), bus)
       else:
         time.sleep(0.01)
   finally:
@@ -187,9 +187,9 @@ def _isotp_thread(panda, bus, tx_addr, tx_queue, rx_queue):
 
 # generic uds request
 def _uds_request(address, service_type, subfunction=None, data=None):
-  req = chr(service_type)
+  req = chr(service_type).encode('utf-8')
   if subfunction is not None:
-    req += chr(subfunction)
+    req += chr(subfunction).encode('utf-8')
   if data is not None:
     req += data
   tx_queue.put(req)
@@ -198,7 +198,8 @@ def _uds_request(address, service_type, subfunction=None, data=None):
     try:
       resp = rx_queue.get(block=True, timeout=10)
     except Empty:
-      raise MessageTimeoutError("timeout waiting for response")
+      print("** Timeout waiting for response. Make sure ignition line is on.")
+      exit(1)
     resp_sid = resp[0] if len(resp) > 0 else None
 
     # negative response
@@ -710,30 +711,30 @@ if __name__ == "__main__":
   diagnostic_session_control(tx_addr, SESSION_TYPE.EXTENDED_DIAGNOSTIC)
   print("reading VIN from radar...")
   vin = read_data_by_identifier(tx_addr, DATA_IDENTIFIER_TYPE.VIN)
-  print("new VIN: {} [{}]".format(vin, hexlify(vin)))
+  print("new VIN: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
   vin = read_data_by_identifier(tx_addr, 0xA022)
-  print("plant mode: {} [{}]".format(vin, hexlify(vin)))
+  print("plant mode: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
   vin = read_data_by_identifier(tx_addr, 0xF014)
-  print("board part #: {} [{}]".format(vin, hexlify(vin)))
+  print("board part #: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
   vin = read_data_by_identifier(tx_addr, 0xF015)
-  print("board ser #: {} [{}]".format(vin, hexlify(vin)))
+  print("board ser #: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
   
   vin = read_data_by_identifier(tx_addr, 0xFC01)
-  print("Active alignment horizontal angle: {} [{}]".format(vin, hexlify(vin)))
+  print("Active alignment horizontal angle: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
   vin = read_data_by_identifier(tx_addr, 0x508)
-  print("Active Alignment Horizontal Screw: {} [{}]".format(vin, hexlify(vin)))
+  print("Active Alignment Horizontal Screw: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
   vin = read_data_by_identifier(tx_addr, 0x505)
-  print("Active Alignment State: {} [{}]".format(vin, hexlify(vin)))
+  print("Active Alignment State: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
   vin = read_data_by_identifier(tx_addr, 0xFC02)
-  print("Active Alignment Vertical Angle: {} [{}]".format(vin, hexlify(vin)))
+  print("Active Alignment Vertical Angle: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
   vin = read_data_by_identifier(tx_addr, 0x507)
-  print("Active Alignment Vertical Screw: {} [{}]".format(vin, hexlify(vin)))
+  print("Active Alignment Vertical Screw: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
   vin = read_data_by_identifier(tx_addr, 0x506)
-  print("Active Alignment Operation: {} [{}]".format(vin, hexlify(vin)))
+  print("Active Alignment Operation: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
   vin = read_data_by_identifier(tx_addr, 0x50A)
-  print("Service Drive Alignment State: {} [{}]".format(vin, hexlify(vin)))
+  print("Service Drive Alignment State: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
   vin = read_data_by_identifier(tx_addr, 0x509)
-  print("Service Drive Alignment Status: {} [{}]".format(vin, hexlify(vin)))
+  print("Service Drive Alignment Status: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
   
   print("reading variables from radar...")
   for i in range(0xF100, 0xF2FF):

@@ -57,4 +57,5 @@ typedef struct BBUIState {
     bool chargingEnabled;
     uint16_t fanSpeed;
     bool keepEonOff;
+    bool recording;
 } BBUIState;

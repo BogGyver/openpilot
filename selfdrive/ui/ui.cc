@@ -321,7 +321,7 @@ static void set_brightness(UIState *s, int brightness) {
 static void set_awake(UIState *s, bool awake) {
   if (awake) {
     // 30 second timeout at 30 fps
-    if ((s->b.tri_state_switch == 3) || (s->b.keepEonOff)) {
+    if (((s->b.tri_state_switch == 3) || (s->b.keepEonOff)) && !s->b.recording) {
       s->awake_timeout = 3*30;
     } else {
       s->awake_timeout = 30*30;
@@ -347,6 +347,7 @@ static void set_awake(UIState *s, bool awake) {
 
 #include "dashcam.h"
 #include "bbui.h"
+#include "tbui.h"
 
 static void set_volume(UIState *s, int volume) {
   char volume_change_cmd[64];
@@ -1465,7 +1466,11 @@ static void ui_draw_vision_footer(UIState *s) {
 #ifdef SHOW_SPEEDLIMIT
   // ui_draw_vision_map(s);
 #endif
+	
+  ui_draw_infobar(s);
 }
+
+
 
 static void ui_draw_vision_alert(UIState *s, int va_size, int va_color,
                                   const char* va_text1, const char* va_text2) {
@@ -2024,7 +2029,7 @@ static void ui_update(UIState *s) {
       delete msg;
     }
 
-    if ((awake) && (s->b.tri_state_switch != 3) && (!s->b.keepEonOff)){
+    if (((awake) && (s->b.tri_state_switch != 3) && (!s->b.keepEonOff)) || (s->b.recording)){
       set_awake(s, true);
     }
   }
