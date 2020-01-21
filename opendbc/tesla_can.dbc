@@ -172,22 +172,26 @@ BO_ 532 EPB_epasControl: 3 EPB
  SG_ EPB_epasEACAllow : 2|3@0+ (1,0) [4|7] ""  NEO,EPAS
 
 BO_ 792 GTW_carState: 8 GTW
- SG_ BOOT_STATE : 47|2@0+ (1,0) [-1|4] ""  NEO
- SG_ CERRD : 7|1@0+ (1,0) [-1|2] ""  NEO
- SG_ DAY : 36|5@0+ (1,0) [2|31] ""  NEO
- SG_ DOOR_STATE_FL : 13|2@0+ (1,0) [-1|4] ""  NEO
- SG_ DOOR_STATE_FR : 15|2@0+ (1,0) [-1|4] ""  NEO
- SG_ DOOR_STATE_FrontTrunk : 51|2@0+ (1,0) [-1|4] ""  NEO
- SG_ DOOR_STATE_RL : 23|2@0+ (1,0) [-1|4] ""  NEO
- SG_ DOOR_STATE_RR : 30|2@0+ (1,0) [-1|4] ""  NEO
- SG_ GTW_updateInProgress : 49|2@0+ (1,0) [-1|4] ""  NEO
- SG_ Hour : 28|5@0+ (1,0) [0|29] "h"  NEO
- SG_ MCU_factoryMode : 52|1@0+ (1,0) [-1|2] ""  NEO
- SG_ MCU_transportModeOn : 53|1@0+ (1,0) [1|1] ""  NEO
- SG_ MINUTE : 45|6@0+ (1,0) [0|61] "min"  NEO
- SG_ MONTH : 11|4@0+ (1,0) [0|14] "Month"  NEO
- SG_ SECOND : 21|6@0+ (1,0) [0|61] "s"  NEO
- SG_ YEAR : 6|7@0+ (1,2000) [2000|2125] "Year"  NEO
+ SG_ YEAR : 0|7@1+ (1,2000) [2000|2127] "Year" NEO
+ SG_ CERRD : 7|1@1+ (1,0) [0|1] "" NEO
+ SG_ MONTH : 8|4@1+ (1,0) [1|12] "Month" NEO
+ SG_ DOOR_STATE_FL : 12|2@1+ (1,0) [0|3] "" NEO
+ SG_ DOOR_STATE_FR : 14|2@1+ (1,0) [0|3] "" NEO
+ SG_ SECOND : 16|6@1+ (1,0) [0|59] "s" NEO
+ SG_ DOOR_STATE_RL : 22|2@1+ (1,0) [0|3] "" NEO
+ SG_ Hour : 24|5@1+ (1,0) [0|23] "h" NEO
+ SG_ DOOR_STATE_RR : 29|2@1+ (1,0) [0|3] "" NEO
+ SG_ DAY : 32|5@1+ (1,0) [0|31] "" NEO
+ SG_ MINUTE : 40|6@1+ (1,0) [0|59] "min" NEO
+ SG_ BOOT_STATE : 46|2@1+ (1,0) [0|3] "" NEO
+ SG_ GTW_updateInProgress : 48|2@1+ (1,0) [0|3] "" NEO
+ SG_ DOOR_STATE_FrontTrunk : 50|2@1+ (1,0) [0|3] "" NEO
+ SG_ MCU_factoryMode : 52|1@1+ (1,0) [0|1] "" NEO
+ SG_ MCU_transportModeOn : 53|1@0+ (1,0) [0|1] "" NEO
+ SG_ BC_headLightLStatus : 55|2@0+ (1,0) [0|3] "" NEO
+ SG_ BC_headLightRStatus : 57|2@0+ (1,0) [0|3] "" NEO
+ SG_ BC_indicatorLStatus : 59|2@0+ (1,0) [0|3] "" NEO
+ SG_ BC_indicatorRStatus : 61|2@0+ (1,0) [0|3] "" NEO
 
 BO_ 872 DI_state: 8 DI
  SG_ DI_systemState : 0|3@1+ (1,0) [0|0] ""  NEO
@@ -280,16 +284,15 @@ BO_ 643 BODY_R1: 8 GTW
  SG_ VTA_Alm_Actv : 13|1@0+ (1,0) [0|1] ""  NEO
  SG_ WprOutsdPkPosn : 29|1@0+ (1,0) [0|1] ""  NEO
 
-BO_ 760 MCU_gpsVehicleSpeed: 8 GTW
- SG_ MCU_gpsHDOP : 0|8@1+ (0.1,0) [0|25.5] "1" DAS
- SG_ MCU_gpsVehicleHeading : 8|16@1+ (0.0078125,0) [0|511.9921875] "deg" DAS
- SG_ MCU_gpsVehicleSpeed : 24|16@1+ (0.00390625,0) [0|250.996] "km/hr" DAS
- SG_ MCU_userSpeedOffset : 40|6@1+ (1,-30) [-30|33] "kph/mph" DAS
- SG_ MCU_mapSpeedLimitUnits : 46|1@1+ (1,0) [0|1] "" DAS
- SG_ MCU_userSpeedOffsetUnits : 47|1@1+ (1,0) [0|1] "" DAS
- SG_ MCU_mppSpeedLimit : 48|5@1+ (5,0) [0|155] "kph/mph" DAS
- SG_ MCU_gpsNmeaMIA : 53|1@1+ (1,0) [0|0] "" DAS
- SG_ MCU_gpsAntennaDisconnected : 54|1@1+ (1,0) [0|0] "" DAS
+BO_ 760 UI_gpsVehicleSpeed: 8 GTW
+ SG_ UI_gpsHDOP : 0|8@1+ (0.1,0) [0|25.5] "1" DAS
+ SG_ UI_gpsVehicleHeading : 8|16@1+ (0.0078125,0) [0|511.9921875] "deg" DAS
+ SG_ UI_gpsVehicleSpeed : 24|16@1+ (0.00390625,0) [0|250.996] "km/hr" Vector__XXX
+ SG_ UI_userSpeedOffset : 40|6@1+ (1,-30) [-30|33] "kph/mph" DAS
+ SG_ UI_mapSpeedLimitUnits : 46|1@1+ (1,0) [0|1] "" DAS
+ SG_ UI_userSpeedOffsetUnits : 47|1@1+ (1,0) [0|1] "" DAS
+ SG_ UI_mppSpeedLimit : 48|5@1+ (5,0) [0|155] "kph/mph" DAS
+ SG_ UI_gpsNmeaMIA : 53|1@1+ (1,0) [0|0] "" DAS
 
 BO_ 536 MCU_chassisControl: 8 GTW
  SG_ MCU_dasDebugEnable : 0|1@1+ (1,0) [0|0] "" NEO
@@ -351,20 +354,6 @@ BO_ 840 GTW_status: 8 GTW
  SG_ GTW_preconditionRequest : 10|1@0+ (1,0) [0|1] ""  NEO
  SG_ GTW_statusChecksum : 63|8@0+ (1,0) [0|255] ""  NEO
  SG_ GTW_statusCounter : 51|4@0+ (1,0) [0|15] ""  NEO
-
-BO_ 1361 GAS_COMMAND: 6 EON
- SG_ GAS_COMMAND : 7|16@0+ (0.0507968128,-22.85856576) [0|1] "" INTERCEPTOR
- SG_ GAS_COMMAND2 : 23|16@0+ (0.1015936256,-22.85856576) [0|1] "" INTERCEPTOR
- SG_ ENABLE : 39|1@0+ (1,0) [0|1] "" INTERCEPTOR
- SG_ IDX : 35|4@0+ (1,0) [0|15] "" INTERCEPTOR
- SG_ CHECKSUM : 47|8@0+ (1,0) [0|3] "" INTERCEPTOR
-
-BO_ 1362 GAS_SENSOR: 6 INTERCEPTOR
- SG_ INTERCEPTOR_GAS : 7|16@0+ (0.0507968128,-22.85856576) [0|1] "" EON
- SG_ INTERCEPTOR_GAS2 : 23|16@0+ (0.1015936256,-22.85856576) [0|1] "" EON
- SG_ STATE : 35|4@0+ (1,0) [0|15] "" EON
- SG_ IDX : 39|4@0+ (1,0) [0|15] "" EON
- SG_ CHECKSUM : 47|8@0+ (1,0) [0|3] "" EON
 
 BO_ 920 GTW_carConfig: 8 GTW
  SG_ GTW_performanceConfig : 2|3@0+ (1,0) [0|0] "" NEO
@@ -675,8 +664,9 @@ VAL_ 309 ESP_absFaultLamp 0 "OFF" 1 "ON" ;
 VAL_ 309 ESP_espOffLamp 0 "OFF" 1 "ON" ;
 VAL_ 309 ESP_stabilityControlSts 2 "ENGAGED" 3 "FAULTED" 5 "INIT" 4 "NOT_CONFIGURED" 0 "OFF" 1 "ON" ;
 VAL_ 309 ESP_tcLampFlash 1 "FLASH" 0 "OFF" ;
-VAL_ 760 MCU_speedLimitUnits 1 "KPH" 0 "MPH" ;
-VAL_ 760 MCU_userSpeedOffsetUnits 1 "KPH" 0 "MPH" ;
+VAL_ 568 UI_mapSpeedLimit 31 "SNA" 30 "UNLIMITED" 29 "LESS_OR_EQ_160" 28 "LESS_OR_EQ_150" 27 "LESS_OR_EQ_140" 26 "LESS_OR_EQ_130" 25 "LESS_OR_EQ_120" 24 "LESS_OR_EQ_115" 23 "LESS_OR_EQ_110" 22 "LESS_OR_EQ_105" 21 "LESS_OR_EQ_100" 20 "LESS_OR_EQ_95" 19 "LESS_OR_EQ_90" 18 "LESS_OR_EQ_85" 17 "LESS_OR_EQ_80" 16 "LESS_OR_EQ_75" 15 "LESS_OR_EQ_70" 14 "LESS_OR_EQ_65" 13 "LESS_OR_EQ_60" 12 "LESS_OR_EQ_55" 11 "LESS_OR_EQ_50" 10 "LESS_OR_EQ_45" 9 "LESS_OR_EQ_40" 8 "LESS_OR_EQ_35" 7 "LESS_OR_EQ_30" 6 "LESS_OR_EQ_25" 5 "LESS_OR_EQ_20" 4 "LESS_OR_EQ_15" 3 "LESS_OR_EQ_10" 2 "LESS_OR_EQ_7" 1 "LESS_OR_EQ_5" 0 "UNKNOWN" ;
+VAL_ 760 UI_mapSpeedLimitUnits 1 "KPH" 0 "MPH" ;
+VAL_ 760 UI_userSpeedOffsetUnits 1 "KPH" 0 "MPH" ;
 VAL_ 643 AirTemp_Insd 255 "SNA" ;
 VAL_ 643 AirTemp_Outsd 254 "INIT" 255 "SNA" ;
 VAL_ 643 Bckl_Sw_RL_Stat_SAM_R 2 "FLT" 1 "NOT" 0 "OK" 3 "SNA" ;
@@ -730,7 +720,6 @@ VAL_ 904 MCU_clusterReadyForDrive 0 "NO_SNA" 1 "YES" ;
 VAL_ 1160 DAS_steeringAngleRequest 16384 "ZERO_ANGLE" ;
 VAL_ 1160 DAS_steeringControlType 1 "ANGLE_CONTROL" 3 "DISABLED" 0 "NONE" 2 "RESERVED" ;
 VAL_ 1160 DAS_steeringHapticRequest 1 "ACTIVE" 0 "IDLE" ;
-VAL_ 1362 STATE 5 "FAULT_TIMEOUT" 4 "FAULT_STARTUP" 3 "FAULT_SCE" 2 "FAULT_SEND" 1 "FAULT_BAD_CHECKSUM" 0 "NO_FAULT" ;
 
 
 CM_ "CHFFR_METRIC 1160 DAS_steeringAngleRequest STEER_ANGLE 0.1098666 180; CHFFR_METRIC 264 DI_motorRPM ENGINE_RPM 1 0";

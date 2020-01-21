@@ -41,7 +41,6 @@ int current_car_time = -1;
 int time_at_last_stalk_pull = -1;
 int eac_status = 0;
 
-int tesla_ignition_started = 0;
 
 /* <-- revB giraffe GPIO */
 #include "../drivers/uja1023.h"
@@ -214,6 +213,18 @@ int DAS_208_rackDetected = 0x00;
 int DAS_025_steeringOverride = 0x00;
 int DAS_221_lcAborting = 0x00;
 
+//fake DAS - high beam request
+int DAS_high_low_beam_request = 0x00;
+int DAS_high_low_beam_reason = 0x00;
+int DAS_ahb_is_enabled = 0;
+
+//fake DAS - plain CC condition
+int DAS_plain_cc_enabled = 0x00;
+
+//fake DAS - emergency brakes use
+int DAS_emergency_brake_request = 0x00;
+int DAS_fleet_speed_state = 0x00;
+
 
 static int add_tesla_crc(uint32_t MLB, uint32_t MHB , int msg_len) {
   //"""Calculate CRC8 using 1D poly, FF start, FF end"""
@@ -348,6 +359,8 @@ static void reset_DAS_data(void) {
   DAS_telLeftMarkerColor = 1; //0-unknown, 1-white, 2-yellow, 3-blue
   DAS_telRightMarkerColor = 1; //0-unknown, 1-white, 2-yellow, 3-blue
   DAS_turn_signal_request = 0;
+  DAS_high_low_beam_request = 0;
+  DAS_high_low_beam_reason = 0;
   DAS_steeringAngle = 0x4000;
   DAS_steeringEnabled = 0;
   DAS_usingPedal = 0;
@@ -375,6 +388,9 @@ static void reset_DAS_data(void) {
   DAS_LEFT_OBJECT_MHB = 0x03FFFF83;
   DAS_RIGHT_OBJECT_MLB = 0xFFFFFF02;
   DAS_RIGHT_OBJECT_MHB = 0x03FFFF83;
+  DAS_plain_cc_enabled = 0x00;
+  DAS_emergency_brake_request = 0x00;
+  DAS_fleet_speed_state = 0x00;
 }
 
 
@@ -775,8 +791,8 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
   if (fake_DAS_counter % 50 == 0) {
     //send DAS_status - 0x399
     MLB = DAS_op_status + 0xF0 + (DAS_speed_limit_kph << 8) + (((DAS_collision_warning << 6) + DAS_speed_limit_kph) << 16);
-    MHB = ((DAS_cc_state & 0x03) << 3) + (DAS_ldwStatus << 5) + 
-        (((DAS_hands_on_state << 2) + ((DAS_alca_state & 0x03) << 6)) << 8) +
+    MHB = ((DAS_fleet_speed_state & 0x03) << 3) + (DAS_ldwStatus << 5) + 
+        (((DAS_hands_on_state << 2) + ((DAS_alca_state & 0x03) << 6) + DAS_fleet_speed_state) << 8) +
        ((( DAS_status_idx << 4) + (DAS_alca_state >> 2)) << 16);
     int cksm = add_tesla_cksm2(MLB, MHB, 0x399, 7);
     MHB = MHB + (cksm << 24);
@@ -799,10 +815,19 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
         lcw = 0x01;
     }
     int b4 = 0x80;
-    int b5 = 0x13;
+    int b5 = 0x13; 
     if (DAS_cc_state > 1) { //enabled or hold
-        b4 = 0x60;
-        b5 = 0x12;
+        b4 = 0x84;
+        b5 = 0x25; //BB lssState 0x 0x03 should be LSS_STATE_ELK enhanced LK
+        int _DAS_RobState = 0x02; //active
+        int _DAS_radarTelemetry = 0x01; // normal 
+        int _DAS_lssState = 0x03;
+        int _DAS_acc_report = 0x01; //ACC_report_target_CIPV
+        if (DAS_fleet_speed_state == 2) {
+          _DAS_acc_report = 0x12; //ACC_report_fleet_speed
+        }
+        b4 = (_DAS_acc_report << 2) + ((_DAS_lssState & 0x01) << 7);
+        b5 =((_DAS_lssState >> 1) & 0x01) + (_DAS_radarTelemetry << 2) + (_DAS_RobState <<4);
     }
     MLB = MLB + (b4 << 24);
     MHB = 0x8000 + b5 + (DAS_status2_idx << 20) + (lcw << 16);
@@ -815,7 +840,7 @@ static void do_fake_DAS(uint32_t RIR, uint32_t RDTR) {
   if (fake_DAS_counter % 50 == 9) {
     //send DAS_bodyControls - 0x3E9
     //0xf1,0x0c + turn_signal_request,0x00,0x00,0x00,0x00,(idx << 4)
-    MLB = 0x00000CF1 + (DAS_turn_signal_request << 8);
+    MLB = 0x000000F1 + (DAS_turn_signal_request << 8) + (DAS_high_low_beam_request << 10) + (DAS_high_low_beam_reason << 12);
     MHB = 0x00 + (DAS_bodyControls_idx << 20);
     int cksm = add_tesla_cksm2(MLB, MHB, 0x3E9, 7);
     MHB = MHB + (cksm << 24);
@@ -1006,10 +1031,9 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   if (current_car_time - time_last_EPAS_data > 2) {
     //no message in the last 2 seconds, car is off
     // GTW_status
-    tesla_ignition_started = 0;
     time_last_EPAS_data = -10;
   } else {
-    tesla_ignition_started = 1;
+
   }
 
   //see if cruise is enabled [Enabled, standstill or Override] and cancel if using pedal
@@ -1028,7 +1052,9 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     if ((EON_is_connected == 1) && (DAS_usingPedal == 0) && (DAS_cc_state != 2) && ( acc_state >= 2) && ( acc_state <= 4)) {
       //disable if more than two seconds since last pull, or there was never a stalk pull
       if (((current_car_time >= time_at_last_stalk_pull + 2) && (current_car_time != -1) && (time_at_last_stalk_pull != -1)) || (time_at_last_stalk_pull == -1)) {
-        do_fake_stalk_cancel(to_push->RIR, to_push->RDTR);
+        if (DAS_plain_cc_enabled == 0) {
+          do_fake_stalk_cancel(to_push->RIR, to_push->RDTR);
+        }
       }
     }
   }
@@ -1164,12 +1190,6 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   // Detect drive rail on (ignition) (start recording)
   if ((addr == 0x348)  && (bus_number == 0))
   {
-    
-    if ((tesla_ignition_started * DAS_present * tesla_radar_should_send ) == 1) {
-      //set_uja1023_output_bits(1 << 7);
-    } else {
-      //clear_uja1023_output_bits(1 << 7);
-    }
     //ALSO use this for radar timeout, this message is always on
     uint32_t ts = TIM2->CNT;
     uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_last_radar_signal);
@@ -1536,6 +1556,19 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     return false;
   }
 
+  //capture message for AHB and parse 
+  if (addr == 0x65A) {
+    int b0 = (to_send->RDLR & 0xFF);
+    int b1 = ((to_send->RDLR >> 8) & 0xFF);
+    int b2 = ((to_send->RDLR >> 16) & 0xFF);
+    DAS_high_low_beam_request = b0;
+    DAS_high_low_beam_reason = b1;
+    DAS_ahb_is_enabled = b2 & 0x01;
+    DAS_fleet_speed_state = (b2 >> 1) & 0x03;
+    //intercept and do not forward
+    return false;
+  }
+
   //capture message for fake DAS and parse
   if (addr == 0x659) { //0x553) {
     int b0 = (to_send->RDLR & 0xFF);
@@ -1557,11 +1590,17 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
     DAS_turn_signal_request = ((b2 & 0xC0) >> 6);
     DAS_forward_collision_warning = ((b2 & 0x10) >> 4);
     DAS_units_included = ((b2 & 0x20) >> 5);
-    DAS_hands_on_state = (b2 & 0x0F);
+    if (((b2 >> 3) & 0x01) == 0) {
+      DAS_plain_cc_enabled = 1;
+    } else {
+      DAS_plain_cc_enabled = 0;
+    }
+    DAS_hands_on_state = (b2 & 0x07);
     DAS_cc_state = ((b3 & 0xC0)>>6);
     DAS_usingPedal = ((b3 & 0x20) >> 5);
     DAS_alca_state = (b3 & 0x1F);
-    DAS_speed_limit_kph = b5;
+    DAS_speed_limit_kph = (b5 & 0x1F);
+    DAS_emergency_brake_request = ((b5 & 0x20)  >> 5);
     time_last_DAS_data = current_car_time;
     DAS_present = 1;
     DAS_steeringAngle = ((b7 << 8) + b6) & 0x7FFF;
@@ -1607,16 +1646,10 @@ static int tesla_tx_hook(CAN_FIFOMailBox_TypeDef *to_send)
 static void tesla_init(int16_t param)
 {
   UNUSED(param);
-  controls_allowed = 0;
-  tesla_ignition_started = 0;
   gmlan_switch_init(1); //init the gmlan switch with 1s timeout enabled
   //uja1023_init();
 }
 
-static int tesla_ign_hook(void)
-{
-  return tesla_ignition_started;
-}
 
 static void tesla_fwd_to_radar_as_is(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   if ((enable_radar_emulation == 0) || (tesla_radar_vin_complete !=7) || (tesla_radar_should_send==0) ) {
@@ -1776,6 +1809,10 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
     if (speed_kph < 0) {
       speed_kph = 0;
     }
+    // is AHB is enabled, use low apeed to spread radar angle
+    if ((speed_kph > 2 ) && (DAS_ahb_is_enabled == 1)) {
+    //  speed_kph = 2;
+    }
     if (((0xFFF0000 & to_send.RDLR) >> 16) == 0xFFF) {
       speed_kph = 0x1FFF; //0xFFF is signal not available for DI_Torque2 speed 0x118; should be SNA or 0x1FFF for 0x169
     } else {
@@ -1927,6 +1964,5 @@ const safety_hooks tesla_hooks = {
   .rx = tesla_rx_hook,
   .tx = tesla_tx_hook,
   .tx_lin = nooutput_tx_lin_hook,
-  .ignition = tesla_ign_hook,
   .fwd = tesla_fwd_hook,
 };

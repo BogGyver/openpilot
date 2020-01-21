@@ -3,7 +3,6 @@ import importlib
 import math
 from collections import defaultdict, deque
 import numpy as np
-import zmq
 
 import selfdrive.messaging as messaging
 from cereal import car,log,tesla
@@ -13,7 +12,6 @@ from selfdrive.config import RADAR_TO_CAMERA
 from selfdrive.controls.lib.cluster.fastcluster_py import \
   cluster_points_centroid
 from selfdrive.controls.lib.radar_helpers import Cluster, Track
-from selfdrive.services import service_list
 from selfdrive.swaglog import cloudlog
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 
@@ -114,13 +112,11 @@ class RadarD():
     self.icCarLR = None
     self.use_tesla_radar = use_tesla_radar
     if (RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE) and self.use_tesla_radar:
-      self.icCarLR = messaging.pub_sock(service_list['uiIcCarLR'].port)
+      self.icCarLR = messaging.pub_sock('uiIcCarLR')
     
     self.lane_width = 3.0
     #only used for left and right lanes
     self.path_x = np.arange(0.0, 160.0, 0.1)    # 160 meters is max
-    self.poller = zmq.Poller()
-    self.pathPlanSocket = messaging.sub_sock(service_list['pathPlan'].port, conflate=True, poller=self.poller)
     self.dPoly = [0.,0.,0.,0.]
 
   def update(self, frame, sm, rr, has_radar,rrext):
@@ -132,12 +128,9 @@ class RadarD():
       self.v_ego_hist.append(self.v_ego)
     if sm.updated['model']:
       self.ready = True
-
-    for socket, _ in self.poller.poll(0):
-      if socket is self.pathPlanSocket:
-        pp = messaging.recv_one(self.pathPlanSocket).pathPlan
-        self.lane_width = pp.laneWidth
-        self.dPoly = pp.dPoly
+    if sm.updated['pathPlan']:
+      self.lane_width = sm['pathPlan'].laneWidth
+      self.dPoly = sm['pathPlan'].dPoly
 
     path_y = np.polyval(self.dPoly, self.path_x)
 
@@ -381,19 +374,17 @@ def radard_thread(sm=None, pm=None, can_sock=None):
   cloudlog.info("radard is importing %s", CP.carName)
   RadarInterface = importlib.import_module('selfdrive.car.%s.radar_interface' % CP.carName).RadarInterface
 
-  can_poller = zmq.Poller()
-
   if can_sock is None:
-    can_sock = messaging.sub_sock(service_list['can'].port)
-    can_poller.register(can_sock)
+    can_sock = messaging.sub_sock('can')
 
   if sm is None:
-    sm = messaging.SubMaster(['model', 'controlsState', 'liveParameters'])
+    sm = messaging.SubMaster(['model', 'controlsState', 'liveParameters', 'pathPlan'])
 
   # *** publish radarState and liveTracks
   if pm is None:
     pm = messaging.PubMaster(['radarState', 'liveTracks'])
-    icLeads = messaging.pub_sock(service_list['uiIcLeads'].port)
+    icLeads = messaging.pub_sock('uiIcLeads')
+    ahbInfo = messaging.pub_sock('ahbInfo')
 
   RI = RadarInterface(CP)
 
@@ -405,24 +396,30 @@ def radard_thread(sm=None, pm=None, can_sock=None):
   v_ego = 0.
 
   while 1:
-    can_strings = messaging.drain_sock_raw_poller(can_poller, can_sock, wait_for_one=True)
-    rr,rrext = RI.update(can_strings)
-
-    if rr is None:
-      continue
+    can_strings = messaging.drain_sock_raw(can_sock, wait_for_one=True)
 
     sm.update(0)
 
     if sm.updated['controlsState']:
       v_ego = sm['controlsState'].vEgo
 
-    
+    rr,rrext,ahbCarDetected = RI.update(can_strings,v_ego)
+
+    if rr is None:
+      continue    
 
     dat,datext = RD.update(rk.frame, sm, rr, has_radar, rrext)
     dat.radarState.cumLagMs = -rk.remaining*1000.
 
     pm.send('radarState', dat)
     icLeads.send(datext.to_bytes())
+
+    ahbInfoMsg = tesla.AHBinfo.new_message()
+    ahbInfoMsg.source = 0
+    ahbInfoMsg.radarCarDetected = ahbCarDetected
+    ahbInfoMsg.cameraCarDetected = False
+    ahbInfo.send(ahbInfoMsg.to_bytes())
+
 
     # *** publish tracks for UI debugging (keep last) ***
     tracks = RD.tracks
@@ -442,8 +439,7 @@ def radard_thread(sm=None, pm=None, can_sock=None):
 
 
 def main(sm=None, pm=None, can_sock=None):
-  radard_thread(sm, pm, can_sock)
-
+  radard_thread(sm,pm,can_sock)
 
 if __name__ == "__main__":
-  main()
+    main()

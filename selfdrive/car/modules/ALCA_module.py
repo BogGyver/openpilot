@@ -44,12 +44,11 @@ v2.0 - detection of lane crossing
 v1.0 - fixed angle move
 """
 
-from common.numpy_fast import interp
+from common.numpy_fast import interp,clip
 from selfdrive.controls.lib.pid import PIController
 from common.realtime import sec_since_boot
 from selfdrive.services import service_list
 import selfdrive.messaging as messaging
-import zmq
 import numpy as np
 from cereal import tesla
 
@@ -62,10 +61,11 @@ ALCA_release_distance = 0.3
 ALCA_line_prob_low = 0.2
 ALCA_line_prob_high = 0.4
 ALCA_distance_jump = 1.1
-ALCA_lane_change_coefficient = 0.8
-ITERATIONS_AHEAD_TO_ESTIMATE = 4
+ALCA_lane_change_coefficient = 0.7
+ITERATIONS_AHEAD_TO_ESTIMATE = 2
 ALCA_duration_seconds = 5.
-ALCA_right_lane_multiplier = 1.1
+ALCA_right_lane_multiplier = 1.
+ALCA_distance_left_min = 0.7
 
 ALCA_DEBUG = False
 DEBUG_INFO = "step {step} of {total_steps}: direction = {ALCA_direction} | using visual = {ALCA_use_visual} | over line = {ALCA_over_line} | lane width = {ALCA_lane_width} | left to move = {left_to_move} | from center = {from_center} | C2 offset = {ALCA_OFFSET_C2} | C1 offset = {ALCA_OFFSET_C1} | Prob Low = {prob_low} | Prob High = {prob_high}"
@@ -82,13 +82,11 @@ class ALCAController():
     self.laneChange_over_the_line = 0 # did we cross the line?
     self.laneChange_enabled = 1 # set to zero for no lane change
     self.laneChange_counter = 0 # used to count frames during lane change
-    self.laneChange_wait = 1 # how many seconds to wait before it starts the change
+    self.laneChange_wait = 2 # how many seconds to wait before it starts the change
     self.laneChange_direction = 0 # direction of the lane change 
-    self.prev_right_blinker_on = False # local variable for prev position
-    self.prev_left_blinker_on = False # local variable for prev position
     self.laneChange_cancelled = False
     self.laneChange_cancelled_counter = 0
-    self.alcaStatusSocket = messaging.pub_sock(service_list['alcaStatus'].port)
+    self.alcaStatusSocket = messaging.pub_sock('alcaStatus')
 
   def debug_alca(self,message):
     if ALCA_DEBUG:
@@ -132,7 +130,7 @@ class ALCAController():
     self.send_status(CS)
 
 
-  def update(self,enabled,CS,actuators,alcaStateData,frame):
+  def update(self,enabled,CS,actuators,alcaStateData,frame,blinker):
     cl_min_v = CS.CL_MIN_V
     cl_max_a = CS.CL_MAX_A
     self.frame = frame
@@ -148,26 +146,13 @@ class ALCAController():
         self.laneChange_cancelled = False
 
     # Basic highway lane change logic
-    actuator_delta = 0.
-    turn_signal_needed = 0 # send 1 for left, 2 for right 0 for not needed
 
-    if (not CS.right_blinker_on) and (not CS.left_blinker_on) and \
-    (self.laneChange_enabled == 4):
-        self.debug_alca("ALCA reset: resetting 4 -> 1")
-        self.laneChange_enabled =1
-        self.laneChange_counter =0
-        self.laneChange_direction =0
-        CS.UE.custom_alert_message(-1,"",0)
-    
-    if (not CS.right_blinker_on) and (not CS.left_blinker_on) and \
-      (self.laneChange_enabled > 1):
-      # no blinkers on but we are still changing lane, so we need to send blinker command
-      if self.laneChange_direction == -1:
-        turn_signal_needed = 1
-      elif self.laneChange_direction == 1:
-        turn_signal_needed = 2
-      else:
-        turn_signal_needed = 0
+    if self.laneChange_enabled == 4 and frame > blinker.override_frame_end:
+      self.debug_alca("ALCA reset: resetting 4 -> 1")
+      self.laneChange_enabled = 1
+      self.laneChange_counter = 0
+      self.laneChange_direction = 0
+      CS.UE.custom_alert_message(-1, "", 0)
 
     if (CS.cstm_btns.get_button_status("alca") > 0) and self.alcaEnabled and (self.laneChange_enabled == 1):
       if ((CS.v_ego < cl_min_v) or (abs(actuators.steerAngle) >= cl_max_a) or \
@@ -185,15 +170,12 @@ class ALCAController():
       self.stop_ALCA(CS, False)
       return 0, False
 
-    if self.alcaEnabled and enabled and (((not self.prev_right_blinker_on) and CS.right_blinker_on) or \
-      ((not self.prev_left_blinker_on) and CS.left_blinker_on))  and \
+    if self.alcaEnabled and enabled and blinker.tap_direction != 0 and \
       (CS.v_ego >= cl_min_v) and (abs(actuators.steerAngle) < cl_max_a) and (self.laneChange_enabled == 1):
       # start blinker, speed and angle is within limits, let's go
-      laneChange_direction = 1
-      # changing lanes
-      if CS.left_blinker_on:
-        laneChange_direction = -1
-      self.debug_alca("ALCA blinker on detected")
+      laneChange_direction = -1 if blinker.tap_direction == 1 else 1 # left -1, right 1
+      blinker.override_direction = blinker.tap_direction
+      self.debug_alca("ALCA blinker tap detected")
 
       CS.UE.custom_alert_message(2,"Auto Lane Change Engaged!",100)
       self.debug_alca("ALCA engaged")
@@ -201,9 +183,6 @@ class ALCAController():
       self.laneChange_counter = 1
       self.laneChange_direction = laneChange_direction
       CS.cstm_btns.set_button_status("alca",2)
-
-    self.prev_right_blinker_on = CS.right_blinker_on
-    self.prev_left_blinker_on = CS.left_blinker_on
 
     if (not self.alcaEnabled) and self.laneChange_enabled > 1:
       self.debug_alca("ALCA canceled: not enabled")
@@ -240,7 +219,8 @@ class ALCAController():
           CS.UE.custom_alert_message(2,"Auto Lane Change Engaged! (2)",int(ALCA_duration_seconds * 100))
         self.laneChange_counter += 1
         self.debug_alca("ALCA phase 3: " + str(self.laneChange_counter))
-        if self.laneChange_counter >= ALCA_duration_seconds * 100.:
+        if self.laneChange_counter >= (ALCA_duration_seconds + 2) * 100.:
+          self.debug_alca("ALCA phase 3: Canceled due to time restriction")
           self.laneChange_enabled = 4
           self.laneChange_counter = 0
       if self.laneChange_enabled == 4:
@@ -251,9 +231,11 @@ class ALCAController():
           self.laneChange_counter = 0
           self.stop_ALCA(CS, True)
           return 0, False
+      else:
+        blinker.override_frame_end = max(blinker.override_frame_end, frame + 25)
 
     self.send_status(CS)
-    return turn_signal_needed, self.laneChange_enabled > 1
+    return self.laneChange_enabled > 1
 
 class ALCAModelParser():
   def __init__(self):
@@ -273,9 +255,8 @@ class ALCAModelParser():
     self.ALCA_use_visual = True
     self.ALCA_vego = 0.
     self.ALCA_vego_prev = 0.
-    self.poller = zmq.Poller()
-    self.alcaStatus = messaging.sub_sock(service_list['alcaStatus'].port, conflate=True, poller=self.poller)
-    self.alcaState = messaging.pub_sock(service_list['alcaState'].port)
+    self.alcaStatus = messaging.sub_sock('alcaStatus', conflate=True)
+    self.alcaState = messaging.pub_sock('alcaState')
     self.alcas = None
     self.hit_prob_low = False
     self.hit_prob_high = False
@@ -324,9 +305,9 @@ class ALCAModelParser():
 
   def update(self, v_ego, md, r_poly, l_poly, r_prob, l_prob, lane_width, p_poly):
 
-    for socket, _ in self.poller.poll(0):
-      if socket is self.alcaStatus:
-        self.alcas = tesla.ALCAStatus.from_bytes(socket.recv())
+    alcaStatusMsg = self.alcaStatus.receive(non_blocking=True)
+    if alcaStatusMsg is not None:
+      self.alcas = tesla.ALCAStatus.from_bytes(alcaStatusMsg)
 
     #if we don't have yet ALCA status, return same values
     if self.alcas is None:
@@ -400,7 +381,9 @@ class ALCAModelParser():
     #compute distances to lines
     self.distance_to_line_L = abs(l_poly[3]) 
     self.distance_to_line_R = abs(r_poly[3]) 
-    distance_left = float((self.ALCA_total_steps) * 0.05 * (self.ALCA_vego_prev + v_ego) / 2.) #5m + distance left
+    percent_completed = float(self.ALCA_total_steps - self.ALCA_step) / float(self.ALCA_total_steps)
+    percent_completed = clip(percent_completed, ALCA_distance_left_min, 1.0)
+    distance_left = float((self.ALCA_total_steps) * 0.05 * percent_completed * (self.ALCA_vego_prev + v_ego) / 2.) #5m + distance left
     distance_estimate = float(ITERATIONS_AHEAD_TO_ESTIMATE * 0.05 * (self.ALCA_vego_prev + v_ego) / 2.) 
     estimate_curv_at = distance_estimate / distance_left
     left_to_move = self.ALCA_lane_width * estimate_curv_at
@@ -420,11 +403,15 @@ class ALCAModelParser():
     d1 = np.polyval(p_poly,distance_estimate -1)
     d2 = np.polyval(p_poly,distance_estimate + 1)
     cos = 0.
+    turn_mult = 0.
     if abs(d2 - d1) > 0.001:
-      #cos = abs(np.cos(np.arctan(2/abs(d2-d1))))
-      cos = np.cos(np.arctan(2/(d2-d1)))
+      cos = abs(np.cos(np.arctan(2/abs(d2-d1))))
+      # turn mult is used to detect if we move in the same direction as the turn or oposite direction
+      # should be + if we move in the same direction and - if opposite
+      # it will increase or decrease the turn angle by cos(angle)
+      turn_mult = max (0, self.ALCA_direction * (d2-d1)/abs(d2-d1))
     d0 = (d2 + d1) / 2.0 - np.polyval(p_poly,distance_estimate)
-    ltm = left_to_move # * (1 - cos * self.ALCA_direction)
+    ltm = left_to_move  * (1 +  cos * turn_mult)
     #compute offsets
     self.ALCA_OFFSET_C1 = 0.
     lane_multiplier = 1. if self.ALCA_direction == 1 else ALCA_right_lane_multiplier
@@ -437,7 +424,7 @@ class ALCAModelParser():
     
     if (not self.ALCA_error) and self.ALCA_use_visual:
       if self.ALCA_over_line:
-        if (self.ALCA_total_steps - self.ALCA_step <= 1) or (self.ALCA_over_line and ((self.ALCA_direction == 1) and (r_poly[3] < -ALCA_release_distance)) or ((self.ALCA_direction == -1) and (l_poly[3] > ALCA_release_distance))):
+        if (self.ALCA_total_steps - self.ALCA_step <= 1) or (self.ALCA_over_line and ((self.ALCA_direction == 1) and ((r_poly[3] < -ALCA_release_distance) or (l_poly[3] < self.ALCA_lane_width / 2. - ALCA_release_distance))) or ((self.ALCA_direction == -1) and ((l_poly[3] > ALCA_release_distance) or (r_poly[3] > -(self.ALCA_lane_width / 2. - ALCA_release_distance))))):
           self.ALCA_error = False
           self.reset_alca(v_ego)
           return np.array(r_poly),np.array(l_poly),r_prob, l_prob, lane_width, p_poly
@@ -462,7 +449,7 @@ class ALCAModelParser():
     p_poly[2] += self.ALCA_OFFSET_C2
     p_poly[1] += self.ALCA_OFFSET_C1
 
-    self.ALCA_vego_prev = v_ego
-    self.send_state()
+    self.ALCA_vego_prev = v_ego	
+    self.send_state()	
     return np.array(r_poly),np.array(l_poly),r_prob, l_prob, self.ALCA_lane_width, np.array(p_poly)
- 
+    

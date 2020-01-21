@@ -274,13 +274,15 @@ static void screen_draw_button(UIState *s, int touch_x, int touch_y) {
   }
 }
 
-void screen_toggle_record_state() {
+void screen_toggle_record_state(UIState *s) {
   if (captureState == CAPTURE_STATE_CAPTURING) {
+    s->b.recording = false;
     stop_capture();
     lock_current_video = false;
   }
   else {
     //captureState = CAPTURE_STATE_CAPTURING;
+    s->b.recording = true;
     start_capture();
   }
 }
@@ -298,13 +300,14 @@ void screen_toggle_lock() {
 void dashcam( UIState *s, int touch_x, int touch_y ) {
   screen_draw_button(s, touch_x, touch_y);
   if (screen_button_clicked(touch_x,touch_y)) {
-    screen_toggle_record_state();
+    screen_toggle_record_state(s);
   }
   if (screen_lock_button_clicked(touch_x,touch_y,lock_button)) {
     screen_toggle_lock();
   }
   if (!s->vision_connected) {
     // Assume car is not in drive so stop recording
+    s->b.recording = false;
     stop_capture();
   }
 }

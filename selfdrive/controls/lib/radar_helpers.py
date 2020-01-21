@@ -144,7 +144,7 @@ class Cluster():
 
   @property
   def oClass(self):
-    return all([t.oClass for t in self.tracks])
+    return max([t.oClass for t in self.tracks])
 
   @property
   def length(self):

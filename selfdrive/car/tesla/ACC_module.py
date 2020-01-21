@@ -1,12 +1,10 @@
-from selfdrive.services import service_list
+from selfdrive.car.tesla.speed_utils.fleet_speed import FleetSpeed
 from selfdrive.car.tesla.values import CruiseButtons, CruiseState
 from selfdrive.config import Conversions as CV
 import selfdrive.messaging as messaging
 import sys
 import time
-import zmq
-from selfdrive.car.tesla.movingaverage import MovingAverage
- 
+
 
 class ACCState():
   # Possible states of the ACC system, following the DI_cruiseState naming
@@ -17,24 +15,26 @@ class ACCState():
   NOT_READY = 9   # Not ready to be engaged due to the state of the car.
   
 class _Mode():
-  def __init__(self, label, autoresume, state):
+  def __init__(self, label, autoresume, state,adaptive):
     self.label = label
     self.autoresume = autoresume
     self.state = state
+    self.adaptive = adaptive
     self.next = None
   
 class ACCMode():
   # Possible ACC modes, controlling how ACC behaves.
   # This is separate from ACC state. For example, you could
   # have ACC in "Autoresume" mode in "Standby" state.
-  FOLLOW = _Mode(label="follow",   autoresume=False, state=ACCState.STANDBY)
-  AUTO =   _Mode(label="auto", autoresume=True,  state=ACCState.STANDBY)
+  FOLLOW = _Mode(label="follow",   autoresume=False, state=ACCState.STANDBY, adaptive=True)
+  AUTO =   _Mode(label="auto", autoresume=True,  state=ACCState.STANDBY, adaptive=True)
+  PLAINCC = _Mode(label="cc",   autoresume=False, state=ACCState.STANDBY, adaptive=False)
   
   BUTTON_NAME = 'acc'
   BUTTON_ABREVIATION = 'ACC'
   
   # Toggle order: OFF -> ON -> AUTO -> OFF
-  _all_modes = [FOLLOW, AUTO]
+  _all_modes = [FOLLOW, AUTO,PLAINCC]
   for index, mode in enumerate(_all_modes):
     mode.next = _all_modes[(index + 1) % len(_all_modes)]
     
@@ -61,14 +61,14 @@ class ACCController():
     self.CC = carcontroller
     self.human_cruise_action_time = 0
     self.automated_cruise_action_time = 0
-    self.poller = zmq.Poller()
-    self.radarState = messaging.sub_sock(service_list['radarState'].port, conflate=True, poller=self.poller)
+    self.radarState = messaging.sub_sock('radarState', conflate=True)
     self.last_update_time = 0
     self.enable_adaptive_cruise = False
     self.prev_enable_adaptive_cruise = False
     # Whether to re-engage automatically after being paused due to low speed or
     # user-initated deceleration.
     self.autoresume = False
+    self.adaptive = False
     self.last_brake_press_time = 0
     self.last_cruise_stalk_pull_time = 0
     self.prev_cruise_buttons = CruiseButtons.IDLE
@@ -82,8 +82,8 @@ class ACCController():
     self.lead_last_seen_time_ms = 0
     # BB speed for testing
     self.new_speed = 0
-    self.average_speed_over_x_suggestions = 20 #2 seconds.... 10x a second
-    self.maxsuggestedspeed_avg = MovingAverage(self.average_speed_over_x_suggestions)
+    average_speed_over_x_suggestions = 20 # 1 second (20x a second)
+    self.fleet_speed = FleetSpeed(average_speed_over_x_suggestions)
 
   # Updates the internal state of this controller based on user input,
   # specifically the steering wheel mounted cruise control stalk, and OpenPilot
@@ -97,33 +97,37 @@ class ACCController():
     acc_mode = ACCMode.from_label(acc_string)
     CS.cstm_btns.get_button(ACCMode.BUTTON_NAME).btn_label2 = acc_mode.label
     self.autoresume = acc_mode.autoresume
+    self.adaptive = acc_mode.adaptive
     curr_time_ms = _current_time_millis()
     # Handle pressing the enable button.
-    if (CS.cruise_buttons == CruiseButtons.MAIN and
-        self.prev_cruise_buttons != CruiseButtons.MAIN):
+    if (CS.cruise_buttons == CruiseButtons.MAIN  or CS.cruise_buttons == CruiseButtons.DECEL_SET) and self.prev_cruise_buttons != CS.cruise_buttons:
       double_pull = curr_time_ms - self.last_cruise_stalk_pull_time < 750
       self.last_cruise_stalk_pull_time = curr_time_ms
       ready = (CS.cstm_btns.get_button_status(ACCMode.BUTTON_NAME) > ACCState.OFF
-               and enabled
+               and (enabled or (CS.cruise_buttons == CruiseButtons.DECEL_SET and not self.adaptive))
                and CruiseState.is_enabled_or_standby(CS.pcm_acc_status)
                and CS.v_ego > self.MIN_CRUISE_SPEED_MS)
-      if ready and double_pull:
+      if ready and double_pull and ((self.adaptive and CS.cruise_buttons == CruiseButtons.MAIN) or ((not self.adaptive) and CS.cruise_buttons == CruiseButtons.DECEL_SET)):
         # A double pull enables ACC. updating the max ACC speed if necessary.
         self.enable_adaptive_cruise = True
         # Increase ACC speed to match current, if applicable.
-        self.acc_speed_kph = max(CS.v_ego_raw * CV.MS_TO_KPH, self.speed_limit_kph)
+        if self.adaptive:
+          self.acc_speed_kph = max(CS.v_ego_raw * CV.MS_TO_KPH, self.speed_limit_kph)
+        else:
+          self.acc_speed_kph = CS.v_ego_raw * CV.MS_TO_KPH
         self.user_has_braked = False
         self.has_gone_below_min_speed = False
       else:
         # A single pull disables ACC (falling back to just steering).
-        self.enable_adaptive_cruise = False
+        if CS.cruise_buttons == CruiseButtons.MAIN:
+          self.enable_adaptive_cruise = False
     # Handle pressing the cancel button.
-    elif CS.cruise_buttons == CruiseButtons.CANCEL:
+    if CS.cruise_buttons == CruiseButtons.CANCEL:
       self.enable_adaptive_cruise = False
       self.acc_speed_kph = 0. 
       self.last_cruise_stalk_pull_time = 0
     # Handle pressing up and down buttons.
-    elif (self.enable_adaptive_cruise and
+    elif (CS.cruise_buttons != CruiseButtons.MAIN and self.enable_adaptive_cruise and
           CS.cruise_buttons != self.prev_cruise_buttons):
       self._update_max_acc_speed(CS)
       
@@ -136,23 +140,24 @@ class ACCController():
     if CS.v_ego < self.MIN_CRUISE_SPEED_MS:
       self.has_gone_below_min_speed = True
     
-    # If autoresume is not enabled, manually steering or slowing disables ACC.
+    # If autoresume is not enabled and not in standard CC, disable if we hit the brakes or gone below 18mph
     if not self.autoresume:
-      if not enabled or self.user_has_braked or self.has_gone_below_min_speed:
+      if (self.adaptive and not enabled) or self.user_has_braked or self.has_gone_below_min_speed:
         self.enable_adaptive_cruise = False
     
     # Notify if ACC was toggled
     if self.prev_enable_adaptive_cruise and not self.enable_adaptive_cruise:
-      CS.UE.custom_alert_message(3, "ACC Disabled", 150, 4)
+      CS.UE.custom_alert_message(3, "%s Disabled" % ("ACC" if self.adaptive else "CC"), 150, 4)
       CS.cstm_btns.set_button_status(ACCMode.BUTTON_NAME, ACCState.STANDBY)
+      self.fleet_speed.reset_averager()
     elif self.enable_adaptive_cruise:
       CS.cstm_btns.set_button_status(ACCMode.BUTTON_NAME, ACCState.ENABLED)
       if not self.prev_enable_adaptive_cruise:
-        CS.UE.custom_alert_message(2, "ACC Enabled", 150)
+        CS.UE.custom_alert_message(2, "%s Enabled" % ("ACC" if self.adaptive else "CC"), 150)
 
     # Update the UI to show whether the current car state allows ACC.
     if CS.cstm_btns.get_button_status(ACCMode.BUTTON_NAME) in [ACCState.STANDBY, ACCState.NOT_READY]:
-      if (enabled
+      if ((enabled or not self.adaptive)
           and CruiseState.is_enabled_or_standby(CS.pcm_acc_status)
           and CS.v_ego > self.MIN_CRUISE_SPEED_MS):
         CS.cstm_btns.set_button_status(ACCMode.BUTTON_NAME, ACCState.STANDBY)
@@ -177,32 +182,18 @@ class ACCController():
     # Clip ACC speed between 0 and 170 KPH.
     self.acc_speed_kph = min(self.acc_speed_kph, 170)
     self.acc_speed_kph = max(self.acc_speed_kph, 0)
-    
-  def max_v_by_speed_limit(self, acc_set_speed_ms, CS):
-    # if more than 10 kph / 2.78 ms, consider we have speed limit
-    if (CS.maxdrivespeed > 0)  and CS.useTeslaMapData and (CS.mapAwareSpeed or (CS.baseMapSpeedLimitMPS <2.7)):
-      #do we know the based speed limit?
-      sl1 = 0.
-      if CS.baseMapSpeedLimitMPS >= 2.7:
-        #computer adjusted maxdrive based on set speed
-        sl1 = min (acc_set_speed_ms *  CS.maxdrivespeed / CS.baseMapSpeedLimitMPS, acc_set_speed_ms)
-        sl1 = self.maxsuggestedspeed_avg.add(sl1)
-      else:
-        sl1 = self.maxsuggestedspeed_avg.add(CS.maxdrivespeed)
-      return min(acc_set_speed_ms, sl1)
-    else:
-      return acc_set_speed_ms
 
-  # Decide which cruise control buttons to simluate to get the car to the
-  # desired speed.
-  def update_acc(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset):
+  # Decide which cruise control buttons to simluate to get the car to the desired speed.
+  def update_acc(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_kph, set_speed_limit_active, speed_limit_offset):
     # Adaptive cruise control
     self.prev_speed_limit_kph = self.speed_limit_kph
-    if speed_limit_valid and set_speed_limit_active and (speed_limit_kph >= 10):
-      self.speed_limit_kph = speed_limit_kph +  speed_limit_offset
-      if not (int(self.prev_speed_limit_kph) == int(self.speed_limit_kph)):
+    if set_speed_limit_active and speed_limit_kph > 0:
+      self.speed_limit_kph = speed_limit_kph + speed_limit_offset
+      if int(self.prev_speed_limit_kph) != int(self.speed_limit_kph):
         self.acc_speed_kph = self.speed_limit_kph
-        self.maxsuggestedspeed_avg.reset()
+        self.fleet_speed.reset_averager()
+    else: # reset internal speed limit, so double pull doesn't set higher speed than current (e.g. after leaving the highway)
+      self.speed_limit_kph = 0.
     current_time_ms = _current_time_millis()
     if CruiseButtons.should_be_throttled(CS.cruise_buttons):
       self.human_cruise_action_time = current_time_ms
@@ -213,14 +204,23 @@ class ACCController():
         and (CS.pcm_acc_status == CruiseState.ENABLED)):
       button_to_press = CruiseButtons.CANCEL
 
+    #if non addaptive and we just engaged ACC but pcm is not engaged, then engage
+    if (not self.adaptive) and self.enable_adaptive_cruise and (CS.pcm_acc_status != CruiseState.ENABLED):
+      button_to_press = CruiseButtons.MAIN
+
+    #if plain cc, not adaptive, then just return None or Cancel
+    if (not self.adaptive) and self.enable_adaptive_cruise:
+      self.acc_speed_kph = CS.v_cruise_actual #if not CS.imperial_speed_units else CS.v_cruise_actual * CV.MPH_TO_KPH
+      return button_to_press
+
     #disengage if cruise is canceled
     if (not self.enable_adaptive_cruise) and (CS.pcm_acc_status >= 2) and (CS.pcm_acc_status <= 4):
       button_to_press = CruiseButtons.CANCEL 
     lead_1 = None
     #if enabled:
-    for socket, _ in self.poller.poll(0):
-      if socket is self.radarState:
-        lead_1 = messaging.recv_one(socket).radarState.leadOne
+    lead = messaging.recv_one_or_none(self.radarState)
+    if lead is not None:
+        lead_1 = lead.radarState.leadOne
         if lead_1.dRel:
           self.lead_last_seen_time_ms = current_time_ms
     if self.enable_adaptive_cruise and enabled: # and (button_to_press == None):
@@ -232,7 +232,7 @@ class ACCController():
         # and speed more directly.
         # Bring in the lead car distance from the radarState feed
         
-        button_to_press = self._calc_follow_button(CS, lead_1,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset)
+        button_to_press = self._calc_follow_button(CS, lead_1, speed_limit_kph, set_speed_limit_active, speed_limit_offset, frame)
     if button_to_press:
       self.automated_cruise_action_time = current_time_ms
       # If trying to slow below the min cruise speed, just cancel cruise.
@@ -248,7 +248,7 @@ class ACCController():
     return button_to_press
 
   # function to calculate the cruise button based on a safe follow distance
-  def _calc_follow_button(self, CS, lead_car,speed_limit_kph, speed_limit_valid, set_speed_limit_active, speed_limit_offset):
+  def _calc_follow_button(self, CS, lead_car, speed_limit_kph, set_speed_limit_active, speed_limit_offset, frame):
     if lead_car is None:
       return None
     # Desired gap (in seconds) between cars.
@@ -263,7 +263,7 @@ class ACCController():
     # Relative velocity between the lead car and our set cruise speed.
     future_vrel_kph = lead_speed_kph - CS.v_cruise_actual
     # How much we can accelerate without exceeding the max allowed speed.
-    max_acc_speed_kph = self.max_v_by_speed_limit(self.acc_speed_kph * CV.KPH_TO_MS, CS) * CV.MS_TO_KPH
+    max_acc_speed_kph = self.fleet_speed.adjust(CS, self.acc_speed_kph * CV.KPH_TO_MS, frame) * CV.MS_TO_KPH
     available_speed_kph = max_acc_speed_kph - CS.v_cruise_actual
     half_press_kph, full_press_kph = self._get_cc_units_kph(CS.imperial_speed_units)
     # button to issue
