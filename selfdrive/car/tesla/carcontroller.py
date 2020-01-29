@@ -579,8 +579,8 @@ class CarController():
       if enable_steer_control and op_status == 3:
         op_status = 0x5
       park_brake_request = int(CS.ahbEnabled)
-      if park_brake_request == 1:
-        print("Park Brake Request received")
+#      if park_brake_request == 1:
+#        print("Park Brake Request received")
       adaptive_cruise = 1 if (not self.PCC.pcc_available and self.ACC.adaptive) or self.PCC.pcc_available else 0
       can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,speed_override,self.DAS_206_apUnavailable, collision_warning, op_status, \
             acc_speed_kph, \

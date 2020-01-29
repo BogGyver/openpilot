@@ -146,31 +146,47 @@ class CarInterface():
           
       # Kp and Ki for the longitudinal control
       if teslaModel == "S":
-        ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.50, 0.45, 0.4]
-        ret.longitudinalTuning.kiBP = [0., 5., 35.]
-        ret.longitudinalTuning.kiV = [0.01,0.01,0.01]
+        ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
+        ret.longitudinalTuning.kpV = [0.50, 0.45, 0.45, 0.4]
+        ret.longitudinalTuning.kiBP = [0., 5., 10., 35.]
+        ret.longitudinalTuning.kiV = [0.01,0.01,0.01,0.01]
+     #   ret.longitudinalTuning.kdBP = [0, 20., 25., 35]
+     #   ret.longitudinalTuning.kdV = [0.01, 0.01, 0.01, 0.01]
+
       elif teslaModel == "SP":
-        ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.325]
-        ret.longitudinalTuning.kiBP = [0., 5., 35.]
-        ret.longitudinalTuning.kiV = [0.00915,0.00825,0.00725]
+        ret.longitudinalTuning.kpBP = [0., 5., 22., 35.] # 0km/h, 18 km/h, 80, 128km/h
+        ret.longitudinalTuning.kpV = [0.260, 0.272, 0.296, 0.314]
+
+        ret.longitudinalTuning.kiBP = [0., 5., 22., 35.]
+        ret.longitudinalTuning.kiV = [0.00835,0.00817, 0.00765, 0.00747]
+     #   ret.longitudinalTuning.kdBP = [0, 5., 22., 35]
+     #   ret.longitudinalTuning.kdV = [0.010, 0.010, 0.010, 0.01]
+
       elif teslaModel == "SD":
-        ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.50, 0.45, 0.4]
-        ret.longitudinalTuning.kiBP = [0., 5., 35.]
+        ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
+        ret.longitudinalTuning.kpV = [0.50, 0.45, 0.45, 0.4]
+        ret.longitudinalTuning.kiBP = [0., 5., 22., 35.]
         ret.longitudinalTuning.kiV = [0.01,0.01,0.01]
+      #  ret.longitudinalTuning.kdBP = [0, 20., 25., 35]
+      #  ret.longitudinalTuning.kdV = [0.01, 0.01, 0.01, 0.01]
+
       elif teslaModel == "SPD":
-        ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.325]
-        ret.longitudinalTuning.kiBP = [0., 5., 35.]
-        ret.longitudinalTuning.kiV = [0.00915,0.00825,0.00725]
+        ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
+        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.325, 0.325]
+        ret.longitudinalTuning.kiBP = [0., 5., 22., 35.]
+        ret.longitudinalTuning.kiV = [0.00915,0.00825,0.00750,0.00725]
+       # ret.longitudinalTuning.kdBP = [0, 20., 25., 35]
+       # ret.longitudinalTuning.kdV = [0.01, 0.01, 0.01, 0.01]
+
       else:
         #use S numbers if we can't match anything
-        ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.3]
-        ret.longitudinalTuning.kiBP = [0., 5., 35.]
-        ret.longitudinalTuning.kiV = [0.08,0.08,0.08]
+        ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
+        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.3, 0.3]
+        ret.longitudinalTuning.kiBP = [0., 5., 22., 35.]
+        ret.longitudinalTuning.kiV = [0.08,0.08,0.08,0.08]
+   #     ret.longitudinalTuning.kdBP = [0, 20., 25., 35]
+   #     ret.longitudinalTuning.kdV = [0.01, 0.01, 0.01, 0.01]
+
       
 
     else:
