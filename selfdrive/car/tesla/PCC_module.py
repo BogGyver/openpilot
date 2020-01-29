@@ -182,6 +182,11 @@ class PCCController():
         if self.LoC.pid:
           self.LoC.pid.p = data['p']
           self.LoC.pid.i = data['i']
+          if 'd' not in data:
+            self.Loc.pid.d = 0.01
+          else:
+            self.LoC.pid.d = data['d']
+
           self.LoC.pid.f = data['f']
       else:
         print("self.LoC not initialized!")
@@ -193,6 +198,7 @@ class PCCController():
     data = {}
     data['p'] = pid.p
     data['i'] = pid.i
+    data['d'] = pid.d
     data['f'] = pid.f
     try:
       with open(V_PID_FILE , 'w') as outfile :
