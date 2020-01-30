@@ -1,5 +1,7 @@
 import numpy as np
 from common.numpy_fast import clip, interp
+from selfdrive.car.tesla.speed_utils.movingaverage import MovingAverage
+
 
 def apply_deadzone(error, deadzone):
   if error > deadzone:
@@ -27,7 +29,8 @@ class PIController():
     self.d_rate = 7.0 / rate
     self.sat_limit = sat_limit
     self.convert = convert
-    self.past_errors = []
+    self.past_5_errors_avg = 0
+    self.past_5_errors = MovingAverage(5)
 
     self.reset()
 
@@ -60,11 +63,12 @@ class PIController():
     self.p = 0.0
     self.i = 0.0
     self.f = 0.0
-#    self.d = 0.0
+    self.d = 0.0
     self.sat_count = 0.0
     self.saturated = False
     self.control = 0
-    self.past_errors.clear()
+    self.past_5_errors_avg = 0
+    self.past_5_errors.reset()
 
   def update(self, setpoint, measurement, speed=0.0, check_saturation=True, override=False, feedforward=0., deadzone=0., freeze_integrator=False):
     self.speed = speed
@@ -78,8 +82,8 @@ class PIController():
       self.i -= self.i_unwind_rate * float(np.sign(self.i))
     else:
       i = self.i + error * self.k_i * self.i_rate
-      if len(self.past_errors) >= 7:
-        self.d = self.k_d * ((error - self.past_errors[-7]) / self.d_rate)
+      if self.past_5_errors.no_items == self.past_5_errors.length:
+        self.d = self.k_d * ((error - self.past_5_errors_avg) / self.d_rate)
       control = self.p + self.f + i
 
       if self.convert is not None:
@@ -92,7 +96,7 @@ class PIController():
          not freeze_integrator:
         self.i = i
 
-    self.past_errors.append(error)
+    self.past_5_errors_avg = self.past_5_errors.add(error)
 
     control = self.p + self.f + self.i + self.d #adds the derivatoive gain to the control output
     if self.convert is not None:
