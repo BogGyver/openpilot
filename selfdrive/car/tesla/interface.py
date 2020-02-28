@@ -395,7 +395,7 @@ class CarInterface():
       events.append(create_event('brakeHold', [ET.NO_ENTRY, ET.USER_DISABLE]))
       if self.CC.opState == 1:
           self.CC.opState = 0
-    if self.CS.park_brake:
+    if ret.gearShifter == 'park':
       events.append(create_event('parkBrake', [ET.NO_ENTRY, ET.USER_DISABLE]))
       if self.CC.opState == 1:
           self.CC.opState = 0
