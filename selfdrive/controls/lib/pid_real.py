@@ -77,13 +77,13 @@ class PIController():
     self.p = error * self.k_p
     self.f = feedforward * self.k_f
     self.d = 0.0
+    if self.past_errors.no_items == self.past_errors.length:
+      self.d = self.k_d * ((error - self.past_errors_avg) / self.d_rate)
 
     if override:
       self.i -= self.i_unwind_rate * float(np.sign(self.i))
     else:
       i = self.i + error * self.k_i * self.i_rate
-      if self.past_errors.no_items == self.past_errors.length:
-        self.d = self.k_d * ((error - self.past_errors_avg) / self.d_rate)
       control = self.p + self.f + i + self.d
 
       if self.convert is not None:
