@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from cereal import car, tesla
+from cereal import car
 from common.numpy_fast import clip, interp
 from common.realtime import DT_CTRL
 from selfdrive.config import Conversions as CV
@@ -10,8 +10,6 @@ from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR,DBC
 from common.params import read_db
 from selfdrive.car import STD_CARGO_KG
 from selfdrive.car.tesla.readconfig import CarSettings
-import selfdrive.messaging as messaging
-from selfdrive.services import service_list
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V
 
 A_ACC_MAX = max(_A_CRUISE_MAX_V)
@@ -140,54 +138,23 @@ class CarInterface():
       ret.lateralTuning.pid.kf = 0.00006 # Initial test value TODO: investigate FF steer control for Model S?
       ret.steerActuatorDelay = 0.2
 
-      #ret.steerReactance = 1.0
-      #ret.steerInductance = 1.0
-      #ret.steerResistance = 1.0
-          
       # Kp and Ki for the longitudinal control
-      if teslaModel == "S":
-        ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
-        ret.longitudinalTuning.kpV = [0.50, 0.45, 0.45, 0.4]
-        ret.longitudinalTuning.kiBP = [0., 5., 10., 35.]
-        ret.longitudinalTuning.kiV = [0.01,0.01,0.01,0.01]
-     #   ret.longitudinalTuning.kdBP = [0, 20., 25., 35]
-     #   ret.longitudinalTuning.kdV = [0.01, 0.01, 0.01, 0.01]
-
-      elif teslaModel == "SP":
+      if teslaModel == "SP":
         ret.longitudinalTuning.kpBP = [0., 5., 22., 35.] # 0km/h, 18 km/h, 80, 128km/h
-        ret.longitudinalTuning.kpV = [0.260, 0.252, 0.296, 0.314]
-
+        ret.longitudinalTuning.kpV = [0.4, 0.4, 0.65, 0.68]
         ret.longitudinalTuning.kiBP = [0., 5., 22., 35.]
-        ret.longitudinalTuning.kiV = [0.2, 0.12, 0.4, 0.4]
-     #   ret.longitudinalTuning.kdBP = [0, 5., 22., 35]
-     #   ret.longitudinalTuning.kdV = [0.010, 0.010, 0.010, 0.01]
-
-      elif teslaModel == "SD":
-        ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
-        ret.longitudinalTuning.kpV = [0.50, 0.45, 0.45, 0.4]
-        ret.longitudinalTuning.kiBP = [0., 5., 22., 35.]
-        ret.longitudinalTuning.kiV = [0.01,0.01,0.01]
-      #  ret.longitudinalTuning.kdBP = [0, 20., 25., 35]
-      #  ret.longitudinalTuning.kdV = [0.01, 0.01, 0.01, 0.01]
-
-      elif teslaModel == "SPD":
-        ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
-        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.325, 0.325]
-        ret.longitudinalTuning.kiBP = [0., 5., 22., 35.]
-        ret.longitudinalTuning.kiV = [0.00915,0.00825,0.00750,0.00725]
-       # ret.longitudinalTuning.kdBP = [0, 20., 25., 35]
-       # ret.longitudinalTuning.kdV = [0.01, 0.01, 0.01, 0.01]
-
+        ret.longitudinalTuning.kiV = [0.08, 0.08, 0.08, 0.09]
+      #elif teslaModel == "SD":
+        # TODO
+      #elif teslaModel == "SPD":
+        # TODO
       else:
-        #use S numbers if we can't match anything
+        if teslaModel != "S":
+          print("Tesla Model " + str(teslaModel) + " kp and ki params not implemented, using Model S values")
         ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
-        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.3, 0.3]
-        ret.longitudinalTuning.kiBP = [0., 5., 22., 35.]
-        ret.longitudinalTuning.kiV = [0.08,0.08,0.08,0.08]
-   #     ret.longitudinalTuning.kdBP = [0, 20., 25., 35]
-   #     ret.longitudinalTuning.kdV = [0.01, 0.01, 0.01, 0.01]
-
-      
+        ret.longitudinalTuning.kpV = [0.4, 0.4, 0.4, 0.4]
+        ret.longitudinalTuning.kiBP = [0.]
+        ret.longitudinalTuning.kiV = [0.01]
 
     else:
       raise ValueError("unsupported car %s" % candidate)
@@ -221,12 +188,12 @@ class CarInterface():
     ret.steerMaxV = [420.,420.]   # max steer allowed
 
     ret.gasMaxBP = [0.]  # m/s
-    ret.gasMaxV = [0.3] #if ret.enableGasInterceptor else [0.] # max gas allowed
-    ret.brakeMaxBP = [0., 20.]  # m/s
-    ret.brakeMaxV = [1., 1.]   # max brake allowed - BB: since we are using regen, make this even
+    ret.gasMaxV = [0.6] #if ret.enableGasInterceptor else [0.] # max gas allowed
+    ret.brakeMaxBP = [0.]  # m/s
+    ret.brakeMaxV = [1.]   # max brake allowed - BB: since we are using regen, make this even
 
-    ret.longitudinalTuning.deadzoneBP = [0., 9.] #BB: added from Toyota to start pedal work; need to tune
-    ret.longitudinalTuning.deadzoneV = [0., 0.] #BB: added from Toyota to start pedal work; need to tune; changed to 0 for now
+    ret.longitudinalTuning.deadzoneBP = [0.]
+    ret.longitudinalTuning.deadzoneV = [0.]
 
     ret.stoppingControl = True
     ret.openpilotLongitudinalControl = True

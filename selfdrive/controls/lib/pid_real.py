@@ -13,7 +13,7 @@ def apply_deadzone(error, deadzone):
   return error
 
 class PIController():
-  def __init__(self, k_p, k_i, k_d, k_f=0.85, pos_limit=None, neg_limit=None, rate=100, sat_limit=0.8, convert=None):
+  def __init__(self, k_p, k_i, k_d, k_f=0., pos_limit=None, neg_limit=None, rate=100, sat_limit=0.8, convert=None):
     self._k_p = k_p # proportional gain
     self._k_i = k_i # integral gain
     self._k_d = k_d # derivative gain
@@ -29,8 +29,8 @@ class PIController():
     self.d_rate = 7.0 / rate
     self.sat_limit = sat_limit
     self.convert = convert
-    self.past_5_errors_avg = 0
-    self.past_5_errors = MovingAverage(5)
+    self.past_errors_avg = 0
+    self.past_errors = MovingAverage(3)
 
     self.reset()
 
@@ -67,8 +67,8 @@ class PIController():
     self.sat_count = 0.0
     self.saturated = False
     self.control = 0
-    self.past_5_errors_avg = 0
-    self.past_5_errors.reset()
+    self.past_errors_avg = 0
+    self.past_errors.reset()
 
   def update(self, setpoint, measurement, speed=0.0, check_saturation=True, override=False, feedforward=0., deadzone=0., freeze_integrator=False):
     self.speed = speed
@@ -82,9 +82,9 @@ class PIController():
       self.i -= self.i_unwind_rate * float(np.sign(self.i))
     else:
       i = self.i + error * self.k_i * self.i_rate
-      if self.past_5_errors.no_items == self.past_5_errors.length:
-        self.d = self.k_d * ((error - self.past_5_errors_avg) / self.d_rate)
-      control = self.p + self.f + i
+      if self.past_errors.no_items == self.past_errors.length:
+        self.d = self.k_d * ((error - self.past_errors_avg) / self.d_rate)
+      control = self.p + self.f + i + self.d
 
       if self.convert is not None:
         control = self.convert(control, speed=self.speed)
@@ -96,9 +96,9 @@ class PIController():
          not freeze_integrator:
         self.i = i
 
-    self.past_5_errors_avg = self.past_5_errors.add(error)
+    self.past_errors_avg = self.past_errors.add(error)
 
-    control = self.p + self.f + self.i + self.d #adds the derivatoive gain to the control output
+    control = self.p + self.f + self.i + self.d
     if self.convert is not None:
       control = self.convert(control, speed=self.speed)
 
