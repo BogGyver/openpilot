@@ -364,7 +364,7 @@ def data_send(sm, pm, CS, CI, CP, VM, state, events, actuators, v_cruise_kph, rk
     "vCruise": float(v_cruise_kph),
     "upAccelCmd": float(LoC.pid.p),
     "uiAccelCmd": float(LoC.pid.i),
-    "ufAccelCmd": float(LoC.pid.f),
+    "ufAccelCmd": 0.,
     "angleSteersDes": float(LaC.angle_steers_des),
     "vTargetLead": float(v_acc),
     "aTarget": float(a_acc),

@@ -186,8 +186,6 @@ class PCCController():
             self.Loc.pid.d = 0.01
           else:
             self.LoC.pid.d = data['d']
-
-          self.LoC.pid.f = data['f']
       else:
         print("self.LoC not initialized!")
     except :
@@ -195,11 +193,7 @@ class PCCController():
 
     #Helper function for saving the PCC pid constants across drives
   def save_pid(self, pid):
-    data = {}
-    data['p'] = pid.p
-    data['i'] = pid.i
-    data['d'] = pid.d
-    data['f'] = pid.f
+    data = {'p': pid.p, 'i': pid.i, 'd': pid.d}
     try:
       with open(V_PID_FILE , 'w') as outfile :
         json.dump(data, outfile)
@@ -419,15 +413,10 @@ class PCCController():
         self.v_acc_start = self.v_acc_sol
         self.a_acc_start = self.a_acc_sol
 
-        # we will try to feed forward the pedal position.... we might want to feed the last_output_gb....
-        # op feeds forward self.a_acc_sol
-        # it's all about testing now.
         vTarget = clip(self.v_acc_sol, 0, self.v_cruise)
         self.vTargetFuture = clip(self.v_acc_future, 0, self.v_pid)
-        feedforward = self.a_acc_sol
-        #feedforward = self.last_output_gb
         t_go, t_brake = self.LoC.update(self.enable_pedal_cruise, CS.v_ego, CS.brake_pressed != 0, CS.standstill, False, 
-                    self.v_cruise , vTarget, self.vTargetFuture, feedforward, CS.CP)
+                    self.v_cruise , vTarget, self.vTargetFuture, self.a_acc_sol, CS.CP)
         output_gb = t_go - t_brake
         #print ("Output GB Follow:", output_gb)
       else:

@@ -13,11 +13,10 @@ def apply_deadzone(error, deadzone):
   return error
 
 class PIController():
-  def __init__(self, k_p, k_i, k_d, k_f=0., pos_limit=None, neg_limit=None, rate=100, sat_limit=0.8, convert=None):
+  def __init__(self, k_p, k_i, k_d, pos_limit=None, neg_limit=None, rate=100, sat_limit=0.8, convert=None):
     self._k_p = k_p # proportional gain
     self._k_i = k_i # integral gain
     self._k_d = k_d # derivative gain
-    self.k_f = k_f  # feedforward gain
 
     self.pos_limit = pos_limit
     self.neg_limit = neg_limit
@@ -62,7 +61,6 @@ class PIController():
   def reset(self):
     self.p = 0.0
     self.i = 0.0
-    self.f = 0.0
     self.d = 0.0
     self.sat_count = 0.0
     self.saturated = False
@@ -75,7 +73,6 @@ class PIController():
 
     error = float(apply_deadzone(setpoint - measurement, deadzone))
     self.p = error * self.k_p
-    self.f = feedforward * self.k_f
     self.d = 0.0
     if self.past_errors.no_items == self.past_errors.length:
       self.d = self.k_d * ((error - self.past_errors_avg) / self.d_rate)
@@ -84,7 +81,7 @@ class PIController():
       self.i -= self.i_unwind_rate * float(np.sign(self.i))
     else:
       i = self.i + error * self.k_i * self.i_rate
-      control = self.p + self.f + i + self.d
+      control = self.p + i + self.d
 
       if self.convert is not None:
         control = self.convert(control, speed=self.speed)
@@ -98,7 +95,7 @@ class PIController():
 
     self.past_errors_avg = self.past_errors.add(error)
 
-    control = self.p + self.f + self.i + self.d
+    control = self.p + self.i + self.d
     if self.convert is not None:
       control = self.convert(control, speed=self.speed)
 
