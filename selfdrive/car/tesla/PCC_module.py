@@ -6,7 +6,7 @@ from common.numpy_fast import clip, interp
 from selfdrive.car.tesla.values import CruiseState, CruiseButtons
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.speed_smoother import speed_smoother
-from selfdrive.controls.lib.planner import calc_cruise_accel_limits
+from selfdrive.controls.lib.planner import calc_cruise_accel_limits, limit_accel_in_turns
 import selfdrive.messaging as messaging
 import time
 import math
@@ -356,12 +356,11 @@ class PCCController():
       
 
     v_ego = CS.v_ego
-    following = self.lead_1.status and self.lead_1.dRel < MAX_RADAR_DISTANCE and self.lead_1.vLeadK > v_ego and self.lead_1.aLeadK > 0.0
     accel_limits = [float(x) for x in calc_cruise_accel_limits(v_ego)]
     accel_limits[1] *= _accel_limit_multiplier(CS, self.lead_1)
     accel_limits[0] = _decel_limit(accel_limits[0], CS.v_ego, self.lead_1, CS, self.pedal_speed_kph)
     jerk_limits = [min(-0.1, accel_limits[0]/2.), max(0.1, accel_limits[1]/2.)]  # TODO: make a separate lookup for jerk tuning
-    #accel_limits = limit_accel_in_turns(v_ego, CS.angle_steers, accel_limits, CS.CP)
+    accel_limits = limit_accel_in_turns(v_ego, CS.angle_steers, accel_limits, CS.CP)
 
     output_gb = 0
     ####################################################################
@@ -374,7 +373,7 @@ class PCCController():
       enabled = self.enable_pedal_cruise and self.LoC.long_control_state in [LongCtrlState.pid, LongCtrlState.stopping]
       # determine if pedal is pressed by human
       self.prev_accelerator_pedal_pressed = self.accelerator_pedal_pressed
-      self.accelerator_pedal_pressed = CS.pedal_interceptor_value > 10
+      self.accelerator_pedal_pressed = CS.pedal_interceptor_value > 5
       #reset PID if we just lifted foot of accelerator
       if (not self.accelerator_pedal_pressed) and self.prev_accelerator_pedal_pressed:
         self.reset(CS.v_ego)
