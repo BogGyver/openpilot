@@ -648,11 +648,13 @@ def _interp_map(val, val_map):
   """Helper to call interp with an OrderedDict for the mapping. I find
   this easier to read than interp, which takes two arrays."""
   return interp(val, list(val_map.keys()), list(val_map.values()))
-  
+
 def _accel_limit_multiplier(CS, lead):
   """Limits acceleration in the presence of a lead car. The further the lead car
   is, the more accel is allowed. Range: 0 to 1, so that it can be multiplied
   with other accel limits."""
+  if not _is_present(lead):
+    return 1.
   accel_by_speed = OrderedDict([
     # (speed m/s, decel)
       (0.,  0.95),  #   0 kmh
@@ -667,21 +669,17 @@ def _accel_limit_multiplier(CS, lead):
         (20., 0.925),  #  72 kmh
         (30., 0.875)]) # 107 kmh
   accel_mult = _interp_map(CS.v_ego, accel_by_speed)
-  if _is_present(lead):
-    safe_dist_m = _safe_distance_m(CS.v_ego,CS)
-    accel_multipliers = OrderedDict([
-      # (distance in m, acceleration fraction)
-      (0.6 * safe_dist_m, 0.15),
-      (1.0 * safe_dist_m, 0.2),
-      (3.0 * safe_dist_m, 0.4)])
-    vrel_multipliers = OrderedDict([
-      # vrel m/s, accel mult
-      (0. , 1.),
-      (10., 1.5)])
-
-    return min(accel_mult * _interp_map(lead.vRel, vrel_multipliers) * _interp_map(lead.dRel, accel_multipliers),1.0)
-  else:
-    return min(accel_mult * 0.4, 1.0)
+  safe_dist_m = _safe_distance_m(CS.v_ego,CS)
+  accel_multipliers = OrderedDict([
+    # (distance in m, acceleration fraction)
+    (0.6 * safe_dist_m, 0.15),
+    (1.0 * safe_dist_m, 0.2),
+    (3.0 * safe_dist_m, 0.4)])
+  vrel_multipliers = OrderedDict([
+    # vrel m/s, accel mult
+    (0. , 1.),
+    (10., 1.5)])
+  return min(accel_mult * _interp_map(lead.vRel, vrel_multipliers) * _interp_map(lead.dRel, accel_multipliers),1.0)
 
 def _decel_limit(accel_min,v_ego, lead, CS, max_speed_kph):
   max_speed_mult = 1.
