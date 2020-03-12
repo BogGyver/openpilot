@@ -46,6 +46,15 @@ class ConfigFile():
       )
       file_changed |= didUpdate
 
+      #uses_a_pillar_harness -> usesApillarHarness
+      into.usesApillarHarness, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = main_section,
+        entry = 'uses_a_pillar_harness', entry_type = bool,
+        default_value = False,
+        comment = 'Enable when using the new A pillar harness.'
+      )
+      file_changed |= didUpdate
+
       #force_pedal_over_cc -> forcePedalOverCC
       into.forcePedalOverCC, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = main_section,
@@ -417,6 +426,7 @@ class CarSettings():
   ldwNumbPeriod = None
   tapBlinkerExtension = None
   ahbOffDuration = None
+  usesApillarHarness = None
 
   def __init__(self, optional_config_file_path = default_config_file_path):
     config_file = ConfigFile()

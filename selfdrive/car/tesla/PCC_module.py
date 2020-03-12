@@ -223,7 +223,10 @@ class PCCController():
           # send reset command
           idx = self.pedal_idx
           self.pedal_idx = (self.pedal_idx + 1) % 16
-          can_sends.append(teslacan.create_pedal_command_msg(0, 0, idx))
+          pedalcan = 2
+          if CS.useWithoutHarness:
+            pedalcan = 0
+          can_sends.append(teslacan.create_pedal_command_msg(0, 0, idx, pedalcan))
       return can_sends
 
     prev_enable_pedal_cruise = self.enable_pedal_cruise

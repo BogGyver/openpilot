@@ -45,11 +45,13 @@ class CarInterface():
       mydbc = mydbc + "1916"
     self.cp = get_can_parser(CP,mydbc)
     self.epas_cp = None
+    self.pedal_cp = None
     if self.CS.useWithoutHarness:
       self.epas_cp = get_epas_parser(CP,0)
+      self.pedal_cp = get_pedal_parser(CP,0)
     else:
       self.epas_cp = get_epas_parser(CP,2)
-    self.pedal_cp = get_pedal_parser(CP)
+      self.pedal_cp = get_pedal_parser(CP,2)
 
     self.CC = None
     if CarController is not None:
@@ -391,6 +393,8 @@ class CarInterface():
       self.CS.DAS_notInDrive = 1
       if self.CC.opState == 1:
           self.CC.opState = 0
+    if ret.gearShifter == 'drive':
+        self.CS.DAS_notInDrive =0
     if self.CS.brake_hold:
       events.append(create_event('brakeHold', [ET.NO_ENTRY, ET.USER_DISABLE]))
       if self.CC.opState == 1:

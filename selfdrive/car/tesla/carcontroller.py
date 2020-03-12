@@ -597,7 +597,7 @@ class CarController():
             self.DAS_202_noisyEnvironment, CS.DAS_doorOpen, CS.DAS_notInDrive, CS.enableDasEmulation, CS.enableRadarEmulation, \
             self.stopSignWarning, self.stopLightWarning, \
             self.DAS_222_accCameraBlind, self.DAS_219_lcTempUnavailableSpeed, self.DAS_220_lcTempUnavailableRoad, self.DAS_221_lcAborting, \
-            self.DAS_207_lkasUnavailable,self.DAS_208_rackDetected, self.DAS_025_steeringOverride,self.ldwStatus,0,CS.useWithoutHarness))
+            self.DAS_207_lkasUnavailable,self.DAS_208_rackDetected, self.DAS_025_steeringOverride,self.ldwStatus,CS.useWithoutHarness,CS.usesApillarHarness))
       self.stopLightWarning_last = self.stopLightWarning
       self.stopSignWarning_last = self.stopSignWarning
       self.warningNeeded = 0
@@ -622,10 +622,13 @@ class CarController():
           can_sends.insert(0, cruise_msg)
     apply_accel = 0.
     if self.PCC.pcc_available and frame % 5 == 0: # pedal processed at 20Hz
+      pedalcan = 2
+      if CS.useWithoutHarness:
+        pedalcan = 0
       apply_accel, accel_needed, accel_idx = self.PCC.update_pdl(enabled, CS, frame, actuators, pcm_speed, \
                     self.speed_limit_ms,
                     self.set_speed_limit_active, self.speed_limit_offset * CV.KPH_TO_MS, self.alca_enabled)
-      can_sends.append(teslacan.create_pedal_command_msg(apply_accel, int(accel_needed), accel_idx))
+      can_sends.append(teslacan.create_pedal_command_msg(apply_accel, int(accel_needed), accel_idx,pedalcan))
     self.last_angle = apply_angle
     self.last_accel = apply_accel
     

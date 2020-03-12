@@ -82,6 +82,13 @@ const safety_hook_config safety_hook_registry[] = {
 int current_safety = -1;
 
 int safety_set_mode(uint16_t mode, int16_t param) {
+  //BB prevent resetting if already in the correct mode
+  UNUSED(mode);
+  UNUSED(param);
+  return 1;
+}
+
+int safety_set_mode2(uint16_t mode, int16_t param) {
   int set_status = -1;   // not set
   int hook_config_count = sizeof(safety_hook_registry) / sizeof(safety_hook_config);
   //BB prevent resetting if already in the correct mode

@@ -35,6 +35,8 @@
 
 #include "drivers/can.h"
 
+uint16_t prev_safety_mode = 0;
+
 // ********************* Serial debugging *********************
 
 bool check_started(void) {
@@ -117,7 +119,17 @@ void EXTI3_IRQHandler(void) {
 
 // this is the only way to leave silent mode
 void set_safety_mode(uint16_t mode, int16_t param) {
-  int err = safety_set_mode(mode, param);
+  //BB to prevent any changes to safety
+  UNUSED(mode);
+  UNUSED(param);
+}
+
+// this is the only way to leave silent mode
+void set_safety_mode2(uint16_t mode, int16_t param) {
+  if (prev_safety_mode == mode) {
+    return;
+  }
+  int err = safety_set_mode2(mode, param);
   if (err == -1) {
     puts("Error: safety set mode failed\n");
   } else {
@@ -146,6 +158,7 @@ void set_safety_mode(uint16_t mode, int16_t param) {
           can_silent = ALL_CAN_LIVE;
           break;
       }
+    prev_safety_mode = mode;
     can_init_all();
   }
 }
@@ -766,14 +779,14 @@ int main(void) {
 
   // default to silent mode to prevent issues with Ford
   // hardcode a specific safety mode if you want to force the panda to be in a specific mode
-  int err = safety_set_mode(SAFETY_NOOUTPUT, 0);
+  int err = safety_set_mode2(SAFETY_TESLA, 0);
   if (err == -1) {
     puts("Failed to set safety mode\n");
     while (true) {
       // if SAFETY_NOOUTPUT isn't succesfully set, we can't continue
     }
   }
-  can_silent = ALL_CAN_SILENT;
+  can_silent = ALL_CAN_LIVE; //ALL_CAN_SILENT;
   can_init_all();
 
 #ifndef EON
