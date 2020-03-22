@@ -76,6 +76,7 @@ class PIController():
     self.d = 0.0
     if self.past_errors.no_items == self.past_errors.length:
       self.d = self.k_d * ((error - self.past_errors_avg) / self.d_rate)
+    self.past_errors_avg = self.past_errors.add(error)
 
     if override:
       self.i -= self.i_unwind_rate * float(np.sign(self.i))
@@ -92,12 +93,11 @@ class PIController():
           (error <= 0 and (control >= self.neg_limit or i > 0.0))) and \
          not freeze_integrator:
         self.i = i
-
-    self.past_errors_avg = self.past_errors.add(error)
-
-    control = self.p + self.i + self.d
-    if self.convert is not None:
-      control = self.convert(control, speed=self.speed)
+      else:
+        # re-calculate with unchanged i
+        control = self.p + self.i + self.d
+        if self.convert is not None:
+          control = self.convert(control, speed=self.speed)
 
     if check_saturation:
       self.saturated = self._check_saturation(control, override, error)
