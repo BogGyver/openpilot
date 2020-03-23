@@ -26,7 +26,7 @@ MAX_RADAR_DISTANCE = 120. #max distance to take in consideration radar reading
 MAX_PEDAL_VALUE = 112.
 PEDAL_HYST_GAP = 1.0  # don't change pedal command for small oscilalitons within this value
 # Cap the pedal to go from 0 to max in 4 seconds
-PEDAL_MAX_UP = MAX_PEDAL_VALUE * _DT / 4
+PEDAL_MAX_UP = MAX_PEDAL_VALUE * _DT / 2
 # Cap the pedal to go from max to 0 in 0.4 seconds
 PEDAL_MAX_DOWN = MAX_PEDAL_VALUE * _DT / 0.4
 
@@ -668,17 +668,17 @@ def _accel_limit_multiplier(CS, lead):
   with other accel limits."""
   accel_by_speed = OrderedDict([
     # (speed m/s, decel)
-      (0.,  0.95),  #   0 kmh
-      (10., 0.95),  #  35 kmh
-      (20., 0.925),  #  72 kmh
-      (30., 0.875)]) # 107 kmh
+      (0.,  0.985),  #   0 kmh
+      (10., 0.975),  #  35 kmh
+      (20., 0.95),  #  72 kmh
+      (30., 0.9)]) # 107 kmh
   if CS.teslaModel in ["SP","SPD"]:
       accel_by_speed = OrderedDict([
         # (speed m/s, decel)
-        (0.,  0.95),  #   0 kmh
-        (10., 0.95),  #  35 kmh
-        (20., 0.925),  #  72 kmh
-        (30., 0.875)]) # 107 kmh
+        (0.,  0.985),  #   0 kmh
+        (10., 0.975),  #  35 kmh
+        (20., 0.95),  #  72 kmh
+        (30., 0.0)]) # 107 kmh
   accel_mult = _interp_map(CS.v_ego, accel_by_speed)
   if _is_present(lead):
     safe_dist_m = _safe_distance_m(CS.v_ego,CS)
