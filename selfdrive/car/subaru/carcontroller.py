@@ -2,7 +2,7 @@
 from selfdrive.car import apply_std_steer_torque_limits
 from selfdrive.car.subaru import subarucan
 from selfdrive.car.subaru.values import DBC
-from selfdrive.can.packer import CANPacker
+from opendbc.can.packer import CANPacker
 
 
 class CarControllerParams():
@@ -18,18 +18,17 @@ class CarControllerParams():
 
 
 class CarController():
-  def __init__(self, car_fingerprint):
+  def __init__(self, dbc_name, CP, VM):
     self.lkas_active = False
-    self.steer_idx = 0
     self.apply_steer_last = 0
-    self.car_fingerprint = car_fingerprint
     self.es_distance_cnt = -1
     self.es_lkas_cnt = -1
+    self.steer_rate_limited = False
 
     # Setup detection helper. Routes commands to
     # an appropriate CAN bus number.
-    self.params = CarControllerParams(car_fingerprint)
-    self.packer = CANPacker(DBC[car_fingerprint]['pt'])
+    self.params = CarControllerParams(CP.carFingerprint)
+    self.packer = CANPacker(DBC[CP.carFingerprint]['pt'])
 
   def update(self, enabled, CS, frame, actuators, pcm_cancel_cmd, visual_alert, left_line, right_line):
     """ Controls thread """
@@ -48,10 +47,11 @@ class CarController():
 
       # limits due to driver torque
 
-      apply_steer = int(round(apply_steer))
-      apply_steer = apply_std_steer_torque_limits(apply_steer, self.apply_steer_last, CS.steer_torque_driver, P)
+      new_steer = int(round(apply_steer))
+      apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, P)
+      self.steer_rate_limited = new_steer != apply_steer
 
-      lkas_enabled = enabled and not CS.steer_not_allowed
+      lkas_enabled = enabled
 
       if not lkas_enabled:
         apply_steer = 0

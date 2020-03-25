@@ -99,7 +99,7 @@ void black_set_can_mode(uint8_t mode){
   switch (mode) {
     case CAN_MODE_NORMAL:
     case CAN_MODE_OBD_CAN2:
-      if ((bool)(mode == CAN_MODE_NORMAL) != (bool)(car_harness_status == HARNESS_STATUS_NORMAL)) {
+      if ((bool)(mode == CAN_MODE_NORMAL) != (bool)(car_harness_status == HARNESS_STATUS_FLIPPED)) {
         // B12,B13: disable OBD mode
         set_gpio_mode(GPIOB, 12, MODE_INPUT);
         set_gpio_mode(GPIOB, 13, MODE_INPUT);
@@ -123,8 +123,8 @@ void black_set_can_mode(uint8_t mode){
   }
 }
 
-void black_usb_power_mode_tick(uint64_t tcnt){
-  UNUSED(tcnt);
+void black_usb_power_mode_tick(uint32_t uptime){
+  UNUSED(uptime);
   // Not applicable
 }
 
@@ -146,6 +146,10 @@ void black_set_fan_power(uint8_t percentage){
   UNUSED(percentage);
 }
 
+void black_set_phone_power(bool enabled){
+  UNUSED(enabled);
+}
+
 void black_init(void) {
   common_init_gpio();
 
@@ -157,6 +161,9 @@ void black_init(void) {
   // C3: OBD_SBU2 (orientation detection)
   set_gpio_mode(GPIOC, 0, MODE_ANALOG);
   set_gpio_mode(GPIOC, 3, MODE_ANALOG);
+
+  // Set default state of GPS
+  current_board->set_esp_gps_mode(ESP_GPS_ENABLED);
 
   // C10: OBD_SBU1_RELAY (harness relay driving output)
   // C11: OBD_SBU2_RELAY (harness relay driving output)
@@ -191,7 +198,7 @@ void black_init(void) {
   black_set_can_mode(CAN_MODE_NORMAL);
 
   // flip CAN0 and CAN2 if we are flipped
-  if (car_harness_status == HARNESS_STATUS_NORMAL) {
+  if (car_harness_status == HARNESS_STATUS_FLIPPED) {
     can_flip_buses(0, 2);
   }
 
@@ -203,12 +210,12 @@ const harness_configuration black_harness_config = {
   .has_harness = true,
   .GPIO_SBU1 = GPIOC,
   .GPIO_SBU2 = GPIOC,
-  .GPIO_relay_normal = GPIOC,
-  .GPIO_relay_flipped = GPIOC,
+  .GPIO_relay_SBU1 = GPIOC,
+  .GPIO_relay_SBU2 = GPIOC,
   .pin_SBU1 = 0,
   .pin_SBU2 = 3,
-  .pin_relay_normal = 10,
-  .pin_relay_flipped = 11,
+  .pin_relay_SBU1 = 10,
+  .pin_relay_SBU2 = 11,
   .adc_channel_SBU1 = 10,
   .adc_channel_SBU2 = 13
 };
@@ -227,5 +234,6 @@ const board board_black = {
   .check_ignition = black_check_ignition,
   .read_current = black_read_current,
   .set_fan_power = black_set_fan_power,
-  .set_ir_power = black_set_ir_power
+  .set_ir_power = black_set_ir_power,
+  .set_phone_power = black_set_phone_power
 };

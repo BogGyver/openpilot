@@ -1,6 +1,8 @@
+#pragma once
+
 #include "cereal/gen/c/ui.capnp.h"
 
-
+// TODO: this is also hardcoded in common/transformations/camera.py
 
 
 vec3 bb_car_space_to_full_frame(const  UIState *s, vec4 car_space_projective) {
@@ -1340,20 +1342,20 @@ void  bb_ui_poll_update( UIState *s) {
           if ((strcmp(s->b.car_model,(char *) datad.icCarName.str) != 0) || (strcmp(s->b.car_folder, (char *) datad.icCarFolder.str) !=0)) {
             strcpy(s->b.car_model, (char *) datad.icCarName.str);
             strcpy(s->b.car_folder, (char *) datad.icCarFolder.str);
-            LOGW("Car folder set (%s)", s->b.car_folder);
+            //LOGW("Car folder set (%s)", s->b.car_folder);
 
             if (strcmp(s->b.car_folder,"tesla")==0) {
               s->b.img_logo = nvgCreateImage(s->vg, "../assets/img_spinner_comma.png", 1);
               s->b.img_logo2 = nvgCreateImage(s->vg, "../assets/img_spinner_comma2.png", 1);
-              LOGW("Spinning logo set for Tesla");
+              //LOGW("Spinning logo set for Tesla");
             } else if (strcmp(s->b.car_folder,"honda")==0) {
               s->b.img_logo = nvgCreateImage(s->vg, "../assets/img_spinner_comma.honda.png", 1);
               s->b.img_logo2 = nvgCreateImage(s->vg, "../assets/img_spinner_comma.honda2.png", 1);
-              LOGW("Spinning logo set for Honda");
+              //LOGW("Spinning logo set for Honda");
             } else if (strcmp(s->b.car_folder,"toyota")==0) {
               s->b.img_logo = nvgCreateImage(s->vg, "../assets/img_spinner_comma.toyota.png", 1);
               s->b.img_logo2 = nvgCreateImage(s->vg, "../assets/img_spinner_comma.toyota2.png", 1);
-              LOGW("Spinning logo set for Toyota");
+              //LOGW("Spinning logo set for Toyota");
             };
           }
           if (datad.icShowCar == 1) {

@@ -39,9 +39,11 @@ Find user made scripts on the [wiki](https://community.comma.ai/wiki/index.php/P
 
 Note that you may have to setup [udev rules](https://community.comma.ai/wiki/index.php/Panda#Linux_udev_rules) for Linux, such as
 ```
-sudo -i
-echo 'SUBSYSTEMS=="usb", ATTR{idVendor}=="bbaa", ATTR{idProduct}=="ddcc", MODE:="0666"' > /etc/udev/rules.d/11-panda.rules
-exit
+sudo tee /etc/udev/rules.d/11-panda.rules <<EOF
+SUBSYSTEM=="usb", ATTRS{idVendor}=="bbaa", ATTRS{idProduct}=="ddcc", MODE="0666"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="bbaa", ATTRS{idProduct}=="ddee", MODE="0666"
+EOF
+sudo udevadm control --reload-rules && sudo udevadm trigger
 ```
 
 Usage (JavaScript)
@@ -87,7 +89,7 @@ To print out the serial console from the ESP8266, run PORT=1 tests/debug_console
 Safety Model
 ------
 
-When a panda powers up, by default it's in `SAFETY_NOOUTPUT` mode. While in no output mode, the buses are also forced to be silent. In order to send messages, you have to select a safety mode. Currently, setting safety modes is only supported over USB.
+When a panda powers up, by default it's in `SAFETY_SILENT` mode. While in `SAFETY_SILENT` mode, the buses are also forced to be silent. In order to send messages, you have to select a safety mode. Currently, setting safety modes is only supported over USB.
 
 Safety modes optionally supports `controls_allowed`, which allows or blocks a subset of messages based on a customizable state in the board.
 

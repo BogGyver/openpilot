@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import os
+import sys
 import threading
 import importlib
-import shutil
 
 if "CI" in os.environ:
   tqdm = lambda x: x
@@ -12,12 +12,21 @@ else:
 from cereal import car, log
 from selfdrive.car.car_helpers import get_car
 import selfdrive.manager as manager
-import selfdrive.messaging as messaging
+import cereal.messaging as messaging
 from common.params import Params
-from selfdrive.services import service_list
+from cereal.services import service_list
 from collections import namedtuple
 
 ProcessConfig = namedtuple('ProcessConfig', ['proc_name', 'pub_sub', 'ignore', 'init_callback', 'should_recv_callback'])
+
+def wait_for_event(evt):
+  if not evt.wait(15):
+    if threading.currentThread().getName() == "MainThread":
+      # tested process likely died. don't let test just hang
+      raise Exception("Timeout reached. Tested process likely crashed.")
+    else:
+      # done testing this process, let it die
+      sys.exit(0)
 
 class FakeSocket:
   def __init__(self, wait=True):
@@ -32,13 +41,13 @@ class FakeSocket:
 
     if self.wait:
       self.recv_called.set()
-      self.recv_ready.wait()
+      wait_for_event(self.recv_ready)
       self.recv_ready.clear()
     return self.data.pop()
 
   def send(self, data):
     if self.wait:
-      self.recv_called.wait()
+      wait_for_event(self.recv_called)
       self.recv_called.clear()
 
     self.data.append(data)
@@ -47,13 +56,12 @@ class FakeSocket:
       self.recv_ready.set()
 
   def wait_for_recv(self):
-    self.recv_called.wait()
+    wait_for_event(self.recv_called)
 
 class DumbSocket:
   def __init__(self, s=None):
     if s is not None:
-      dat = messaging.new_message()
-      dat.init(s)
+      dat = messaging.new_message(s)
       self.data = dat.to_bytes()
 
   def receive(self, non_blocking=False):
@@ -75,23 +83,23 @@ class FakeSubMaster(messaging.SubMaster):
     # hack to know when fingerprinting is done
     if self.wait_on_getitem:
       self.update_called.set()
-      self.update_ready.wait()
+      wait_for_event(self.update_ready)
       self.update_ready.clear()
     return self.data[s]
 
   def update(self, timeout=-1):
     self.update_called.set()
-    self.update_ready.wait()
+    wait_for_event(self.update_ready)
     self.update_ready.clear()
 
   def update_msgs(self, cur_time, msgs):
-    self.update_called.wait()
+    wait_for_event(self.update_called)
     self.update_called.clear()
     super(FakeSubMaster, self).update_msgs(cur_time, msgs)
     self.update_ready.set()
 
   def wait_for_update(self):
-    self.update_called.wait()
+    wait_for_event(self.update_called)
 
 class FakePubMaster(messaging.PubMaster):
   def __init__(self, services):
@@ -99,11 +107,10 @@ class FakePubMaster(messaging.PubMaster):
     self.sock = {}
     self.last_updated = None
     for s in services:
-      data = messaging.new_message()
       try:
-        data.init(s)
+        data = messaging.new_message(s)
       except:
-        data.init(s, 0)
+        data = messaging.new_message(s, 0)
       self.data[s] = data.as_reader()
       self.sock[s] = DumbSocket()
     self.send_called = threading.Event()
@@ -116,11 +123,11 @@ class FakePubMaster(messaging.PubMaster):
     else:
       self.data[s] = dat.as_reader()
     self.send_called.set()
-    self.get_called.wait()
+    wait_for_event(self.get_called)
     self.get_called.clear()
 
   def wait_for_msg(self):
-    self.send_called.wait()
+    wait_for_event(self.send_called)
     self.send_called.clear()
     dat = self.data[self.last_updated]
     self.get_called.set()
@@ -132,14 +139,14 @@ def fingerprint(msgs, fsm, can_sock):
 
   # populate fake socket with data for fingerprinting
   canmsgs = [msg for msg in msgs if msg.which() == "can"]
-  can_sock.recv_called.wait()
+  wait_for_event(can_sock.recv_called)
   can_sock.recv_called.clear()
   can_sock.data = [msg.as_builder().to_bytes() for msg in canmsgs[:300]]
   can_sock.recv_ready.set()
   can_sock.wait = False
 
   # we know fingerprinting is done when controlsd sets sm['pathPlan'].sensorValid
-  fsm.update_called.wait()
+  wait_for_event(fsm.update_called)
   fsm.update_called.clear()
 
   fsm.wait_on_getitem = False
@@ -159,11 +166,11 @@ def get_car_params(msgs, fsm, can_sock):
   _, CP = get_car(can, sendcan)
   Params().put("CarParams", CP.to_bytes())
 
-def radar_rcv_callback(msg, CP):
+def radar_rcv_callback(msg, CP, cfg, fsm):
   if msg.which() != "can":
-    return []
+    return [], False
   elif CP.radarOffCan:
-    return ["radarState", "liveTracks"]
+    return ["radarState", "liveTracks"], True
 
   radar_msgs = {"honda": [0x445], "toyota": [0x19f, 0x22f], "gm": [0x474],
                 "chrysler": [0x2d4]}.get(CP.carName, None)
@@ -173,17 +180,25 @@ def radar_rcv_callback(msg, CP):
 
   for m in msg.can:
     if m.src == 1 and m.address in radar_msgs:
-      return ["radarState", "liveTracks"]
-  return []
+      return ["radarState", "liveTracks"], True
+  return [], False
+
+def calibration_rcv_callback(msg, CP, cfg, fsm):
+  # calibrationd publishes 1 calibrationData every 5 cameraOdometry packets.
+  # should_recv always true to increment frame
+  recv_socks = ["liveCalibration"] if (fsm.frame + 1) % 5 == 0 else []
+  return recv_socks, True
+
 
 CONFIGS = [
   ProcessConfig(
     proc_name="controlsd",
     pub_sub={
       "can": ["controlsState", "carState", "carControl", "sendcan", "carEvents", "carParams"],
-      "thermal":  [], "health": [], "liveCalibration": [], "driverMonitoring": [], "plan": [], "pathPlan": [], "gpsLocation": [],
+      "thermal": [], "health": [], "liveCalibration": [], "dMonitoringState": [], "plan": [], "pathPlan": [], "gpsLocation": [],
+      "model": [],
     },
-    ignore=[("logMonoTime", 0), ("valid", True), ("controlsState.startMonoTime", 0), ("controlsState.cumLagMs", 0)],
+    ignore=["logMonoTime", "valid", "controlsState.startMonoTime", "controlsState.cumLagMs"],
     init_callback=fingerprint,
     should_recv_callback=None,
   ),
@@ -193,7 +208,7 @@ CONFIGS = [
       "can": ["radarState", "liveTracks"],
       "liveParameters":  [], "controlsState":  [], "model":  [],
     },
-    ignore=[("logMonoTime", 0), ("valid", True), ("radarState.cumLagMs", 0)],
+    ignore=["logMonoTime", "valid", "radarState.cumLagMs"],
     init_callback=get_car_params,
     should_recv_callback=radar_rcv_callback,
   ),
@@ -203,7 +218,7 @@ CONFIGS = [
       "model": ["pathPlan"], "radarState": ["plan"],
       "carState": [], "controlsState": [], "liveParameters": [],
     },
-    ignore=[("logMonoTime", 0), ("valid", True), ("plan.processingDelay", 0)],
+    ignore=["logMonoTime", "valid", "plan.processingDelay"],
     init_callback=get_car_params,
     should_recv_callback=None,
   ),
@@ -212,7 +227,17 @@ CONFIGS = [
     pub_sub={
       "cameraOdometry": ["liveCalibration"]
     },
-    ignore=[("logMonoTime", 0), ("valid", True)],
+    ignore=["logMonoTime", "valid"],
+    init_callback=get_car_params,
+    should_recv_callback=calibration_rcv_callback,
+  ),
+  ProcessConfig(
+    proc_name="dmonitoringd",
+    pub_sub={
+      "driverState": ["dMonitoringState"],
+      "liveCalibration": [], "carState": [], "model": [], "gpsLocation": [],
+    },
+    ignore=["logMonoTime", "valid"],
     init_callback=get_car_params,
     should_recv_callback=None,
   ),
@@ -232,11 +257,12 @@ def replay_process(cfg, lr):
   all_msgs = sorted(lr, key=lambda msg: msg.logMonoTime)
   pub_msgs = [msg for msg in all_msgs if msg.which() in list(cfg.pub_sub.keys())]
 
-  shutil.rmtree('/data/params', ignore_errors=True)
   params = Params()
+  params.clear_all()
   params.manager_start()
   params.put("OpenpilotEnabledToggle", "1")
   params.put("Passive", "0")
+  params.put("CommunityFeaturesToggle", "1")
 
   os.environ['NO_RADAR_SLEEP'] = "1"
   manager.prepare_managed_process(cfg.proc_name)
@@ -261,12 +287,11 @@ def replay_process(cfg, lr):
   log_msgs, msg_queue = [], []
   for msg in tqdm(pub_msgs):
     if cfg.should_recv_callback is not None:
-      recv_socks = cfg.should_recv_callback(msg, CP)
+      recv_socks, should_recv = cfg.should_recv_callback(msg, CP, cfg, fsm)
     else:
       recv_socks = [s for s in cfg.pub_sub[msg.which()] if
                       (fsm.frame + 1) % int(service_list[msg.which()].frequency / service_list[s].frequency) == 0]
-
-    should_recv = bool(len(recv_socks))
+      should_recv = bool(len(recv_socks))
 
     if msg.which() == 'can':
       can_sock.send(msg.as_builder().to_bytes())

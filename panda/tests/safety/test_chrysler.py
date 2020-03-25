@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import unittest
 import numpy as np
-import libpandasafety_py  # pylint: disable=import-error
 from panda import Panda
+from panda.tests.safety import libpandasafety_py
+from panda.tests.safety.common import StdTest, make_msg
 
 MAX_RATE_UP = 3
 MAX_RATE_DOWN = 3
@@ -13,41 +14,78 @@ RT_INTERVAL = 250000
 
 MAX_TORQUE_ERROR = 80
 
-def twos_comp(val, bits):
-  if val >= 0:
-    return val
-  else:
-    return (2**bits) + val
+TX_MSGS = [[571, 0], [658, 0], [678, 0]]
 
-def sign(a):
-  if a > 0:
-    return 1
-  else:
-    return -1
-
-def swap_bytes(data_str):
-  """Accepts string with hex, returns integer with order swapped for CAN."""
-  a = int(data_str, 16)
-  return ((a & 0xff) << 24) + ((a & 0xff00) << 8) + ((a & 0x00ff0000) >> 8) + ((a & 0xff000000) >> 24)
+def chrysler_checksum(msg, len_msg):
+  checksum = 0xFF
+  for idx in range(0, len_msg-1):
+    curr = (msg.RDLR >> (8*idx)) if idx < 4 else (msg.RDHR >> (8*(idx - 4)))
+    curr &= 0xFF
+    shift = 0x80
+    for i in range(0, 8):
+      bit_sum = curr & shift
+      temp_chk = checksum & 0x80
+      if (bit_sum != 0):
+        bit_sum = 0x1C
+        if (temp_chk != 0):
+          bit_sum = 1
+        checksum = checksum << 1
+        temp_chk = checksum | 1
+        bit_sum ^= temp_chk
+      else:
+        if (temp_chk != 0):
+          bit_sum = 0x1D
+        checksum = checksum << 1
+        bit_sum ^= checksum
+      checksum = bit_sum
+      shift = shift >> 1
+  return ~checksum & 0xFF
 
 class TestChryslerSafety(unittest.TestCase):
+  cnt_torque_meas = 0
+  cnt_gas = 0
+  cnt_cruise = 0
+  cnt_brake = 0
+
   @classmethod
   def setUp(cls):
     cls.safety = libpandasafety_py.libpandasafety
-    cls.safety.safety_set_mode(Panda.SAFETY_CHRYSLER, 0)
+    cls.safety.set_safety_hooks(Panda.SAFETY_CHRYSLER, 0)
     cls.safety.init_tests_chrysler()
 
-  def _send_msg(self, bus, addr, length):
-    to_send = libpandasafety_py.ffi.new('CAN_FIFOMailBox_TypeDef *')
-    to_send[0].RIR = addr << 21
-    to_send[0].RDTR = length
-    to_send[0].RDTR = bus << 4
+  def _button_msg(self, buttons):
+    to_send = make_msg(0, 571)
+    to_send[0].RDLR = buttons
     return to_send
 
-  def _button_msg(self, buttons):
-    to_send = libpandasafety_py.ffi.new('CAN_FIFOMailBox_TypeDef *')
-    to_send[0].RIR = 1265 << 21
-    to_send[0].RDLR = buttons
+  def _cruise_msg(self, active):
+    to_send = make_msg(0, 500)
+    to_send[0].RDLR = 0x380000 if active else 0
+    to_send[0].RDHR |= (self.cnt_cruise % 16) << 20
+    to_send[0].RDHR |= chrysler_checksum(to_send[0], 8) << 24
+    self.__class__.cnt_cruise += 1
+    return to_send
+
+  def _speed_msg(self, speed):
+    speed = int(speed / 0.071028)
+    to_send = make_msg(0, 514, 4)
+    to_send[0].RDLR = ((speed & 0xFF0) >> 4) + ((speed & 0xF) << 12) + \
+                      ((speed & 0xFF0) << 12) + ((speed & 0xF) << 28)
+    return to_send
+
+  def _gas_msg(self, gas):
+    to_send = make_msg(0, 308)
+    to_send[0].RDHR = (gas & 0x7F) << 8
+    to_send[0].RDHR |= (self.cnt_gas % 16) << 20
+    self.__class__.cnt_gas += 1
+    return to_send
+
+  def _brake_msg(self, brake):
+    to_send = make_msg(0, 320)
+    to_send[0].RDLR = 5 if brake else 0
+    to_send[0].RDHR |= (self.cnt_brake % 16) << 20
+    to_send[0].RDHR |= chrysler_checksum(to_send[0], 8) << 24
+    self.__class__.cnt_brake += 1
     return to_send
 
   def _set_prev_torque(self, t):
@@ -56,16 +94,23 @@ class TestChryslerSafety(unittest.TestCase):
     self.safety.set_chrysler_torque_meas(t, t)
 
   def _torque_meas_msg(self, torque):
-    to_send = libpandasafety_py.ffi.new('CAN_FIFOMailBox_TypeDef *')
-    to_send[0].RIR = 544 << 21
+    to_send = make_msg(0, 544)
     to_send[0].RDHR = ((torque + 1024) >> 8) + (((torque + 1024) & 0xff) << 8)
+    to_send[0].RDHR |= (self.cnt_torque_meas % 16) << 20
+    to_send[0].RDHR |= chrysler_checksum(to_send[0], 8) << 24
+    self.__class__.cnt_torque_meas += 1
     return to_send
 
   def _torque_msg(self, torque):
-    to_send = libpandasafety_py.ffi.new('CAN_FIFOMailBox_TypeDef *')
-    to_send[0].RIR = 0x292 << 21
+    to_send = make_msg(0, 0x292)
     to_send[0].RDLR = ((torque + 1024) >> 8) + (((torque + 1024) & 0xff) << 8)
     return to_send
+
+  def test_spam_can_buses(self):
+    StdTest.test_spam_can_buses(self, TX_MSGS)
+
+  def test_relay_malfunction(self):
+    StdTest.test_relay_malfunction(self, 0x292)
 
   def test_default_controls_not_allowed(self):
     self.assertFalse(self.safety.get_controls_allowed())
@@ -81,27 +126,32 @@ class TestChryslerSafety(unittest.TestCase):
           self.assertTrue(self.safety.safety_tx_hook(self._torque_msg(t)))
 
   def test_manually_enable_controls_allowed(self):
-    self.safety.set_controls_allowed(1)
-    self.assertTrue(self.safety.get_controls_allowed())
-    self.safety.set_controls_allowed(0)
-    self.assertFalse(self.safety.get_controls_allowed())
+    StdTest.test_manually_enable_controls_allowed(self)
 
   def test_enable_control_allowed_from_cruise(self):
-    to_push = libpandasafety_py.ffi.new('CAN_FIFOMailBox_TypeDef *')
-    to_push[0].RIR = 0x1f4 << 21
-    to_push[0].RDLR = 0x380000
-
+    to_push = self._cruise_msg(True)
     self.safety.safety_rx_hook(to_push)
     self.assertTrue(self.safety.get_controls_allowed())
 
   def test_disable_control_allowed_from_cruise(self):
-    to_push = libpandasafety_py.ffi.new('CAN_FIFOMailBox_TypeDef *')
-    to_push[0].RIR = 0x1f4 << 21
-    to_push[0].RDLR = 0
-
+    to_push = self._cruise_msg(False)
     self.safety.set_controls_allowed(1)
     self.safety.safety_rx_hook(to_push)
     self.assertFalse(self.safety.get_controls_allowed())
+
+  def test_gas_disable(self):
+    self.safety.set_controls_allowed(1)
+    self.safety.safety_rx_hook(self._speed_msg(2.2))
+    self.safety.safety_rx_hook(self._gas_msg(1))
+    self.assertTrue(self.safety.get_controls_allowed())
+    self.safety.safety_rx_hook(self._gas_msg(0))
+    self.safety.safety_rx_hook(self._speed_msg(2.3))
+    self.safety.safety_rx_hook(self._gas_msg(1))
+    self.assertFalse(self.safety.get_controls_allowed())
+
+  def test_brake_disengage(self):
+    StdTest.test_allow_brake_at_zero_speed(self)
+    StdTest.test_not_allow_brake_when_moving(self, 0)
 
   def test_non_realtime_limit_up(self):
     self.safety.set_controls_allowed(True)
@@ -179,28 +229,30 @@ class TestChryslerSafety(unittest.TestCase):
     self.assertEqual(0, self.safety.get_chrysler_torque_meas_max())
     self.assertEqual(0, self.safety.get_chrysler_torque_meas_min())
 
+  def test_cancel_button(self):
+    CANCEL = 1
+    for b in range(0, 0xff):
+      if b == CANCEL:
+        self.assertTrue(self.safety.safety_tx_hook(self._button_msg(b)))
+      else:
+        self.assertFalse(self.safety.safety_tx_hook(self._button_msg(b)))
+
   def test_fwd_hook(self):
     buss = list(range(0x0, 0x3))
     msgs = list(range(0x1, 0x800))
-    chrysler_camera_detected = [0, 1]
 
-    for ccd in chrysler_camera_detected:
-      self.safety.set_chrysler_camera_detected(ccd)
-      blocked_msgs = [658, 678]
-      for b in buss:
-        for m in msgs:
-          if not ccd:
-            if b == 0:
-              fwd_bus = 2
-            elif b == 1:
-              fwd_bus = -1
-            elif b == 2:
-              fwd_bus = -1 if m in blocked_msgs else 0
-          else:
-            fwd_bus = -1
+    blocked_msgs = [658, 678]
+    for b in buss:
+      for m in msgs:
+        if b == 0:
+          fwd_bus = 2
+        elif b == 1:
+          fwd_bus = -1
+        elif b == 2:
+          fwd_bus = -1 if m in blocked_msgs else 0
 
-          # assume len 8
-          self.assertEqual(fwd_bus, self.safety.safety_fwd_hook(b, self._send_msg(b, m, 8)))
+        # assume len 8
+        self.assertEqual(fwd_bus, self.safety.safety_fwd_hook(b, make_msg(b, m, 8)))
 
 
 if __name__ == "__main__":

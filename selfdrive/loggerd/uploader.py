@@ -14,6 +14,7 @@ import subprocess
 from selfdrive.swaglog import cloudlog
 from selfdrive.loggerd.config import ROOT
 
+from common import android
 from common.params import Params
 
 from common.api import Api
@@ -69,20 +70,18 @@ def clear_locks(root):
 def is_on_wifi():
   # ConnectivityManager.getActiveNetworkInfo()
   try:
-    result = subprocess.check_output(["service", "call", "connectivity", "2"], encoding='utf8').strip().split("\n")  # pylint: disable=unexpected-keyword-arg
-  except subprocess.CalledProcessError:
+    # TODO: figure out why the android service call sometimes dies with SIGUSR2 (signal from MSGQ)
+    result = android.parse_service_call_string(android.service_call(["connectivity", "2"]))
+    if result is None:
+      return True
+    return 'WIFI' in result
+  except Exception:
+    cloudlog.exception("is_on_wifi failed")
     return False
-
-  # Concatenate all ascii parts
-  r = ""
-  for line in result[1:]:
-    r += line[51:67]
-
-  return "W.I.F.I" in r
 
 def is_on_hotspot():
   try:
-    result = subprocess.check_output(["ifconfig", "wlan0"], encoding='utf8')  # pylint: disable=unexpected-keyword-arg
+    result = subprocess.check_output(["ifconfig", "wlan0"], stderr=subprocess.STDOUT, encoding='utf8')
     result = re.findall(r"inet addr:((\d+\.){3}\d+)", result)[0][0]
 
     is_android = result.startswith('192.168.43.')
@@ -248,10 +247,9 @@ def uploader_fn(exit_event):
   backoff = 0.1
   while True:
     allow_raw_upload = (params.get("IsUploadRawEnabled") != b"0")
-    allow_cellular = (params.get("IsUploadVideoOverCellularEnabled") != b"0")
     on_hotspot = is_on_hotspot()
     on_wifi = is_on_wifi()
-    should_upload = allow_cellular or (on_wifi and not on_hotspot)
+    should_upload = on_wifi and not on_hotspot
 
     if exit_event.is_set():
       return
@@ -263,7 +261,7 @@ def uploader_fn(exit_event):
 
     key, fn = d
 
-    cloudlog.event("uploader_netcheck", allow_cellular=allow_cellular, is_on_hotspot=on_hotspot, is_on_wifi=on_wifi)
+    cloudlog.event("uploader_netcheck", is_on_hotspot=on_hotspot, is_on_wifi=on_wifi)
     cloudlog.info("to upload %r", d)
     success = uploader.upload(key, fn)
     if success:
@@ -274,7 +272,7 @@ def uploader_fn(exit_event):
       backoff = min(backoff*2, 120)
     cloudlog.info("upload done, success=%r", success)
 
-def main(gctx=None):
+def main():
   uploader_fn(threading.Event())
 
 if __name__ == "__main__":

@@ -4,27 +4,32 @@ import math
 from collections import defaultdict, deque
 import numpy as np
 
-import selfdrive.messaging as messaging
+import cereal.messaging as messaging
 from cereal import car,log,tesla
+from common.numpy_fast import interp
 from common.params import Params
-from common.realtime import DT_RDR, Ratekeeper, set_realtime_priority
+from common.realtime import Ratekeeper, set_realtime_priority
 from selfdrive.config import RADAR_TO_CAMERA
-from selfdrive.controls.lib.cluster.fastcluster_py import \
-  cluster_points_centroid
+from selfdrive.controls.lib.cluster.fastcluster_py import cluster_points_centroid
 from selfdrive.controls.lib.radar_helpers import Cluster, Track
 from selfdrive.swaglog import cloudlog
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 
-DEBUG = False
 
-#vision point
-DIMSV = 2
-XV, SPEEDV = 0, 1
-VISION_POINT = -1
-RDR_TO_LDR = 0.
-
-# Time-alignment
-v_len = 20   # how many speed data points to remember for t alignment with rdr data
+class KalmanParams():
+  def __init__(self, dt):
+    # Lead Kalman Filter params, calculating K from A, C, Q, R requires the control library.
+    # hardcoding a lookup table to compute K for values of radar_ts between 0.1s and 1.0s
+    assert dt > .01 and dt < .1, "Radar time step must be between .01s and 0.1s"
+    self.A = [[1.0, dt], [0.0, 1.0]]
+    self.C = [1.0, 0.0]
+    #Q = np.matrix([[10., 0.0], [0.0, 100.]])
+    #R = 1e3
+    #K = np.matrix([[ 0.05705578], [ 0.03073241]])
+    dts = [dt * 0.01 for dt in range(1, 11)]
+    K0 = [0.12288, 0.14557, 0.16523, 0.18282, 0.19887, 0.21372, 0.22761, 0.24069, 0.2531, 0.26491]
+    K1 = [0.29666, 0.29331, 0.29043, 0.28787, 0.28555, 0.28342, 0.28144, 0.27958, 0.27783, 0.27617]
+    self.K = [[interp(dt, dts, K0)], [interp(dt, dts, K1)]]
 
 
 def laplacian_cdf(x, mu, b):
@@ -92,11 +97,11 @@ def get_lead(v_ego, ready, clusters, lead_msg, low_speed_override=True,use_tesla
 
 
 class RadarD():
-  def __init__(self, mocked, RI,use_tesla_radar, delay=0):
+  def __init__(self, radar_ts, mocked, RI,use_tesla_radar, delay=0):
     self.current_time = 0
     self.mocked = mocked
-    self.RI = RI
     self.tracks = defaultdict(dict)
+    self.kalman_params = KalmanParams(radar_ts)
 
     self.last_md_ts = 0
     self.last_controls_state_ts = 0
@@ -107,7 +112,6 @@ class RadarD():
     self.v_ego = 0.
     self.v_ego_hist = deque([0], maxlen=delay+1)
 
-    self.v_ego_t_aligned = 0.
     self.ready = False
     self.icCarLR = None
     self.use_tesla_radar = use_tesla_radar
@@ -148,7 +152,7 @@ class RadarD():
       rpt = ar_pts[ids]
 
       # align v_ego by a fixed time to align it with the radar measurement
-      self.v_ego_t_aligned = self.v_ego_hist[0]
+      v_lead = rpt[2] + self.v_ego_hist[0]
 
       # distance relative to path
       d_path = np.sqrt(np.amin((self.path_x - rpt[0]) ** 2 + (path_y - rpt[1]) ** 2))
@@ -157,7 +161,7 @@ class RadarD():
 
       # create the track if it doesn't exist or it's a new track
       if ids not in self.tracks:
-        self.tracks[ids] = Track()
+        self.tracks[ids] = Track(v_lead, self.kalman_params)
       self.tracks[ids].update(rpt[0], rpt[1], rpt[2], rpt[3], rpt[4],rpt[5],rpt[6],rpt[7],rpt[8],rpt[9], d_path, self.v_ego_t_aligned,self.use_tesla_radar)
 
     idens = list(sorted(self.tracks.keys()))
@@ -333,8 +337,7 @@ class RadarD():
     
 
     # *** publish radarState ***
-    dat = messaging.new_message()
-    dat.init('radarState')
+    dat = messaging.new_message('radarState')
     dat.valid = sm.all_alive_and_valid(service_list=['controlsState', 'model'])
     dat.radarState.mdMonoTime = self.last_md_ts
     dat.radarState.canMonoTimes = list(rr.canMonoTimes)
@@ -388,8 +391,8 @@ def radard_thread(sm=None, pm=None, can_sock=None):
 
   RI = RadarInterface(CP)
 
-  rk = Ratekeeper(1.0 / DT_RDR, print_delay_threshold=None)
-  RD = RadarD(mocked, RI, use_tesla_radar,RI.delay)
+  rk = Ratekeeper(1.0 / CP.radarTimeStep, print_delay_threshold=None)
+  RD = RadarD(CP.radarTimeStep, mocked, RI, use_tesla_radar,RI.delay)
 
   has_radar = not CP.radarOffCan or mocked
   last_md_ts = 0.
@@ -423,8 +426,7 @@ def radard_thread(sm=None, pm=None, can_sock=None):
 
     # *** publish tracks for UI debugging (keep last) ***
     tracks = RD.tracks
-    dat = messaging.new_message()
-    dat.init('liveTracks', len(tracks))
+    dat = messaging.new_message('liveTracks', len(tracks))
 
     for cnt, ids in enumerate(sorted(tracks.keys())):
       dat.liveTracks[cnt] = {

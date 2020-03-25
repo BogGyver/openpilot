@@ -23,9 +23,11 @@
 #include <ftw.h>
 
 #include <zmq.h>
-#include <yaml-cpp/yaml.h>
 #include <capnp/serialize.h>
+
+#ifdef QCOM
 #include <cutils/properties.h>
+#endif
 
 #include "common/version.h"
 #include "common/timing.h"
@@ -37,6 +39,12 @@
 
 #include "logger.h"
 #include "messaging.hpp"
+#include "services.h"
+
+#ifndef QCOM
+// no encoder on PC
+#define DISABLE_ENCODER
+#endif
 
 
 #ifndef DISABLE_ENCODER
@@ -109,6 +117,7 @@ void encoder_thread(bool is_streaming, bool raw_clips, bool front) {
   int cnt = 0;
 
   PubSocket *idx_sock = PubSocket::create(s.ctx, front ? "frontEncodeIdx" : "encodeIdx");
+  assert(idx_sock != NULL);
 
   LoggerHandle *lh = NULL;
 
@@ -419,6 +428,7 @@ kj::Array<capnp::word> gen_init_data() {
 
   init.setKernelVersion(util::read_file("/proc/version"));
 
+#ifdef QCOM
   {
     std::vector<std::pair<std::string, std::string> > properties;
     property_list(append_property, (void*)&properties);
@@ -430,6 +440,7 @@ kj::Array<capnp::word> gen_init_data() {
       lentry.setValue(properties[i].second);
     }
   }
+#endif
 
   const char* dongle_id = getenv("DONGLE_ID");
   if (dongle_id) {
@@ -442,21 +453,22 @@ kj::Array<capnp::word> gen_init_data() {
   }
 
   char* git_commit = NULL;
-  read_db_value(NULL, "GitCommit", &git_commit, NULL);
+  size_t size;
+  read_db_value(NULL, "GitCommit", &git_commit, &size);
   if (git_commit) {
-    init.setGitCommit(capnp::Text::Reader(git_commit));
+    init.setGitCommit(capnp::Text::Reader(git_commit, size));
   }
 
   char* git_branch = NULL;
-  read_db_value(NULL, "GitBranch", &git_branch, NULL);
+  read_db_value(NULL, "GitBranch", &git_branch, &size);
   if (git_branch) {
-    init.setGitBranch(capnp::Text::Reader(git_branch));
+    init.setGitBranch(capnp::Text::Reader(git_branch, size));
   }
 
   char* git_remote = NULL;
-  read_db_value(NULL, "GitRemote", &git_remote, NULL);
+  read_db_value(NULL, "GitRemote", &git_remote, &size);
   if (git_remote) {
-    init.setGitRemote(capnp::Text::Reader(git_remote));
+    init.setGitRemote(capnp::Text::Reader(git_remote, size));
   }
 
   char* passive = NULL;
@@ -566,9 +578,6 @@ int main(int argc, char** argv) {
   s.ctx = Context::create();
   Poller * poller = Poller::create();
 
-  std::string exe_dir = util::dir_name(util::readlink("/proc/self/exe"));
-  std::string service_list_path = exe_dir + "/../service_list.yaml";
-
   // subscribe to all services
 
   SubSocket *frame_sock = NULL;
@@ -577,14 +586,13 @@ int main(int argc, char** argv) {
   std::map<SubSocket*, int> qlog_counter;
   std::map<SubSocket*, int> qlog_freqs;
 
-  YAML::Node service_list = YAML::LoadFile(service_list_path);
-  for (const auto& it : service_list) {
-    auto name = it.first.as<std::string>();
-    bool should_log = it.second[1].as<bool>();
-    int qlog_freq = it.second[3] ? it.second[3].as<int>() : 0;
+  for (const auto& it : services) {
+    std::string name = it.name;
 
-    if (should_log) {
+    if (it.should_log) {
       SubSocket * sock = SubSocket::create(s.ctx, name);
+      assert(sock != NULL);
+
       poller->registerSocket(sock);
       socks.push_back(sock);
 
@@ -592,8 +600,8 @@ int main(int argc, char** argv) {
         frame_sock = sock;
       }
 
-      qlog_counter[sock] = (qlog_freq == 0) ? -1 : 0;
-      qlog_freqs[sock] = qlog_freq;
+      qlog_counter[sock] = (it.decimation == -1) ? -1 : 0;
+      qlog_freqs[sock] = it.decimation;
     }
   }
 

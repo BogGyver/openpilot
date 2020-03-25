@@ -1,7 +1,7 @@
 import os
 import math
 
-import selfdrive.messaging as messaging
+import cereal.messaging as messaging
 from selfdrive.swaglog import cloudlog
 from common.realtime import sec_since_boot
 from selfdrive.controls.lib.radar_helpers import _LEAD_ACCEL_TAU
@@ -28,8 +28,7 @@ class LongitudinalMpc():
 
   def send_mpc_solution(self, pm, qp_iterations, calculation_time):
     qp_iterations = max(0, qp_iterations)
-    dat = messaging.new_message()
-    dat.init('liveLongitudinalMpc')
+    dat = messaging.new_message('liveLongitudinalMpc')
     dat.liveLongitudinalMpc.xEgo = list(self.mpc_solution[0].x_ego)
     dat.liveLongitudinalMpc.vEgo = list(self.mpc_solution[0].v_ego)
     dat.liveLongitudinalMpc.aEgo = list(self.mpc_solution[0].a_ego)

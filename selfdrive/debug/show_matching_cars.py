@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from selfdrive.car.fingerprints import eliminate_incompatible_cars, all_known_cars
-import selfdrive.messaging as messaging
+import cereal.messaging as messaging
 
 
 # Prius and Leuxs es 300H
@@ -16,8 +16,7 @@ candidate_cars = all_known_cars()
 
 
 for addr, l in fingerprint.items():
-    dat = messaging.new_message()
-    dat.init('can', 1)
+    dat = messaging.new_message('can', 1)
 
     msg = dat.can[0]
     msg.address = addr

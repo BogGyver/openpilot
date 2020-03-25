@@ -1,3 +1,4 @@
+#pragma once
 const int touch_timeout = 25;
 
 typedef struct UICstmButton {
