@@ -132,6 +132,7 @@ int ubloxd_main(poll_ubloxraw_msg_func poll_func, send_gps_event_func send_func)
           } else
             LOGW("Unknown msg class: 0x%02X", parser.msg_class());
           parser.reset();
+        }
       }
       delete msg;
     }

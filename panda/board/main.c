@@ -165,7 +165,7 @@ void set_safety_mode2(uint16_t mode, int16_t param) {
       can_silent = ALL_CAN_LIVE;
       break;
   }
-  rev_safety_mode = mode;
+  prev_safety_mode = mode;
   can_init_all();
 }
 

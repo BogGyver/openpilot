@@ -43,8 +43,10 @@ function launch {
   #    switching branches/forks, which should not be overwritten.
   # 2. The FINALIZED consistent file has to exist, indicating there's an update
   #    that completed successfully and synced to disk.
+ 
 
-  if [ -f "${BASEDIR}/.overlay_init" ]; then
+
+  if [ $do_auto_update == "True" ] && [ -f "${BASEDIR}/.overlay_init" ]; then
     find ${BASEDIR}/.git -newer ${BASEDIR}/.overlay_init | grep -q '.' 2> /dev/null
     if [ $? -eq 0 ]; then
       echo "${BASEDIR} has been modified, skipping overlay update installation"
@@ -70,10 +72,6 @@ function launch {
     fi
   fi
 
-      exec "${BASH_SOURCE[0]}"
-    fi
-  fi
-  
   # no cpu rationing for now
   echo 0-3 > /dev/cpuset/background/cpus
   echo 0-3 > /dev/cpuset/system-background/cpus

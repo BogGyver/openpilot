@@ -8,7 +8,7 @@
 //      brake rising edge
 //      brake > 0mph
 
-
+void can_send(CAN_FIFOMailBox_TypeDef *to_push, uint8_t bus_number, bool skip_tx_hook);
 // 2m/s are added to be less restrictive
 const struct lookup_t TESLA_LOOKUP_ANGLE_RATE_UP = {
     {2., 7., 17.},
@@ -21,6 +21,33 @@ const struct lookup_t TESLA_LOOKUP_ANGLE_RATE_DOWN = {
 const struct lookup_t TESLA_LOOKUP_MAX_ANGLE = {
     {2., 29., 38.},
     {500., 500., 500.}};
+
+const AddrBus TESLA_TX_MSGS[] = {//chassis CAN
+{0x045,0}, {0x209,0}, {0x219,0}, {0x214,0}, {0x229,0}, {0x239,0}, {0x249,0}, 
+  {0x2B9,0}, {0x309,0}, {0x329,0}, {0x349,0}, {0x369,0}, {0x379,0}, {0x389,0}, 
+  {0x399,0}, {0x3A9,0}, {0x3B1,0}, {0x3D9,0}, {0x3E9,0}, {0x400,0}, {0x488,0}, 
+  {0x409,0}, {0x551,0}, {0x539,0}, {0x554,0}, {0x556,0}, {0x557,0}, {0x559,0}, 
+  {0x560,0}, {0x5D9,0}, {0x5F9,0}, {0x609,0}, {0x639,0}, {0x659,0}, {0x65A,0}, 
+  {0x669,0}, {0x720,0}, 
+//radar CAN
+{0x101,1}, {0x109,1}, {0x119,1}, {0x129,1}, {0x149,1}, {0x159,1}, {0x169,1}, 
+  {0x199,1}, {0x1A9,1}, {0x209,1}, {0x219,1}, {0x2A9,1}, {0x2B9,1}, {0x2D9,1}, 
+  {0x641,1}, 
+//epas CAN
+{0x214,2}, {0x488,2}, {0x551,2},};  
+
+// TODO: do checksum and counter checks. Add correct timestep, 0.1s for now.
+AddrCheckStruct tesla_rx_checks[] = {
+  {.addr = {0x00E}, .bus =0, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U},
+  {.addr = {0x045}, .bus =0, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U},
+  {.addr = {0x108}, .bus =0, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U},
+  {.addr = {0x118}, .bus =0, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U},
+  {.addr = {0x318}, .bus =0, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U},
+  {.addr = {0x348}, .bus =0, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U},
+  {.addr = {0x368}, .bus =0, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U},
+};
+const int TESLA_RX_CHECK_LEN = sizeof(tesla_rx_checks) / sizeof(tesla_rx_checks[0]);
+
 
 const uint32_t TESLA_RT_INTERVAL = 250000; // 250ms between real time checks
 
@@ -41,8 +68,8 @@ int current_car_time = -1;
 int time_at_last_stalk_pull = -1;
 int eac_status = 0;
 
-
 /* <-- revB giraffe GPIO */
+/*
 #include "../drivers/uja1023.h"
 
 uint32_t tesla_ts_brakelight_on_last = 0;
@@ -54,6 +81,7 @@ int stw_menu_current_output_state = 0;
 int stw_menu_btn_state_last = 0;
 int stw_menu_output_flag = 0;
 int high_beam_lever_state = 0;
+*/
 /* revB giraffe GPIO --> */
 
 int tesla_radar_status = 0; //0-not present, 1-initializing, 2-active
@@ -61,8 +89,8 @@ uint32_t tesla_last_radar_signal = 0;
 const uint32_t TESLA_RADAR_TIMEOUT = 10000000; // 10s second between real time checks
 char radar_VIN[] = "                 "; //leave empty if your radar VIN matches the car VIN
 int tesla_radar_vin_complete = 0;
-int tesla_radar_can = 1;
-int tesla_epas_can = 2;
+uint8_t tesla_radar_can = 1;
+uint8_t tesla_epas_can = 2;
 int tesla_radar_trigger_message_id = 0; //not used by tesla, to showcase for other cars
 int radarPosition = 0; //0 nosecone, 1 facelift
 int radarEpasType = 0; //0/1 bosch, 2-4 mando
@@ -316,16 +344,16 @@ static uint32_t bitShift(int value, int which_octet, int starting_bit_in_octet) 
   return ( value << ((starting_bit_in_octet - 1) + (which_octet -1) * 8));
 }
 
-void can_send(CAN_FIFOMailBox_TypeDef *to_push, uint8_t bus_number);
 
-static void send_fake_message(uint32_t RIR, uint32_t RDTR,int msg_len, int msg_addr, int bus_num, uint32_t data_lo, uint32_t data_hi) {
+
+static void send_fake_message(uint32_t RIR, uint32_t RDTR,int msg_len, int msg_addr, uint8_t bus_num, uint32_t data_lo, uint32_t data_hi) {
   CAN_FIFOMailBox_TypeDef to_send;
   uint32_t addr_mask = 0x001FFFFF;
   to_send.RIR = (msg_addr << 21) + (addr_mask & (RIR | 1));
   to_send.RDTR = (RDTR & 0xFFFFFFF0) | msg_len;
   to_send.RDLR = data_lo;
   to_send.RDHR = data_hi;
-  can_send(&to_send, bus_num);
+  can_send(&to_send, bus_num, false);
 }
 
 static void reset_DAS_data(void) {
@@ -980,15 +1008,19 @@ static void do_fake_stalk_cancel(uint32_t RIR, uint32_t RDTR) {
 
 
 
-static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
+static int tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
 {
+  bool valid = false;
+  //not much to check yet on these, each tesla messaage has checksum in a different place
+  
+
   if (DAS_noEpasHarness == 0) {
     set_gmlan_digital_output(GMLAN_HIGH);
     reset_gmlan_switch_timeout(); //we're still in tesla safety mode, reset the timeout counter and make sure our output is enabled
   }
   uint32_t ts = TIM2->CNT;
 
-  int bus_number = (to_push->RDTR >> 4) & 0xFF;
+  uint8_t bus_number = (to_push->RDTR >> 4) & 0xFF;
   uint32_t addr;
 
   if (to_push->RIR & 4)
@@ -1002,6 +1034,21 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   {
     // Normal
     addr = to_push->RIR >> 21;
+  }
+  if (bus_number == 1) {
+    //radar is always accepted
+    valid = true;
+  } else 
+  if ((bus_number == 0) || (bus_number == 2)) {
+    if ((addr == 0x00E ) || (addr == 0x045 ) || (addr == 0x108 ) || 
+    (addr == 0x118 ) || (addr == 0x318 ) || (addr == 0x348 ) || (addr == 0x368))
+    {
+      valid = addr_safety_check(to_push, tesla_rx_checks, TESLA_RX_CHECK_LEN,
+                              NULL, NULL, NULL);
+    } else {
+      valid = true;
+    }
+
   }
 
   //let's see if the pedal was pressed
@@ -1018,7 +1065,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
       do_EPB_epasControl(to_push->RIR,to_push->RDTR);
     }
     do_fake_DAS(to_push->RIR,to_push->RDTR);
-    return;
+    return valid;
   }
 
   // Record the current car time in current_car_time (for use with double-pulling cruise stalk)
@@ -1129,6 +1176,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
       do_fake_stalk_cancel(to_push->RIR, to_push->RDTR);
     }
     /* <-- revB giraffe GPIO */
+    /*
     int turn_signal_lever = (to_push->RDLR >> 16) & 0x3; //TurnIndLvr_Stat : 16|2@1+
     int stw_menu_button = (to_push->RDHR >> 5) & 0x1; //StW_Sw05_Psd : 37|1@1+
     high_beam_lever_state = (to_push->RDLR >> 18) & 0x3; //SG_ HiBmLvr_Stat : 18|2@1+
@@ -1191,6 +1239,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
       stw_menu_output_flag = 0;
       stw_menu_btn_state_last = 0;
     }
+    */
     /* revB giraffe GPIO --> */
   }
 
@@ -1206,10 +1255,12 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     } 
   }
 
+
   // exit controls on brake press
   // DI_torque2::DI_brakePedal 0x118
 
   /* revB giraffe GPIO --> */
+  /*
   if ((addr == 0x118)  && (bus_number == 0))
   {
     int drive_state = (to_push->RDLR >> 12) & 0x7; //DI_gear : 12|3@1+
@@ -1217,8 +1268,6 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
     int tesla_speed_mph = (((((GET_BYTE(to_push, 3) & 0xF) << 8) + GET_BYTE(to_push, 2)) * 0.05) - 25);
     
 
-    //for fake messages for radar we need also in kph
-    //actual_speed_kph = (int)(tesla_speed_mph * 1.609);
     
     //if the car goes into reverse, set UJA1023 output pin 5 to high. If Drive, set pin 1 high
     //DI_gear 7 "DI_GEAR_SNA" 4 "DI_GEAR_D" 3 "DI_GEAR_N" 2 "DI_GEAR_R" 1 "DI_GEAR_P" 0 "DI_GEAR_INVALID" ;
@@ -1280,7 +1329,13 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
         //puts(" Brakelight off!\n");
       } 
     }
+  }
+  */
     /* revB giraffe GPIO --> */
+  if ((addr == 0x118)  && (bus_number == 0))
+  {
+    int tesla_speed_mph = (((((GET_BYTE(to_push, 3) & 0xF) << 8) + GET_BYTE(to_push, 2)) * 0.05) - 25);
+    
     
     //get vehicle speed in m/2. Tesla gives MPH
     tesla_speed = (tesla_speed_mph*1.609/3.6);
@@ -1318,7 +1373,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   if ((addr == 0x00E)  && (bus_number == 0))
   {
     int angle_meas_now = (int)(((((GET_BYTE(to_push, 0) & 0x3F) << 8) + GET_BYTE(to_push, 1)) * 0.1) - 819.2);
-    uint32_t ts = TIM2->CNT;
+    //uint32_t ts = TIM2->CNT;
     uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_ts_angle_last);
 
     // *** angle real time check
@@ -1354,6 +1409,7 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
   }
   
     /* <-- revB giraffe GPIO */
+  /*
   //BO_ 1001 DAS_bodyControls: 8 XXX
   if ((addr == 0x3e9)  && (bus_number == 0)) {
     int high_beam_decision = (to_push->RDLR >> 10) & 0x3; //DAS_highLowBeamDecision : 10|2@1+
@@ -1399,8 +1455,9 @@ static void tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push)
         //puts(" Brakelight off!\n");
       }
     }
-  }
+  }*/
   /* revB giraffe GPIO --> */
+  return valid;
 }
 
 // all commands: gas/regen, friction brake and steering
@@ -1666,7 +1723,7 @@ static void tesla_init(int16_t param)
 }
 
 
-static void tesla_fwd_to_radar_as_is(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
+static void tesla_fwd_to_radar_as_is(uint8_t bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   if ((enable_radar_emulation == 0) || (tesla_radar_vin_complete !=7) || (tesla_radar_should_send==0) ) {
     return;
   }
@@ -1675,7 +1732,7 @@ static void tesla_fwd_to_radar_as_is(int bus_num, CAN_FIFOMailBox_TypeDef *to_fw
   to_send.RDTR = to_fwd->RDTR;
   to_send.RDLR = to_fwd->RDLR;
   to_send.RDHR = to_fwd->RDHR;
-  can_send(&to_send, bus_num);
+  can_send(&to_send, bus_num, true);
 }
 
 
@@ -1684,7 +1741,7 @@ static uint32_t radar_VIN_char(int pos, int shift) {
 }
 
 
-static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
+static void tesla_fwd_to_radar_modded(uint8_t bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   if ((enable_radar_emulation == 0) || (tesla_radar_vin_complete !=7) || (tesla_radar_should_send==0) ) {
     return;
   }
@@ -1715,7 +1772,7 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
         to_send.RDHR = radar_VIN_char(13,0) | radar_VIN_char(14,1) | radar_VIN_char(15,2) | radar_VIN_char(16,3);
       }
     }
-    can_send(&to_send, bus_num);
+    can_send(&to_send, bus_num, true);
 
     return;
   }
@@ -1727,7 +1784,7 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
     to_send.RDHR = to_send.RDHR | 0x100; //TODO if this is Park Assist, it should be RDLR not RDHR
     //resend on CAN 0 first
     to_send.RIR = (to_fwd->RIR | 1);
-    //can_send(&to_send,0);
+    //can_send(&to_send,0, true);
      
     
     to_send.RDLR = to_send.RDLR & 0xFFFFF33F;
@@ -1742,7 +1799,7 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
     }
     //now change address and send to radar
     to_send.RIR = (0x2A9 << 21) + (addr_mask & (to_fwd->RIR | 1));
-    can_send(&to_send, bus_num);
+    can_send(&to_send, bus_num, true);
 
     return;
   }
@@ -1763,13 +1820,13 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
       //Add new CRC
       to_send.RDHR = to_send.RDHR | (crc << 24);
     }
-    can_send(&to_send, bus_num);
+    can_send(&to_send, bus_num, true);
     return;
   }
   if (addr == 0x20A )
   {
     to_send.RIR = (0x159 << 21) + (addr_mask & (to_fwd->RIR | 1));
-    can_send(&to_send, bus_num);
+    can_send(&to_send, bus_num, true);
 
     return;
   }
@@ -1780,7 +1837,7 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
 
     to_send.RIR = (0x129 << 21) + (addr_mask & (to_fwd->RIR | 1));
     int cksm = (0x16 + (counter << 4)) & 0xFF;
-    can_send(&to_send, bus_num);
+    can_send(&to_send, bus_num, true);
 
     //we don't get 0x148 DI_espControl so send as 0x1A9 on CAN1 and also as 0x148 on CAN0
     to_send.RDTR = (to_fwd->RDTR & 0xFFFFFFF0) | 0x05;
@@ -1788,10 +1845,10 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
     to_send.RDLR = 0x000C0000 | (counter << 28);
     cksm = (0x38 + 0x0C + (counter << 4)) & 0xFF;
     to_send.RDHR = cksm;
-    //can_send(&to_send, 0);
+    //can_send(&to_send, 0, true);
 
     to_send.RIR = (0x1A9 << 21) + (addr_mask & (to_fwd->RIR | 1));
-    can_send(&to_send, bus_num);
+    can_send(&to_send, bus_num, true);
 
     return;
   }
@@ -1799,7 +1856,7 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
   if (addr == 0x145) 
   {
     to_send.RIR = (0x149 << 21) + (addr_mask & (to_fwd->RIR | 1));
-    can_send(&to_send, bus_num);
+    can_send(&to_send, bus_num, true);
 
     return;
   }
@@ -1807,14 +1864,14 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
   /*if (addr == 0x175)
   {
     to_send.RIR = (0x169 << 21) + (addr_mask & (to_fwd->RIR | 1));
-    can_send(&to_send, bus_num);
+    can_send(&to_send, bus_num, true);
     return;
   }*/
 
   if (addr == 0x118 )
   {
     to_send.RIR = (0x119 << 21) + (addr_mask & (to_fwd->RIR | 1));
-    can_send(&to_send, bus_num);
+    can_send(&to_send, bus_num, true);
 
      //we don't get 0x175 ESP_wheelSpeeds so send as 0x169 on CAN1 and also as 0x175 on CAN0
     int counter = to_fwd->RDHR  & 0x0F;
@@ -1839,45 +1896,45 @@ static void tesla_fwd_to_radar_modded(int bus_num, CAN_FIFOMailBox_TypeDef *to_f
     cksm = (cksm + (to_send.RDLR & 0xFF) + ((to_send.RDLR >> 8) & 0xFF) + ((to_send.RDLR >> 16) & 0xFF) + ((to_send.RDLR >> 24) & 0xFF)) & 0xFF;
     cksm = (cksm + (to_send.RDHR & 0xFF) + ((to_send.RDHR >> 8) & 0xFF) + ((to_send.RDHR >> 16) & 0xFF) + ((to_send.RDHR >> 24) & 0xFF)) & 0xFF;
     to_send.RDHR = to_send.RDHR | (cksm << 24);
-    can_send(&to_send, bus_num);
+    can_send(&to_send, bus_num, true);
 
     //to_send.RIR = (0x175 << 21) + (addr_mask & (to_fwd->RIR | 1));
-    //can_send(&to_send, 0);
+    //can_send(&to_send, 0, true);
     
     return;
   }
   if (addr == 0x108 )
   {
     to_send.RIR = (0x109 << 21) + (addr_mask & (to_fwd->RIR | 1));
-    can_send(&to_send, bus_num);
+    can_send(&to_send, bus_num, true);
 
     return;
   }
   if (addr == 0x308 )
   {
     to_send.RIR = (0x209 << 21) + (addr_mask & (to_fwd->RIR | 1));
-    can_send(&to_send, bus_num);
+    can_send(&to_send, bus_num, true);
 
     return;
   }
   if (addr == 0x45 )
   {
     to_send.RIR = (0x219 << 21) + (addr_mask & (to_fwd->RIR | 1));
-    can_send(&to_send, bus_num);
+    can_send(&to_send, bus_num, true);
 
     return;
   }
   if (addr == 0x148 )
   {
     to_send.RIR = (0x1A9 << 21) + (addr_mask & (to_fwd->RIR | 1));
-    can_send(&to_send, bus_num);
+    can_send(&to_send, bus_num,true);
 
     return;
   }
   if (addr == 0x30A)
   {
     to_send.RIR = (0x2D9 << 21) + (addr_mask & (to_fwd->RIR | 1));
-    can_send(&to_send, bus_num);
+    can_send(&to_send, bus_num, true);
 
     return;
   }
@@ -1986,4 +2043,6 @@ const safety_hooks tesla_hooks = {
   .tx = tesla_tx_hook,
   .tx_lin = nooutput_tx_lin_hook,
   .fwd = tesla_fwd_hook,
+  .addr_check = tesla_rx_checks,
+  .addr_check_len = sizeof(tesla_rx_checks) / sizeof(tesla_rx_checks[0]),
 };
