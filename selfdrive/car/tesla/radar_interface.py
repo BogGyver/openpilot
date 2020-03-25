@@ -4,7 +4,7 @@ import time
 from cereal import car, tesla
 from selfdrive.can.parser import CANParser
 from common.realtime import DT_RDR
-from selfdrive.services import service_list
+from cereal.services import service_list
 import selfdrive.messaging as messaging
 from selfdrive.car.interfaces import RadarInterfaceBase
 from selfdrive.car.tesla.readconfig import CarSettings

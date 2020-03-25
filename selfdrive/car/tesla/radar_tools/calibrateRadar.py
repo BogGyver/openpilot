@@ -10,7 +10,7 @@ import time
 import os
 from selfdrive.can.parser import CANParser
 from common.realtime import sec_since_boot
-from selfdrive.services import service_list
+from cereal.services import service_list
 import selfdrive.messaging as messaging
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 from selfdrive.car.tesla.radar_interface import RadarInterface

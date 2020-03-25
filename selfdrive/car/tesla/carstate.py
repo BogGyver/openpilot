@@ -1,5 +1,5 @@
 from common.kalman.simple_kalman import KF1D
-from selfdrive.can.parser import CANParser
+from opendbc.can.parser import CANParser
 from selfdrive.config import Conversions as CV
 from selfdrive.car.tesla.ACC_module import ACCMode
 from selfdrive.car.tesla.PCC_module import PCCModes

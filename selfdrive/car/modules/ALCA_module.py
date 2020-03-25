@@ -47,7 +47,7 @@ v1.0 - fixed angle move
 from common.numpy_fast import interp,clip
 from selfdrive.controls.lib.pid import PIController
 from common.realtime import sec_since_boot
-from selfdrive.services import service_list
+from cereal.services import service_list
 import selfdrive.messaging as messaging
 import numpy as np
 from cereal import tesla

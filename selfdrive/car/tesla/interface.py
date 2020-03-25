@@ -11,7 +11,7 @@ from common.params import read_db
 from selfdrive.car import STD_CARGO_KG
 from selfdrive.car.tesla.readconfig import CarSettings
 import selfdrive.messaging as messaging
-from selfdrive.services import service_list
+from cereal.services import service_list
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V
 
 A_ACC_MAX = max(_A_CRUISE_MAX_V)

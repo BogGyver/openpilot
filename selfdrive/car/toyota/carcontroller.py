@@ -51,20 +51,13 @@ class CarController():
     self.alert_active = False
     self.last_standstill = False
     self.standstill_req = False
-
+ 
     self.last_fault_frame = -200
     self.steer_rate_limited = False
 
     self.fake_ecus = set()
-<<<<<<< HEAD
-    if enable_camera: self.fake_ecus.add(ECU.CAM)
-    if enable_dsu: self.fake_ecus.add(ECU.DSU)
-    if enable_apg: self.fake_ecus.add(ECU.APGS)
-    self.ALCA = ALCAController(self,True,False)  # Enabled True and SteerByAngle only False
-=======
     if CP.enableCamera: self.fake_ecus.add(Ecu.fwdCamera)
     if CP.enableDsu: self.fake_ecus.add(Ecu.dsu)
->>>>>>> cc6358d983479e918d8deac95554c39ed5866e1a
 
     self.packer = CANPacker(dbc_name)
 
@@ -97,16 +90,9 @@ class CarController():
     if (frame % 10 == 0):
       self.ALCA.update_status(CS.cstm_btns.get_button_status("alca") > 0)
     # steer torque
-<<<<<<< HEAD
-    alca_angle, alca_steer, alca_enabled, turn_signal_needed = self.ALCA.update(enabled, CS, frame, actuators)
-    apply_steer = int(round(alca_steer * SteerLimitParams.STEER_MAX))
-
-    apply_steer = apply_toyota_steer_torque_limits(apply_steer, self.last_steer, CS.steer_torque_motor, SteerLimitParams)
-=======
     new_steer = int(round(actuators.steer * SteerLimitParams.STEER_MAX))
     apply_steer = apply_toyota_steer_torque_limits(new_steer, self.last_steer, CS.out.steeringTorqueEps, SteerLimitParams)
     self.steer_rate_limited = new_steer != apply_steer
->>>>>>> cc6358d983479e918d8deac95554c39ed5866e1a
 
     # only cut torque when steer state is a known fault
     if CS.steer_state in [9, 25]:
@@ -119,31 +105,6 @@ class CarController():
     else:
       apply_steer_req = 1
 
-<<<<<<< HEAD
-    self.steer_angle_enabled, self.ipas_reset_counter = \
-      ipas_state_transition(self.steer_angle_enabled, enabled, CS.ipas_active, self.ipas_reset_counter)
-    #print("{0} {1} {2}".format(self.steer_angle_enabled, self.ipas_reset_counter, CS.ipas_active))
-
-
-    # steer angle
-    if self.steer_angle_enabled and CS.ipas_active:
-
-      apply_angle = alca_angle
-      angle_lim = interp(CS.v_ego, ANGLE_MAX_BP, ANGLE_MAX_V)
-      apply_angle = clip(apply_angle, -angle_lim, angle_lim)
-
-      # windup slower
-      if self.last_angle * apply_angle > 0. and abs(apply_angle) > abs(self.last_angle):
-        angle_rate_lim = interp(CS.v_ego, ANGLE_DELTA_BP, ANGLE_DELTA_V)
-      else:
-        angle_rate_lim = interp(CS.v_ego, ANGLE_DELTA_BP, ANGLE_DELTA_VU)
-
-      apply_angle = clip(apply_angle, self.last_angle - angle_rate_lim, self.last_angle + angle_rate_lim)
-    else:
-      apply_angle = CS.angle_steers
-
-=======
->>>>>>> cc6358d983479e918d8deac95554c39ed5866e1a
     if not enabled and CS.pcm_acc_status:
       # send pcm acc cancel cmd if drive is disabled but pcm is still on, or if the system can't be activated
       pcm_cancel_cmd = 1

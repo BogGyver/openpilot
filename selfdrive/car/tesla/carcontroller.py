@@ -8,7 +8,7 @@ from selfdrive.car.tesla import teslacan
 from selfdrive.car.tesla.blinker_module import Blinker
 from selfdrive.car.tesla.speed_utils.fleet_speed import FleetSpeed
 from selfdrive.car.tesla.values import AH, CM
-from selfdrive.can.packer import CANPacker
+from opendbc.can.packer import CANPacker
 from selfdrive.config import Conversions as CV
 from selfdrive.car.modules.ALCA_module import ALCAController
 from selfdrive.car.modules.GYRO_module import GYROController
