@@ -8,7 +8,7 @@ from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.car.tesla.carstate import CarState, get_can_parser, get_epas_parser, get_pedal_parser
 from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR,DBC
 from common.params import read_db
-from selfdrive.car import STD_CARGO_KG
+from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, is_ecu_disconnected, gen_empty_fingerprint
 from selfdrive.car.tesla.readconfig import CarSettings
 import selfdrive.messaging as messaging
 from cereal.services import service_list
@@ -21,8 +21,6 @@ VisualAlert = car.CarControl.HUDControl.VisualAlert
 K_MULT = 0.8 
 K_MULTi = 280000.
 
-def tesla_compute_gb(accel, speed):
-  return float(accel) / 3.
 
 
 class CarInterface():
@@ -57,8 +55,11 @@ class CarInterface():
     if CarController is not None:
       self.CC = CarController(self.cp.dbc_name)
 
-    self.compute_gb = tesla_compute_gb
-    
+
+  @staticmethod
+  def compute_gb(accel, speed):
+    return float(accel) / 3.
+
 
 
   @staticmethod
@@ -93,12 +94,12 @@ class CarInterface():
     return float(max(max_accel, a_target / A_ACC_MAX)) * min(speedLimiter, accelLimiter)
 
   @staticmethod
-  def get_params(candidate, fingerprint, vin="", is_panda_black=False):
+  def get_params(candidate, fingerprint=gen_empty_fingerprint(), has_relay=False, car_fw=[]):
 
     # Scaled tire stiffness
     ts_factor = 8 
 
-    ret = car.CarParams.new_message()
+    ret = CarInterfaceBase.get_std_params(candidate, fingerprint, has_relay)
 
     ret.carName = "tesla"
     ret.carFingerprint = candidate
