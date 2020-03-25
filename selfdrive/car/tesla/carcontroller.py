@@ -17,7 +17,7 @@ from selfdrive.car.tesla.PCC_module import PCCController
 from selfdrive.car.tesla.HSO_module import HSOController
 from selfdrive.car.tesla.speed_utils.movingaverage import MovingAverage
 from selfdrive.car.tesla.AHB_module import AHBController
-import selfdrive.messaging as messaging
+import cereal.messaging as messaging
 
 # Steer angle limits
 ANGLE_MAX_BP = [0., 27., 36.]
@@ -76,7 +76,7 @@ HUDData = namedtuple("HUDData",
 
 
 class CarController():
-  def __init__(self, dbc_name):
+  def __init__(self, dbc_name,CP,VM):
     self.fleet_speed_state = 0
     self.cc_counter = 0
     self.alcaStateData = None

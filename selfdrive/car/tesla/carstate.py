@@ -7,6 +7,7 @@ from selfdrive.car.tesla.values import CAR, DBC
 from selfdrive.car.modules.UIBT_module import UIButtons
 from selfdrive.car.modules.UIEV_module import UIEvents
 from selfdrive.car.tesla.readconfig import read_config_file
+from selfdrive.car.interfaces import CarStateBase
 import os
 import subprocess
 from common.params import read_db, write_db
@@ -183,20 +184,9 @@ def get_pedal_can_signals(CP):
   checks = []
   return signals, checks
 
-def get_can_parser(CP,mydbc):
-  signals, checks = get_can_signals(CP)
-  return CANParser(mydbc, signals, checks, 0)
-
-def get_epas_parser(CP,epascan):
-  signals, checks = get_epas_can_signals(CP)
-  return CANParser(DBC[CP.carFingerprint]['pt']+"_epas", signals, checks, epascan)
-
-def get_pedal_parser(CP,pedalcan):
-  signals, checks = get_pedal_can_signals(CP)
-  return CANParser(DBC[CP.carFingerprint]['pt']+"_pedal", signals, checks, pedalcan)
-
-class CarState():
+class CarState(CarStateBase):
   def __init__(self, CP):
+    super().__init__(CP)
     self.speed_control_enabled = 0
     self.CL_MIN_V = 8.9
     self.CL_MAX_A = 20.
@@ -425,6 +415,28 @@ class CarState():
     self.ahbLoBeamOn = 0
     self.ahbHiBeamOn = 0
     self.ahbNightMode = 0
+
+  @staticmethod
+  def get_can_parser(CP):
+    signals, checks = get_can_signals(CP)
+    return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 0)
+
+  @staticmethod
+  def get_can_parser2(CP,mydbc):
+    signals, checks = get_can_signals(CP)
+    return CANParser(mydbc, signals, checks, 0)
+
+  @staticmethod
+  def get_epas_parser(CP,epascan):
+    signals, checks = get_epas_can_signals(CP)
+    return CANParser(DBC[CP.carFingerprint]['pt']+"_epas", signals, checks, epascan)
+
+  @staticmethod
+  def get_pedal_parser(CP,pedalcan):
+    signals, checks = get_pedal_can_signals(CP)
+    return CANParser(DBC[CP.carFingerprint]['pt']+"_pedal", signals, checks, pedalcan)
+
+
    
   def config_ui_buttons(self, pcc_available, pcc_blocked_by_acc_mode):
     if pcc_available:

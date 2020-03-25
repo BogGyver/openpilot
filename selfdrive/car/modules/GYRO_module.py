@@ -1,6 +1,6 @@
 from cereal.services import service_list
 from collections import deque
-import selfdrive.messaging as messaging
+import cereal.messaging as messaging
 import cereal
 import math
 from common.realtime import sec_since_boot

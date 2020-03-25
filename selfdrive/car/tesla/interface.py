@@ -5,14 +5,14 @@ from common.realtime import DT_CTRL
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.drive_helpers import create_event, EventTypes as ET, get_events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
-from selfdrive.car.tesla.carstate import CarState, get_can_parser, get_epas_parser, get_pedal_parser
 from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR,DBC
 from common.params import read_db
 from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, is_ecu_disconnected, gen_empty_fingerprint
 from selfdrive.car.tesla.readconfig import CarSettings
-import selfdrive.messaging as messaging
+import cereal.messaging as messaging
 from cereal.services import service_list
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V
+from selfdrive.car.interfaces import CarInterfaceBase
 
 A_ACC_MAX = max(_A_CRUISE_MAX_V)
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
@@ -23,8 +23,9 @@ K_MULTi = 280000.
 
 
 
-class CarInterface():
-  def __init__(self, CP, CarController):
+class CarInterface(CarInterfaceBase):
+  def __init__(self, CP, CarController, CarState):
+    super().__init__(CP, CarController, CarState)
     self.CP = CP
 
     self.frame = 0
@@ -41,19 +42,19 @@ class CarInterface():
     mydbc = DBC[CP.carFingerprint]['pt']
     if CP.carFingerprint == CAR.MODELS and self.CS.fix1916:
       mydbc = mydbc + "1916"
-    self.cp = get_can_parser(CP,mydbc)
+    self.cp = self.CS.get_can_parser2(CP,mydbc)
     self.epas_cp = None
     self.pedal_cp = None
     if self.CS.useWithoutHarness:
-      self.epas_cp = get_epas_parser(CP,0)
-      self.pedal_cp = get_pedal_parser(CP,0)
+      self.epas_cp = self.CS.get_epas_parser(CP,0)
+      self.pedal_cp = self.CS.get_pedal_parser(CP,0)
     else:
-      self.epas_cp = get_epas_parser(CP,2)
-      self.pedal_cp = get_pedal_parser(CP,2)
+      self.epas_cp = self.CS.get_epas_parser(CP,2)
+      self.pedal_cp = self.CS.get_pedal_parser(CP,2)
 
     self.CC = None
     if CarController is not None:
-      self.CC = CarController(self.cp.dbc_name)
+      self.CC = CarController(self.cp.dbc_name,CP,self.VM)
 
 
   @staticmethod
@@ -103,7 +104,6 @@ class CarInterface():
 
     ret.carName = "tesla"
     ret.carFingerprint = candidate
-    ret.isPandaBlack = is_panda_black
 
     teslaModel = read_db('/data/params','TeslaModel')
     if teslaModel is not None:
@@ -113,7 +113,7 @@ class CarInterface():
 
     ret.safetyModel = car.CarParams.SafetyModel.tesla
     ret.safetyParam = 1
-    ret.carVin = vin
+    ret.carVin = "TESLAFAKEVIN12345"
 
     ret.enableCamera = True
     ret.enableGasInterceptor = False #keep this False for now

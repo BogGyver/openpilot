@@ -1,7 +1,7 @@
 from selfdrive.car.tesla.speed_utils.fleet_speed import FleetSpeed
 from selfdrive.car.tesla.values import CruiseButtons, CruiseState
 from selfdrive.config import Conversions as CV
-import selfdrive.messaging as messaging
+import cereal.messaging as messaging
 import sys
 import time
 

@@ -5,7 +5,7 @@ from cereal import car, tesla
 from selfdrive.can.parser import CANParser
 from common.realtime import DT_RDR
 from cereal.services import service_list
-import selfdrive.messaging as messaging
+import cereal.messaging as messaging
 from selfdrive.car.interfaces import RadarInterfaceBase
 from selfdrive.car.tesla.readconfig import CarSettings
 from selfdrive.tinklad.tinkla_interface import TinklaClient
