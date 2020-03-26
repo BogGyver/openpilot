@@ -8,7 +8,7 @@ except ValueError:
 from cereal import car
 import time
 import os
-from selfdrive.can.parser import CANParser
+from opendbc.can.parser import CANParser
 from common.realtime import sec_since_boot
 from cereal.services import service_list
 import cereal.messaging as messaging

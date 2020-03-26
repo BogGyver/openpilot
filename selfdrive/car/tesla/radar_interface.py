@@ -2,13 +2,14 @@
 import os
 import time
 from cereal import car, tesla
-from selfdrive.can.parser import CANParser
-from common.realtime import DT_RDR
+from opendbc.can.parser import CANParser
 from cereal.services import service_list
 import cereal.messaging as messaging
 from selfdrive.car.interfaces import RadarInterfaceBase
 from selfdrive.car.tesla.readconfig import CarSettings
 from selfdrive.tinklad.tinkla_interface import TinklaClient
+from selfdrive.car.interfaces import RadarInterfaceBase
+
 
 BOSCH_MAX_DIST = 250. #max distance for radar
 #use these for tracks (5 tracks)
@@ -67,11 +68,10 @@ class RadarInterface(RadarInterfaceBase):
   tinklaClient = TinklaClient()
 
   def __init__(self,CP):
-    super().__init__(self)
     # radar
     self.pts = {}
     self.extPts = {}
-    self.delay = int(0.1 / DT_RDR)
+    self.delay = 0 
     self.useTeslaRadar = CarSettings().get_value("useTeslaRadar")
     self.TRACK_LEFT_LANE = True
     self.TRACK_RIGHT_LANE = True
@@ -87,7 +87,7 @@ class RadarInterface(RadarInterfaceBase):
       self.trackId = 1
       self.trigger_start_msg = RADAR_A_MSGS[0]
       self.trigger_end_msg = RADAR_B_MSGS[-1]
-
+    self.radar_ts = CP.radarTimeStep
 
 
   def update(self, can_strings,v_ego):

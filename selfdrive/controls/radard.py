@@ -100,6 +100,7 @@ class RadarD():
   def __init__(self, radar_ts, mocked, RI,use_tesla_radar, delay=0):
     self.current_time = 0
     self.mocked = mocked
+    self.RI = RI
     self.tracks = defaultdict(dict)
     self.kalman_params = KalmanParams(radar_ts)
 

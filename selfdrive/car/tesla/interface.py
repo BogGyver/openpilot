@@ -222,6 +222,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerRateCost = 1.0
 
     ret.radarOffCan = not CarSettings().get_value("useTeslaRadar")
+    ret.radarTimeStep = 0.05 #20Hz
 
     return ret
 
