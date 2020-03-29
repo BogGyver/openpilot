@@ -52,10 +52,10 @@ if arch == "aarch64":
     cpppath = [
       "#phonelibs/opencl/include",
       "/data/op_rk3399_setup/support_files/include",
-      "/data/op_rk3399_setup/snpe/include",
+      "/data/op_rk3399_setup/external/snpe/include",
     ]
     libpath = [
-      "/data/op_rk3399_setup/snpe/lib/lib",
+      "/data/op_rk3399_setup/external/snpe/lib/lib",
       "/usr/lib",
       "/data/data/com.termux/files/usr/lib",
       "/system/vendor/lib64",
@@ -64,7 +64,7 @@ if arch == "aarch64":
       "/data/op_rk3399_setup/support_files/lib",
     ]
     rpath = ["/system/vendor/lib64",
-      "/data/op_rk3399_setup/snpe/lib/lib",
+      "/data/op_rk3399_setup/external/snpe/lib/lib",
       "/data/op_rk3399_setup/support_files/lib",
       "external/tensorflow/lib",
       "cereal",
