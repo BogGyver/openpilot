@@ -12,19 +12,29 @@ AddOption('--asan',
           help='turn on ASAN')
 
 arch = subprocess.check_output(["uname", "-m"], encoding='utf8').rstrip()
+is_tbp = os.path.isfile('/data/tinkla_buddy_pro')
 if platform.system() == "Darwin":
   arch = "Darwin"
 
 if arch == "aarch64":
-  lenv = {
-    "LD_LIBRARY_PATH": '/data/data/com.termux/files/usr/lib',
-    "PATH": os.environ['PATH'],
-    "ANDROID_DATA": os.environ['ANDROID_DATA'],
-    "ANDROID_ROOT": os.environ['ANDROID_ROOT'],
-  }
+  if is_tbp:
+    lenv = {
+      "LD_LIBRARY_PATH": '/usr/lib',
+      "PATH": os.environ['PATH'],
+      "ANDROID_DATA": "/data",
+      "ANDROID_ROOT": "/",
+    }
+  else:
+    lenv = {
+      "LD_LIBRARY_PATH": '/data/data/com.termux/files/usr/lib',
+      "PATH": os.environ['PATH'],
+      "ANDROID_DATA": os.environ['ANDROID_DATA'],
+      "ANDROID_ROOT": os.environ['ANDROID_ROOT'],
+    }
 
   cpppath = [
     "#phonelibs/opencl/include",
+    "#phonelibs/snpe/include",
   ]
   libpath = [
     "#phonelibs/snpe/aarch64-android-clang3.8",
@@ -35,11 +45,36 @@ if arch == "aarch64":
     "#phonelibs/nanovg",
     "#phonelibs/libyuv/lib",
   ]
-
-  cflags = ["-DQCOM", "-mcpu=cortex-a57"]
-  cxxflags = ["-DQCOM", "-mcpu=cortex-a57"]
-
-  rpath = ["/system/vendor/lib64"]
+  
+  if is_tbp:
+    cflags = ["-mcpu=cortex-a57"]
+    cxxflags = ["-mcpu=cortex-a57"]
+    cpppath = [
+      "#phonelibs/opencl/include",
+      "/data/op_rk3399_setup/support_files/include",
+      "/data/op_rk3399_setup/snpe/include",
+    ]
+    libpath = [
+      "/data/op_rk3399_setup/snpe/lib/lib",
+      "/usr/lib",
+      "/data/data/com.termux/files/usr/lib",
+      "/system/vendor/lib64",
+      "/system/comma/usr/lib",
+      "#phonelibs/nanovg",
+      "/data/op_rk3399_setup/support_files/lib",
+    ]
+    rpath = ["/system/vendor/lib64",
+      "/data/op_rk3399_setup/snpe/lib/lib",
+      "/data/op_rk3399_setup/support_files/lib",
+      "external/tensorflow/lib",
+      "cereal",
+      "/usr/lib",
+      "selfdrive/common",
+    ] 
+  else:
+    cflags = ["-DQCOM", "-mcpu=cortex-a57"]
+    cxxflags = ["-DQCOM", "-mcpu=cortex-a57"]
+    rpath = ["/system/vendor/lib64"]
 else:
   lenv = {
     "PATH": "#external/bin:" + os.environ['PATH'],
@@ -123,7 +158,6 @@ env = Environment(
     "#phonelibs/android_hardware_libhardware/include",
     "#phonelibs/android_system_core/include",
     "#phonelibs/linux/include",
-    "#phonelibs/snpe/include",
     "#phonelibs/nanovg",
     "#selfdrive/common",
     "#selfdrive/camerad",
@@ -178,7 +212,7 @@ def abspath(x):
 #zmq = 'zmq'
 # still needed for apks
 zmq = FindFile("libzmq.a", libpath)
-Export('env', 'arch', 'zmq', 'SHARED')
+Export('env', 'arch', 'zmq', 'SHARED', 'is_tbp')
 
 # cereal and messaging are shared with the system
 SConscript(['cereal/SConscript'])
@@ -222,7 +256,7 @@ SConscript(['selfdrive/proclogd/SConscript'])
 SConscript(['selfdrive/ui/SConscript'])
 SConscript(['selfdrive/loggerd/SConscript'])
 
-if arch == "aarch64":
+if arch == "aarch64" and not is_tbp:
   SConscript(['selfdrive/logcatd/SConscript'])
   SConscript(['selfdrive/sensord/SConscript'])
   SConscript(['selfdrive/clocksd/SConscript'])
