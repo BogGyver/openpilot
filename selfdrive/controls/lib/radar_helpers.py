@@ -41,9 +41,7 @@ class Track():
     self.vLead = self.vRel + v_ego_t_aligned
 
       
-    if self.cnt == 0:
-      self.kf = KF1D([[self.vLead], [0.0]], _VLEAD_A, _VLEAD_C, _VLEAD_K)
-    else:
+    if self.cnt > 0:
       self.kf.update(self.vLead)
 
     self.vLeadK = float(self.kf.x[SPEED][0])

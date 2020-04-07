@@ -15,6 +15,8 @@ from selfdrive.controls.lib.radar_helpers import Cluster, Track
 from selfdrive.swaglog import cloudlog
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 
+DEBUG = False
+RDR_TO_LDR = 0
 
 class KalmanParams():
   def __init__(self, dt):
@@ -163,7 +165,7 @@ class RadarD():
       # create the track if it doesn't exist or it's a new track
       if ids not in self.tracks:
         self.tracks[ids] = Track(v_lead, self.kalman_params)
-      self.tracks[ids].update(rpt[0], rpt[1], rpt[2], rpt[3], rpt[4],rpt[5],rpt[6],rpt[7],rpt[8],rpt[9], d_path, self.v_ego_t_aligned,self.use_tesla_radar)
+      self.tracks[ids].update(rpt[0], rpt[1], rpt[2], rpt[3], rpt[4],rpt[5],rpt[6],rpt[7],rpt[8],rpt[9], d_path, self.v_ego,self.use_tesla_radar)
 
     idens = list(sorted(self.tracks.keys()))
     track_pts = list([self.tracks[iden].get_key_for_cluster() for iden in idens])

@@ -359,8 +359,10 @@ class PCCController():
       
 
     v_ego = CS.v_ego
-    following = self.lead_1.status and self.lead_1.dRel < MAX_RADAR_DISTANCE and self.lead_1.vLeadK > v_ego and self.lead_1.aLeadK > 0.0
-    accel_limits = [float(x) for x in calc_cruise_accel_limits(v_ego)]
+    following = False
+    if self.lead_1:
+      following = self.lead_1.status and self.lead_1.dRel < MAX_RADAR_DISTANCE and self.lead_1.vLeadK > v_ego and self.lead_1.aLeadK > 0.0
+    accel_limits = [float(x) for x in calc_cruise_accel_limits(v_ego,following)]
     accel_limits[1] *= _accel_limit_multiplier(CS, self.lead_1)
     accel_limits[0] = _decel_limit(accel_limits[0], CS.v_ego, self.lead_1, CS, self.pedal_speed_kph)
     jerk_limits = [min(-0.1, accel_limits[0]/2.), max(0.1, accel_limits[1]/2.)]  # TODO: make a separate lookup for jerk tuning
