@@ -1,10 +1,14 @@
-Import('env', 'arch', 'messaging', 'common', 'gpucommon', 'visionipc', 'cereal')
+Import('env', 'arch', 'is_tbp', 'messaging', 'common', 'gpucommon', 'visionipc', 'cereal')
 
 libs = ['m', 'pthread', common, 'jpeg', 'json', cereal, 'OpenCL', messaging, 'czmq', 'zmq', 'capnp', 'kj', 'capnp_c', visionipc, gpucommon]
 
 if arch == "aarch64":
-  libs += ['gsl', 'CB', 'adreno_utils', 'EGL', 'GLESv3', 'cutils', 'ui']
-  cameras = ['cameras/camera_qcom.c']
+  if is_tbp:
+    libs += []
+    cameras = ['cameras/camera_frame_stream.cc']
+  else:
+    libs += ['gsl', 'CB', 'adreno_utils', 'EGL', 'GLESv3', 'cutils', 'ui']
+    cameras = ['cameras/camera_qcom.c']
 else:
   libs += []
   cameras = ['cameras/camera_frame_stream.cc']

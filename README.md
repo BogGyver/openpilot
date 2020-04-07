@@ -2,6 +2,7 @@
 WARNING: TESLA ONLY OPENPILOT 0.7.4-T15
 ======
 This repo contains code that was modified specifically for Tesla and will not work on other cars!
+Main Comma.ai code is Copyright (c) 2018, Comma.ai, Inc. Additonal work (ALCA, webcamera, any modifications to base Comma.ao code) is licensed under <a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-nd/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/">Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License</a>.
 
 [![](https://i.imgur.com/UelUjKAh.png)](#)
 

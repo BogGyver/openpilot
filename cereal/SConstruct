@@ -3,7 +3,7 @@ import subprocess
 
 zmq = 'zmq'
 arch = subprocess.check_output(["uname", "-m"], encoding='utf8').rstrip()
-
+is_tbp = os.path.isfile('/data/tinkla_buddy_pro')
 cereal_dir = Dir('.')
 
 cpppath = [
@@ -45,5 +45,5 @@ env = Environment(
 )
 
 
-Export('env', 'zmq', 'arch')
+Export('env', 'zmq', 'arch','is_tbp')
 SConscript(['SConscript'])

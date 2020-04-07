@@ -33,10 +33,11 @@ sourcefiles = ['messaging_pyx.pyx']
 extra_compile_args = ["-std=c++11"]
 libraries = ['zmq']
 ARCH = subprocess.check_output(["uname", "-m"], encoding='utf8').rstrip()  # pylint: disable=unexpected-keyword-arg
-
+is_tbp = os.path.isfile('/data/tinkla_buddy_pro')
 if ARCH == "aarch64":
   extra_compile_args += ["-Wno-deprecated-register"]
-  libraries += ['gnustl_shared']
+  if not is_tbp:
+    libraries += ['gnustl_shared']
 
 setup(name='CAN parser',
       cmdclass={'build_ext': BuildExtWithoutPlatformSuffix},
