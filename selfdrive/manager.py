@@ -196,7 +196,7 @@ persistent_processes = [
   'ui',
 ]
 if not WEBCAM:
-    persistent_process += [
+    persistent_processes += [
       'logmessaged',
       'uploader',
     ]
