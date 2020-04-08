@@ -9,10 +9,12 @@ common_src = [
   "transforms/loadyuv.c",
   "transforms/transform.c"]
 if is_tbp:
-  arch = "aarch64_TBP"
-if arch == "aarch64":
+  larch = "aarch64_TBP"
+else:
+  larch = arch
+if larch == "aarch64":
   libs += ['SNPE', 'gsl', 'CB', 'gnustl_shared']
-elif arch == "aarch64_TBP":
+elif larch == "aarch64_TBP":
   libs += ['pthread']
   # for tensorflow support
   common_src = [

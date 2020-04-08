@@ -4,8 +4,10 @@ src = ['ui.cc', 'paint.cc', 'sidebar.cc', '#phonelibs/nanovg/nanovg.c']
 libs = [common, 'zmq', 'czmq', 'capnp', 'capnp_c', 'm', cereal, messaging, gpucommon, visionipc]
 
 if is_tbp:
-  arch = "aarch64_TBP"
-if arch == "aarch64":
+  larch = "aarch64_TBP"
+else:
+  larch = arch
+if larch == "aarch64":
   src += ['sound.cc', 'slplay.c']
   libs += ['EGL', 'GLESv3', 'gnustl_shared', 'log', 'utils', 'gui', 'hardware', 'ui', 'CB', 'gsl', 'adreno_utils', 'OpenSLES', 'cutils', 'uuid', 'OpenCL']
   linkflags = ['-Wl,-rpath=/system/lib64,-rpath=/system/comma/usr/lib']

@@ -222,7 +222,7 @@ car_started_processes = [
 ]
 
 if not WEBCAM:
-    car_start_processes += [
+    car_started_processes += [
        'proclogd',
     ]
 
