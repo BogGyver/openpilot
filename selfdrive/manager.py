@@ -200,6 +200,7 @@ if not WEBCAM:
       'logmessaged',
       'uploader',
     ]
+
 if ANDROID:
   persistent_processes += [
     'logcatd',
@@ -210,6 +211,7 @@ if ANDROID:
 car_started_processes = [
   'controlsd',
   'plannerd',
+  'loggerd',
   'radard',
   'dmonitoringd',
   'calibrationd',
@@ -218,7 +220,6 @@ car_started_processes = [
   'modeld',
   'ubloxd',
   'locationd',
-  'loggerd',
 ]
 
 if not WEBCAM:

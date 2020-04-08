@@ -159,7 +159,7 @@ env = Environment(
     "#phonelibs/json11",
     "#phonelibs/eigen",
     "#phonelibs/curl/include",
-    #"#phonelibs/opencv/include",
+    "#phonelibs/opencv/include",
     "#phonelibs/libgralloc/include",
     "#phonelibs/android_frameworks_native/include",
     "#phonelibs/android_hardware_libhardware/include",
