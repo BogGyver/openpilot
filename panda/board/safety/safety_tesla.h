@@ -983,8 +983,9 @@ static void do_EPB_epasControl(uint32_t RIR, uint32_t RDTR) {
   MLB = MLB + (cksm << 16);
   if (DAS_noEpasHarness == 0) {
     send_fake_message(RIR,RDTR,3,0x214,2,MLB,MHB);
-  } // send also on 0 for monitoring
-  send_fake_message(RIR,RDTR,3,0x214,0,MLB,MHB);
+  } else {
+    send_fake_message(RIR,RDTR,3,0x214,0,MLB,MHB);
+  }
   EPB_epasControl_idx++;
   EPB_epasControl_idx = EPB_epasControl_idx % 16;
 }
@@ -2005,6 +2006,11 @@ static int tesla_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd)
       to_fwd->RDLR = GET_BYTES_04(to_fwd) & 0xFFFF;
       to_fwd->RDLR = GET_BYTES_04(to_fwd) + (checksum << 16);
       return ret_val;
+    }
+
+    if (addr == 0x214) {
+      //inhibit ibooster epas kill signal
+      return -1;
     }
 
     //forward everything else to CAN 2 unless claiming no harness
