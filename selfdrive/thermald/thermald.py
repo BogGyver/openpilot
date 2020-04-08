@@ -19,6 +19,11 @@ from selfdrive.loggerd.config import get_available_percent
 from selfdrive.pandad import get_expected_signature
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 from selfdrive.thermald.power_monitoring import PowerMonitoring, get_battery_capacity, get_battery_status, get_battery_current, get_battery_voltage, get_usb_present
+WEBCAM = os.getenv("WEBCAM") is not None
+if WEBCAM:
+    from backports.datetime_fromisoformat import MonkeyPatch
+    MonkeyPatch.patch_fromisoformat()
+
 
 FW_SIGNATURE = get_expected_signature()
 

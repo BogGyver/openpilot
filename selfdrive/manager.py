@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.7
+#!/usr/bin/env python3
 import os
 import time
 import sys
@@ -14,6 +14,7 @@ from selfdrive.car.tesla.readconfig import CarSettings
 import datetime
 
 from common.basedir import BASEDIR, PARAMS
+WEBCAM = os.getenv("WEBCAM") is not None
 from common.android import ANDROID
 sys.path.append(os.path.join(BASEDIR, "pyextra"))
 os.environ['BASEDIR'] = BASEDIR
@@ -115,7 +116,7 @@ if not prebuilt:
         for i in range(3,-1,-1):
           print("....%d" % i)
           time.sleep(1)
-        subprocess.check_call(["scons", "-c"], cwd=BASEDIR, env=env)
+        #subprocess.check_call(["scons", "-c"], cwd=BASEDIR, env=env)
         shutil.rmtree("/tmp/scons_cache")
       else:
         raise RuntimeError("scons build failed")
@@ -192,10 +193,13 @@ green_temp_processes = ['uploader']
 persistent_processes = [
   'tinklad',
   'thermald',
-  'logmessaged',
   'ui',
-  'uploader',
 ]
+if not WEBCAM:
+    persistent_process += [
+      'logmessaged',
+      'uploader',
+    ]
 if ANDROID:
   persistent_processes += [
     'logcatd',
@@ -206,17 +210,22 @@ if ANDROID:
 car_started_processes = [
   'controlsd',
   'plannerd',
-  'loggerd',
   'radard',
   'dmonitoringd',
   'calibrationd',
   'paramsd',
   'camerad',
   'modeld',
-  'proclogd',
   'ubloxd',
   'locationd',
+  'loggerd',
 ]
+
+if not WEBCAM:
+    car_start_processes += [
+       'proclogd',
+    ]
+
 if ANDROID:
   car_started_processes += [
     'sensord',
@@ -364,7 +373,9 @@ def manager_init(should_register=True):
       raise Exception("server registration failed")
   else:
     dongle_id = "c"*16
-
+  #BB
+  if not dongle_id:
+      dongle_id = "nada"
   # set dongle id
   cloudlog.info("dongle id is " + dongle_id)
   os.environ['DONGLE_ID'] = dongle_id
@@ -564,7 +575,7 @@ def main():
     ("LongitudinalControl", "0"),
     ("LimitSetSpeed", "0"),
     ("LimitSetSpeedNeural", "0"),
-    ("LastUpdateTime", datetime.datetime.now().isoformat().encode('utf8')),
+    ("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')),
     ("OpenpilotEnabledToggle", "1"),
     ("LaneChangeEnabled", "1"),
   ]

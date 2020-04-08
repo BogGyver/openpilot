@@ -16,8 +16,11 @@ is_tbp = os.path.isfile('/data/tinkla_buddy_pro')
 if platform.system() == "Darwin":
   arch = "Darwin"
 
+webcam = bool(ARGUMENTS.get("use_webcam", 0))
+
 if arch == "aarch64":
   if is_tbp:
+    webcam=True
     lenv = {
       "LD_LIBRARY_PATH": '/usr/lib',
       "PATH": os.environ['PATH'],
@@ -47,28 +50,32 @@ if arch == "aarch64":
   ]
   
   if is_tbp:
-    cflags = ["-mcpu=cortex-a57"]
-    cxxflags = ["-mcpu=cortex-a57"]
+    cflags = []
+    cxxflags = []
     cpppath = [
-      "#phonelibs/opencl/include",
-      "/data/op_rk3399_setup/support_files/include",
-      "/data/op_rk3399_setup/external/snpe/include",
+      "/usr/local/include",
+      "/usr/local/include/opencv4",
+      "/usr/include/khronos-api",
+      "/usr/include",
+      "#phonelibs/snpe/include",
+      "/usr/include/aarch64-linux-gnu",
     ]
     libpath = [
-      "/data/op_rk3399_setup/external/snpe/lib/lib",
+      "/usr/local/lib",
+      "/usr/lib/aarch64-linux-gnu",
       "/usr/lib",
+      "/data/op_rk3399_setup/external/snpe/lib/lib",
       "/data/data/com.termux/files/usr/lib",
-      "/system/vendor/lib64",
-      "/system/comma/usr/lib",
       "#phonelibs/nanovg",
       "/data/op_rk3399_setup/support_files/lib",
     ]
     rpath = ["/system/vendor/lib64",
+      "/usr/local/lib",
+      "/usr/lib/aarch64-linux-gnu",
+      "/usr/lib",
       "/data/op_rk3399_setup/external/snpe/lib/lib",
       "/data/op_rk3399_setup/support_files/lib",
-      "external/tensorflow/lib",
       "cereal",
-      "/usr/lib",
       "selfdrive/common",
     ] 
   else:
@@ -152,7 +159,7 @@ env = Environment(
     "#phonelibs/json11",
     "#phonelibs/eigen",
     "#phonelibs/curl/include",
-    "#phonelibs/opencv/include",
+    #"#phonelibs/opencv/include",
     "#phonelibs/libgralloc/include",
     "#phonelibs/android_frameworks_native/include",
     "#phonelibs/android_hardware_libhardware/include",
@@ -211,8 +218,8 @@ def abspath(x):
 
 #zmq = 'zmq'
 # still needed for apks
-zmq = FindFile("libzmq.a", libpath)
-Export('env', 'arch', 'zmq', 'SHARED', 'is_tbp')
+zmq = FindFile("libzmq.so", libpath)
+Export('env', 'arch', 'zmq', 'SHARED', 'webcam', 'is_tbp')
 
 # cereal and messaging are shared with the system
 SConscript(['cereal/SConscript'])
