@@ -40,12 +40,12 @@ if arch == "aarch64":
     "#phonelibs/snpe/include",
   ]
   libpath = [
-    "#phonelibs/snpe/aarch64-android-clang3.8",
     "/usr/lib",
     "/data/data/com.termux/files/usr/lib",
     "/system/vendor/lib64",
     "/system/comma/usr/lib",
     "#phonelibs/nanovg",
+    "#phonelibs/snpe/aarch64",
     "#phonelibs/libyuv/lib",
   ]
   
@@ -159,7 +159,7 @@ env = Environment(
     "#phonelibs/json11",
     "#phonelibs/eigen",
     "#phonelibs/curl/include",
-    "#phonelibs/opencv/include",
+    #"#phonelibs/opencv/include",
     "#phonelibs/libgralloc/include",
     "#phonelibs/android_frameworks_native/include",
     "#phonelibs/android_hardware_libhardware/include",
@@ -218,7 +218,9 @@ def abspath(x):
 
 #zmq = 'zmq'
 # still needed for apks
-zmq = FindFile("libzmq.so", libpath)
+zmq = FindFile("libzmq.a", libpath)
+if is_tbp:
+  zmq = FindFile("libzmq.so", libpath)
 Export('env', 'arch', 'zmq', 'SHARED', 'webcam', 'is_tbp')
 
 # cereal and messaging are shared with the system

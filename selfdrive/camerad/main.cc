@@ -910,7 +910,7 @@ void cl_init(VisionState *s) {
                        &s->device_id, &num_devices);
   assert(err == 0);
 
-  //cl_print_info(platform_id, s->device_id);
+  cl_print_info(platform_id, s->device_id);
   printf("\n");
 
   s->context = clCreateContext(NULL, 1, &s->device_id, NULL, NULL, &err);
