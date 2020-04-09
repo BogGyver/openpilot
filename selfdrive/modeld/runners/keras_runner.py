@@ -28,6 +28,9 @@ def run_loop(m):
   osize = m.outputs[0].shape[1]
   print("ready to run keras model %d -> %d" % (isize, osize), file=sys.stderr)
   while 1:
+    # check parent process, if ppid is 1, then modeld is no longer running and the runner should exit.
+    if os.getppid() == 1:
+      break
     idata = read(isize).reshape((1, isize))
     ret = m.predict_on_batch(idata)
     write(ret)
