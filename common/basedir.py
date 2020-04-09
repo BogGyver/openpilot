@@ -2,11 +2,11 @@ import os
 BASEDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../"))
 
 from common.android import ANDROID
-WEBCAM = os.getenv("WEBCAM") is not None
+is_tbp = os.path.isfile('/data/tinkla_buddy_pro')
 if ANDROID:
   PERSIST = "/persist"
   PARAMS = "/data/params"
-elif WEBCAM:
+elif is_tbp:
   PERSIST = "/data/params/persist"
   PARAMS = "/data/params"
 else:
