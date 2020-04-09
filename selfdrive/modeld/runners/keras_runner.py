@@ -36,9 +36,13 @@ if __name__ == "__main__":
   print(tf.__version__, file=sys.stderr)
   # limit gram alloc
   gpus = tf.config.experimental.list_physical_devices('GPU')
-  if len(gpus) > 0:
-    tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2048)])
   name = sys.argv[1].split('.keras')[0]
+  if name == "supercombo":
+    if len(gpus) > 0:
+      tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2048)])
+  else:
+    if len(gpus) > 0:
+      tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
   with open(f"{name}.model.keras", "r") as json_file:
     m = model_from_json(json_file.read())
   m.load_weights(f"{name}.weights.keras")

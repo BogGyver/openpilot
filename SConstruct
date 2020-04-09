@@ -22,7 +22,7 @@ if arch == "aarch64":
   if is_tbp:
     webcam=True
     lenv = {
-      "LD_LIBRARY_PATH": '/usr/lib',
+      "LD_LIBRARY_PATH": '/usr/lib:/usr/local/lib/:/usr/lib/aarch64-linux-gnu',
       "PATH": os.environ['PATH'],
       "ANDROID_DATA": "/data",
       "ANDROID_ROOT": "/",

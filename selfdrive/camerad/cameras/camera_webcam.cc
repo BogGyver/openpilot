@@ -40,10 +40,10 @@ void camera_release_buffer(void *cookie, int buf_idx) {
 void open_gl_stream_def(CameraState * s, int video_id, int width, int height, char ** strm_def) {
   printf("OPENGLSTREAM");
   std::string  strm_template="v4l2src device=/dev/video%d  ! video/x-raw,width=%d,height=%d,framerate=%d/1,format=YUY2 !"
-  	                     "nvvidconv ! video/x-raw(memory:NVMM),format=I420 !"
-  	                     "nvvidconv ! video/x-raw,format=BGRx !"
-  	                     "videoconvert ! video/x-raw,format=BGR !"
-			     "videoscale ! video/x-raw,width=%d,height=%d !"
+  	                     " nvvidconv ! video/x-raw(memory:NVMM),format=I420 !"
+  	                     " nvvidconv ! video/x-raw,format=BGRx !"
+  	                     " videoconvert ! video/x-raw,format=BGR !"
+			     " videoscale ! video/x-raw,width=%d,height=%d !"
   			     " appsink ";  
   * strm_def = (char*)calloc(300,1);
   sprintf(*strm_def,strm_template.c_str(),video_id, width, height, s->fps, s->ci.frame_width, s->ci.frame_height);
