@@ -303,8 +303,13 @@ void ui_draw_sidebar(UIState *s);
 void ui_nvg_init(UIState *s);
 static void set_awake(UIState *s, bool awake); 
 
+#if !defined(QCOM) && !defined(QCOM2)
+#include "GLFW/glfw3.h"
+FramebufferState* framebuffer_init_linux(
+    const char* name, int32_t layer, int alpha,
+    int *out_w, int *out_h, GLFWmousebuttonfun mouse_event_handler);
 #endif
-
+#endif
 // TODO: this is also hardcoded in common/transformations/camera.py
 const mat3 intrinsic_matrix = (mat3){{
   910., 0., 582.,

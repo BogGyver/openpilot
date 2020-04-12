@@ -13,7 +13,7 @@ if larch == "aarch64":
   linkflags = ['-Wl,-rpath=/system/lib64,-rpath=/system/comma/usr/lib']
 else:
   src += ['linux.cc']
-  libs += ['pthread', 'glfw']
+  libs += ['pthread', 'glfw', 'X11']
   linkflags = []
 
 env.Program('_ui', src,

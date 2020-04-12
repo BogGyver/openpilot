@@ -14,6 +14,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
+#include "common/params.h"
 
 extern volatile sig_atomic_t do_exit;
 #define FRAME_WIDTH  1164
@@ -37,16 +38,16 @@ void camera_release_buffer(void *cookie, int buf_idx) {
 }
 
 
-void open_gl_stream_def(CameraState * s, int video_id, int width, int height, char ** strm_def) {
+void open_gl_stream_def(CameraState * s, char* camera_id, int width, int height, char ** strm_def) {
   printf("OPENGLSTREAM");
-  std::string  strm_template="v4l2src device=/dev/video%d  ! video/x-raw,width=%d,height=%d,framerate=%d/1,format=YUY2 !"
+  std::string  strm_template="v4l2src device=/dev/v4l/by-id/%s  ! video/x-raw,width=%d,height=%d,framerate=%d/1,format=YUY2 !"
   	                     " nvvidconv ! video/x-raw(memory:NVMM),format=I420 !"
   	                     " nvvidconv ! video/x-raw,format=BGRx !"
   	                     " videoconvert ! video/x-raw,format=BGR !"
 			     " videoscale ! video/x-raw,width=%d,height=%d !"
   			     " appsink ";  
-  * strm_def = (char*)calloc(300,1);
-  sprintf(*strm_def,strm_template.c_str(),video_id, width, height, s->fps, s->ci.frame_width, s->ci.frame_height);
+  * strm_def = (char*)calloc(600,1);
+  sprintf(*strm_def,strm_template.c_str(),camera_id, width, height, s->fps, s->ci.frame_width, s->ci.frame_height);
   printf(" GL Stream :[%s]\n",*strm_def);
 }
 
@@ -67,7 +68,9 @@ static void* rear_thread(void *arg) {
   CameraState* s = (CameraState*)arg;
   char * strm_def;
   printf("open_GL");
-  open_gl_stream_def(s,1, 800, 600, &strm_def);
+  char * cameraId_value;
+  const int result = read_db_value(NULL, "RoadUsbCameraID", &cameraId_value, NULL);
+  open_gl_stream_def(s,cameraId_value, 800, 600, &strm_def);
   cv::VideoCapture cap_rear(strm_def);  // road
   free(strm_def);
 
@@ -122,7 +125,10 @@ void front_thread(CameraState *s) {
   int err;
   printf("OPEN FRONT");
   char * strm_def;
-  open_gl_stream_def(s,0,640,480, &strm_def);
+  char * cameraId_value;
+  const int result = read_db_value(NULL, "DriverUsbCameraID", &cameraId_value, NULL);
+  if (result != 0) return;
+  open_gl_stream_def(s,cameraId_value,640,480, &strm_def);
   cv::VideoCapture cap_front(strm_def);  // driver
   free(strm_def);
 

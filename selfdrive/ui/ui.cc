@@ -17,6 +17,13 @@
 #include "ui.hpp"
 #include "sound.hpp"
 
+#if !defined(QCOM) && !defined(QCOM2)
+#include <X11/Xlib.h>
+int force_rez = 0;
+int force_rez_w = 0;
+int force_rez_h = 0;
+#endif
+
 #include "bbui.h"
 
 static int last_brightness = -1;
@@ -190,14 +197,43 @@ static void ui_init(UIState *s) {
   s->ipc_fd = -1;
 
   // init display
+#if defined(QCOM) || defined(QCOM2)
   s->fb = framebuffer_init("ui", 0x00010000, true, &s->fb_w, &s->fb_h);
+#else
+  s->fb = framebuffer_init_linux("ui", 0x00010000, true, &s->fb_w, &s->fb_h,bb_mouse_event_handler);
+#endif 
   assert(s->fb);
 
   set_awake(s, true);
 
   s->model_changed = false;
   s->livempc_or_radarstate_changed = false;
+#if defined(QCOM) || defined(QCOM2)
+  s->b.scr_w = vwp_w;
+  s->b.scr_h = vwp_h;
+  s->b.scr_scale_x = 1.0f;
+  s->b.scr_scale_y = 1.0f;
+  s->b.scr_device_factor = 1.0f;
+  s->b.scr_scissor_offset = 0.0f;
+#else
+  //scale
+  if (force_rez == 1) {
+    s->b.scr_w = force_rez_w;
+    s->b.scr_h = force_rez_h;
+    printf("Forcing rezolution to %d x %d \n",force_rez_w,force_rez_h);
 
+  } else {
+    s->b.scr_display = XOpenDisplay(NULL);
+    Screen*  xorg_s = DefaultScreenOfDisplay(s->b.scr_display);
+    s->b.scr_w = xorg_s->width;
+    s->b.scr_h = xorg_s->height;
+  }
+  s->b.scr_scale_x = (float)(s->b.scr_w) / (float)(vwp_w);
+  s->b.scr_scale_y = (float)(s->b.scr_h) / (float)(vwp_h);
+  s->b.scr_device_factor = (float)(1164) / (float)(s->b.scr_w);
+  s->b.scr_scissor_offset = (float)(s->b.scr_w * 3) / 4.0f - (float)(s->b.scr_h);
+  mouse_ui_state = s;
+#endif
   ui_nvg_init(s);
 }
 
@@ -838,8 +874,11 @@ fail:
 static void* bg_thread(void* args) {
   UIState *s = (UIState*)args;
   set_thread_name("bg");
-
+#if defined(QCOM) || defined(QCOM2)
   FramebufferState *bg_fb = framebuffer_init("bg", 0x00001000, false, NULL, NULL);
+#else
+  FramebufferState *bg_fb = framebuffer_init_linux("bg", 0x00001000, false, NULL, NULL, NULL);
+#endif
   assert(bg_fb);
 
   int bg_status = -1;
@@ -893,13 +932,22 @@ int main(int argc, char* argv[]) {
 
   zsys_handler_set(NULL);
   signal(SIGINT, (sighandler_t)set_do_exit);
+#if !defined(QCOM) && !defined(QCOM2)
+  if (argc == 4) {
+    if (strcmp(argv[1],"-rez")==0) {
+	 force_rez = 1;
+	 force_rez_w = atoi(argv[2]);
+	 force_rez_h = atoi(argv[3]);
+    }
+  }
+#endif
 
   UIState uistate;
   UIState *s = &uistate;
   ui_init(s);
   //BB init our UI
   bb_ui_init(s);
-
+  
   pthread_t connect_thread_handle;
   err = pthread_create(&connect_thread_handle, NULL,
                        vision_connect_thread, s);
@@ -989,6 +1037,7 @@ int main(int argc, char* argv[]) {
       s->b.touch_last_x = 0;
       s->b.touch_last_y = 0;
     }
+
     
     //s->b.touch_last_width = s->scene.ui_viz_rw;
     //BB Update our cereal polls
@@ -1034,6 +1083,7 @@ int main(int argc, char* argv[]) {
     if (s->awake) {
       ui_draw(s);
       if (s->vision_connected) {
+	nvgScale(s->vg,s->b.scr_scale_x,s->b.scr_scale_y);
         bb_ui_draw_UI(s) ;
         ui_draw_infobar(s);
       }

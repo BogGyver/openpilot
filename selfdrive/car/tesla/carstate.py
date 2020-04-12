@@ -233,6 +233,8 @@ class CarState(CarStateBase):
     self.ldwNumbPeriod = 1.5
     self.tapBlinkerExtension = 2
     self.ahbOffDuration = 5
+    self.roadCameraID = ""
+    self.driverCameraID = ""
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

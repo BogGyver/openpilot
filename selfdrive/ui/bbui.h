@@ -2,6 +2,19 @@
 
 #include "cereal/gen/c/ui.capnp.h"
 
+#if !defined(QCOM) && !defined(QCOM2)
+#ifndef __APPLE__
+#define GLFW_INCLUDE_ES2
+#else
+#define GLFW_INCLUDE_GLCOREARB
+#endif
+
+#define GLFW_INCLUDE_GLEXT
+#include <GLFW/glfw3.h>
+int linux_abs_x = 0;
+int linux_abs_y = 0;
+UIState *mouse_ui_state;
+#endif
 // TODO: this is also hardcoded in common/transformations/camera.py
 
 
@@ -251,7 +264,13 @@ int bb_ui_draw_measure( UIState *s,  const char* bb_value, const char* bb_uom, c
 }
 
 
+
 bool bb_handle_ui_touch( UIState *s, int touch_x, int touch_y) {
+#if !defined(QCOM) && !defined(QCOM2)
+  touch_x = (int)(vwp_w * touch_x / 1280);
+  touch_y = (int)(vwp_h * touch_y / 720);
+  printf("Linux mouse up at %d, %d  ( %d, %d)\n",(int)touch_x, (int)touch_y, linux_abs_x, linux_abs_y);
+#endif
   for(int i=0; i<6; i++) {
     if (s->b.btns_r[i] > 0) {
       if ((abs(touch_x - s->b.btns_x[i]) < s->b.btns_r[i]) && (abs(touch_y - s->b.btns_y[i]) < s->b.btns_r[i])) {
@@ -291,6 +310,20 @@ bool bb_handle_ui_touch( UIState *s, int touch_x, int touch_y) {
   }
   return false;
 };
+
+#if !defined(QCOM) && !defined(QCOM2)
+void bb_mouse_event_handler(GLFWwindow* window, int button, int action, int mods) {
+   if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+
+        double xpos, ypos;
+	glfwGetCursorPos(window, &xpos, &ypos);
+	int w_width,w_height;
+	glfwGetWindowSize(window, &linux_abs_x, &linux_abs_y);
+        bb_handle_ui_touch(mouse_ui_state,(int) xpos, (int)ypos);
+   }
+}
+#endif
+
 
 int bb_get_button_status( UIState *s, char *btn_name) {
   int ret_status = -1;
