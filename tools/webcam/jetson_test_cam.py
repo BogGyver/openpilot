@@ -22,14 +22,22 @@ if __name__ == "__main__":
     print ("Processing camera [%s]\n" % cam)
     if cam == "road":
       strm = strm_template % (cs.roadCameraID, 800, 600, 20, 1164,874)
+      dx = round(1164/4)
+      dy = round(874/4)
     else:
       strm = strm_template % (cs.driverCameraID, 640, 480, 10, 1152,864)
+      dx = round(1152/4)
+      dy = round(864/4)
     print("Capturing with stream [%s}\n" % strm)
     cap = cv2.VideoCapture(strm)
     i = 0
     try:
       while True:
-        ret, img = cap.read()
+        ret, frame = cap.read()
+        if cam == "road":
+          img = frame[ dy:3*dy, dx:3*dx]
+        else:
+          img = frame[:,-864//2:,:]
         if ret:
           if i == 0:
             print(img.shape,end='\r')
