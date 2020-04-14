@@ -814,13 +814,13 @@ static void ui_draw_vision(UIState *s) {
 #else
   int b0 = int(bdr_s * s->b.scr_w / 1920);
   int w0 = s->b.scr_w -2 * b0;
-  int h0 = s->b.scr_h; //-2*b0;
+  int h0 = s->b.scr_h -2*b0;
   int x0 = b0;
   int y0 = s->fb_h-(b0+h0);
-  int x1 = (w0-1920)/2 + b0;
-  int y1 = 1080-h0 + b0;
+  int x1 = (w0-ui_viz_rw)/2 -  b0;
+  int y1 = box_h -h0 - 2 * bdr_s;
   glViewport(x0,y0,w0,h0);
-  glScissor(x1,y1,1920,1080);
+  glScissor(x1,y1,ui_viz_rw,box_h);
 #endif
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
