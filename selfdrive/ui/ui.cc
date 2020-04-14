@@ -230,7 +230,7 @@ static void ui_init(UIState *s) {
   }
   s->b.scr_scale_x = (float)(s->b.scr_w) / (float)(vwp_w);
   s->b.scr_scale_y = (float)(s->b.scr_h) / (float)(vwp_h);
-  s->b.scr_device_factor = (float)(1164) / (float)(s->b.scr_w);
+  s->b.scr_device_factor =  (float)(1920) / (float)(s->b.scr_w);
   s->b.scr_scissor_offset = (float)(s->b.scr_w * 3) / 4.0f - (float)(s->b.scr_h);
   mouse_ui_state = s;
 #endif
@@ -1006,10 +1006,15 @@ int main(int argc, char* argv[]) {
 
     // resize vision for collapsing sidebar
     const bool hasSidebar = !s->scene.uilayout_sidebarcollapsed;
+#if defined(QCOM) || defined(QCOM2)
     s->scene.ui_viz_rx = hasSidebar ? box_x : (box_x - sbr_w + (bdr_s * 2));
     s->scene.ui_viz_rw = hasSidebar ? box_w : (box_w + sbr_w - (bdr_s * 2));
     s->scene.ui_viz_ro = hasSidebar ? -(sbr_w - 6 * bdr_s) : 0;
-
+#else
+    s->scene.ui_viz_rx = hasSidebar ? box_x : (box_x - sbr_w);
+    s->scene.ui_viz_rw = hasSidebar ? box_w : (box_w + sbr_w);
+    s->scene.ui_viz_ro = hasSidebar ? -(sbr_w) : 0;
+#endif
     // poll for touch events
     int touch_x = -1, touch_y = -1;
     int dc_touch_x = -1, dc_touch_y = -1;

@@ -108,7 +108,11 @@ keys = {
   "Offroad_InvalidTime": [TxType.CLEAR_ON_MANAGER_START],
   "Offroad_IsTakingSnapshot": [TxType.CLEAR_ON_MANAGER_START],
   "DriverUsbCameraID": [TxType.PERSISTENT],
+  "DriverUsbCameraFx": [TxType.PERSISTENT],
+  "DriverUsbCameraFlip": [TxType.PERSISTENT],
   "RoadUsbCameraID": [TxType.PERSISTENT],
+  "RoadUsbCameraFx": [TxType.PERSISTENT],
+  "RoadUsbCameraFlip": [TxType.PERSISTENT],
 }
 
 
