@@ -94,6 +94,7 @@ else:
     "#phonelibs/capnp-c/include",
     "#phonelibs/zmq/x64/include",
     "#external/tensorflow/include",
+    "#phonelibs/snpe/include",
   ]
 
   if arch == "Darwin":
