@@ -53,7 +53,7 @@ class UnknownKeyName(Exception):
 
 
 keys = {
-  "AccessToken": [TxType.CLEAR_ON_MANAGER_START],
+  "AccessToken": [TxType.CLEAR_ON_MANAGER_START], #BB what happends if no int connection?
   "AthenadPid": [TxType.PERSISTENT],
   "CalibrationParams": [TxType.PERSISTENT],
   "CarParams": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT], #BB we had [TxType.CLEAR_ON_CAR_START],
@@ -111,6 +111,10 @@ keys = {
   "Offroad_IsTakingSnapshot": [TxType.CLEAR_ON_MANAGER_START],
   "DriverUsbCameraID": [TxType.PERSISTENT],
   "RoadUsbCameraID": [TxType.PERSISTENT],
+  "DriverUsbCameraFx": [TxType.PERSISTENT],
+  "DriverUsbCameraFlip": [TxType.PERSISTENT],
+  "RoadUsbCameraFx": [TxType.PERSISTENT],
+  "RoadUsbCameraFlip": [TxType.PERSISTENT],
 }
 
 

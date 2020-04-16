@@ -362,13 +362,70 @@ class ConfigFile():
       )
       file_changed |= didUpdate
 
+      #jetson_road_camera_fx -> roadCameraFx
+      into.roadCameraFx, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = jetson_section,
+        entry = 'jetson_road_camera_fx', entry_type = float,
+        default_value = 0.73,
+        comment = 'Focal length correction factor to match the EON camera view window'
+      )
+      file_changed |= didUpdate
+
+      #jetson_driver_camera_fx -> driverCameraFx
+      into.driverCameraFx, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = jetson_section,
+        entry = 'jetson_driver_camera_fx', entry_type = float,
+        default_value = 0.75,
+        comment = 'Focal length correction factor to match the EON camera view window'
+      )
+      file_changed |= didUpdate
+
+      #jetson_driver_camera_flip -> driverCameraFlip
+      into.driverCameraFlip, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = jetson_section,
+        entry = 'jetson_driver_camera_flip', entry_type = int,
+        default_value = 0,
+        comment = 'Flip the image for the driver camera'
+      )
+      file_changed |= didUpdate
+
+      #jetson_road_camera_flip -> roadCameraFlip
+      into.roadCameraFlip, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = jetson_section,
+        entry = 'jetson_road_camera_flip', entry_type = int,
+        default_value = 0,
+        comment = 'Flip the image for the road camera'
+      )
+      file_changed |= didUpdate
+
+      #jetson_monitor_forced_resolution -> monitorForcedRes
+      into.monitorForcedRes, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = jetson_section,
+        entry = 'jetson_monitor_forced_resolution', entry_type = str,
+        default_value = "-rez 1280 720",
+        comment = 'To use the Pi 7" HDMI screen this has to be set to "-rez 800 480"'
+      )
+      file_changed |= didUpdate
+
       #check camera_id values against LiveParams
       savedRoadCameraID = params.get("RoadUsbCameraID")
       savedDriverCameraID = params.get("DriverUsbCameraID")
+      savedRoadCameraFx = params.get("RoadUsbCameraFx")
+      savedDriverCameraFx = params.get("DriverUsbCameraFx")
+      savedRoadCameraFlip = params.get("RoadUsbCameraFlip")
+      savedDriverCameraFlip = params.get("DriverUsbCameraFlip")
       if into.driverCameraID != savedDriverCameraID:
           params.put("DriverUsbCameraID",into.driverCameraID)
       if into.roadCameraID != savedRoadCameraID:
           params.put("RoadUsbCameraID",into.roadCameraID)
+      if into.driverCameraFx != savedDriverCameraFx:
+          params.put("DriverUsbCameraFx","%f" % into.driverCameraFx)
+      if into.roadCameraFx != savedRoadCameraFx:
+          params.put("RoadUsbCameraFx","%f" % into.roadCameraFx)
+      if into.driverCameraFlip != savedDriverCameraFlip:
+          params.put("DriverUsbCameraFlip","%d" % into.driverCameraFlip)
+      if into.roadCameraFlip != savedRoadCameraFlip:
+          params.put("RoadUsbCameraFlip","%d" % into.roadCameraFlip)
       
       
       into.shouldLogCanErrors, didUpdate = self.read_config_entry(
@@ -462,6 +519,11 @@ class CarSettings():
   usesApillarHarness = None
   roadCameraID = None
   driverCameraID = None
+  roadCameraFx = None
+  driverCameraFx = None
+  roadCameraFlip = None
+  driverCameraFlip = None
+  monitorForcedRes = None
 
   def __init__(self, optional_config_file_path = default_config_file_path):
     config_file = ConfigFile()
