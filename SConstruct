@@ -15,7 +15,7 @@ arch = subprocess.check_output(["uname", "-m"], encoding='utf8').rstrip()
 is_tbp = os.path.isfile('/data/tinkla_buddy_pro')
 if platform.system() == "Darwin":
   arch = "Darwin"
-if arch == "aarch64" and not os.path.isdir("/system"):
+if arch == "aarch64" and (not os.path.isdir("/system")) and not is_tbp:
   arch = "larch64"
 
 webcam = bool(ARGUMENTS.get("use_webcam", 0))
@@ -36,11 +36,6 @@ if arch == "aarch64":
       "ANDROID_DATA": os.environ['ANDROID_DATA'],
       "ANDROID_ROOT": os.environ['ANDROID_ROOT'],
     }
-
-  if arch == "aarch64":
-    # android
-    lenv["ANDROID_DATA"] = os.environ['ANDROID_DATA']
-    lenv["ANDROID_ROOT"] = os.environ['ANDROID_ROOT']
 
   cpppath = [
     "#phonelibs/opencl/include",
