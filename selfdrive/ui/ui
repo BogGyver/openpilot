@@ -1,4 +1,8 @@
 #!/bin/sh
 export LD_LIBRARY_PATH="/system/lib64:$LD_LIBRARY_PATH"
-exec ./_ui
-
+TBP=/data/tinkla_buddy_pro
+if test -f "$TBP"; then
+  exec /usr/bin/startx ./_ui -rez 800 480
+else
+  exec ./_ui
+fi

@@ -11,6 +11,7 @@ from cereal import log
 from common import realtime
 import cereal.messaging as messaging
 from selfdrive.locationd.test.ephemeris import EphemerisData, GET_FIELD_U
+from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 
 panda = os.getenv("PANDA") is not None   # panda directly connected
 grey = not (os.getenv("EVAL") is not None)     # panda through boardd
@@ -283,20 +284,24 @@ def main():
   for i in range(1,33):
     nav_frame_buffer[0][i] = {}
 
+  if not CarSettings().get_value("useTeslaGPS"):
 
-  gpsLocationExternal = messaging.pub_sock('gpsLocationExternal')
-  ubloxGnss = messaging.pub_sock('ubloxGnss')
+    gpsLocationExternal = messaging.pub_sock('gpsLocationExternal')
+    ubloxGnss = messaging.pub_sock('ubloxGnss')
 
-  dev = init_reader()
-  while True:
-    try:
-      msg = dev.receive_message()
-    except serial.serialutil.SerialException as e:
-      print(e)
-      dev.close()
-      dev = init_reader()
-    if msg is not None:
-      handle_msg(dev, msg, nav_frame_buffer)
-
+    dev = init_reader()
+    while True:
+      try:
+        msg = dev.receive_message()
+      except serial.serialutil.SerialException as e:
+        print(e)
+        dev.close()
+        dev = init_reader()
+      if msg is not None:
+        handle_msg(dev, msg, nav_frame_buffer)
+  else:
+    while True:
+      time.sleep(1.1)
+      
 if __name__ == "__main__":
   main()

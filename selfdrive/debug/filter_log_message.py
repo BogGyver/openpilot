@@ -46,6 +46,8 @@ if __name__ == "__main__":
           print(f"[{t / 1e9:.6f}] {log['filename']}:{log.get('lineno', '')} - {log.get('funcname', '')}: {log['msg']}")
       except json.decoder.JSONDecodeError:
         print(f"[{t / 1e9:.6f}] decode error: {sm['logMessage']}")
+      if log['levelnum'] >= min_level:
+        print(f"{log['filename']}:{log.get('lineno', '')} - {log.get('funcname', '')}: {log['msg']}")
 
     if sm.updated['androidLog']:
       t = sm.logMonoTime['androidLog']

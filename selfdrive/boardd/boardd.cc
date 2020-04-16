@@ -31,8 +31,8 @@
 #include <algorithm>
 #include <bitset>
 
-// double the FIFO size
-#define RECV_SIZE (0x1000)
+//triple the FIFO size
+#define RECV_SIZE (0x3F00)
 #define TIMEOUT 0
 
 #define MAX_IR_POWER 0.5f
@@ -108,9 +108,10 @@ void *safety_setter_thread(void *s) {
   free(value_vin);
 
   // VIN query done, stop listening to OBDII
-  pthread_mutex_lock(&usb_lock);
-  libusb_control_transfer(dev_handle, 0x40, 0xdc, (uint16_t)(cereal::CarParams::SafetyModel::NO_OUTPUT), 0, NULL, 0, TIMEOUT);
-  pthread_mutex_unlock(&usb_lock);
+  // BB prevent switch to no output
+//  pthread_mutex_lock(&usb_lock);
+//  libusb_control_transfer(dev_handle, 0x40, 0xdc, (uint16_t)(cereal::CarParams::SafetyModel::NO_OUTPUT), 0, NULL, 0, TIMEOUT);
+//  pthread_mutex_unlock(&usb_lock);
 
   char *value;
   size_t value_sz = 0;
@@ -137,6 +138,8 @@ void *safety_setter_thread(void *s) {
   auto safety_param = car_params.getSafetyParam();
   LOGW("setting safety model: %d with param %d", safety_model, safety_param);
 
+
+  /*BB stop changes to safety model 
   pthread_mutex_lock(&usb_lock);
 
   // set in the mutex to avoid race
@@ -145,7 +148,7 @@ void *safety_setter_thread(void *s) {
   libusb_control_transfer(dev_handle, 0x40, 0xdc, safety_model, safety_param, NULL, 0, TIMEOUT);
 
   pthread_mutex_unlock(&usb_lock);
-
+*/
   return NULL;
 }
 

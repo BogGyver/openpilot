@@ -16,7 +16,9 @@ from selfdrive.loggerd.config import ROOT
 
 from common import android
 from common.params import Params
+
 from common.api import Api
+from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 from common.xattr import getxattr, setxattr
 
 UPLOAD_ATTR_NAME = 'user.upload'
@@ -87,9 +89,12 @@ def is_on_hotspot():
 
     is_android = result.startswith('192.168.43.')
     is_ios = result.startswith('172.20.10.')
+    car_set = CarSettings()
+    blockUploadWhileTethering = car_set.get_value("blockUploadWhileTethering")
+    tetherIP = car_set.get_value("tetherIP")
+    is_other_tether = blockUploadWhileTethering and result.startswith(tetherIP)
     is_entune = result.startswith('10.0.2.')
-
-    return (is_android or is_ios or is_entune)
+    return (is_android or is_ios or is_other_tether or is_entune)
   except Exception:
     return False
 

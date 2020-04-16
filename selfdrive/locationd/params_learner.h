@@ -12,6 +12,9 @@
 #define MIN_SR_TH  0.55
 #define MAX_SR_TH  1.9
 
+#define FREQUENCY 100.0 //BB learner is called at 100 Hz
+#define MAX_ACCEL 0.2 //BB maximum acceleration m/s^2 accepted before ignoring the calculations 
+
 class ParamsLearner {
   double cF0, cR0;
   double aR, aF;
@@ -19,11 +22,13 @@ class ParamsLearner {
 
   double min_sr, max_sr, min_sr_th, max_sr_th;
   double alpha1, alpha2, alpha3, alpha4;
+  double cs_sr;
 
 public:
   double ao;
   double slow_ao;
   double x, sR;
+  double prev_u; //BB previous speed so we only learn when speed is constant between iterations
 
   ParamsLearner(cereal::CarParams::Reader car_params,
                 double angle_offset,
