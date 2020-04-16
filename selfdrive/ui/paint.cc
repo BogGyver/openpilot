@@ -856,8 +856,15 @@ static void ui_draw_vision(UIState *s) {
   glViewport(ui_viz_rx+ui_viz_ro, s->fb_h-(box_y+box_h), viz_w , box_h);
   glScissor(ui_viz_rx, s->fb_h-(box_y+box_h), ui_viz_rw, box_h);
 #else
-  glViewport(0, s->b.scr_h + s->b.scr_scissor_offset, s->b.scr_w, s->b.scr_w * 0.751);
-  glScissor(0, s->b.scr_h + s->b.scr_scissor_offset, s->b.scr_w, s->b.scr_w * 0.751);
+  int b0 = int(bdr_s * s->b.scr_w / 1920);
+  int w0 = s->b.scr_w -2 * b0;
+  int h0 = s->b.scr_h -2*b0;
+  int x0 = b0;
+  int y0 = s->fb_h-(b0+h0);
+  int x1 = (w0-ui_viz_rw)/2 -  b0;
+  int y1 = box_h -h0 - 2 * bdr_s;
+  glViewport(x0,y0,w0,h0);
+  glScissor(x1,y1,ui_viz_rw,box_h);
 #endif
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1097,19 +1104,9 @@ void ui_nvg_init(UIState *s) {
     glBindBuffer(GL_ARRAY_BUFFER,0);
     glBindVertexArray(0);
   }
-  #if defined(QCOM) || defined(QCOM2)
-    s->rear_frame_mat = matmul(device_transform, frame_transform);
-    s->front_frame_mat = matmul(device_transform, full_to_wide_frame_transform);
-  #else
-    mat4 device_transform_bb = {{
-      s->b.scr_device_factor,  0.0, 0.0, 0.0,
-      0.0,   s->b.scr_device_factor, 0.0, 0.0,
-      0.0,  0.0, 1.0, 0.0,
-      0.0,  0.0, 0.0, 1.0,
-    }};
-    s->rear_frame_mat = matmul(device_transform_bb, frame_transform);
-    s->front_frame_mat = matmul(device_transform_bb, full_to_wide_frame_transform);
-  #endif
+
+  s->front_frame_mat = matmul(device_transform, full_to_wide_frame_transform);
+  s->rear_frame_mat = matmul(device_transform, frame_transform);
 
   for(int i = 0;i < UI_BUF_COUNT; i++) {
     s->khr[i] = NULL;

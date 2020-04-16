@@ -237,7 +237,6 @@ if ANDROID:
 car_started_processes = [
   'controlsd',
   'plannerd',
-  'loggerd',
   'radard',
   'dmonitoringd',
   'calibrationd',
@@ -250,8 +249,9 @@ car_started_processes = [
 ]
 
 if not WEBCAM:
-    car_started_processes += [
-    ]
+  car_started_processes += [
+    'loggerd',
+  ]
 
 if ANDROID:
   car_started_processes += [
