@@ -16,14 +16,13 @@ void rgb_to_yuv_init(RGBToYUVState* s, cl_context ctx, cl_device_id device_id, i
   char args[8024];
   printf("snprintf");
   snprintf(args, sizeof(args),
-           "-cl-denorms-are-zero "
+           "-cl-fast-relaxed-math  -cl-denorms-are-zero "
 #ifdef CL_DEBUG
            "-DCL_DEBUG "
 #endif
            "-DWIDTH=%d -DHEIGHT=%d -DUV_WIDTH=%d -DUV_HEIGHT=%d -DRGB_STRIDE=%d -DRGB_SIZE=%d",
            width, height, width/ 2, height / 2, rgb_stride, width * height);
-  printf("loading transforms");
-  cl_program prg = CLU_LOAD_FROM_FILE(ctx, device_id, "/data/openpilot/selfdrive/camerad/transforms/rgb_to_yuv.cl", args);
+  cl_program prg = CLU_LOAD_FROM_FILE(ctx, device_id, "transforms/rgb_to_yuv.cl", args);
 
   s->rgb_to_yuv_krnl = clCreateKernel(prg, "rgb_to_yuv", &err);
   assert(err == 0);

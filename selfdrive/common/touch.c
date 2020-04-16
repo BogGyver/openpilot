@@ -96,7 +96,7 @@ int touch_read(TouchState *s, int* out_x, int* out_y) {
   struct input_event event;
   int err = read(s->fd, &event, sizeof(event));
   if (err < sizeof(event)) {
-    return false; //-1;
+    return -1;
   }
   bool up = false;
   switch (event.type) {

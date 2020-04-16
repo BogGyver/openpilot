@@ -16,21 +16,21 @@ files = [
   'visionimg.cc',
 ]
 
-if arch == "aarch64":
-  if is_tbp:
-    defines = {"CLU_NO_CACHE": None}   
-    files += [                         
-      'visionbuf_cl.c',                
-    ]                                                                     
-    _gpu_libs = ["GL"] 
-  else:
-    defines = {}
-    files += [
-      'framebuffer.cc',
-      'touch.c',
-      'visionbuf_ion.c',
-    ]
-    _gpu_libs = ['gui', 'adreno_utils']
+
+if is_tbp:
+  defines = {"CLU_NO_CACHE": None}   
+  files += [                         
+    'visionbuf_cl.c',                
+  ]                                                                     
+  _gpu_libs = ["GL"] 
+elif arch == "aarch64":
+  defines = {}
+  files += [
+    'framebuffer.cc',
+    'touch.c',
+    'visionbuf_ion.c',
+  ]
+  _gpu_libs = ['gui', 'adreno_utils']
 else:
   defines = {"CLU_NO_CACHE": None}
   files += [

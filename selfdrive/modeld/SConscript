@@ -8,13 +8,8 @@ common_src = [
   "runners/snpemodel.cc",
   "transforms/loadyuv.c",
   "transforms/transform.c"]
+
 if is_tbp:
-  larch = "aarch64_TBP"
-else:
-  larch = arch
-if larch == "aarch64":
-  libs += ['SNPE', 'gsl', 'CB', 'gnustl_shared']
-elif larch == "aarch64_TBP":
   libs += ['pthread']
   # for tensorflow support
   common_src = [
@@ -25,6 +20,10 @@ elif larch == "aarch64_TBP":
   # tell runners to use it
   lenv['CFLAGS'].append("-DUSE_TF_MODEL")
   lenv['CXXFLAGS'].append("-DUSE_TF_MODEL")
+elif arch == "aarch64":
+  libs += ['SNPE', 'gsl', 'CB', 'gnustl_shared']
+elif larch == "larch64":
+  libs += ['SNPE', 'gsl', 'CB', 'symphony-cpu', 'pthread']  
 else:
   libs += ['symphony-cpu', 'pthread']
   # for tensorflow support

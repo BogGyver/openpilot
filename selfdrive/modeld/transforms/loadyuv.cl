@@ -37,3 +37,4 @@ __kernel void loaduv(__global uchar8 const * const in,
   const float8 outv  = convert_float8(inv);
   out[gid + out_offset / 8] = outv;
 }
+

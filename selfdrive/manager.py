@@ -16,7 +16,6 @@ import textwrap
 from selfdrive.swaglog import cloudlog, add_logentries_handler
 
 from common.basedir import BASEDIR, PARAMS
-WEBCAM = os.getenv("WEBCAM") is not None
 from common.android import ANDROID
 WEBCAM = os.getenv("WEBCAM") is not None
 sys.path.append(os.path.join(BASEDIR, "pyextra"))
