@@ -1,13 +1,24 @@
-Import('env', 'arch', 'messaging', 'common', 'gpucommon', 'visionipc', 'cereal', 'webcam')
+Import('env', 'arch', 'messaging', 'is_tbp', 'common', 'gpucommon', 'visionipc', 'cereal', 'webcam')
 
 libs = ['m', 'pthread', common, 'jpeg', 'json', cereal, 'OpenCL', messaging, 'czmq', 'zmq', 'capnp', 'kj', 'capnp_c', visionipc, gpucommon]
 
-if arch == "aarch64":
+if is_tbp:
+  larch =  "aarch64_TBP"
+else:
+  larch = arch
+if larch == "aarch64":
   libs += ['gsl', 'CB', 'adreno_utils', 'EGL', 'GLESv3', 'cutils', 'ui']
   cameras = ['cameras/camera_qcom.c']
-elif arch == "larch64":
+elif larch == "larch64":
   libs += []
   cameras = ['cameras/camera_qcom2.c']
+elif larch == "aarch64_TBP":
+    libs += ['opencv_core', 'opencv_highgui', 'opencv_video', 'opencv_imgproc', 'opencv_videoio']
+    cameras = ['cameras/camera_webcam.cc']
+    env = env.Clone()
+    env.Append(CXXFLAGS = '-DWEBCAM')
+    env.Append(CFLAGS = '-DWEBCAM')
+    #env.Append(CPPPATH = '/usr/local/include/opencv4')
 else:
   if webcam:
     libs += ['opencv_core', 'opencv_highgui', 'opencv_imgproc', 'opencv_videoio']

@@ -6,6 +6,7 @@ from opendbc.can.parser import CANParser
 from selfdrive.config import Conversions as CV
 from selfdrive.car.interfaces import CarStateBase
 from selfdrive.car.honda.values import CAR, DBC, STEER_THRESHOLD, SPEED_FACTOR, HONDA_BOSCH
+from selfdrive.car.honda.readconfig import read_config_file
 
 def calc_cruise_offset(offset, speed):
   # euristic formula so that speed is controlled to ~ 0.3m/s below pid_speed
@@ -53,20 +54,12 @@ def get_can_signals(CP):
       ("ENGINE_DATA", 100),
       ("WHEEL_SPEEDS", 50),
       ("STEERING_SENSORS", 100),
+      ("SCM_FEEDBACK", 10),
+      ("GEARBOX", 100),
       ("SEATBELT_STATUS", 10),
       ("CRUISE", 10),
       ("POWERTRAIN_DATA", 100),
       ("VSA_STATUS", 50),
-  ]
-
-  if CP.carFingerprint == CAR.ODYSSEY_CHN:
-    checks += [
-      ("SCM_FEEDBACK", 25),
-      ("SCM_BUTTONS", 50),
-    ]
-  else:
-    checks += [
-      ("SCM_FEEDBACK", 10),
       ("SCM_BUTTONS", 25),
     ]
 
@@ -79,7 +72,7 @@ def get_can_signals(CP):
       ("GEARBOX", 100),
     ]
 
-  if CP.radarOffCan:
+  if CP.carFingerprint in HONDA_BOSCH:
     # Civic is only bosch to use the same brake message as other hondas.
     if CP.carFingerprint not in (CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CIVIC_BOSCH_DIESEL, CAR.CRV_HYBRID, CAR.INSIGHT):
       signals += [("BRAKE_PRESSED", "BRAKE_MODULE", 0)]
@@ -90,23 +83,23 @@ def get_can_signals(CP):
                 ("EPB_STATE", "EPB_STATUS", 0),
                 ("CRUISE_SPEED", "ACC_HUD", 0)]
     checks += [("GAS_PEDAL_2", 100)]
+
+    # TODO: why were these removed from bosch?
+    signals += [("BRAKE_ERROR_1", "STANDSTILL", 1),
+                ("BRAKE_ERROR_2", "STANDSTILL", 1)]
+    checks += [("STANDSTILL", 50)]
+
   else:
     # Nidec signals.
     signals += [("BRAKE_ERROR_1", "STANDSTILL", 1),
                 ("BRAKE_ERROR_2", "STANDSTILL", 1),
                 ("CRUISE_SPEED_PCM", "CRUISE", 0),
                 ("CRUISE_SPEED_OFFSET", "CRUISE_PARAMS", 0)]
-    checks += [("STANDSTILL", 50)]
-
-    if CP.carFingerprint == CAR.ODYSSEY_CHN:
-      checks += [("CRUISE_PARAMS", 10)]
-    else:
-      checks += [("CRUISE_PARAMS", 50)]
+    checks += [("CRUISE_PARAMS", 50),
+               ("STANDSTILL", 50)]
 
   if CP.carFingerprint in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CIVIC_BOSCH_DIESEL, CAR.CRV_HYBRID, CAR.INSIGHT):
     signals += [("DRIVERS_DOOR_OPEN", "SCM_FEEDBACK", 1)]
-  elif CP.carFingerprint == CAR.ODYSSEY_CHN:
-    signals += [("DRIVERS_DOOR_OPEN", "SCM_BUTTONS", 1)]
   else:
     signals += [("DOOR_OPEN_FL", "DOORS_STATUS", 1),
                 ("DOOR_OPEN_FR", "DOORS_STATUS", 1),
@@ -136,10 +129,6 @@ def get_can_signals(CP):
   elif CP.carFingerprint == CAR.PILOT:
     signals += [("MAIN_ON", "SCM_BUTTONS", 0),
                 ("CAR_GAS", "GAS_PEDAL_2", 0)]
-  elif CP.carFingerprint == CAR.ODYSSEY_CHN:
-    signals += [("MAIN_ON", "SCM_BUTTONS", 0),
-                ("EPB_STATE", "EPB_STATUS", 0)]
-    checks += [("EPB_STATUS", 50)]
 
   # add gas interceptor reading if we are using it
   if CP.enableGasInterceptor:

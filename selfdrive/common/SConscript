@@ -1,4 +1,4 @@
-Import('env', 'arch', 'SHARED')
+Import('env', 'arch', 'SHARED','is_tbp')
 
 if SHARED:
   fxn = env.SharedLibrary
@@ -17,19 +17,20 @@ files = [
 ]
 
 if arch == "aarch64":
-  defines = {}
-  files += [
-    'framebuffer.cc',
-    'touch.c',
-    'visionbuf_ion.c',
-  ]
-  _gpu_libs = ['gui', 'adreno_utils']
-elif arch == "larch64":
-  defines = {"CLU_NO_CACHE": None}
-  files += [
-    'visionbuf_ion.c',
-  ]
-  _gpu_libs = ['GL']
+  if is_tbp:
+    defines = {"CLU_NO_CACHE": None}   
+    files += [                         
+      'visionbuf_cl.c',                
+    ]                                                                     
+    _gpu_libs = ["GL"] 
+  else:
+    defines = {}
+    files += [
+      'framebuffer.cc',
+      'touch.c',
+      'visionbuf_ion.c',
+    ]
+    _gpu_libs = ['gui', 'adreno_utils']
 else:
   defines = {"CLU_NO_CACHE": None}
   files += [

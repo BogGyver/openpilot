@@ -14,9 +14,17 @@
 #include "common/touch.h"
 #include "common/visionimg.h"
 #include "common/params.h"
-
 #include "ui.hpp"
 #include "sound.hpp"
+
+#if !defined(QCOM) && !defined(QCOM2)
+#include <X11/Xlib.h>
+int force_rez = 0;
+int force_rez_w = 0;
+int force_rez_h = 0;
+#endif
+
+#include "bbui.h"
 
 static int last_brightness = -1;
 static void set_brightness(UIState *s, int brightness) {
@@ -45,7 +53,11 @@ static void set_awake(UIState *s, bool awake) {
 #ifdef QCOM
   if (awake) {
     // 30 second timeout at 30 fps
-    s->awake_timeout = 30*30;
+    if (((s->b.tri_state_switch == 3) || (s->b.keepEonOff)) && !s->b.recording) {
+      s->awake_timeout = 3*30;
+    } else {
+      s->awake_timeout = 30*30;
+    }
   }
   if (s->awake != awake) {
     s->awake = awake;
@@ -94,6 +106,9 @@ static void update_offroad_layout_state(UIState *s) {
   s->offroad_sock->send((char*)buf, rs);
   capn_free(&rc);
 }
+
+#include "dashcam.h"
+#include "tbui.h"
 
 static void navigate_to_settings(UIState *s) {
 #ifdef QCOM
@@ -272,14 +287,43 @@ static void ui_init(UIState *s) {
   s->ipc_fd = -1;
 
   // init display
-  s->fb = framebuffer_init("ui", 0, true, &s->fb_w, &s->fb_h);
+#if defined(QCOM) || defined(QCOM2)
+  s->fb = framebuffer_init("ui", 0x00010000, true, &s->fb_w, &s->fb_h);
+#else
+  s->fb = framebuffer_init_linux("ui", 0x00010000, true, &s->fb_w, &s->fb_h,bb_mouse_event_handler);
+#endif 
   assert(s->fb);
 
   set_awake(s, true);
 
   s->model_changed = false;
   s->livempc_or_radarstate_changed = false;
+#if defined(QCOM) || defined(QCOM2)
+  s->b.scr_w = vwp_w;
+  s->b.scr_h = vwp_h;
+  s->b.scr_scale_x = 1.0f;
+  s->b.scr_scale_y = 1.0f;
+  s->b.scr_device_factor = 1.0f;
+  s->b.scr_scissor_offset = 0.0f;
+#else
+  //scale
+  if (force_rez == 1) {
+    s->b.scr_w = force_rez_w;
+    s->b.scr_h = force_rez_h;
+    printf("Forcing rezolution to %d x %d \n",force_rez_w,force_rez_h);
 
+  } else {
+    s->b.scr_display = XOpenDisplay(NULL);
+    Screen*  xorg_s = DefaultScreenOfDisplay(s->b.scr_display);
+    s->b.scr_w = xorg_s->width;
+    s->b.scr_h = xorg_s->height;
+  }
+  s->b.scr_scale_x = (float)(s->b.scr_w) / (float)(vwp_w);
+  s->b.scr_scale_y = (float)(s->b.scr_h) / (float)(vwp_h);
+  s->b.scr_device_factor = (float)(1164) / (float)(s->b.scr_w);
+  s->b.scr_scissor_offset = (float)(s->b.scr_w * 3) / 4.0f - (float)(s->b.scr_h);
+  mouse_ui_state = s;
+#endif
   ui_nvg_init(s);
 }
 
@@ -382,6 +426,8 @@ static ModelData read_model(cereal_ModelData_ptr modelp) {
 }
 
 static void update_status(UIState *s, int status) {
+  //BB Variable for the old status
+  int old_status = s->status;
   if (s->status != status) {
     s->status = status;
   }
@@ -397,7 +443,8 @@ void handle_message(UIState *s, Message * msg) {
   struct cereal_Event eventd;
   cereal_read_Event(&eventd, eventp);
 
-  if (eventd.which == cereal_Event_controlsState && s->started) {
+  int bts = bb_get_button_status(s,(char *)"sound");
+  if (eventd.which == cereal_Event_controlsState) {
     struct cereal_ControlsState datad;
     cereal_read_ControlsState(&datad, eventd.controlsState);
 
@@ -411,6 +458,10 @@ void handle_message(UIState *s, Message * msg) {
     s->scene.v_cruise = datad.vCruise;
     s->scene.v_ego = datad.vEgo;
     s->scene.curvature = datad.curvature;
+    //BB get angles
+    s->b.angleSteers = datad.angleSteers;
+    s->b.angleSteersDes = datad.angleSteersDes;
+    //BB END
     s->scene.engaged = datad.enabled;
     s->scene.engageable = datad.engageable;
     s->scene.gps_planner_active = datad.gpsPlannerActive;
@@ -422,7 +473,9 @@ void handle_message(UIState *s, Message * msg) {
       if (s->alert_sound != cereal_CarControl_HUDControl_AudibleAlert_none) {
         stop_alert_sound(s->alert_sound);
       }
-      play_alert_sound(datad.alertSound);
+      if (bts !=0) {
+        play_alert_sound(datad.alertSound);
+      }
 
       s->alert_sound = datad.alertSound;
       snprintf(s->alert_type, sizeof(s->alert_type), "%s", datad.alertType.str);
@@ -557,6 +610,26 @@ void handle_message(UIState *s, Message * msg) {
 
     s->thermal_started = datad.started;
 
+    //BB CPU TEMP
+    s->b.maxCpuTemp=datad.cpu0;
+    if (s->b.maxCpuTemp<datad.cpu1)
+    {
+        s->b.maxCpuTemp=datad.cpu1;
+    }
+    else if (s->b.maxCpuTemp<datad.cpu2)
+    {
+        s->b.maxCpuTemp=datad.cpu2;
+    }
+    else if (s->b.maxCpuTemp<datad.cpu3)
+    {
+        s->b.maxCpuTemp=datad.cpu3;
+    }
+    s->b.maxBatTemp=datad.bat;
+    s->b.freeSpace=datad.freeSpace;
+    s->b.batteryPercent=datad.batteryPercent;
+    s->b.chargingEnabled=!datad.chargingDisabled;
+    s->b.fanSpeed=datad.fanSpeed;
+    //BB END CPU TEMP
   } else if (eventd.which == cereal_Event_ubloxGnss) {
     struct cereal_UbloxGnss datad;
     cereal_read_UbloxGnss(&datad, eventd.ubloxGnss);
@@ -774,6 +847,10 @@ static void ui_update(UIState *s) {
         s->cur_vision_idx = idx;
         // printf("v %d\n", ((uint8_t*)s->bufs[idx].addr)[0]);
       }
+      //BB merge: not sure where this will go for now
+      //if (((awake) && (s->b.tri_state_switch != 3) && (!s->b.keepEonOff)) || (s->b.recording)){
+      //  set_awake(s, true);
+      //}
     } else {
       assert(false);
     }
@@ -920,6 +997,41 @@ fail:
   return NULL;
 }
 
+static void* bg_thread(void* args) {
+  UIState *s = (UIState*)args;
+  set_thread_name("bg");
+#if defined(QCOM) || defined(QCOM2)
+  FramebufferState *bg_fb = framebuffer_init("bg", 0x00001000, false, NULL, NULL);
+#else
+  FramebufferState *bg_fb = framebuffer_init_linux("bg", 0x00001000, false, NULL, NULL, NULL);
+#endif
+  assert(bg_fb);
+
+  int bg_status = -1;
+  while(!do_exit) {
+    pthread_mutex_lock(&s->lock);
+    //BB Change of background based on our color
+    int actual_status = bb_get_status(s);
+    if (bg_status == actual_status) {
+      // will always be signaled if it changes?
+      pthread_cond_wait(&s->bg_cond, &s->lock);
+    }
+    bg_status = actual_status;
+    //BB End of background color change
+    pthread_mutex_unlock(&s->lock);
+
+    assert(bg_status < ARRAYSIZE(bg_colors));
+    const uint8_t *color = bg_colors[bg_status];
+
+    glClearColor(color[0]/256.0, color[1]/256.0, color[2]/256.0, 0.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    framebuffer_swap(bg_fb);
+  }
+
+  return NULL;
+}
+
 #endif
 
 int is_leon() {
@@ -946,10 +1058,22 @@ int main(int argc, char* argv[]) {
 
   zsys_handler_set(NULL);
   signal(SIGINT, (sighandler_t)set_do_exit);
+#if !defined(QCOM) && !defined(QCOM2)
+  if (argc == 4) {
+    if (strcmp(argv[1],"-rez")==0) {
+	 force_rez = 1;
+	 force_rez_w = atoi(argv[2]);
+	 force_rez_h = atoi(argv[3]);
+    }
+  }
+#endif
 
   UIState uistate;
   UIState *s = &uistate;
   ui_init(s);
+  //BB init our UI
+  bb_ui_init(s);
+  
   enable_event_processing(true);
 
   pthread_t connect_thread_handle;
@@ -963,7 +1087,7 @@ int main(int argc, char* argv[]) {
                        light_sensor_thread, s);
   assert(err == 0);
 #endif
-
+  s->b.touch_last_width = s->scene.ui_viz_rw;
   TouchState touch = {0};
   touch_init(&touch);
   s->touch_fd = touch.fd;
@@ -1013,15 +1137,41 @@ int main(int argc, char* argv[]) {
 
     // poll for touch events
     int touch_x = -1, touch_y = -1;
+    int dc_touch_x = -1, dc_touch_y = -1;
+    s->b.touch_timeout --;
+    if (s->b.touch_timeout < 0) {
+      s->b.touch_timeout = 0;
+    }
     int touched = touch_poll(&touch, &touch_x, &touch_y, 0);
     if (touched == 1) {
       set_awake(s, true);
       handle_sidebar_touch(s, touch_x, touch_y);
       handle_vision_touch(s, touch_x, touch_y);
+      s->b.touch_last = true;
+      s->b.touch_last_x = touch_x;
+      s->b.touch_last_y = touch_y;
+      s->b.touch_timeout = touch_timeout;
+    }
+    //BB check touch
+    if ((s->b.touch_last) && (s->b.touch_last_width != s->scene.ui_viz_rw)) {
+      s->b.touch_last_width=s->scene.ui_viz_rw;
+      bb_handle_ui_touch(s,s->b.touch_last_x,s->b.touch_last_y);
+      dc_touch_x = s->b.touch_last_x;
+      dc_touch_y = s->b.touch_last_y;
+      s->b.touch_last = false;
+      s->b.touch_last_x = 0;
+      s->b.touch_last_y = 0;
     }
 
-    if (!s->started) {
-      // always process events offroad
+    
+    //s->b.touch_last_width = s->scene.ui_viz_rw;
+    //BB Update our cereal polls
+    bb_ui_poll_update(s);
+
+    if (!s->vision_connected) {
+      if (s->status != STATUS_STOPPED) {
+        update_status(s, STATUS_STOPPED);
+      }
       check_messages(s);
     } else {
       set_awake(s, true);
@@ -1060,6 +1210,11 @@ int main(int argc, char* argv[]) {
     // Don't waste resources on drawing in case screen is off
     if (s->awake) {
       ui_draw(s);
+      if (s->vision_connected) {
+	nvgScale(s->vg,s->b.scr_scale_x,s->b.scr_scale_y);
+        bb_ui_draw_UI(s) ;
+        ui_draw_infobar(s);
+      }
       glFinish();
       should_swap = true;
     }

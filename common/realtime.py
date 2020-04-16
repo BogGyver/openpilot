@@ -55,10 +55,12 @@ class Ratekeeper():
     return self._remaining
 
   # Maintain loop rate by calling this at the end of each loop
-  def keep_time(self):
+  def keep_time(self, offset=0.):
     lagged = self.monitor_time()
     if self._remaining > 0:
       time.sleep(self._remaining)
+    elif not offset == 0.:
+      self._next_frame_time += offset
     return lagged
 
   # this only monitor the cumulative lag, but does not enforce a rate

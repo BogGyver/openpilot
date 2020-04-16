@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.7
+#!/usr/bin/env python3
 import os
 import time
 import sys
@@ -7,11 +7,16 @@ import errno
 import signal
 import shutil
 import subprocess
+import time
+from selfdrive.tinklad.tinkla_interface import TinklaClient
+from cereal import tinkla
+from selfdrive.car.tesla.readconfig import CarSettings
 import datetime
 import textwrap
 from selfdrive.swaglog import cloudlog, add_logentries_handler
 
 from common.basedir import BASEDIR, PARAMS
+WEBCAM = os.getenv("WEBCAM") is not None
 from common.android import ANDROID
 WEBCAM = os.getenv("WEBCAM") is not None
 sys.path.append(os.path.join(BASEDIR, "pyextra"))
@@ -125,7 +130,7 @@ if not prebuilt:
         for i in range(3,-1,-1):
           print("....%d" % i)
           time.sleep(1)
-        subprocess.check_call(["scons", "-c"], cwd=BASEDIR, env=env)
+        #subprocess.check_call(["scons", "-c"], cwd=BASEDIR, env=env)
         shutil.rmtree("/tmp/scons_cache")
       else:
         # Build failed log errors
@@ -161,6 +166,7 @@ ThermalStatus = cereal.log.ThermalData.ThermalStatus
 
 # comment out anything you don't want to run
 managed_processes = {
+  "tinklad":  "selfdrive.tinklad.tinklad",
   "thermald": "selfdrive.thermald.thermald",
   "uploader": "selfdrive.loggerd.uploader",
   "deleter": "selfdrive.loggerd.deleter",
@@ -211,11 +217,15 @@ kill_processes = ['sensord', 'paramsd']
 green_temp_processes = ['uploader']
 
 persistent_processes = [
+  'tinklad',
   'thermald',
-  'logmessaged',
   'ui',
-  'uploader',
 ]
+if not WEBCAM:
+    persistent_processes += [
+      'logmessaged',
+      'uploader',
+    ]
 
 if ANDROID:
   persistent_processes += [
@@ -239,10 +249,9 @@ car_started_processes = [
   'locationd',
 ]
 
-if WEBCAM:
-  car_started_processes += [
-    'dmonitoringmodeld',
-  ]
+if not WEBCAM:
+    car_started_processes += [
+    ]
 
 if ANDROID:
   car_started_processes += [
@@ -252,6 +261,11 @@ if ANDROID:
     'dmonitoringmodeld',
     'deleter',
   ]
+
+if WEBCAM:
+    car_started_processes += [
+    'dmonitoringmodeld',
+]
 
 def register_managed_process(name, desc, car_started=False):
   global managed_processes, car_started_processes, persistent_processes
@@ -391,7 +405,9 @@ def manager_init(should_register=True):
       raise Exception("server registration failed")
   else:
     dongle_id = "c"*16
-
+  #BB
+  if not dongle_id:
+      dongle_id = "nada"
   # set dongle id
   cloudlog.info("dongle id is " + dongle_id)
   os.environ['DONGLE_ID'] = dongle_id
@@ -415,6 +431,32 @@ def manager_init(should_register=True):
     os.chmod(BASEDIR, 0o755)
     os.chmod(os.path.join(BASEDIR, "cereal"), 0o755)
     os.chmod(os.path.join(BASEDIR, "cereal", "libmessaging_shared.so"), 0o755)
+
+def system(cmd):
+  try:
+    cloudlog.info("running %s" % cmd)
+    subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+  except subprocess.CalledProcessError as e:
+    cloudlog.event("running failed",
+      cmd=e.cmd,
+      output=e.output[-1024:],
+      returncode=e.returncode)
+
+def sendUserInfoToTinkla(params, tinklaClient):
+  carSettings = CarSettings()
+  gitRemote = params.get("GitRemote")
+  gitBranch = params.get("GitBranch")
+  gitHash = params.get("GitCommit")
+  dongleId = params.get("DongleId")
+  userHandle = carSettings.userHandle
+  info = tinkla.Interface.UserInfo.new_message(
+      openPilotId=dongleId,
+      userHandle=userHandle,
+      gitRemote=gitRemote,
+      gitBranch=gitBranch,
+      gitHash=gitHash
+  )
+  tinklaClient.setUserInfo(info)
 
 def manager_thread():
   # now loop
@@ -453,6 +495,10 @@ def manager_thread():
 
   logger_dead = False
 
+  # Tinkla interface
+  last_tinklad_send_attempt_time = 0
+  tinklaClient = TinklaClient()
+  sendUserInfoToTinkla(params=params, tinklaClient=tinklaClient)
   start_t = time.time()
   first_proc = None
 
@@ -468,6 +514,13 @@ def manager_thread():
       for p in green_temp_processes:
         if p in persistent_processes:
           start_managed_process(p)
+
+    # Attempt to send pending messages if there's any that queued while offline
+    # Seems this loop runs every second or so, throttle to once every 30s
+    now = time.time()
+    if now - last_tinklad_send_attempt_time >= 30:
+      tinklaClient.attemptToSendPendingMessages()
+      last_tinklad_send_attempt_time = now
 
     if msg.thermal.freeSpace < 0.05:
       logger_dead = True
@@ -511,6 +564,8 @@ def manager_thread():
         sys.exit(print_cpu_usage(first_proc, last_proc))
 
 def manager_prepare(spinner=None):
+
+  carSettings = CarSettings()
   # build all processes
   os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -519,7 +574,8 @@ def manager_prepare(spinner=None):
 
   for i, p in enumerate(managed_processes):
     if spinner is not None:
-      spinner.update("%d" % ((100.0 - total) + total * (i + 1) / len(managed_processes),))
+      spinText = carSettings.spinnerText
+      spinner.update(spinText % ((100.0 - total) + total * (i + 1) / len(managed_processes),))
     prepare_managed_process(p)
 
 def uninstall():
@@ -533,7 +589,8 @@ def main():
   os.environ['PARAMS_PATH'] = PARAMS
 
   # the flippening!
-  os.system('LD_LIBRARY_PATH="" content insert --uri content://settings/system --bind name:s:user_rotation --bind value:i:1')
+  if not WEBCAM:
+    os.system('LD_LIBRARY_PATH="" content insert --uri content://settings/system --bind name:s:user_rotation --bind value:i:1')
 
   # disable bluetooth
   os.system('service call bluetooth_manager 8')
@@ -593,6 +650,7 @@ def main():
   except Exception:
     traceback.print_exc()
     crash.capture_exception()
+    print ("EXIT ON EXCEPTION")
   finally:
     cleanup_all_processes(None, None)
 

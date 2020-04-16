@@ -187,8 +187,8 @@ ALERTS = [
 
   Alert(
       "startupNoCar",
-      "Dashcam mode for unsupported car",
-      "Always keep hands on wheel and eyes on road",
+      "Dashcam mode with unsupported car",
+      "If Tesla, please force fingerprint",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., 15.),
 
