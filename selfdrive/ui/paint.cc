@@ -943,7 +943,6 @@ void ui_draw(UIState *s) {
   } else {
     nvgScale(s->vg,s->b.scr_scale_x,s->b.scr_scale_y);
     
-    ui_draw_blank(s);
     if (!s->scene.uilayout_sidebarcollapsed) {
       ui_draw_sidebar(s);
     }

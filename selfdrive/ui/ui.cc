@@ -997,40 +997,6 @@ fail:
   return NULL;
 }
 
-static void* bg_thread(void* args) {
-  UIState *s = (UIState*)args;
-  set_thread_name("bg");
-#if defined(QCOM) || defined(QCOM2)
-  FramebufferState *bg_fb = framebuffer_init("bg", 0x00001000, false, NULL, NULL);
-#else
-  FramebufferState *bg_fb = framebuffer_init_linux("bg", 0x00001000, false, NULL, NULL, NULL);
-#endif
-  assert(bg_fb);
-
-  int bg_status = -1;
-  while(!do_exit) {
-    pthread_mutex_lock(&s->lock);
-    //BB Change of background based on our color
-    int actual_status = bb_get_status(s);
-    if (bg_status == actual_status) {
-      // will always be signaled if it changes?
-      pthread_cond_wait(&s->bg_cond, &s->lock);
-    }
-    bg_status = actual_status;
-    //BB End of background color change
-    pthread_mutex_unlock(&s->lock);
-
-    assert(bg_status < ARRAYSIZE(bg_colors));
-    const uint8_t *color = bg_colors[bg_status];
-
-    glClearColor(color[0]/256.0, color[1]/256.0, color[2]/256.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    framebuffer_swap(bg_fb);
-  }
-
-  return NULL;
-}
 
 #endif
 

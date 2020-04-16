@@ -1359,8 +1359,6 @@ void  bb_ui_poll_update( UIState *s) {
           }
           
           capn_free(&ctx);
-          // wakeup bg thread since status changed
-          pthread_cond_signal(&s->bg_cond);
         }  
         if (sock == s->b.uiSetCar_sock) {
           //set car model socket
