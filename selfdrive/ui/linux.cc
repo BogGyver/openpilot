@@ -13,7 +13,7 @@
 #endif
 
 #define GLFW_INCLUDE_GLEXT
-#include "GLFW/glfw3.h"
+#include <GLFW/glfw3.h>
 
 typedef struct FramebufferState FramebufferState;
 typedef struct TouchState TouchState;

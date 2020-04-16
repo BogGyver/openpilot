@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.7
+#!/usr/bin/env python3
 import os
 import json
 import copy
@@ -220,20 +220,10 @@ def thermald_thread():
   should_start_prev = False
   handle_fan = None
   is_uno = False
-
-  is_uno = (read_tz(29, clip=False) < -1000)
-  if is_uno or not ANDROID:
-    handle_fan = handle_fan_uno
-  else:
-    setup_eon_fan()
-    handle_fan = handle_fan_eon
-
   # Make sure charging is enabled
   charging_disabled = False
-  os.system('echo "1" > /sys/class/power_supply/battery/charging_enabled')
-
   params = Params()
-  pm = PowerMonitoring(is_uno)
+  pm = PowerMonitoring()
 
   while 1:
     health = messaging.recv_sock(health_sock, wait=True)
@@ -413,7 +403,6 @@ def thermald_thread():
 
       off_ts = None
       if started_ts is None:
-        params.car_start()
         started_ts = sec_since_boot()
         started_seen = True
         os.system('echo performance > /sys/class/devfreq/soc:qcom,cpubw/governor')

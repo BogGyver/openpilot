@@ -9,6 +9,7 @@ import tensorflow.keras as keras
 import numpy as np
 from tensorflow.keras.models import Model
 from tensorflow.keras.models import model_from_json
+from pathlib import Path
 
 def read(sz):
   dd = []
@@ -39,28 +40,18 @@ if __name__ == "__main__":
   print(tf.__version__, file=sys.stderr)
   # limit gram alloc
   gpus = tf.config.experimental.list_physical_devices('GPU')
-  name = sys.argv[1].split('.keras')[0]
+  model_path = Path(sys.argv[1]).parents[0]
+  name = Path(sys.argv[1]).stem
+  print("\n\nRunning [%s] with [%s]\n\n" % (sys.argv[1],name))
   if name == "supercombo":
     if len(gpus) > 0:
       tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2048)])
   else:
     if len(gpus) > 0:
-      tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
-  with open(f"{name}.model.keras", "r") as json_file:
+      tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1524)])
+  with open(f"{model_path / name}.model.keras", "r") as json_file:
     m = model_from_json(json_file.read())
-  m.load_weights(f"{name}.weights.keras")
+  m.load_weights(f"{model_path / name}.weights.keras")
   print(m, file=sys.stderr)
   bs = [int(np.product(ii.shape[1:])) for ii in m.inputs]
   ri = keras.layers.Input((sum(bs),))
-
-  tii = []
-  acc = 0
-  for i, ii in enumerate(m.inputs):
-    print(ii, file=sys.stderr)
-    ti = keras.layers.Lambda(lambda x: x[:,acc:acc+bs[i]], output_shape=(1, bs[i]))(ri)
-    acc += bs[i]
-    tr = keras.layers.Reshape(ii.shape[1:])(ti)
-    tii.append(tr)
-  no = keras.layers.Concatenate()(m(tii))
-  m = Model(inputs=ri, outputs=[no])
-  run_loop(m)

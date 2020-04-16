@@ -12,6 +12,7 @@ extern "C"{
 #include "common/glutil.h"
 }
 
+
 // Projects a point in car to space to the corresponding point in full frame
 // image space.
 vec3 car_space_to_full_frame(const UIState *s, vec4 car_space_projective) {
@@ -1017,8 +1018,8 @@ static const char frame_fragment_shader[] =
 #endif
 
 static const mat4 device_transform = {{
-  0.68,  0.0, 0.0, 0.0,
-  0.0,  0.68, 0.0, 0.0,
+  1.0,  0.0, 0.0, 0.0,
+  0.0,  1.0, 0.0, 0.0,
   0.0,  0.0, 1.0, 0.0,
   0.0,  0.0, 0.0, 1.0,
 }};
