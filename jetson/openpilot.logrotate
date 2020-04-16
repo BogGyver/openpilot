@@ -1,0 +1,7 @@
+/var/log/openpilot.output.log  /var/log/openpilot.error.log {
+  daily
+  missingok
+  rotate 0
+  nomail
+  nocreate
+}

@@ -1,0 +1,19 @@
+[Unit]
+Description=Tesla OpenPilot Driving Agent
+DefaultDependencies=no
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10s
+User=openpilot
+Group=openpilot
+
+WorkingDirectory=/data/openpilot/
+StandardOutput=file:/var/log/openpilot.output.log
+StandardError=file:/var/log/openpilot.error.log
+
+ExecStart=/data/openpilot/start_op_jetson.sh
+ExecStop=/usr/bin/killall -9 python
+[Install]
+WantedBy=multi-user.target
