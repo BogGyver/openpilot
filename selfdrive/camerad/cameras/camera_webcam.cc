@@ -52,8 +52,7 @@ void open_gl_stream_def(CameraState * s, char* camera_id, int width, int height,
   if (flip == 1) {
     flip_command = "videoflip method=rotate-180 ! ";
   }
-  //1.5 is a fixed factor that came from Comma implementation
-  sprintf(*strm_def,strm_template.c_str(),camera_id, width, height, s->fps, (int)(s->ci.frame_width*fx*1.5), (int)(s->ci.frame_height*fx*1.5), flip_command.c_str(), s->ci.frame_width, s->ci.frame_height);
+  sprintf(*strm_def,strm_template.c_str(),camera_id, width, height, s->fps, (int)(s->ci.frame_width*fx), (int)(s->ci.frame_height*fx), flip_command.c_str(), s->ci.frame_width, s->ci.frame_height);
   printf(" GL Stream :[%s]\n",*strm_def);
 }
 
