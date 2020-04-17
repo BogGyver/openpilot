@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # TODO: why are the keras models saved with python 2?
 from __future__ import print_function
 
@@ -27,7 +27,6 @@ def write(d):
 def run_loop(m,name):
   isize = m.inputs[0].shape[1]
   osize = m.outputs[0].shape[1]
-  int 
   print("ready to run keras model %d -> %d" % (isize, osize), file=sys.stderr)
   cnt = 0
   while 1:

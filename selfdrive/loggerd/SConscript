@@ -1,4 +1,4 @@
-Import('env', 'arch', 'is_tbp', 'messaging', 'common', 'visionipc')
+Import('env', 'arch', 'messaging', 'common', 'visionipc')
 
 src = ['loggerd.cc', 'logger.cc']
 libs = ['zmq', 'czmq', 'capnp', 'kj', 'z',
@@ -6,12 +6,13 @@ libs = ['zmq', 'czmq', 'capnp', 'kj', 'z',
   'yuv', 'bz2', common, 'json', messaging, visionipc]
 
 if arch == "aarch64":
-  if not is_tbp:
-    src += ['encoder.c', 'raw_logger.cc']
-    libs += ['OmxVenc', 'OmxCore', 'cutils']
+  src += ['encoder.c', 'raw_logger.cc']
+  libs += ['OmxVenc', 'OmxCore', 'cutils']
 elif arch == "larch64":
   src += ['encoder.c', 'raw_logger.cc']
   libs += ['OmxVenc', 'OmxCore', 'pthread']
+elif arch == "jarch64":
+  src += []
 else:
   libs += ['pthread']
 

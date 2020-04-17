@@ -1,18 +1,14 @@
-Import('env', 'arch', 'messaging', 'is_tbp', 'common', 'gpucommon', 'visionipc', 'cereal', 'webcam')
+Import('env', 'arch', 'messaging', 'common', 'gpucommon', 'visionipc', 'cereal', 'webcam')
 
 libs = ['m', 'pthread', common, 'jpeg', 'json', cereal, 'OpenCL', messaging, 'czmq', 'zmq', 'capnp', 'kj', 'capnp_c', visionipc, gpucommon]
 
-if is_tbp:
-  larch =  "aarch64_TBP"
-else:
-  larch = arch
-if larch == "aarch64":
+if arch == "aarch64":
   libs += ['gsl', 'CB', 'adreno_utils', 'EGL', 'GLESv3', 'cutils', 'ui']
   cameras = ['cameras/camera_qcom.c']
-elif larch == "larch64":
+elif arch == "larch64":
   libs += []
   cameras = ['cameras/camera_qcom2.c']
-elif larch == "aarch64_TBP":
+elif arch == "jarch64":
     libs += ['opencv_core', 'opencv_highgui', 'opencv_video', 'opencv_imgproc', 'opencv_videoio']
     cameras = ['cameras/camera_webcam.cc']
     env = env.Clone()

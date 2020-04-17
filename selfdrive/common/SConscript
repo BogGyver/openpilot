@@ -1,4 +1,4 @@
-Import('env', 'arch', 'SHARED','is_tbp')
+Import('env', 'arch', 'SHARED')
 
 if SHARED:
   fxn = env.SharedLibrary
@@ -17,7 +17,7 @@ files = [
 ]
 
 
-if is_tbp:
+if arch == "jarch64":
   defines = {} #{"CLU_NO_CACHE": None}   
   files += [                         
     'visionbuf_cl.c',                
