@@ -8,7 +8,7 @@ import sys
 import tensorflow.keras as keras
 import numpy as np
 from tensorflow.keras.models import Model
-from tensorflow.keras.models import model_from_json
+from tensorflow.keras.models import load_model
 from pathlib import Path
 
 def read(sz):
