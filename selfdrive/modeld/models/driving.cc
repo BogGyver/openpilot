@@ -54,6 +54,7 @@ void model_init(ModelState* s, cl_device_id device_id, cl_context context, int t
   s->traffic_convention = (float*)malloc(TRAFFIC_CONVENTION_LEN * sizeof(float));
   for (int i = 0; i < TRAFFIC_CONVENTION_LEN; i++) s->traffic_convention[i] = 0.0;
   s->m->addTrafficConvention(s->traffic_convention, TRAFFIC_CONVENTION_LEN);
+
   char *string;
   const int result = read_db_value(NULL, "IsRHD", &string, NULL);
   if (result == 0) {
@@ -80,7 +81,7 @@ void model_init(ModelState* s, cl_device_id device_id, cl_context context, int t
 ModelDataRaw model_eval_frame(ModelState* s, cl_command_queue q,
                            cl_mem yuv_cl, int width, int height,
                            mat3 transform, void* sock,
-                           float *desire_in, float *traffic_convention_in) {
+                           float *desire_in) {
 #ifdef DESIRE
   if (desire_in != NULL) {
     for (int i = 0; i < DESIRE_LEN; i++) {
@@ -332,3 +333,4 @@ void posenet_publish(PubSocket *sock, uint32_t frame_id,
   auto bytes = words.asBytes();
   sock->send((char*)bytes.begin(), bytes.size());
   }
+

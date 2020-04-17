@@ -13,7 +13,7 @@ void rgb_to_yuv_init(RGBToYUVState* s, cl_context ctx, cl_device_id device_id, i
   assert(height % 2 == 0);
   s->width = width;
   s->height = height;
-  char args[8024];
+  char args[1024];
   printf("snprintf");
   snprintf(args, sizeof(args),
            "-cl-fast-relaxed-math  -cl-denorms-are-zero "
