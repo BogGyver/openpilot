@@ -18,7 +18,7 @@ files = [
 
 
 if is_tbp:
-  defines = {"CLU_NO_CACHE": None}   
+  defines = {} #{"CLU_NO_CACHE": None}   
   files += [                         
     'visionbuf_cl.c',                
   ]                                                                     
