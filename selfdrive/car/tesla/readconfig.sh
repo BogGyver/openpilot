@@ -5,4 +5,3 @@ CFG_CONTENT=$(cat $CFG_FILE | sed -r "s/'/SINGLE_Q/" | sed -r '/[^=]+=[^=]+/!d' 
         -e 's/^[[:space:]]*//' \
         -e "s/^\(.*\)=\([^\"']*\)$/\1=\"\2\"/" | sed -r "s/SINGLE_Q/'/" )
 eval "export $CFG_CONTENT"
-echo $CFG_CONTENT
