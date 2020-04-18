@@ -102,7 +102,7 @@ class LanePlanner():
     if self.shouldUseAlca and alca:
       self.r_poly,self.l_poly,self.r_prob,self.l_prob,self.lane_width, self.p_poly = self.ALCAMP.update(v_ego, md, np.array(self.r_poly), np.array(self.l_poly), self.r_prob, self.l_prob, self.lane_width, self.p_poly)
 
-    self.d_poly = calc_d_poly(self.l_poly, self.r_poly, self.p_poly, self.l_prob, self.r_prob, self.lane_width)
+    self.d_poly = calc_d_poly(self.l_poly, self.r_poly, self.p_poly, self.l_prob, self.r_prob, self.lane_width,v_ego)
 
   def update(self, v_ego, md, alca):
     self.parse_model(md)
