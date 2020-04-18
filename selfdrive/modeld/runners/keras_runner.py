@@ -7,7 +7,7 @@ import sys
 import tensorflow.keras as keras
 import numpy as np
 from tensorflow.keras.models import Model
-from tensorflow.keras.models import model_from_json, loadmodel
+from tensorflow.keras.models import model_from_json, load_model
 
 def read(sz):
   dd = []
@@ -39,17 +39,18 @@ if __name__ == "__main__":
   print(tf.__version__, file=sys.stderr)
   # limit gram alloc
   gpus = tf.config.experimental.list_physical_devices('GPU')
-  if os.path.splitext(os.path.basename(sys.argv[1]))[0]== "supercombo":
-    if len(gpus) > 0:
+  if len(gpus) > 0:
+    if os.path.splitext(os.path.basename(sys.argv[1]))[0]== "supercombo":
       tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2548)])
-      
       with open(f"{os.path.splitext(sys.argv[1])}.model.keras", "r") as json_file:
         m = model_from_json(json_file.read())
       m.load_weights(f"{os.path.splitext(sys.argv[1])}.weights.keras")
-  else:
-    if len(gpus) > 0:
+    else:
       tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=256)])
-      m.load_model(sys.argv[1])
+      m = load_model(sys.argv[1])
+  else:
+    m = load_model(sys.argv[1])
+      
   bs = [int(np.product(ii.shape[1:])) for ii in m.inputs]
   ri = keras.layers.Input((sum(bs),))
   tii = []
