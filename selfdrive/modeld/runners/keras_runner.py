@@ -24,7 +24,6 @@ def write(d):
 def run_loop(m,name):
   isize = m.inputs[0].shape[1]
   osize = m.outputs[0].shape[1]
-  int 
   print("ready to run keras model %d -> %d" % (isize, osize), file=sys.stderr)
   while 1:
     # check parent process, if ppid is 1, then modeld is no longer running and the runner should exit.
