@@ -1,9 +1,6 @@
-[submodule "panda"]
-	path = panda
-	url = https://github.com/boggyver/panda.git
 [submodule "opendbc"]
 	path = opendbc
-	url = https://github.com/boggyver/opendbc.git
+	url = git@github.com:BogGyver/opendbc.git
 [submodule "laika_repo"]
 	path = laika_repo
 	url = https://github.com/commaai/laika.git
@@ -12,4 +9,7 @@
 	url = https://github.com/commaai/openpilot-apks.git
 [submodule "cereal"]
 	path = cereal
-	url = https://github.com/boggyver/cereal.git
+	url = git@github.com:BogGyver/cereal.git
+[submodule "panda"]
+	path = panda
+	url = git@github.com:BogGyver/panda.git

@@ -4,7 +4,7 @@
 // gate this here
 #define TEMPORAL
 #define DESIRE
-#define TRAFFIC_CONVENTION
+//#define TRAFFIC_CONVENTION
 
 #ifdef QCOM
 #include <eigen3/Eigen/Dense>
