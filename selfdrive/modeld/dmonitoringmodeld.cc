@@ -95,6 +95,7 @@ int main(int argc, char **argv) {
 
   delete dmonitoring_sock;
   delete dmonstate_sock;
+  delete msg_context;
   dmonitoring_free(&dmonitoringmodel);
 
   return 0;

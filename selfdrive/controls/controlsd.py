@@ -31,7 +31,7 @@ from selfdrive.car.tesla.readconfig import CarSettings
 
 LANE_DEPARTURE_THRESHOLD = 0.1
 STEER_ANGLE_SATURATION_TIMEOUT = 1.0 / DT_CTRL
-STEER_ANGLE_SATURATION_THRESHOLD = 2.5  # Degrees
+STEER_ANGLE_SATURATION_THRESHOLD = 250  # Degrees
 
 ThermalStatus = log.ThermalData.ThermalStatus
 State = log.ControlsState.OpenpilotState
@@ -119,7 +119,7 @@ def data_sample(CI, CC, sm, can_sock, state, mismatch_counter, can_error_counter
     else:
       events.append(create_event('calibrationInvalid', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
 
-  if CS.vEgo > 92 * CV.MPH_TO_MS:
+  if CS.vEgo > 150 * CV.MPH_TO_MS:
     events.append(create_event('speedTooHigh', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
 
   # When the panda and controlsd do not agree on controls_allowed
@@ -470,10 +470,6 @@ def controlsd_thread(sm=None, pm=None, can_sock=None):
 
   passive = passive or not openpilot_enabled_toggle
 
-  # Passive if internet needed
-  internet_needed = params.get("Offroad_ConnectivityNeeded", encoding='utf8') is not None
-  passive = passive or internet_needed
-
   # Pub/Sub Sockets
   if pm is None:
     pm = messaging.PubMaster(['sendcan', 'controlsState', 'carState', 'carControl', 'carEvents', 'carParams'])
@@ -588,6 +584,9 @@ def controlsd_thread(sm=None, pm=None, can_sock=None):
       events.append(create_event('communityFeatureDisallowed', [ET.PERMANENT]))
     if read_only and not passive:
       events.append(create_event('carUnrecognized', [ET.PERMANENT]))
+    if log.HealthData.FaultType.relayMalfunction in sm['health'].faults:
+      events.append(create_event('relayMalfunction', [ET.NO_ENTRY, ET.PERMANENT, ET.IMMEDIATE_DISABLE]))
+
 
     # Only allow engagement with brake pressed when stopped behind another stopped car
     if CS.brakePressed and sm['plan'].vTargetFuture >= STARTING_TARGET_SPEED and not CP.radarOffCan and CS.vEgo < 0.3:

@@ -635,6 +635,9 @@ void *can_send_thread(void *crap) {
   while (!do_exit) {
     can_send(subscriber);
   }
+  
+  delete subscriber;
+  delete context;
   return NULL;
 }
 
@@ -665,6 +668,9 @@ void *can_recv_thread(void *crap) {
 
     next_frame_time += dt;
   }
+
+  delete publisher;
+  delete c;
   return NULL;
 }
 
@@ -680,6 +686,9 @@ void *can_health_thread(void *crap) {
     can_health(publisher);
     usleep(500*1000);
   }
+
+  delete publisher;
+  delete c;
   return NULL;
 }
 
@@ -914,6 +923,8 @@ void *pigeon_thread(void *crap) {
     cnt++;
   }
 
+  delete publisher;
+  delete context;
   return NULL;
 }
 
@@ -946,7 +957,12 @@ int main() {
   // init libusb
   err = libusb_init(&ctx);
   assert(err == 0);
+
+#if LIBUSB_API_VERSION >= 0x01000106
+  libusb_set_option(ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_INFO);
+#else
   libusb_set_debug(ctx, 3);
+#endif
 
   pthread_t can_health_thread_handle;
   err = pthread_create(&can_health_thread_handle, NULL,
