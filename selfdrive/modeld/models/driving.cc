@@ -19,7 +19,7 @@
 #define POSE_IDX META_IDX + OTHER_META_SIZE + DESIRE_PRED_SIZE
 #define OUTPUT_SIZE  POSE_IDX + POSE_SIZE
 #ifdef TEMPORAL
-  #define TEMPORAL_SIZE 1024
+  #define TEMPORAL_SIZE 512 //1024 //needs to be 1024 that with new model
 #else
   #define TEMPORAL_SIZE 0
 #endif
@@ -333,3 +333,4 @@ void posenet_publish(PubSocket *sock, uint32_t frame_id,
   auto bytes = words.asBytes();
   sock->send((char*)bytes.begin(), bytes.size());
   }
+

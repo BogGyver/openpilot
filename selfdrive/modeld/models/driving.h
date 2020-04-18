@@ -83,3 +83,4 @@ void model_publish(PubSocket* sock, uint32_t frame_id,
 void posenet_publish(PubSocket* sock, uint32_t frame_id,
                    const ModelDataRaw data, uint64_t timestamp_eof);
 #endif
+
