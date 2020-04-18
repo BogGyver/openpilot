@@ -235,6 +235,11 @@ class CarState(CarStateBase):
     self.ahbOffDuration = 5
     self.roadCameraID = ""
     self.driverCameraID = ""
+    self.roadCameraFx = 0.73
+    self.driverCameraFx = 0.75
+    self.roadCameraFlip = 0
+    self.driverCameraFlip = 0
+    self.monitorForcedRes = ""
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###

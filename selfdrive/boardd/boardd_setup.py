@@ -21,7 +21,7 @@ if ARCH == "x86_64":
     ARCH_DIR = 'x64'
 else:
   libraries = [':libcan_list_to_can_capnp.a', 'capnp', 'kj']
-  if os.path.isdir("/system"):
+  if os.path.isdir("/system") or os.path.isdir('/data/oprun'):
     ARCH_DIR = 'aarch64'
   else:
     ARCH_DIR = 'larch64'

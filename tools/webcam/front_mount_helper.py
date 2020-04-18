@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.6
 import numpy as np
 
 # copied from common.transformations/camera.py
@@ -15,7 +15,7 @@ webcam_intrinsics = np.array([
   [  0.,  webcam_focal_length,  720/2.],
   [  0.,    0.,     1.]])
 
-cam_id = 2
+cam_id = 1
 
 if __name__ == "__main__":
   import cv2

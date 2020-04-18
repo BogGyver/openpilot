@@ -110,7 +110,7 @@ ALERTS = [
 
   Alert(
       "preDriverDistracted",
-      "KEEP EYES ON ROAD: Driver Distracted",
+      "KEEP EYES ON ROAD: Driver Appears Distracted",
       "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.steerRequired, AudibleAlert.none, .0, .1, .1, alert_rate=0.75),
@@ -272,7 +272,7 @@ ALERTS = [
   Alert(
       "dataNeededNoEntry",
       "openpilot Unavailable",
-      "Calibration Needs Data. Upload Drive, Try Again",
+      "Data Needed for Calibration. Upload Drive, Try Again",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.chimeError, .4, 0., 3.),
 
@@ -526,13 +526,6 @@ ALERTS = [
       AlertStatus.normal, AlertSize.mid,
       Priority.HIGH, VisualAlert.none, AudibleAlert.chimeDisengage, .4, 2., 3.),
 
-  Alert(
-      "speedTooHigh",
-      "Speed Too High",
-      "Slow down to resume operation",
-      AlertStatus.normal, AlertSize.mid,
-      Priority.HIGH, VisualAlert.none, AudibleAlert.chimeDisengage, .4, 2., 3.),
-
   # Cancellation alerts causing non-entry
   Alert(
       "overheatNoEntry",
@@ -551,7 +544,7 @@ ALERTS = [
   Alert(
       "calibrationInvalidNoEntry",
       "openpilot Unavailable",
-      "Calibration Invalid: Reposition Device & Recalibrate",
+      "Calibration Invalid: Reposition Device and Recalibrate",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.chimeError, .4, 2., 3.),
 
@@ -749,13 +742,6 @@ ALERTS = [
       "invalidGiraffeToyotaPermanent",
       "Unsupported Giraffe Configuration",
       "Visit comma.ai/tg",
-      AlertStatus.normal, AlertSize.mid,
-      Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., .2),
-
-  Alert(
-      "invalidLkasSettingPermanent",
-      "Stock LKAS is turned on",
-      "Turn off stock LKAS to engage",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., .2),
 
