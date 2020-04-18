@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # TODO: why are the keras models saved with python 2?
-from __future__ import print_function
 
 import tensorflow as tf
 import os
@@ -8,7 +7,7 @@ import sys
 import tensorflow.keras as keras
 import numpy as np
 from tensorflow.keras.models import Model
-from tensorflow.keras.models import model_from_json
+from tensorflow.keras.models import model_from_json, loadmodel
 def read(sz):
   dd = []
   gt = 0

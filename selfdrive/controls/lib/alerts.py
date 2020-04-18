@@ -110,7 +110,7 @@ ALERTS = [
 
   Alert(
       "preDriverDistracted",
-      "KEEP EYES ON ROAD: Driver Appears Distracted",
+      "KEEP EYES ON ROAD: Driver Distracted",
       "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.steerRequired, AudibleAlert.none, .0, .1, .1, alert_rate=0.75),
@@ -272,7 +272,7 @@ ALERTS = [
   Alert(
       "dataNeededNoEntry",
       "openpilot Unavailable",
-      "Data Needed for Calibration. Upload Drive, Try Again",
+      "Calibration Needs Data. Upload Drive, Try Again",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.chimeError, .4, 0., 3.),
 
@@ -526,6 +526,13 @@ ALERTS = [
       AlertStatus.normal, AlertSize.mid,
       Priority.HIGH, VisualAlert.none, AudibleAlert.chimeDisengage, .4, 2., 3.),
 
+  Alert(
+      "speedTooHigh",
+      "Speed Too High",
+      "Slow down to resume operation",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.HIGH, VisualAlert.none, AudibleAlert.chimeDisengage, .4, 2., 3.),
+
   # Cancellation alerts causing non-entry
   Alert(
       "overheatNoEntry",
@@ -544,7 +551,7 @@ ALERTS = [
   Alert(
       "calibrationInvalidNoEntry",
       "openpilot Unavailable",
-      "Calibration Invalid: Reposition Device and Recalibrate",
+      "Calibration Invalid: Reposition Device & Recalibrate",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.chimeError, .4, 2., 3.),
 
@@ -746,6 +753,13 @@ ALERTS = [
       Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., .2),
 
   Alert(
+      "invalidLkasSettingPermanent",
+      "Stock LKAS is turned on",
+      "Turn off stock LKAS to engage",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., .2),
+
+  Alert(
       "internetConnectivityNeededPermanent",
       "Please connect to Internet",
       "An Update Check Is Required to Engage",
@@ -801,6 +815,7 @@ ALERTS = [
       AlertStatus.normal, AlertSize.small,
       Priority.LOWEST, VisualAlert.steerRequired, AudibleAlert.none, .0, .0, .1),
 
+  # offroad alerts
   Alert(
       "ldwPermanent",
       "TAKE CONTROL",
