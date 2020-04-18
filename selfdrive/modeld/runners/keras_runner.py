@@ -22,7 +22,7 @@ def read(sz):
 def write(d):
   os.write(1, d.tobytes())
 
-def run_loop(m,name):
+def run_loop(m):
   isize = m.inputs[0].shape[1]
   osize = m.outputs[0].shape[1]
   print("ready to run keras model %d -> %d" % (isize, osize), file=sys.stderr)
@@ -42,9 +42,9 @@ if __name__ == "__main__":
   if len(gpus) > 0:
     if os.path.splitext(os.path.basename(sys.argv[1]))[0]== "supercombo":
       tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2548)])
-      with open(f"{os.path.splitext(sys.argv[1])}.model.keras", "r") as json_file:
+      with open(f"{os.path.splitext(sys.argv[1])[0]}.model.keras", "r") as json_file:
         m = model_from_json(json_file.read())
-      m.load_weights(f"{os.path.splitext(sys.argv[1])}.weights.keras")
+      m.load_weights(f"{os.path.splitext(sys.argv[1])[0]}.weights.keras")
     else:
       tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=256)])
       m = load_model(sys.argv[1], compile=False)
@@ -62,5 +62,5 @@ if __name__ == "__main__":
     tii.append(tr)
   no = keras.layers.Concatenate()(m(tii))
   m = Model(inputs=ri, outputs=[no])
-  run_loop(m,name)
+  run_loop(m)
 
