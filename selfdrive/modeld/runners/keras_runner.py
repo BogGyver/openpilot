@@ -47,9 +47,9 @@ if __name__ == "__main__":
       m.load_weights(f"{os.path.splitext(sys.argv[1])}.weights.keras")
     else:
       tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=256)])
-      m = load_model(sys.argv[1])
+      m = load_model(sys.argv[1], compile=False)
   else:
-    m = load_model(sys.argv[1])
+    m = load_model(sys.argv[1], compile=False)
       
   bs = [int(np.product(ii.shape[1:])) for ii in m.inputs]
   ri = keras.layers.Input((sum(bs),))
