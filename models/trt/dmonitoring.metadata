@@ -1,0 +1,1 @@
+{"input_names": ["input_img"], "output_names": ["face_descs/BiasAdd", "face_prob/Sigmoid", "left_blink_prob/Sigmoid", "left_eye_descs/BiasAdd", "left_eye_prob/Sigmoid", "right_blink_prob/Sigmoid", "right_eye_descs/BiasAdd", "right_eye_prob/Sigmoid"]}
