@@ -580,6 +580,7 @@ static void ui_update(UIState *s) {
   int err;
 
   if (s->vision_connect_firstrun) {
+    set_awake(s, true);
     // cant run this in connector thread because opengl.
     // do this here for now in lieu of a run_on_main_thread event
 
