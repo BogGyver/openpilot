@@ -470,6 +470,10 @@ def controlsd_thread(sm=None, pm=None, can_sock=None):
 
   passive = passive or not openpilot_enabled_toggle
 
+  # Passive if internet needed
+  internet_needed = params.get("Offroad_ConnectivityNeeded", encoding='utf8') is not None
+  passive = passive or internet_needed
+
   # Pub/Sub Sockets
   if pm is None:
     pm = messaging.PubMaster(['sendcan', 'controlsState', 'carState', 'carControl', 'carEvents', 'carParams'])
