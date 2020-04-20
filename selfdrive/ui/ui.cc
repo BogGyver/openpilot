@@ -1054,7 +1054,6 @@ int main(int argc, char* argv[]) {
       }
       check_messages(s);
     } else {
-      set_awake(s, true);
       if (s->status == STATUS_STOPPED) {
         update_status(s, STATUS_DISENGAGED);
       }
