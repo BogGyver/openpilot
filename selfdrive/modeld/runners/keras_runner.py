@@ -41,9 +41,9 @@ if __name__ == "__main__":
   gpus = tf.config.experimental.list_physical_devices('GPU')
   if len(gpus) > 0:
     if os.path.splitext(os.path.basename(sys.argv[1]))[0]== "supercombo":
-      tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2548)])
+      tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1772)])
     else:
-      tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=256)])
+      tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=306)])
   with open(f"{os.path.splitext(sys.argv[1])[0]}.model.keras", "r") as json_file:
     m = model_from_json(json_file.read())
     m.load_weights(f"{os.path.splitext(sys.argv[1])[0]}.weights.keras")
