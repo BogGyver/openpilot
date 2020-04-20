@@ -22,7 +22,7 @@ if arch == "jarch64":
   lenv['CXXFLAGS'].append("-DUSE_TF_MODEL")
 elif arch == "aarch64":
   libs += ['SNPE', 'gsl', 'CB', 'gnustl_shared']
-elif larch == "larch64":
+elif arch == "larch64":
   libs += ['SNPE', 'gsl', 'CB', 'symphony-cpu', 'pthread']  
 else:
   libs += ['symphony-cpu', 'pthread']
