@@ -1,2 +1,0 @@
-*.trt filter=lfs diff=lfs merge=lfs -text
-supercombo.uff filter=lfs diff=lfs merge=lfs -text
