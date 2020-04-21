@@ -25,7 +25,7 @@ elif arch == "aarch64":
 elif arch == "larch64":
   libs += ['SNPE', 'gsl', 'CB', 'symphony-cpu', 'pthread']  
 else:
-  libs += ['symphony-cpu', 'pthread']
+  libs += ['SNPE', 'symphony-cpu', 'pthread']
   # for tensorflow support
   common_src += ['runners/tfmodel.cc']
   # tell runners to use it
