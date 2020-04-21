@@ -35,6 +35,7 @@ if arch == "aarch64" or arch == "larch64":
 
   cpppath = [
     "#phonelibs/opencl/include",
+    "#phonelibs/snpe/include"
   ]
 
   libpath = [
