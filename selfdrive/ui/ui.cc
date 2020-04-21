@@ -706,6 +706,7 @@ static void ui_update(UIState *s) {
   int err;
 
   if (s->vision_connect_firstrun) {
+    set_awake(s, true);
     // cant run this in connector thread because opengl.
     // do this here for now in lieu of a run_on_main_thread event
 
@@ -1140,7 +1141,7 @@ int main(int argc, char* argv[]) {
       }
       check_messages(s);
     } else {
-      set_awake(s, true);
+      //set_awake(s, true);
       // Car started, fetch a new rgb image from ipc
       if (s->vision_connected){
         ui_update(s);
