@@ -185,7 +185,6 @@ int main(int argc, char **argv) {
       if (buf == NULL) {
         LOGW("visionstream get failed");
         visionstream_destroy(&stream);
-	delete buf;
         break;
       }
 
@@ -234,7 +233,6 @@ int main(int argc, char **argv) {
 	printf("model process: %.2fms, from last %.2fms\n", mt2-mt1, mt1-last);
         last = mt1;
       }
-      delete buf;
     }
     visionbuf_free(&yuv_ion);
   }
