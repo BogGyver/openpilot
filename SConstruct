@@ -35,7 +35,7 @@ if arch == "aarch64" or arch == "larch64":
 
   cpppath = [
     "#phonelibs/opencl/include",
-    "#phonelibs/snpe/include"
+    "#phonelibs/snpe/include",
   ]
 
   libpath = [
@@ -43,7 +43,7 @@ if arch == "aarch64" or arch == "larch64":
     "/data/data/com.termux/files/usr/lib",
     "/system/vendor/lib64",
     "/system/comma/usr/lib",
-    "#phonelibs/nanovg",
+    "#phonelibs/nanovg",	
   ]
 
   if arch == "larch64":
