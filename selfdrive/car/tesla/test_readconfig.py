@@ -2,7 +2,6 @@
 
 import unittest
 import os
-import readconfig
 from selfdrive.car.tesla.readconfig import read_config_file, CarSettings
 
 
@@ -26,12 +25,12 @@ class ReadConfigTests(unittest.TestCase):
   # Tests to make sure defaults are set when the config file is missing
   def test_defaults_missing_file(self):
     # First time proves that data is set locally
-    cs = readconfig.CarSettings(
+    cs = CarSettings(
         optional_config_file_path=self.test_config_file)
     self.check_defaults(cs)
     self.assertEqual(cs.did_write_file, True)
     # Run a second time to make sure it was saved and read correctly
-    cs = readconfig.CarSettings(
+    cs = CarSettings(
         optional_config_file_path=self.test_config_file)
     self.check_defaults(cs)
     self.assertEqual(cs.did_write_file, False)
@@ -40,7 +39,7 @@ class ReadConfigTests(unittest.TestCase):
   def test_defaults_empty_file(self):
     config_file_path = "./test_config_file2.cfg"
     self.create_empty_config_file(config_file_path)
-    cs = readconfig.CarSettings(optional_config_file_path=config_file_path)
+    cs = CarSettings(optional_config_file_path=config_file_path)
     self.check_defaults(cs)
     os.remove(config_file_path)
 
@@ -49,7 +48,7 @@ class ReadConfigTests(unittest.TestCase):
     config_file_path = "./test_config_file2.cfg"
     self.create_empty_config_file(
         config_file_path, test_parameter_string="force_pedal_over_cc = True")
-    cs = readconfig.CarSettings(optional_config_file_path=config_file_path)
+    cs = CarSettings(optional_config_file_path=config_file_path)
     # Should still be true, even though the defaut is False
     self.assertEqual(cs.forcePedalOverCC, True)
     os.remove(config_file_path)
@@ -58,11 +57,11 @@ class ReadConfigTests(unittest.TestCase):
   def test_empty_radar_vin(self):
     self.delete_test_config_file()
     # first pass creates config file
-    cs = readconfig.CarSettings(
+    cs = CarSettings(
         optional_config_file_path=self.test_config_file)
     self.assertEqual(cs.radarVIN, "                 ")
     # second pass actually reads the file
-    cs = readconfig.CarSettings(
+    cs = CarSettings(
         optional_config_file_path=self.test_config_file)
     self.assertEqual(cs.radarVIN, "                 ")
 
@@ -71,7 +70,7 @@ class ReadConfigTests(unittest.TestCase):
     config_file_path = "./test_config_file2.cfg"
     self.create_empty_config_file(
         config_file_path, test_parameter_string="radar_vin =                 ")
-    cs = readconfig.CarSettings(optional_config_file_path=config_file_path)
+    cs = CarSettings(optional_config_file_path=config_file_path)
     # Should be the correct all spaces VIN
     self.assertEqual(cs.radarVIN, "                 ")
     os.remove(config_file_path)
@@ -82,16 +81,16 @@ class ReadConfigTests(unittest.TestCase):
     self.create_empty_config_file(
         config_file_path,
         test_parameter_string="radar_vin = 12345678901234567")
-    cs = readconfig.CarSettings(optional_config_file_path=config_file_path)
+    cs = CarSettings(optional_config_file_path=config_file_path)
     self.assertEqual(cs.radarVIN, "12345678901234567")
     os.remove(config_file_path)
 
   def test_comments(self):
-    expected_comment = "# do_auto_update: set this setting to false if you do not want op to autoupdate every time you reboot and there is a change on the repo (default: true)"
+    expected_comment = "set this setting to false if you do not want op to autoupdate every time you reboot and there is a change on the repo"
     config_file_path = "./test_config_file2.cfg"
     self.create_empty_config_file(
         config_file_path, test_parameter_string="force_pedal_over_cc = True")
-    cs = readconfig.CarSettings(optional_config_file_path=config_file_path)
+    cs = CarSettings(optional_config_file_path=config_file_path)
     # Should still be true, even though the defaut is False
     self.assertEqual(cs.forcePedalOverCC, True)
     # Make sure comment was added:
@@ -106,9 +105,8 @@ class ReadConfigTests(unittest.TestCase):
     old_comment = "# do_auto_update - old description (default: true)"
     old_entry = "do_auto_update = False"
     self.create_empty_config_file(config_file_path,
-                                  test_parameter_string="[OP_CONFIG]\n" +
-                                  old_comment + "\n" + old_entry)
-    expected_comment = "# do_auto_update: set this setting to false if you do not want op to autoupdate every time you reboot and there is a change on the repo (default: true)"
+                                  test_parameter_string= old_comment + "\n" + old_entry)
+    expected_comment = "set this setting to false if you do not want op to autoupdate every time you reboot and there is a change on the repo."
     cs = CarSettings(optional_config_file_path=config_file_path)
     # Make sure setting didn't change
     self.assertEqual(cs.doAutoUpdate, False)
@@ -120,19 +118,18 @@ class ReadConfigTests(unittest.TestCase):
     # File should have changed (to update comment)
     self.assertEqual(cs.did_write_file, True)
     # Next time we read, file shouldn't change anymore:
-    cs = readconfig.CarSettings(optional_config_file_path=config_file_path)
+    cs = CarSettings(optional_config_file_path=config_file_path)
     self.assertEqual(cs.did_write_file, False)
     # Now remove a config option to cause an update:
     fd = open(config_file_path, "r")
     contents = fd.read()
     fd.close()
     new_contents = contents.replace("limit_battery_max = 80", "")
-    os.remove(config_file_path)
-    fd = open(config_file_path, "wb")
+    fd = open(config_file_path, "w")
     fd.write(new_contents)
     fd.close()
-    cs = readconfig.CarSettings(optional_config_file_path=config_file_path)
-    another_comment = '# radar_vin: if you used an aftermarket tesla bosch radar that already has a coded vin, you will have to enter that vin value here (default: "                 ")'
+    cs = CarSettings(optional_config_file_path=config_file_path)
+    another_comment = 'if you use an aftermarket tesla bosch radar that already has a coded vin, you will have to enter that vin'
     # Make sure other comments were written:
     fd = open(config_file_path, "r")
     contents = fd.read()
@@ -144,7 +141,7 @@ class ReadConfigTests(unittest.TestCase):
     config_file_path = "./test_config_file2.cfg"
     self.create_empty_config_file(config_file_path,
                                   test_parameter_string="radar_offset = 3.14")
-    cs = readconfig.CarSettings(optional_config_file_path=config_file_path)
+    cs = CarSettings(optional_config_file_path=config_file_path)
     self.assertEqual(cs.radarOffset, 3.14)
     os.remove(config_file_path)
 
@@ -154,7 +151,7 @@ class ReadConfigTests(unittest.TestCase):
     config_file_path = "./test_config_file2.cfg"
     self.create_empty_config_file(
         config_file_path, test_parameter_string="force_pedal_over_cc = True")
-    #cs = readconfig.CarSettings(optional_config_file_path = config_file_path)
+    #cs = CarSettings(optional_config_file_path = config_file_path)
     cs = CarSettingsTestClass()
     try:
       read_config_file(cs)
@@ -166,13 +163,13 @@ class ReadConfigTests(unittest.TestCase):
     read_config_file(cs, config_path=self.test_config_file)
     self.assertEqual(cs.forcePedalOverCC, False)
     # check for defaults
-    self.assertEqual(cs.fix1916, False)
+    self.assertEqual(cs.fix1916, True)
     os.remove(config_file_path)
 
   # Test get_value interface:
   def test_get_value(self):
     config_file_path = "./test_config_file3.cfg"
-    cs = readconfig.CarSettings(optional_config_file_path=config_file_path)
+    cs = CarSettings(optional_config_file_path=config_file_path)
     value = cs.get_value("userHandle")
     self.assertEqual(value, 'your_tinkla_username')
     value = cs.get_value("doAutoUpdate")
@@ -207,7 +204,7 @@ class ReadConfigTests(unittest.TestCase):
     self.assertEqual(cs.radarEpasType, 0)
     self.assertEqual(cs.radarPosition, 0)
     self.assertEqual(cs.doAutoUpdate, True)
-    self.assertEqual(cs.fix1916, False)
+    self.assertEqual(cs.fix1916, True)
     self.assertEqual(cs.get_value("userHandle"), 'your_tinkla_username')
     self.assertEqual(cs.get_value("doAutoUpdate"), True)
     self.assertEqual(cs.shouldLogCanErrors, False)

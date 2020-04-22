@@ -199,8 +199,6 @@ class Cluster():
     # the distance at which v_lat matters is higher at higher speed
     lookahead_dist = 40. + v_ego/1.2   #40m at 0mph, ~70m at 80mph
 
-    t_lookahead_v  = [1., 0.]
-    t_lookahead_bp = [10., lookahead_dist]
 
     # average dist
     d_path = self.dPath

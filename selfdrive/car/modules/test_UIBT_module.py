@@ -27,5 +27,5 @@ cs = CarState()
 
 while 1:
     cs.UE.update_custom_ui()
-    CS.cstm_btns.send_button_info()
+    cs.cstm_btns.send_button_info()
     time.sleep(0.1)

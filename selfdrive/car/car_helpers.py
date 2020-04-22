@@ -169,7 +169,7 @@ def get_car(logcan, sendcan, has_relay = False):
     fingerprints=["","",""]
     vin="TESLAFORCED123456"
     #BB
-    fw_candidates, car_fw = set(), []
+    car_fw = []
     source=car.CarParams.FingerprintSource.fixed
     cloudlog.warning("VIN %s", vin)
     Params().put("CarVin", vin)
