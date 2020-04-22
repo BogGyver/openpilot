@@ -9,18 +9,16 @@ import pycuda.autoinit
 import pycuda.driver as cuda
 from pathlib import Path
 from onnx import ModelProto
-from collections import namedtuple
-
-HostDeviceMemory = namedtuple('HostDeviceMemory', 'host_memory device_memory')
 
 TRT_LOGGER = trt.Logger(trt.Logger.VERBOSE)
 trt_runtime = trt.Runtime(TRT_LOGGER)
 trt.init_libnvinfer_plugins(TRT_LOGGER, '')
+
 def build_engine(onnx_path):
     builder = trt.Builder(TRT_LOGGER)
     network = builder.create_network() 
     parser  = trt.OnnxParser(network, TRT_LOGGER)
-    builder.max_workspace_size = 1 << 30  #8GB
+    builder.max_workspace_size = 1 << 20  # 1024MB
     builder.max_batch_size = 1
 #    builder.fp16_mode = True
     print(onnx_path, file=sys.stderr)
@@ -30,6 +28,7 @@ def build_engine(onnx_path):
     isize = network.get_input(0).shape
     last_layer = network.get_layer(network.num_layers - 1)
     network.mark_output(last_layer.get_output(0))
+    print(network, file=sys.stderr)
     engine = builder.build_cuda_engine(network)
     return engine
 
@@ -37,6 +36,7 @@ def save_engine(engine, file_name):
    buf = engine.serialize()
    with open(file_name, 'wb') as f:
        f.write(buf)
+
 def load_engine(trt_runtime, engine_path):
    with open(engine_path, 'rb') as f:
        engine_data = f.read()
@@ -46,23 +46,16 @@ def load_engine(trt_runtime, engine_path):
 def alloc_buf(engine, isize, osize):
     # host cpu mem
     in_cpu = cuda.pagelocked_empty(isize, dtype=np.float32)
-    out_cpu = cuda.pagelocked_empty(osize, dtype=np.float32)
+    out_cpu = cuda.pagelocked_empty(osize*10000, dtype=np.float32)
     # allocate gpu mem
     in_gpu = cuda.mem_alloc(in_cpu.nbytes)
     out_gpu = cuda.mem_alloc(out_cpu.nbytes)
-    stream = cuda.Stream()
     return in_cpu, out_cpu, in_gpu, out_gpu
 
-
-def predict(context, inputs, outputs, in_gpu, out_gpu):
-    cuda.memcpy_htod(in_gpu, inputs)
-    print(f'exec in_gpu: {int(in_gpu)} out_gpu: {int(out_gpu)}', file=sys.stderr)
-
+def predict(context, in_cpu, out_cpu, in_gpu, out_gpu):
+    cuda.memcpy_htod(in_gpu, in_cpu)
     context.execute(1, bindings=[int(in_gpu), int(out_gpu)])
-    print('copying out of gpu', file=sys.stderr)
-    cuda.memcpy_dtoh(outputs, out_gpu)
-    return outputs
-
+    cuda.memcpy_dtoh(out_cpu, out_gpu)
 
 def read(sz):
   dd = []
@@ -75,6 +68,7 @@ def read(sz):
   return np.fromstring(b''.join(dd), dtype=np.float32)
 
 def write(d):
+  print(d, file=sys.stderr)
   os.write(1, d.tobytes())
 
 def run_loop(engine, context, in_cpu, out_cpu, in_gpu, out_gpu, isize, osize):
@@ -85,8 +79,8 @@ def run_loop(engine, context, in_cpu, out_cpu, in_gpu, out_gpu, isize, osize):
       print("exiting due to Parent PID", file=sys.stderr)  
       break
     idata = read(isize).reshape((1, isize))
-    ret = predict(context, idata, out_cpu, in_gpu, out_gpu)
-    write(ret)
+    predict(context, idata, out_cpu, in_gpu, out_gpu)
+    write(out_cpu)
 
 if __name__ == "__main__":
   model_path = Path(sys.argv[1])
