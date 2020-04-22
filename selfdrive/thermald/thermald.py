@@ -4,6 +4,7 @@ import json
 import copy
 import datetime
 import psutil
+import sys
 from smbus2 import SMBus
 from cereal import log
 from common.android import ANDROID, get_network_type, get_network_strength
@@ -20,7 +21,7 @@ from selfdrive.pandad import get_expected_signature
 from selfdrive.car.tesla.readconfig import CarSettings
 from selfdrive.thermald.power_monitoring import PowerMonitoring, get_battery_capacity, get_battery_status, get_battery_current, get_battery_voltage, get_usb_present
 WEBCAM = os.getenv("WEBCAM") is not None
-if WEBCAM:
+if WEBCAM and (sys.version_info.major == 3 and sys.version_info.minor == 6):
     from backports.datetime_fromisoformat import MonkeyPatch
     MonkeyPatch.patch_fromisoformat()
 

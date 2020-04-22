@@ -144,8 +144,12 @@ class RadarD():
 
     ar_pts = {}
     for pt in rr.points:
-      extpt = get_rrext_by_trackId(rrext,pt.trackId)
-      ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured, pt.aRel, pt.yvRel, extpt.objectClass, extpt.length, pt.trackId+2, extpt.movingState]
+      if rrext:
+        extpt = get_rrext_by_trackId(rrext,pt.trackId)
+        ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured, pt.aRel, pt.yvRel, extpt.objectClass, extpt.length, pt.trackId+2, extpt.movingState]
+      else:
+        ar_pts[pt.trackId] = [pt.dRel + RDR_TO_LDR, pt.yRel, pt.vRel, pt.measured, pt.aRel, pt.yvRel, 1, 0, pt.trackId+2, 1]
+
     # *** remove missing points from meta data ***
     for ids in list(self.tracks.keys()):
       if ids not in ar_pts:
@@ -410,7 +414,12 @@ def radard_thread(sm=None, pm=None, can_sock=None):
     if sm.updated['controlsState']:
       v_ego = sm['controlsState'].vEgo
 
-    rr,rrext,ahbCarDetected = RI.update(can_strings,v_ego)
+    if CP.carName == "tesla":
+      rr,rrext,ahbCarDetected = RI.update(can_strings,v_ego)
+    else:
+      rr = RI.update(can_strings)
+      rrext = None
+      ahbCarDetected = False
 
     if rr is None:
       continue    
@@ -421,11 +430,12 @@ def radard_thread(sm=None, pm=None, can_sock=None):
     pm.send('radarState', dat)
     icLeads.send(datext.to_bytes())
 
-    ahbInfoMsg = tesla.AHBinfo.new_message()
-    ahbInfoMsg.source = 0
-    ahbInfoMsg.radarCarDetected = ahbCarDetected
-    ahbInfoMsg.cameraCarDetected = False
-    ahbInfo.send(ahbInfoMsg.to_bytes())
+    if CP.carName == "tesla":
+      ahbInfoMsg = tesla.AHBinfo.new_message()
+      ahbInfoMsg.source = 0
+      ahbInfoMsg.radarCarDetected = ahbCarDetected
+      ahbInfoMsg.cameraCarDetected = False
+      ahbInfo.send(ahbInfoMsg.to_bytes())
 
 
     # *** publish tracks for UI debugging (keep last) ***

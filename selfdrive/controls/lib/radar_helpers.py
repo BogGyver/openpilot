@@ -205,7 +205,7 @@ class Cluster():
     # consider only cut-ins
     d_path = clip(d_path + lat_corr, min(0., d_path), max(0.,d_path))
 
-    return abs(d_path) < 1.5 and not self.stationary and not self.oncoming
+    return abs(d_path) < 1.5 and not self.stationary #and not self.oncoming
 
   def is_potential_lead_dy(self, v_ego,dy):
     # predict cut-ins by extrapolating lateral speed by a lookahead time
