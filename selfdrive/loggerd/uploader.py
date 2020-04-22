@@ -18,7 +18,7 @@ from common import android
 from common.params import Params
 
 from common.api import Api
-from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
+from selfdrive.car.tesla.readconfig import CarSettings
 from common.xattr import getxattr, setxattr
 
 UPLOAD_ATTR_NAME = 'user.upload'

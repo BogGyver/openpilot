@@ -5,7 +5,7 @@ from collections import defaultdict, deque
 import numpy as np
 
 import cereal.messaging as messaging
-from cereal import car,log,tesla
+from cereal import car,tesla
 from common.numpy_fast import interp
 from common.params import Params
 from common.realtime import Ratekeeper, set_realtime_priority
@@ -13,7 +13,7 @@ from selfdrive.config import RADAR_TO_CAMERA
 from selfdrive.controls.lib.cluster.fastcluster_py import cluster_points_centroid
 from selfdrive.controls.lib.radar_helpers import Cluster, Track
 from selfdrive.swaglog import cloudlog
-from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
+from selfdrive.car.tesla.readconfig import CarSettings
 
 DEBUG = False
 RDR_TO_LDR = 0
@@ -398,7 +398,6 @@ def radard_thread(sm=None, pm=None, can_sock=None):
   RD = RadarD(CP.radarTimeStep, mocked, RI, use_tesla_radar,RI.delay)
 
   has_radar = not CP.radarOffCan or mocked
-  last_md_ts = 0.
   v_ego = 0.
 
   while 1:

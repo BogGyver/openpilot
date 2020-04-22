@@ -7,7 +7,6 @@ import errno
 import signal
 import shutil
 import subprocess
-import time
 from selfdrive.tinklad.tinkla_interface import TinklaClient
 from cereal import tinkla
 from selfdrive.car.tesla.readconfig import CarSettings

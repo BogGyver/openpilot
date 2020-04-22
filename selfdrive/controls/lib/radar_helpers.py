@@ -205,9 +205,6 @@ class Cluster():
     # average dist
     d_path = self.dPath
 
-    # lat_corr used to be gated on enabled, now always running
-    t_lookahead = interp(self.dRel, t_lookahead_bp, t_lookahead_v)
-
     # correct d_path for lookahead time, considering only cut-ins and no more than 1m impact.
     lat_corr = 0. # BB disables for now : clip(t_lookahead * self.vLat, -1., 1.) if self.measured else 0.
 

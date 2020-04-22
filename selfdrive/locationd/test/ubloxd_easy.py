@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
 import os
-import time
 from selfdrive.locationd.test import ublox
 from common import realtime
 from selfdrive.locationd.test.ubloxd import gen_raw, gen_solution
 import zmq
 import cereal.messaging as messaging
-from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
+from selfdrive.car.tesla.readconfig import CarSettings
 
 
 unlogger = os.getenv("UNLOGGER") is not None   # debug prints

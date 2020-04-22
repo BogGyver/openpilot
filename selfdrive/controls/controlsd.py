@@ -26,7 +26,6 @@ from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.controls.lib.planner import LON_MPC_STEP
 from selfdrive.locationd.calibration_helpers import Calibration, Filter
 from selfdrive.tinklad.tinkla_interface import TinklaClient
-from selfdrive.car.tesla.readconfig import CarSettings
 
 
 LANE_DEPARTURE_THRESHOLD = 0.1
@@ -233,11 +232,6 @@ def state_control(frame, rcv_frame, plan, path_plan, CS, CP, state, events, v_cr
 
   enabled = isEnabled(state)
   active = isActive(state)
-
-  # check if user has interacted with the car
-  driver_engaged = len(CS.buttonEvents) > 0 or \
-                   v_cruise_kph != v_cruise_kph_last or \
-                   CS.steeringPressed 
 
   if CS.leftBlinker or CS.rightBlinker:
     last_blinker_frame = frame
