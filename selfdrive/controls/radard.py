@@ -118,8 +118,9 @@ class RadarD():
     self.ready = False
     self.icCarLR = None
     self.use_tesla_radar = use_tesla_radar
-    if (RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE) and self.use_tesla_radar:
-      self.icCarLR = messaging.pub_sock('uiIcCarLR')
+    if self.use_tesla_radar:
+      if (RI.TRACK_RIGHT_LANE or RI.TRACK_LEFT_LANE):
+        self.icCarLR = messaging.pub_sock('uiIcCarLR')
     
     self.lane_width = 3.0
     #only used for left and right lanes
@@ -201,142 +202,143 @@ class RadarD():
     #################################################################
     #BB For Tesla integration we will also track Left and Right lanes
     #################################################################
-    if (self.RI.TRACK_RIGHT_LANE or self.RI.TRACK_LEFT_LANE) and self.use_tesla_radar:
-      datrl = tesla.ICCarsLR.new_message()
-      datrl.v1Type = int(0)
-      datrl.v1Dx = float(0.)
-      datrl.v1Vrel = float(0.)
-      datrl.v1Dy = float(0.)
-      datrl.v1Id = int(0)
-      datrl.v2Type = int(0) 
-      datrl.v2Dx = float(0.)
-      datrl.v2Vrel = float(0.)
-      datrl.v2Dy = float(0.)
-      datrl.v2Id = int(0)
-      datrl.v3Type = int(0)
-      datrl.v3Dx = float(0.)
-      datrl.v3Vrel = float(0.)
-      datrl.v3Dy = float(0.)
-      datrl.v3Id = int(0)
-      datrl.v4Type = int(0) 
-      datrl.v4Dx = float(0.)
-      datrl.v4Vrel = float(0.)
-      datrl.v4Dy = float(0.)
-      datrl.v4Id = int(0)
-      lane_offset = 0. 
-    #LEFT LANE
-    if self.RI.TRACK_LEFT_LANE and self.use_tesla_radar:
-      ll_track_pts = np.array([self.tracks[iden].get_key_for_cluster_dy(-self.lane_width) for iden in idens])
-      # If we have multiple points, cluster them
-      if len(ll_track_pts) > 1:
-        ll_cluster_idxs = cluster_points_centroid(ll_track_pts, 2.5)
-        ll_clusters = [None] * (max(ll_cluster_idxs) + 1)
+    if self.use_tesla_radar:
+      if (self.RI.TRACK_RIGHT_LANE or self.RI.TRACK_LEFT_LANE):
+        datrl = tesla.ICCarsLR.new_message()
+        datrl.v1Type = int(0)
+        datrl.v1Dx = float(0.)
+        datrl.v1Vrel = float(0.)
+        datrl.v1Dy = float(0.)
+        datrl.v1Id = int(0)
+        datrl.v2Type = int(0) 
+        datrl.v2Dx = float(0.)
+        datrl.v2Vrel = float(0.)
+        datrl.v2Dy = float(0.)
+        datrl.v2Id = int(0)
+        datrl.v3Type = int(0)
+        datrl.v3Dx = float(0.)
+        datrl.v3Vrel = float(0.)
+        datrl.v3Dy = float(0.)
+        datrl.v3Id = int(0)
+        datrl.v4Type = int(0) 
+        datrl.v4Dx = float(0.)
+        datrl.v4Vrel = float(0.)
+        datrl.v4Dy = float(0.)
+        datrl.v4Id = int(0)
+        lane_offset = 0. 
+      #LEFT LANE
+      if self.RI.TRACK_LEFT_LANE:
+        ll_track_pts = np.array([self.tracks[iden].get_key_for_cluster_dy(-self.lane_width) for iden in idens])
+        # If we have multiple points, cluster them
+        if len(ll_track_pts) > 1:
+          ll_cluster_idxs = cluster_points_centroid(ll_track_pts, 2.5)
+          ll_clusters = [None] * (max(ll_cluster_idxs) + 1)
 
-        for idx in range(len(ll_track_pts)):
-          ll_cluster_i = ll_cluster_idxs[idx]
+          for idx in range(len(ll_track_pts)):
+            ll_cluster_i = ll_cluster_idxs[idx]
 
-          if ll_clusters[ll_cluster_i] == None:
-            ll_clusters[ll_cluster_i] = Cluster(self.use_tesla_radar)
-          ll_clusters[ll_cluster_i].add(self.tracks[idens[idx]])
-      elif len(ll_track_pts) == 1:
-        # TODO: why do we need this?
-        ll_clusters = [Cluster(self.use_tesla_radar)]
-        ll_clusters[0].add(self.tracks[idens[0]])
-      else:
-        ll_clusters = []
-      if DEBUG:
-        for i in ll_clusters:
-          print(i)
-      # *** extract the lead car ***
-      ll_lead_clusters = [c for c in ll_clusters
-                      if c.is_potential_lead_dy(self.v_ego,-self.lane_width)]
-      ll_lead_clusters.sort(key=lambda x: x.dRel)
-      ll_lead_len = len(ll_lead_clusters)
-      ll_lead1_truck = (len([c for c in ll_lead_clusters
-                      if c.is_truck(ll_lead_clusters)]) > 0)
+            if ll_clusters[ll_cluster_i] == None:
+              ll_clusters[ll_cluster_i] = Cluster(self.use_tesla_radar)
+            ll_clusters[ll_cluster_i].add(self.tracks[idens[idx]])
+        elif len(ll_track_pts) == 1:
+          # TODO: why do we need this?
+          ll_clusters = [Cluster(self.use_tesla_radar)]
+          ll_clusters[0].add(self.tracks[idens[0]])
+        else:
+          ll_clusters = []
+        if DEBUG:
+          for i in ll_clusters:
+            print(i)
+        # *** extract the lead car ***
+        ll_lead_clusters = [c for c in ll_clusters
+                        if c.is_potential_lead_dy(self.v_ego,-self.lane_width)]
+        ll_lead_clusters.sort(key=lambda x: x.dRel)
+        ll_lead_len = len(ll_lead_clusters)
+        ll_lead1_truck = (len([c for c in ll_lead_clusters
+                        if c.is_truck(ll_lead_clusters)]) > 0)
 
-      # *** extract the second lead from the whole set of leads ***
-      ll_lead2_clusters = [c for c in ll_lead_clusters
-                        if c.is_potential_lead2(ll_lead_clusters)]
-      ll_lead2_clusters.sort(key=lambda x: x.dRel)
-      ll_lead2_len = len(ll_lead2_clusters)
-      ll_lead2_truck = (len([c for c in ll_lead_clusters
-                      if c.is_truck(ll_lead2_clusters)]) > 0)
-      # publish data
-      if ll_lead_len > 0:
-        datrl.v1Type = int(ll_lead_clusters[0].oClass)
-        if datrl.v1Type == 1 and ll_lead1_truck:
-            datrl.v1Type = 0
-        datrl.v1Dx = float(ll_lead_clusters[0].dRel)
-        datrl.v1Vrel = float(ll_lead_clusters[0].vRel)
-        datrl.v1Dy = float(-ll_lead_clusters[0].yRel - lane_offset)
-        datrl.v1Id = int(ll_lead_clusters[0].track_id % 32)
-        if ll_lead2_len > 0:
-          datrl.v2Type = int(ll_lead2_clusters[0].oClass)
-          if datrl.v2Type == 1 and ll_lead2_truck:
-            datrl.v2Type = 0
-          datrl.v2Dx = float(ll_lead2_clusters[0].dRel)
-          datrl.v2Vrel = float(ll_lead2_clusters[0].vRel)
-          datrl.v2Dy = float(-ll_lead2_clusters[0].yRel - lane_offset) 
-          datrl.v2Id = int(ll_lead2_clusters[0].track_id % 32)
-    #RIGHT LANE
-    if self.RI.TRACK_RIGHT_LANE and self.use_tesla_radar:
-      rl_track_pts = np.array([self.tracks[iden].get_key_for_cluster_dy(self.lane_width) for iden in idens])
-      # If we have multiple points, cluster them
-      if len(rl_track_pts) > 1:
-        rl_cluster_idxs = cluster_points_centroid(rl_track_pts, 2.5)
-        rl_clusters = [None] * (max(rl_cluster_idxs) + 1)
+        # *** extract the second lead from the whole set of leads ***
+        ll_lead2_clusters = [c for c in ll_lead_clusters
+                          if c.is_potential_lead2(ll_lead_clusters)]
+        ll_lead2_clusters.sort(key=lambda x: x.dRel)
+        ll_lead2_len = len(ll_lead2_clusters)
+        ll_lead2_truck = (len([c for c in ll_lead_clusters
+                        if c.is_truck(ll_lead2_clusters)]) > 0)
+        # publish data
+        if ll_lead_len > 0:
+          datrl.v1Type = int(ll_lead_clusters[0].oClass)
+          if datrl.v1Type == 1 and ll_lead1_truck:
+              datrl.v1Type = 0
+          datrl.v1Dx = float(ll_lead_clusters[0].dRel)
+          datrl.v1Vrel = float(ll_lead_clusters[0].vRel)
+          datrl.v1Dy = float(-ll_lead_clusters[0].yRel - lane_offset)
+          datrl.v1Id = int(ll_lead_clusters[0].track_id % 32)
+          if ll_lead2_len > 0:
+            datrl.v2Type = int(ll_lead2_clusters[0].oClass)
+            if datrl.v2Type == 1 and ll_lead2_truck:
+              datrl.v2Type = 0
+            datrl.v2Dx = float(ll_lead2_clusters[0].dRel)
+            datrl.v2Vrel = float(ll_lead2_clusters[0].vRel)
+            datrl.v2Dy = float(-ll_lead2_clusters[0].yRel - lane_offset) 
+            datrl.v2Id = int(ll_lead2_clusters[0].track_id % 32)
+      #RIGHT LANE
+      if self.RI.TRACK_RIGHT_LANE:
+        rl_track_pts = np.array([self.tracks[iden].get_key_for_cluster_dy(self.lane_width) for iden in idens])
+        # If we have multiple points, cluster them
+        if len(rl_track_pts) > 1:
+          rl_cluster_idxs = cluster_points_centroid(rl_track_pts, 2.5)
+          rl_clusters = [None] * (max(rl_cluster_idxs) + 1)
 
-        for idx in range(len(rl_track_pts)):
-          rl_cluster_i = rl_cluster_idxs[idx]
+          for idx in range(len(rl_track_pts)):
+            rl_cluster_i = rl_cluster_idxs[idx]
 
-          if rl_clusters[rl_cluster_i] == None:
-            rl_clusters[rl_cluster_i] = Cluster(self.use_tesla_radar)
-          rl_clusters[rl_cluster_i].add(self.tracks[idens[idx]])
-      elif len(rl_track_pts) == 1:
-        # TODO: why do we need this?
-        rl_clusters = [Cluster(self.use_tesla_radar)]
-        rl_clusters[0].add(self.tracks[idens[0]])
-      else:
-        rl_clusters = []
-      if DEBUG:
-        for i in rl_clusters:
-          print(i)
-      # *** extract the lead car ***
-      rl_lead_clusters = [c for c in rl_clusters
-                      if c.is_potential_lead_dy(self.v_ego,self.lane_width)]
-      rl_lead_clusters.sort(key=lambda x: x.dRel)
-      rl_lead_len = len(rl_lead_clusters)
-      rl_lead1_truck = (len([c for c in rl_lead_clusters
-                      if c.is_truck(rl_lead_clusters)]) > 0)
-      # *** extract the second lead from the whole set of leads ***
-      rl_lead2_clusters = [c for c in rl_lead_clusters
-                        if c.is_potential_lead2(rl_lead_clusters)]
-      rl_lead2_clusters.sort(key=lambda x: x.dRel)
-      rl_lead2_len = len(rl_lead2_clusters)
-      rl_lead2_truck = (len([c for c in rl_lead_clusters
-                      if c.is_truck(rl_lead2_clusters)]) > 0)
-      # publish data
-      if rl_lead_len > 0:
-        datrl.v3Type = int(rl_lead_clusters[0].oClass) 
-        if datrl.v3Type == 1 and rl_lead1_truck:
-          datrl.v3Type = 0
-        datrl.v3Dx = float(rl_lead_clusters[0].dRel)
-        datrl.v3Vrel = float(rl_lead_clusters[0].vRel)
-        datrl.v3Dy = float(-rl_lead_clusters[0].yRel+ lane_offset)
-        datrl.v3Id = int(rl_lead_clusters[0].track_id % 32)
-        if rl_lead2_len > 0:
-          datrl.v4Type = int(rl_lead2_clusters[0].oClass)
-          if datrl.v4Type == 1 and rl_lead2_truck:
-            datrl.v4Type = 0
-          datrl.v4Dx = float(rl_lead2_clusters[0].dRel)
-          datrl.v4Vrel = float(rl_lead2_clusters[0].vRel)
-          datrl.v4Dy = float(-rl_lead2_clusters[0].yRel + lane_offset)
-          datrl.v4Id = int(rl_lead2_clusters[0].track_id % 32)
-    if (self.RI.TRACK_RIGHT_LANE or self.RI.TRACK_LEFT_LANE) and self.use_tesla_radar:
-      self.icCarLR.send(datrl.to_bytes())      
+            if rl_clusters[rl_cluster_i] == None:
+              rl_clusters[rl_cluster_i] = Cluster(self.use_tesla_radar)
+            rl_clusters[rl_cluster_i].add(self.tracks[idens[idx]])
+        elif len(rl_track_pts) == 1:
+          # TODO: why do we need this?
+          rl_clusters = [Cluster(self.use_tesla_radar)]
+          rl_clusters[0].add(self.tracks[idens[0]])
+        else:
+          rl_clusters = []
+        if DEBUG:
+          for i in rl_clusters:
+            print(i)
+        # *** extract the lead car ***
+        rl_lead_clusters = [c for c in rl_clusters
+                        if c.is_potential_lead_dy(self.v_ego,self.lane_width)]
+        rl_lead_clusters.sort(key=lambda x: x.dRel)
+        rl_lead_len = len(rl_lead_clusters)
+        rl_lead1_truck = (len([c for c in rl_lead_clusters
+                        if c.is_truck(rl_lead_clusters)]) > 0)
+        # *** extract the second lead from the whole set of leads ***
+        rl_lead2_clusters = [c for c in rl_lead_clusters
+                          if c.is_potential_lead2(rl_lead_clusters)]
+        rl_lead2_clusters.sort(key=lambda x: x.dRel)
+        rl_lead2_len = len(rl_lead2_clusters)
+        rl_lead2_truck = (len([c for c in rl_lead_clusters
+                        if c.is_truck(rl_lead2_clusters)]) > 0)
+        # publish data
+        if rl_lead_len > 0:
+          datrl.v3Type = int(rl_lead_clusters[0].oClass) 
+          if datrl.v3Type == 1 and rl_lead1_truck:
+            datrl.v3Type = 0
+          datrl.v3Dx = float(rl_lead_clusters[0].dRel)
+          datrl.v3Vrel = float(rl_lead_clusters[0].vRel)
+          datrl.v3Dy = float(-rl_lead_clusters[0].yRel+ lane_offset)
+          datrl.v3Id = int(rl_lead_clusters[0].track_id % 32)
+          if rl_lead2_len > 0:
+            datrl.v4Type = int(rl_lead2_clusters[0].oClass)
+            if datrl.v4Type == 1 and rl_lead2_truck:
+              datrl.v4Type = 0
+            datrl.v4Dx = float(rl_lead2_clusters[0].dRel)
+            datrl.v4Vrel = float(rl_lead2_clusters[0].vRel)
+            datrl.v4Dy = float(-rl_lead2_clusters[0].yRel + lane_offset)
+            datrl.v4Id = int(rl_lead2_clusters[0].track_id % 32)
+      if (self.RI.TRACK_RIGHT_LANE or self.RI.TRACK_LEFT_LANE):
+        self.icCarLR.send(datrl.to_bytes())      
 
-    ### END REVIEW SECTION
+      ### END REVIEW SECTION
     
 
     # *** publish radarState ***

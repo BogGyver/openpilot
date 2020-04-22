@@ -196,10 +196,6 @@ class Cluster():
     # lookahead time depends on cut-in distance. more attentive for close cut-ins
     # also, above 50 meters the predicted path isn't very reliable
 
-    # the distance at which v_lat matters is higher at higher speed
-    lookahead_dist = 40. + v_ego/1.2   #40m at 0mph, ~70m at 80mph
-
-
     # average dist
     d_path = self.dPath
 

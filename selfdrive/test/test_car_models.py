@@ -21,6 +21,7 @@ from selfdrive.car.chrysler.values import CAR as CHRYSLER
 from selfdrive.car.subaru.values import CAR as SUBARU
 from selfdrive.car.volkswagen.values import CAR as VOLKSWAGEN
 from selfdrive.car.nissan.values import CAR as NISSAN
+from selfdrive.car.tesla.values import CAR as TESLA
 
 
 os.environ['NOCRASH'] = '1'
@@ -387,6 +388,7 @@ non_tested_cars = [
   TOYOTA.CHR,
   TOYOTA.CHRH,
   TOYOTA.HIGHLANDERH,
+  TESLA.MODELS,
 ]
 
 if __name__ == "__main__":
