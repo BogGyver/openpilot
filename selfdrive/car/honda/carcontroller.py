@@ -143,13 +143,6 @@ class CarController():
 
     # Send CAN commands.
     can_sends = []
-    self.radarVin_idx = 0
-
-    #if using radar, we need to send the VIN
-    if CS.useTeslaRadar and (frame % 100 == 0):
-      can_sends.append(hondacan.create_radar_VIN_msg(self.radarVin_idx,CS.radarVIN,2,0x1d6,CS.useTeslaRadar))
-      self.radarVin_idx += 1
-      self.radarVin_idx = self.radarVin_idx  % 3
 
     # Send steering command.
     idx = frame % 4
@@ -161,7 +154,7 @@ class CarController():
       idx = (frame//10) % 4
       can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.is_metric, idx, CS.CP.isPandaBlack, CS.stock_hud))
 
-    if not CS.CP.openpilotLongitudinalControl:
+    if CS.CP.radarOffCan:
       # If using stock ACC, spam cancel command to kill gas when OP disengages.
       if pcm_cancel_cmd:
         can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, idx, CS.CP.carFingerprint, CS.CP.isPandaBlack))

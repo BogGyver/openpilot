@@ -124,14 +124,12 @@ class CarInterface(CarInterfaceBase):
       rdr_bus = 0 if has_relay else 2
       ret.enableCamera = is_ecu_disconnected(fingerprint[rdr_bus], FINGERPRINTS, ECU_FINGERPRINT, candidate, Ecu.fwdCamera) or has_relay
       ret.radarOffCan = True
-      ret.openpilotLongitudinalControl = not any(x for x in BOSCH_RADAR_MSGS if x in fingerprint)
-      ret.enableCruise = not ret.openpilotLongitudinalControl
+      ret.openpilotLongitudinalControl = False
     else:
       ret.safetyModel = car.CarParams.SafetyModel.hondaNidec
       ret.enableCamera = is_ecu_disconnected(fingerprint[0], FINGERPRINTS, ECU_FINGERPRINT, candidate, Ecu.fwdCamera) or has_relay
       ret.enableGasInterceptor = 0x201 in fingerprint[0]
       ret.openpilotLongitudinalControl = ret.enableCamera
-      ret.enableCruise = not ret.enableGasInterceptor
 
     cloudlog.warning("ECU Camera Simulated: %r", ret.enableCamera)
     cloudlog.warning("ECU Gas Interceptor: %r", ret.enableGasInterceptor)
@@ -286,6 +284,20 @@ class CarInterface(CarInterfaceBase):
       ret.longitudinalTuning.kiBP = [0., 35.]
       ret.longitudinalTuning.kiV = [0.18, 0.12]
 
+    elif candidate == CAR.HRV:
+      stop_and_go = False
+      ret.mass = 3125 * CV.LB_TO_KG + STD_CARGO_KG
+      ret.wheelbase = 2.61
+      ret.centerToFront = ret.wheelbase * 0.41
+      ret.steerRatio = 15.2
+      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]
+      tire_stiffness_factor = 0.5
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.16], [0.025]]
+      ret.longitudinalTuning.kpBP = [0., 5., 35.]
+      ret.longitudinalTuning.kpV = [1.2, 0.8, 0.5]
+      ret.longitudinalTuning.kiBP = [0., 35.]
+      ret.longitudinalTuning.kiV = [0.18, 0.12]
+
     elif candidate == CAR.ACURA_RDX:
       stop_and_go = False
       ret.mass = 3935. * CV.LB_TO_KG + STD_CARGO_KG
@@ -391,8 +403,7 @@ class CarInterface(CarInterfaceBase):
                                                                          tire_stiffness_factor=tire_stiffness_factor)
 
     ret.gasMaxBP = [0.]  # m/s
-    # TODO: what is the correct way to handle this?
-    ret.gasMaxV = [1.] #if ret.enableGasInterceptor else [0.] # max gas allowed
+    ret.gasMaxV = [0.6] if ret.enableGasInterceptor else [0.] # max gas allowed
     ret.brakeMaxBP = [5., 20.]  # m/s
     ret.brakeMaxV = [1., 0.8]   # max brake allowed
 
