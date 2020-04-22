@@ -1,8 +1,9 @@
 import configparser
 from common.params import Params
 import subprocess
+from common.basedir import BASEDIR
 
-default_config_file_path = '/data/bb_openpilot.cfg'
+default_config_file_path = '%s/../bb_openpilot.cfg' % BASEDIR
 
 class ConfigFile():
   config_file_r = 'r'
