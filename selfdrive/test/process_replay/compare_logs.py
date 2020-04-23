@@ -48,12 +48,12 @@ def remove_ignored_fields(msg, ignore):
 def compare_logs(log1, log2, ignore_fields=[], ignore_msgs=[]):
   filter_msgs = lambda m: m.which() not in ignore_msgs
   log1, log2 = [list(filter(filter_msgs, log)) for log in (log1, log2)]
-  #assert len(log1) == len(log2), "logs are not same length: " + str(len(log1)) + " VS " + str(len(log2))
+  assert len(log1) == len(log2), "logs are not same length: " + str(len(log1)) + " VS " + str(len(log2))
 
   diff = []
   for msg1, msg2 in tqdm(zip(log1, log2)):
     if msg1.which() != msg2.which():
-      print("MSG1: ",msg1,"MSG2: ",msg2)
+      print(msg1, msg2)
       raise Exception("msgs not aligned between logs")
 
     msg1_bytes = remove_ignored_fields(msg1, ignore_fields).as_builder().to_bytes()

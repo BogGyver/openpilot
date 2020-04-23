@@ -423,8 +423,8 @@ class CarInterface(CarInterfaceBase):
     #else:
     #  if ret.brakePressed:
     #    events.append(create_event('pedalPressed', [ET.NO_ENTRY, ET.USER_DISABLE]))
-    if ret.gasPressed:
-      events.append(create_event('pedalPressed', [ET.PRE_ENABLE]))
+    #if ret.gasPressed:
+    #  events.append(create_event('pedalPressed', [ET.PRE_ENABLE]))
 
     # it can happen that car cruise disables while comma system is enabled: need to
     # keep braking if needed or if the speed is very low
