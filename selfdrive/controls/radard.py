@@ -362,12 +362,12 @@ class RadarD():
       dat.radarState.leadOne = l1d
       dat.radarState.leadTwo = l2d
     
-    datext.lead1trackId = l1x['trackId']
-    datext.lead1oClass = l1x['oClass']
-    datext.lead1length = l1x['length']
-    datext.lead2trackId = l2x['trackId']
-    datext.lead2oClass = l2x['oClass']
-    datext.lead2length = l2x['length']
+    datext.lead1trackId = l1x.trackId
+    datext.lead1oClass = l1x.oClass
+    datext.lead1length = l1x.length
+    datext.lead2trackId = l2x.trackId
+    datext.lead2oClass = l2x.oClass
+    datext.lead2length = l2x.length
     return dat, datext
 
 
