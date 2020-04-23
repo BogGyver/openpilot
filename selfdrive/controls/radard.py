@@ -353,21 +353,19 @@ class RadarD():
     dat.radarState.radarErrors = list(rr.errors)
     dat.radarState.controlsStateMonoTime = self.last_controls_state_ts
 
-    datext = tesla.ICLeads.new_message()
-    l1x = tesla.TeslaLeadPoint.new_message()
-    l2x = tesla.TeslaLeadPoint.new_message()
+    datext = messaging.new_message('uiIcLeads') #tesla.ICLeads.new_message()
     if has_radar:
       l1d,l1x = get_lead(self.v_ego, self.ready, clusters, sm['model'].lead, low_speed_override=True,use_tesla_radar=self.use_tesla_radar)
       l2d,l2x = get_lead(self.v_ego, self.ready, clusters, sm['model'].leadFuture, low_speed_override=False, use_tesla_radar=self.use_tesla_radar)
       dat.radarState.leadOne = l1d
       dat.radarState.leadTwo = l2d
     
-    datext.lead1trackId = l1x.trackId
-    datext.lead1oClass = l1x.oClass
-    datext.lead1length = l1x.length
-    datext.lead2trackId = l2x.trackId
-    datext.lead2oClass = l2x.oClass
-    datext.lead2length = l2x.length
+      datext.lead1trackId = l1x['trackId']
+      datext.lead1oClass = l1x['oClass']
+      datext.lead1length = l1x['length']
+      datext.lead2trackId = l2x['trackId']
+      datext.lead2oClass = l2x['oClass']
+      datext.lead2length = l2x['length']
     return dat, datext
 
 
