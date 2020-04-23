@@ -353,7 +353,7 @@ class RadarD():
     dat.radarState.radarErrors = list(rr.errors)
     dat.radarState.controlsStateMonoTime = self.last_controls_state_ts
 
-    datext = messaging.new_message('uiIcLeads') #tesla.ICLeads.new_message()
+    datext = tesla.ICLeads.new_message()
     if has_radar:
       l1d,l1x = get_lead(self.v_ego, self.ready, clusters, sm['model'].lead, low_speed_override=True,use_tesla_radar=self.use_tesla_radar)
       l2d,l2x = get_lead(self.v_ego, self.ready, clusters, sm['model'].leadFuture, low_speed_override=False, use_tesla_radar=self.use_tesla_radar)
