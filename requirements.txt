@@ -7,7 +7,6 @@ atomicwrites
 attrs
 Babel
 backcall
-backports-datetime-fromisoformat
 bcrypt
 bleach
 cachetools
