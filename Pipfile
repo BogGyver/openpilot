@@ -125,6 +125,7 @@ pycryptodome = "*"
 pillow = "*"
 scons = "*"
 cysignals = "*"
+backports-datetime-fromisoformat = "*"
 
 [requires]
 python_version = "3.7.3"
