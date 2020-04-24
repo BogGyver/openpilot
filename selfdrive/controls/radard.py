@@ -99,9 +99,8 @@ def get_lead(v_ego, ready, clusters, lead_msg, low_speed_override=True,use_tesla
 
 
 class RadarD():
-  def __init__(self, radar_ts, mocked, RI,use_tesla_radar, delay=0):
+  def __init__(self, radar_ts, RI,use_tesla_radar, delay=0):
     self.current_time = 0
-    self.mocked = mocked
     self.RI = RI
     self.tracks = defaultdict(dict)
     self.kalman_params = KalmanParams(radar_ts)
@@ -136,9 +135,10 @@ class RadarD():
       self.v_ego_hist.append(self.v_ego)
     if sm.updated['model']:
       self.ready = True
-    if sm.updated['pathPlan']:
-      self.lane_width = sm['pathPlan'].laneWidth
-      self.dPoly = sm['pathPlan'].dPoly
+    if self.use_tesla_radar:
+      if sm.updated['pathPlan']:
+        self.lane_width = sm['pathPlan'].laneWidth
+        self.dPoly = sm['pathPlan'].dPoly
 
     path_y = np.polyval(self.dPoly, self.path_x)
 
@@ -377,7 +377,6 @@ def radard_thread(sm=None, pm=None, can_sock=None):
   cloudlog.info("radard is waiting for CarParams")
   CP = car.CarParams.from_bytes(Params().get("CarParams", block=True))
   use_tesla_radar = CarSettings().get_value("useTeslaRadar")
-  mocked = (CP.carName == "mock") or ((CP.carName == "tesla") and not use_tesla_radar)
   cloudlog.info("radard got CarParams")
 
   # import the radar from the fingerprint
@@ -388,29 +387,30 @@ def radard_thread(sm=None, pm=None, can_sock=None):
     can_sock = messaging.sub_sock('can')
 
   if sm is None:
-    sm = messaging.SubMaster(['model', 'controlsState', 'liveParameters', 'pathPlan'])
+    if CP.carName == "tesla":
+      sm = messaging.SubMaster(['model', 'controlsState', 'liveParameters', 'pathPlan'])
+    else:
+      sm = messaging.SubMaster(['model', 'controlsState', 'liveParameters'])
+
 
   # *** publish radarState and liveTracks
   if pm is None:
     pm = messaging.PubMaster(['radarState', 'liveTracks'])
+  if CP.carName == "tesla":
     icLeads = messaging.pub_sock('uiIcLeads')
     ahbInfo = messaging.pub_sock('ahbInfo')
 
   RI = RadarInterface(CP)
 
   rk = Ratekeeper(1.0 / CP.radarTimeStep, print_delay_threshold=None)
-  RD = RadarD(CP.radarTimeStep, mocked, RI, use_tesla_radar,RI.delay)
+  RD = RadarD(CP.radarTimeStep, RI, use_tesla_radar,RI.delay)
 
-  has_radar = not CP.radarOffCan or mocked
+  has_radar = not CP.radarOffCan 
   v_ego = 0.
-
+  print("Working with ",CP.carName," with radarOffCan=",CP.radarOffCan)
   while 1:
     can_strings = messaging.drain_sock_raw(can_sock, wait_for_one=True)
 
-    sm.update(0)
-
-    if sm.updated['controlsState']:
-      v_ego = sm['controlsState'].vEgo
 
     if CP.carName == "tesla":
       rr,rrext,ahbCarDetected = RI.update(can_strings,v_ego)
@@ -418,17 +418,21 @@ def radard_thread(sm=None, pm=None, can_sock=None):
       rr = RI.update(can_strings)
       rrext = None
       ahbCarDetected = False
-
     if rr is None:
       continue    
+
+    sm.update(0)
+
+    if sm.updated['controlsState']:
+      v_ego = sm['controlsState'].vEgo
 
     dat,datext = RD.update(rk.frame, sm, rr, has_radar, rrext)
     dat.radarState.cumLagMs = -rk.remaining*1000.
 
     pm.send('radarState', dat)
-    icLeads.send(datext.to_bytes())
 
     if CP.carName == "tesla":
+      icLeads.send(datext.to_bytes())
       ahbInfoMsg = tesla.AHBinfo.new_message()
       ahbInfoMsg.source = 0
       ahbInfoMsg.radarCarDetected = ahbCarDetected

@@ -72,13 +72,17 @@ class RadarInterface(RadarInterfaceBase):
     self.pts = {}
     self.extPts = {}
     self.delay = 0 
-    self.useTeslaRadar = CarSettings().get_value("useTeslaRadar")
     self.TRACK_LEFT_LANE = True
     self.TRACK_RIGHT_LANE = True
     self.updated_messages = set()
     self.canErrorCounter = 0
     self.AHB_car_detected = False
-    if self.useTeslaRadar:
+    self.track_id = 0
+    self.radar_fault = False
+    self.radar_wrong_config = False
+    self.radar_off_can = CP.radarOffCan
+    self.radar_ts = CP.radarTimeStep
+    if not self.radar_off_can:
       self.pts = {}
       self.extPts = {}
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
@@ -87,13 +91,14 @@ class RadarInterface(RadarInterfaceBase):
       self.trackId = 1
       self.trigger_start_msg = RADAR_A_MSGS[0]
       self.trigger_end_msg = RADAR_B_MSGS[-1]
-    self.radar_ts = CP.radarTimeStep
 
+    self.delay = int(round(0.1 / CP.radarTimeStep))   # 0.1s delay of radar
 
   def update(self, can_strings,v_ego):
     # radard at 20Hz and return no points
-    if not self.useTeslaRadar:
-      time.sleep(0.05)
+    if self.radar_off_can:
+      if 'NO_RADAR_SLEEP' not in os.environ:
+        time.sleep(self.radar_ts)
       return car.RadarData.new_message(),self.extPts.values(),self.AHB_car_detected
 
     if can_strings is not None:
