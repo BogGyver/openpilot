@@ -13,7 +13,7 @@ EARTH_GM = 3.986005e14  # m^3/s^2 (gravitational constant * mass of earth)
 
 
 def parse_prr(m):
-  from laika.raw_gnss import GNSSMeasurement
+  from laika.laika.raw_gnss import GNSSMeasurement
   sat_pos_vel_i = np.concatenate((m[GNSSMeasurement.SAT_POS],
                                   m[GNSSMeasurement.SAT_VEL]))
   R_i = np.atleast_2d(m[GNSSMeasurement.PRR_STD]**2)
@@ -22,7 +22,7 @@ def parse_prr(m):
 
 
 def parse_pr(m):
-  from laika.raw_gnss import GNSSMeasurement
+  from laika.laika.raw_gnss import GNSSMeasurement
   pseudorange = m[GNSSMeasurement.PR]
   pseudorange_stdev = m[GNSSMeasurement.PR_STD]
   sat_pos_freq_i = np.concatenate((m[GNSSMeasurement.SAT_POS],
