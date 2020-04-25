@@ -7,6 +7,7 @@
 #include "cereal/gen/cpp/log.capnp.h"
 #include "cereal/gen/cpp/car.capnp.h"
 #include "params_learner.h"
+#include <string>
 
 // #define DEBUG
 
@@ -27,6 +28,13 @@ ParamsLearner::ParamsLearner(cereal::CarParams::Reader car_params,
 
   cF0 = car_params.getTireStiffnessFront();
   cR0 = car_params.getTireStiffnessRear();
+
+  std::string carName = car_params.getCarName();
+  if (carName == "tesla") {
+    is_tesla = 1;
+  } else {
+    is_tesla = 0;
+  }
 
   prev_u = 0;
 
@@ -62,7 +70,7 @@ bool ParamsLearner::update(double psi, double u, double sa) {
 
     //only consider if acceleration [abs(prev_speed - speed) * frequency] is less than MAX_ACCEL
     double a = abs(prev_u - u) * FREQUENCY;
-    if (a < MAX_ACCEL) {
+    if ((a < MAX_ACCEL) || (is_tesla == 0)) {
       ao = new_ao;
       slow_ao = new_slow_ao;
       x = new_x;

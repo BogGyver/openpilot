@@ -48,7 +48,7 @@ def calc_states_after_delay(states, v_ego, steer_angle, curvature_factor, steer_
 
 class PathPlanner():
   def __init__(self, CP):
-    self.LP = LanePlanner(shouldUseAlca=True)
+    self.LP = LanePlanner(shouldUseAlca=(CP.carName=="tesla"))
 
     self.last_cloudlog_t = 0
     self.steer_rate_cost = CP.steerRateCost
@@ -104,7 +104,7 @@ class PathPlanner():
 
     
     #BB blocking comma ALCA for now
-    if True or (not active) or (self.lane_change_timer > LANE_CHANGE_TIME_MAX) or (not one_blinker) or (not self.lane_change_enabled):
+    if (CP.carName == "tesla") or (not active) or (self.lane_change_timer > LANE_CHANGE_TIME_MAX) or (not one_blinker) or (not self.lane_change_enabled):
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
     else:
