@@ -53,14 +53,7 @@ def get_segment(segment_name, original=True):
 
 def test_process(cfg, lr, cmp_log_fn, ignore_fields=[], ignore_msgs=[]):
   if not os.path.isfile(cmp_log_fn):
-    req = requests.get(BASE_URL + os.path.basename(cmp_log_fn))
-    assert req.status_code == 200, ("Failed to download %s" % cmp_log_fn)
-
-    with tempfile.NamedTemporaryFile(suffix=".bz2") as f:
-      f.write(req.content)
-      f.flush()
-      f.seek(0)
-      cmp_log_msgs = list(LogReader(f.name))
+    assert False, ("Failed to open %s" % cmp_log_fn)
   else:
     cmp_log_msgs = list(LogReader(cmp_log_fn))
 
@@ -132,6 +125,7 @@ if __name__ == "__main__":
   procs_whitelisted = len(args.whitelist_procs) > 0
 
   process_replay_dir = os.path.dirname(os.path.abspath(__file__))
+  ref_files_dir = os.path.join(process_replay_dir,"ref_files")
   try:
     ref_commit = open(os.path.join(process_replay_dir, "ref_commit")).read().strip()
   except:
@@ -164,7 +158,7 @@ if __name__ == "__main__":
           (not procs_whitelisted and cfg.proc_name in args.blacklist_procs):
         continue
 
-      cmp_log_fn = os.path.join(process_replay_dir, "%s_%s_%s.bz2" % (segment, cfg.proc_name, ref_commit))
+      cmp_log_fn = os.path.join(ref_files_dir, "%s_%s_%s.bz2" % (segment, cfg.proc_name, ref_commit))
       results[segment][cfg.proc_name] = test_process(cfg, lr, cmp_log_fn, args.ignore_fields, args.ignore_msgs)
     os.remove(rlog_fn)
 

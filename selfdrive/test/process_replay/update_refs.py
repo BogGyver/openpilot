@@ -11,11 +11,18 @@ from tools.lib.logreader import LogReader
 
 if __name__ == "__main__":
 
-  no_upload = "--no-upload" in sys.argv
+  #no_upload = "--no-upload" in sys.argv
 
   process_replay_dir = os.path.dirname(os.path.abspath(__file__))
+  ref_files_dir = os.path.join(process_replay_dir, "ref_files")
   ref_commit_fn = os.path.join(process_replay_dir, "ref_commit")
 
+  #first delete all old files in directory
+  filelist = [ f for f in os.listdir(ref_files_dir) if f.endswith(".bz2") ]
+  for f in filelist:
+    os.remove(os.path.join(mydir, f))
+
+  #now just follow standard Comma process
   ref_commit = get_git_commit()
   with open(ref_commit_fn, "w") as f:
     f.write(ref_commit)
@@ -31,12 +38,12 @@ if __name__ == "__main__":
 
     for cfg in CONFIGS:
       log_msgs = replay_process(cfg, lr)
-      log_fn = os.path.join(process_replay_dir, "%s_%s_%s.bz2" % (segment, cfg.proc_name, ref_commit))
+      log_fn = os.path.join(ref_files_dir, "%s_%s_%s.bz2" % (segment, cfg.proc_name, ref_commit))
       save_log(log_fn, log_msgs)
 
-      if not no_upload:
-        upload_file(log_fn, os.path.basename(log_fn))
-        os.remove(log_fn)
+      #if not no_upload:
+      #  upload_file(log_fn, os.path.basename(log_fn))
+      #  os.remove(log_fn)
     os.remove(rlog_fn)
 
   print("done")
