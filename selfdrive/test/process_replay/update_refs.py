@@ -2,7 +2,7 @@
 import os
 import sys
 
-from selfdrive.test.openpilotci_upload import upload_file
+#from selfdrive.test.openpilotci_upload import upload_file
 from selfdrive.test.process_replay.compare_logs import save_log
 from selfdrive.test.process_replay.process_replay import replay_process, CONFIGS
 from selfdrive.test.process_replay.test_processes import segments, get_segment
@@ -20,7 +20,7 @@ if __name__ == "__main__":
   #first delete all old files in directory
   filelist = [ f for f in os.listdir(ref_files_dir) if f.endswith(".bz2") ]
   for f in filelist:
-    os.remove(os.path.join(mydir, f))
+    os.remove(os.path.join(ref_files_dir, f))
 
   #now just follow standard Comma process
   ref_commit = get_git_commit()
