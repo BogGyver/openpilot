@@ -33,8 +33,9 @@ NetworkType = log.ThermalData.NetworkType
 NetworkStrength = log.ThermalData.NetworkStrength
 CURRENT_TAU = 15.   # 15s time constant
 CPU_TEMP_TAU = 5.   # 5s time constant
-DAYS_NO_CONNECTIVITY_MAX = 14  # do not allow to engage after 2 weeks without internet
-DAYS_NO_CONNECTIVITY_PROMPT = 7  # send an offroad prompt after 10 days with no internet
+DAYS_NO_CONNECTIVITY_MAX = 7  # do not allow to engage after a week without internet
+DAYS_NO_CONNECTIVITY_PROMPT = 4  # send an offroad prompt after 4 days with no internet
+DISCONNECT_TIMEOUT = 5.  # wait 5 seconds before going offroad after disconnect so you get an alert
 
 LEON = False
 last_eon_fan_val = None
@@ -225,6 +226,7 @@ def thermald_thread():
   charging_disabled = False
   params = Params()
   pm = PowerMonitoring()
+  no_panda_cnt = 0
 
   while 1:
     health = messaging.recv_sock(health_sock, wait=True)
@@ -234,7 +236,17 @@ def thermald_thread():
 
     if health is not None:
       usb_power = health.health.usbPowerMode != log.HealthData.UsbPowerMode.client
-      ignition = health.health.ignitionLine or health.health.ignitionCan
+
+      # If we lose connection to the panda, wait 5 seconds before going offroad
+      if health.health.hwType == log.HealthData.HwType.unknown:
+        no_panda_cnt += 1
+        if no_panda_cnt > DISCONNECT_TIMEOUT / DT_TRML:
+          if ignition:
+            cloudlog.error("Lost panda connection while onroad")
+          ignition = False
+      else:
+        no_panda_cnt = 0
+        ignition = health.health.ignitionLine or health.health.ignitionCan
 
       # Setup fan handler on first connect to panda
       if handle_fan is None and health.health.hwType != log.HealthData.HwType.unknown:

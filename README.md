@@ -81,6 +81,7 @@ Supported Cars
 | Honda     | CR-V 2017-19                  | Honda Sensing     | Stock            | 0mph               | 12mph             |
 | Honda     | CR-V Hybrid 2017-2019         | Honda Sensing     | Stock            | 0mph               | 12mph             |
 | Honda     | Fit 2018-19                   | Honda Sensing     | openpilot        | 25mph<sup>1</sup>  | 12mph             |
+| Honda     | HR-V 2019                     | Honda Sensing     | openpilot        | 25mph<sup>1</sup>  | 12mph             |
 | Honda     | Insight 2019                  | Honda Sensing     | Stock            | 0mph               | 3mph              |
 | Honda     | Odyssey 2018-20               | Honda Sensing     | openpilot        | 25mph<sup>1</sup>  | 0mph              |
 | Honda     | Passport 2019                 | All               | openpilot        | 25mph<sup>1</sup>  | 12mph             |
@@ -157,7 +158,7 @@ Community Maintained Cars and Features
 | Nissan    | Leaf 2019                     | Propilot          | Stock            | 0mph               | 0mph         |
 | Nissan    | X-Trail 2018                  | Propilot          | Stock            | 0mph               | 0mph         |
 | Subaru    | Crosstrek 2018-19             | EyeSight          | Stock            | 0mph               | 0mph         |
-| Subaru    | Impreza 2019-20               | EyeSight          | Stock            | 0mph               | 0mph         |
+| Subaru    | Impreza 2018-20               | EyeSight          | Stock            | 0mph               | 0mph         |
 | Volkswagen| Golf 2016-19<sup>3</sup>      | Driver Assistance | Stock            | 0mph               | 0mph         |
 
 <sup>1</sup>Requires a [panda](https://comma.ai/shop/products/panda-obd-ii-dongle) and [community built giraffe](https://zoneos.com/volt/). ***NOTE: disconnecting the ASCM disables Automatic Emergency Braking (AEB).*** <br />

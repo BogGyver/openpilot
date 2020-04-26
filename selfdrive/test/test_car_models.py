@@ -350,7 +350,6 @@ routes = {
     'carFingerprint': NISSAN.LEAF,
     'enableCamera': True,
   },
-
 }
 
 passive_routes = [
