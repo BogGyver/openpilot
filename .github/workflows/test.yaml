@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-16.04
     steps:
     - uses: actions/checkout@v2
+      with: 
+        lfs: true
     - name: Checkout submodules
       run: |
         git submodule update --init
