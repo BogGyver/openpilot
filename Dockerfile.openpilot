@@ -1,7 +1,10 @@
 FROM ubuntu:16.04
 ENV PYTHONUNBUFFERED 1
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y apt-utils && apt-get install -y curl
+RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash	
+
+RUN apt-get install -y \
     autoconf \
     build-essential \
     bzip2 \
@@ -40,7 +43,7 @@ RUN apt-get update && apt-get install -y \
     vim \
     wget
 
-
+RUN git lfs install
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && locale-gen
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
@@ -68,7 +71,8 @@ ENV PATH="/tmp/openpilot/external/bin:${PATH}"
 ENV PYTHONPATH /tmp/openpilot:${PYTHONPATH}
 
 RUN mkdir -p /tmp/openpilot
-RUN git lfs pull
+#BB pull our bz2 logs since we can not use the commaai ones
+RUN git lfs pull -I "selfdrive/test/process_replay/ref_files/*.bz2"
 COPY ./flake8_openpilot.sh /tmp/openpilot/
 COPY ./pylint_openpilot.sh /tmp/openpilot/
 COPY ./.pylintrc /tmp/openpilot/
