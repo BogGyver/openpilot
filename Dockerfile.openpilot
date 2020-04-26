@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     ffmpeg \
     git \
+    git-lfs \
     libarchive-dev \
     libbz2-dev \
     libcurl4-openssl-dev \
@@ -67,6 +68,7 @@ ENV PATH="/tmp/openpilot/external/bin:${PATH}"
 ENV PYTHONPATH /tmp/openpilot:${PYTHONPATH}
 
 RUN mkdir -p /tmp/openpilot
+RUN git lfs pull
 COPY ./flake8_openpilot.sh /tmp/openpilot/
 COPY ./pylint_openpilot.sh /tmp/openpilot/
 COPY ./.pylintrc /tmp/openpilot/
