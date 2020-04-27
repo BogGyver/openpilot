@@ -14,6 +14,7 @@ from tools.lib.logreader import LogReader
 INJECT_MODEL = 0
 
 segments = [
+  ("TESLA", "d3126df386f83c4d|2020-04-22--13-17-39--3"),     # TESLA.MODELS
   ("HONDA", "0375fdf7b1ce594d|2019-06-13--08-32-25--3"),      # HONDA.ACCORD
   ("HONDA", "99c94dc769b5d96e|2019-08-03--14-19-59--2"),      # HONDA.CIVIC
   ("TOYOTA", "77611a1fac303767|2020-02-29--13-29-33--3"),     # TOYOTA.COROLLA_TSS2
@@ -26,7 +27,6 @@ segments = [
 
   # Enable when port is tested and dascamOnly is no longer set
   ("NISSAN", "fbbfa6af821552b9|2020-03-03--08-09-43--0"),     # NISSAN.XTRAIL
-  ("TESLA", "d3126df386f83c4d|2020-04-22--13-17-39--3"),     # TESLA.MODELS
 ]
 
 # ford doesn't need to be tested until a full port is done

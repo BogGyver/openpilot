@@ -115,6 +115,7 @@ keys = {
   "DriverUsbCameraFlip": [TxType.PERSISTENT],
   "RoadUsbCameraFx": [TxType.PERSISTENT],
   "RoadUsbCameraFlip": [TxType.PERSISTENT],
+  "TeslaModel": [TxType.PERSISTENT],
 }
 
 

@@ -10,7 +10,7 @@ from selfdrive.car.tesla.readconfig import read_config_file
 from selfdrive.car.interfaces import CarStateBase
 import os
 import subprocess
-from common.params import read_db, write_db
+from common.params import Params
 
 def parse_gear_shifter(can_gear_shifter, car_fingerprint):
 
@@ -187,6 +187,7 @@ def get_pedal_can_signals(CP):
 class CarState(CarStateBase):
   def __init__(self, CP):
     super().__init__(CP)
+    self.params = Params()
     self.speed_control_enabled = 0
     self.CL_MIN_V = 8.9
     self.CL_MAX_A = 20.
@@ -252,7 +253,7 @@ class CarState(CarStateBase):
 
     # Tesla Model
     self.teslaModelDetected = 1
-    self.teslaModel = read_db('/data/params','TeslaModel')
+    self.teslaModel = self.params.get('TeslaModel')
     if self.teslaModel is not None:
       self.teslaModel = self.teslaModel.decode()
     if self.teslaModel is None:
@@ -526,7 +527,7 @@ class CarState(CarStateBase):
       if (cp.vl["GTW_carConfig"]['GTW_fourWheelDrive'] == 1):
         self.teslaModel = self.teslaModel + "D"
       if (self.teslaModelDetected == 0) or (prev_teslaModel != self.teslaModel):
-        write_db('/data/params','TeslaModel',self.teslaModel)
+        self.params.put('TeslaModel',self.teslaModel)
         self.teslaModelDetected = 1
 
     #Nav Map Data

@@ -103,7 +103,7 @@ class CarInterface(CarInterfaceBase):
     ret.carName = "tesla"
     ret.carFingerprint = candidate
 
-    teslaModel = read_db('/data/params','TeslaModel')
+    teslaModel = read_db('/data/params/d/','TeslaModel')
     if teslaModel is not None:
       teslaModel = teslaModel.decode()
     if teslaModel is None:
