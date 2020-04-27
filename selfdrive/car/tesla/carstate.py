@@ -658,7 +658,6 @@ class CarState(CarStateBase):
     self.prev_turn_signal_stalk_state = self.turn_signal_stalk_state
     self.turn_signal_stalk_state = 0 if cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'] == 3 else int(cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'])
 
-    self.park_brake = 0  # TODO
     self.brake_hold = 0  # TODO
 
     self.main_on = 1 #cp.vl["SCM_BUTTONS"]['MAIN_ON']
@@ -666,6 +665,7 @@ class CarState(CarStateBase):
     if self.imperial_speed_units:
       self.DI_cruiseSet = self.DI_cruiseSet * CV.MPH_TO_KPH
     self.gear_shifter = parse_gear_shifter(can_gear_shifter, self.CP.carFingerprint)
+    self.park_brake = self.gear_shifter == 'park'  # TODO
 
     self.pedal_gas = 0. # cp.vl["DI_torque1"]['DI_pedalPos'] / 102 #BB: to make it between 0..1
     self.car_gas = self.pedal_gas
