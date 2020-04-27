@@ -1,6 +1,7 @@
 from cereal import log
 from common.numpy_fast import clip, interp
-from selfdrive.controls.lib.pid_real import PIController
+from selfdrive.controls.lib.pid import PIController
+from selfdrive.controls.lib.pid_real import PIDController
 
 LongCtrlState = log.ControlsState.LongControlState
 
@@ -62,12 +63,20 @@ class LongControl():
     kdV = [0.02, 0.02, 0.022, 0.025]
 
     self.long_control_state = LongCtrlState.off  # initialized to off
-    self.pid = PIController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
+    if CP.carName == "tesla":
+      self.pid = PIController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
                             (CP.longitudinalTuning.kiBP, CP.longitudinalTuning.kiV),
                             (kdBp,kdV),
                             rate=RATE,
                             sat_limit=0.8,
                             convert=compute_gb)
+    else:
+      self.pid = PIController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
+                            (CP.longitudinalTuning.kiBP, CP.longitudinalTuning.kiV),
+                            rate=RATE,
+                            sat_limit=0.8,
+                            convert=compute_gb)
+
     self.v_pid = 0.0
     self.last_output_gb = 0.0
 
