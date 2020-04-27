@@ -1,4 +1,5 @@
-FROM ubuntu:16.04
+#BB used to be 16.04 but we want to match Jetson with 18.04
+FROM ubuntu:18.04
 ENV PYTHONUNBUFFERED 1
 
 RUN apt-get update && apt-get install -y \
@@ -47,8 +48,9 @@ ENV LC_ALL en_US.UTF-8
 RUN curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
 
 ENV PATH="/root/.pyenv/bin:/root/.pyenv/shims:${PATH}"
-RUN pyenv install 3.7.3
-RUN pyenv global 3.7.3
+#BB used to be 3.7.3 but we want to match what's on the Jetson used to generate files
+RUN pyenv install 3.6.9
+RUN pyenv global 3.6.9
 RUN pyenv rehash
 
 RUN pip install pipenv==2018.11.26
