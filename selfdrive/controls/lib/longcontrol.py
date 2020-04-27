@@ -1,6 +1,6 @@
 from cereal import log
 from common.numpy_fast import clip, interp
-from selfdrive.controls.lib.pid import PIController
+from selfdrive.controls.lib.pid_real import PIController
 
 LongCtrlState = log.ControlsState.LongControlState
 
@@ -57,9 +57,14 @@ def long_control_state_trans(active, long_control_state, v_ego, v_target, v_pid,
 
 class LongControl():
   def __init__(self, CP, compute_gb):
+
+    kdBp = [0, 5., 22.,35.]
+    kdV = [0.02, 0.02, 0.022, 0.025]
+
     self.long_control_state = LongCtrlState.off  # initialized to off
     self.pid = PIController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
                             (CP.longitudinalTuning.kiBP, CP.longitudinalTuning.kiV),
+                            (kdBp,kdV),
                             rate=RATE,
                             sat_limit=0.8,
                             convert=compute_gb)
