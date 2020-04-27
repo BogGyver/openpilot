@@ -350,6 +350,10 @@ routes = {
     'carFingerprint': NISSAN.LEAF,
     'enableCamera': True,
   },
+  "d3126df386f83c4d|2020-04-22--13-17-39": {
+    'carFingerprint': TESLA.MODELS,
+    'enableCamera': True,
+  },
 }
 
 passive_routes = [
@@ -392,7 +396,7 @@ non_tested_cars = [
   TOYOTA.CHR,
   TOYOTA.CHRH,
   TOYOTA.HIGHLANDERH,
-  TESLA.MODELS,
+  #TESLA.MODELS,
 ]
 
 if __name__ == "__main__":

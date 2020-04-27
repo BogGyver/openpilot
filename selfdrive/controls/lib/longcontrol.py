@@ -64,7 +64,7 @@ class LongControl():
 
     self.long_control_state = LongCtrlState.off  # initialized to off
     if CP.carName == "tesla":
-      self.pid = PIController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
+      self.pid = PIDController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
                             (CP.longitudinalTuning.kiBP, CP.longitudinalTuning.kiV),
                             (kdBp,kdV),
                             rate=RATE,

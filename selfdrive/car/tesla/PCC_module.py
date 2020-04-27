@@ -174,7 +174,7 @@ class PCCController():
     average_speed_over_x_suggestions = 6 # 0.3 seconds (20x a second)
     self.fleet_speed = FleetSpeed(average_speed_over_x_suggestions)
 
-    def load_pid(self):
+  def load_pid(self):
       try:
         v_pid_json = open(V_PID_FILE)
         data = json.load(v_pid_json)
