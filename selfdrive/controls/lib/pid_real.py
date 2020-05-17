@@ -82,7 +82,7 @@ class PIDController():
 
     self.f = feedforward * self.k_f
     self.d = 0.0
-    if self.past_errors.no_items == self.past_errors.length:
+    if self.past_errors.full():
       self.d = self.k_d * ((error - self.past_errors_avg) / self.d_rate)
     self.past_errors_avg = self.past_errors.add(error)
 
