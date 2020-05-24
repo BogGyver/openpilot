@@ -16,6 +16,3 @@ class MovingAverage():
     self.queue.put_nowait(sample)
     self.sum += sample
     return self.sum / self.queue.qsize()
-
-  def full(self):
-    return self.queue.full()
