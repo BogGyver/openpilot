@@ -317,7 +317,9 @@ class PCCController():
 
     return can_sends
     
-  def update_pdl(self, enabled, CS, frame, actuators, pcm_speed, speed_limit_ms, set_speed_limit_active, speed_limit_offset,alca_enabled):
+  def update_pdl(self, enabled, CS, frame, actuators, pcm_speed, pcm_override,
+                 speed_limit_ms, set_speed_limit_active, speed_limit_offset,
+                 alca_enabled):
     idx = self.pedal_idx
 
     self.prev_speed_limit_kph = self.speed_limit_kph
@@ -385,6 +387,7 @@ class PCCController():
     # how much accel and break we have to do
     ####################################################################
     if PCCModes.is_selected(FollowMode(), CS.cstm_btns):
+      MPC_BRAKE_MULTIPLIER = 6.
       enabled = self.enable_pedal_cruise and self.LoC.long_control_state in [LongCtrlState.pid, LongCtrlState.stopping]
       # determine if pedal is pressed by human
       self.prev_accelerator_pedal_pressed = self.accelerator_pedal_pressed
@@ -463,12 +466,12 @@ class PCCController():
     ##############################################################
     elif PCCModes.is_selected(OpMode(), CS.cstm_btns):
       output_gb = actuators.gas - actuators.brake
-      self.v_pid = -10.
+      self.v_pid = pcm_override
+      MPC_BRAKE_MULTIPLIER = 12.
 
     self.last_output_gb = output_gb
     # accel and brake
     apply_accel = clip(output_gb, 0., 1) #_accel_pedal_max(CS.v_ego, self.v_pid, self.lead_1, self.prev_tesla_accel, CS))
-    MPC_BRAKE_MULTIPLIER = 6.
     apply_brake = -clip(output_gb * MPC_BRAKE_MULTIPLIER, _brake_pedal_min(CS.v_ego, self.v_pid, self.lead_1, CS, self.pedal_speed_kph), 0.)
 
     # if speed is over 5mph, the "zero" is at PedalForZeroTorque; otherwise it is zero
