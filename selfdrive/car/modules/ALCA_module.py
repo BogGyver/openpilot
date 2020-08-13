@@ -53,7 +53,7 @@ import numpy as np
 from cereal import tesla
 
 #wait time after turn complete before enabling smoother
-WAIT_TIME_AFTER_TURN = 2.0
+WAIT_TIME_AFTER_TURN = 1.0
 
 #ALCA
 ALCA_line_min_prob = 0.01
@@ -62,8 +62,8 @@ ALCA_line_prob_low = 0.2
 ALCA_line_prob_high = 0.4
 ALCA_distance_jump = 1.1
 ALCA_lane_change_coefficient = 0.7
-ITERATIONS_AHEAD_TO_ESTIMATE = 2
-ALCA_duration_seconds = 5.
+ITERATIONS_AHEAD_TO_ESTIMATE = 4
+ALCA_duration_seconds = 8.
 ALCA_right_lane_multiplier = 1.
 ALCA_distance_left_min = 0.7
 
