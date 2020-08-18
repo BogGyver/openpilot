@@ -556,7 +556,8 @@ class CarState(CarStateBase):
     self.gpsVehicleSpeed = cp.vl['UI_gpsVehicleSpeed']["UI_gpsVehicleSpeed"] * CV.KPH_TO_MS
 
     if (self.hasTeslaIcIntegration):
-      self.apEnabled = (cp.vl["MCU_chassisControl"]["MCU_latControlEnable"] == 1)
+      #BB: AutoSteer enabled does not work unless we do old style port mapping on MCU
+      #self.apEnabled = (cp.vl["MCU_chassisControl"]["MCU_latControlEnable"] == 1)
       self.summonButton = int(cp.vl["UI_driverAssistControl"]["UI_autoSummonEnable"])
       self.apFollowTimeInS =  1 + cp.vl["MCU_chassisControl"]["MCU_fcwSensitivity"] * 0.5
       self.keepEonOff = cp.vl["MCU_chassisControl"]["MCU_ldwEnable"] == 1
