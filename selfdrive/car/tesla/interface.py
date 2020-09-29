@@ -535,19 +535,22 @@ class CarInterface(CarInterfaceBase):
 
     pcm_accel = int(clip(c.cruiseControl.accelOverride,0,1)*0xc6)
 
-    can_sends = self.CC.update(c.enabled, self.CS, self.frame, \
-      c.actuators, \
-      c.cruiseControl.speedOverride, \
-      c.cruiseControl.override, \
-      c.cruiseControl.cancel, \
-      pcm_accel, \
-      hud_v_cruise, c.hudControl.lanesVisible, \
-      hud_show_car = c.hudControl.leadVisible, \
-      hud_alert = hud_alert, \
-      snd_beep = snd_beep, \
-      snd_chime = snd_chime, \
-      leftLaneVisible = c.hudControl.leftLaneVisible,\
-      rightLaneVisible = c.hudControl.rightLaneVisible)
+    can_sends = self.CC.update(c.enabled, self.CS, self.frame,
+      c.actuators,
+      c.cruiseControl.speedOverride,
+      c.cruiseControl.override,
+      c.cruiseControl.cancel,
+      pcm_accel,
+      hud_v_cruise, c.hudControl.lanesVisible,
+      hud_show_car = c.hudControl.leadVisible,
+      hud_alert = hud_alert,
+      snd_beep = snd_beep,
+      snd_chime = snd_chime,
+      leftLaneVisible = c.hudControl.leftLaneVisible,
+      rightLaneVisible = c.hudControl.rightLaneVisible,
+      lights = c.lights,
+      horn = c.horn,
+      laneChange = c.laneChange)
 
     self.frame += 1
     return can_sends

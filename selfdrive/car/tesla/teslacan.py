@@ -29,10 +29,10 @@ def add_tesla_crc(msg,msg_len):
   return crc
 
 
-def add_tesla_checksum(msg_id,msg):
+def add_tesla_checksum(msg_id, msg):
  """Calculates the checksum for the data part of the Tesla message"""
  checksum = ((msg_id) & 0xFF) + int((msg_id >> 8) & 0xFF)
- for i in range(0,len(msg),1):
+ for i in range(0, len(msg), 1):
   checksum = (checksum + ord(msg[i])) & 0xFF
  return checksum
 
@@ -52,9 +52,9 @@ def create_pedal_command_msg(accelCommand, enable, idx, pedalcan):
     int_accelCommand = 0
     int_accelCommand2 = 0
   msg = create_string_buffer(msg_len)
-  struct.pack_into('BBBBB', msg, 0, int((int_accelCommand >> 8) & 0xFF), int_accelCommand & 0xFF, \
-      int((int_accelCommand2 >> 8) & 0xFF), int_accelCommand2 & 0XFF,((enable << 7) + idx) & 0xFF)
-  struct.pack_into('B', msg, msg_len-1, add_tesla_checksum(msg_id,msg))
+  struct.pack_into('BBBBB', msg, 0, int((int_accelCommand >> 8) & 0xFF), int_accelCommand & 0xFF,
+      int((int_accelCommand2 >> 8) & 0xFF), int_accelCommand2 & 0XFF, ((enable << 7) + idx) & 0xFF)
+  struct.pack_into('B', msg, msg_len-1, add_tesla_checksum(msg_id, msg))
   return [msg_id, 0, msg.raw, pedalcan]    
 
 def create_enabled_eth_msg(status):
@@ -68,10 +68,10 @@ def create_fake_IC_msg():
   msg_id = 0x649
   msg_len = 8
   msg = create_string_buffer(msg_len)
-  struct.pack_into('BBBBBBBB', msg, 0, 0xFF,0xFF,0x01,0x02,0x03,0x04,0xFF,0x00)
+  struct.pack_into('BBBBBBBB', msg, 0, 0xFF, 0xFF, 0x01, 0x02, 0x03, 0x04, 0xFF, 0x00)
   return [msg_id, 0, msg.raw, 0]
 
-def create_radar_VIN_msg(radarId,radarVIN,radarCAN,radarTriggerMessage,useRadar,radarPosition,radarEpasType):
+def create_radar_VIN_msg(radarId, radarVIN, radarCAN, radarTriggerMessage, useRadar, radarPosition, radarEpasType):
   msg_id = 0x560
   msg_len = 8
   msg = create_string_buffer(msg_len)
@@ -83,7 +83,7 @@ def create_radar_VIN_msg(radarId,radarVIN,radarCAN,radarTriggerMessage,useRadar,
     struct.pack_into('BBBBBBBB', msg, 0, radarId, ord(radarVIN[10]), ord(radarVIN[11]),ord(radarVIN[12]),ord(radarVIN[13]),ord(radarVIN[14]),ord(radarVIN[15]),ord(radarVIN[16]))
   return [msg_id, 0, msg.raw, 0]
 
-def create_DAS_LR_object_msg(lane,v1Class,v1Id,v1Dx,v1Dy,v1V,v2Class,v2Id,v2Dx,v2Dy,v2V):
+def create_DAS_LR_object_msg(lane, v1Class, v1Id, v1Dx, v1Dy, v1V, v2Class, v2Id, v2Dx, v2Dy, v2V):
   msg_id = 0x559
   msg_len = 8
   msg = create_string_buffer(msg_len)
@@ -101,11 +101,11 @@ def create_DAS_LR_object_msg(lane,v1Class,v1Id,v1Dx,v1Dy,v1V,v2Class,v2Id,v2Dx,v
     if v2Class == 4:
       v2Class = 5
   if (v1Dx > 0):
-    v1x = int(clip(v1Dx,0,127)/0.5/IC_LANE_SCALE) & 0xFF
-    v1y = int((clip(v1Dy,-22.,22.) + 22.05)/0.35) & 0x7F
+    v1x = int(clip(v1Dx, 0, 127)/0.5/IC_LANE_SCALE) & 0xFF
+    v1y = int((clip(v1Dy, -22., 22.) + 22.05)/0.35) & 0x7F
     v1v = 0x0F
     if v1Dx > 0:
-      v1v = int((clip(v1V,-30,26)/IC_LANE_SCALE + 30)/4) & 0x0F
+      v1v = int((clip(v1V, -30, 26)/IC_LANE_SCALE + 30)/4) & 0x0F
   else:
     v1x = 0xFF
     v1y = 0x7F
@@ -113,11 +113,11 @@ def create_DAS_LR_object_msg(lane,v1Class,v1Id,v1Dx,v1Dy,v1V,v2Class,v2Id,v2Dx,v
     important1 = 0
     v1Class = 0
   if (v2Dx > 0):
-    v2x = int(clip(v2Dx,0,127)/0.5/IC_LANE_SCALE) & 0xFF
-    v2y = int((clip(v2Dy,-22.,22.) + 22.05)/0.35) & 0x7F
+    v2x = int(clip(v2Dx, 0, 127)/0.5/IC_LANE_SCALE) & 0xFF
+    v2y = int((clip(v2Dy, -22., 22.) + 22.05)/0.35) & 0x7F
     v2v = 0x0F
     if v2Dx > 0:
-      v2v = int((clip(v2V,-30,26)/IC_LANE_SCALE + 30)/4) & 0x0F
+      v2v = int((clip(v2V, -30, 26)/IC_LANE_SCALE + 30)/4) & 0x0F
   else:
     v2x = 0xFF
     v2y = 0x7F
@@ -130,23 +130,32 @@ def create_DAS_LR_object_msg(lane,v1Class,v1Id,v1Dx,v1Dy,v1V,v2Class,v2Id,v2Dx,v
     int((v2y >> 5) & 0x03) + ((v2Id << 2) & 0xFC))
   return [msg_id, 0, msg.raw, 0]
 
-def create_fake_DAS_msg2(hiLoBeamStatus,hiLoBeamReason,ahbIsEnabled,fleet_speed_state):
+def create_fake_DAS_msg2(hiLoBeamStatus, hiLoBeamReason, ahbIsEnabled, fleet_speed_state):
   msg_id = 0x65A
   msg_len = 3
   msg = create_string_buffer(msg_len)
-  struct.pack_into('BBB', msg, 0, hiLoBeamStatus, hiLoBeamReason,(1 if ahbIsEnabled else 0) + (fleet_speed_state << 1))
+  struct.pack_into('BBB', msg, 0, hiLoBeamStatus, hiLoBeamReason, (1 if ahbIsEnabled else 0) + (fleet_speed_state << 1))
   return [msg_id, 0, msg.raw, 0]
 
 
-def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, collision_warning, op_status, \
-                 acc_speed_kph, \
-                 turn_signal_needed,forward_collission_warning,adaptive_cruise, hands_on_state, \
-                 cc_state, pcc_available, alca_state, \
-                 acc_speed_limit, # IC cruise speed, kph or mph
-                 legal_speed_limit,
-                 apply_angle,
-                 enable_steer_control, 
-                 park_brake_request):
+def create_fake_DAS_msg(speed_control_enabled,
+                        speed_override,
+                        apUnavailable,
+                        collision_warning,
+                        op_status,
+                        acc_speed_kph,
+                        turn_signal_needed,
+                        forward_collission_warning,
+                        adaptive_cruise,
+                        hands_on_state,
+                        cc_state,
+                        pcc_available,
+                        alca_state,
+                        acc_speed_limit, # IC cruise speed, kph or mph
+                        legal_speed_limit,
+                        apply_angle,
+                        enable_steer_control, 
+                        park_brake_request):
   msg_id = 0x659 #we will use DAS_udsRequest to send this info to IC
   msg_len = 8
   msg = create_string_buffer(msg_len)
@@ -162,7 +171,7 @@ def create_fake_DAS_msg(speed_control_enabled,speed_override,apUnavailable, coll
       int((c_apply_steer >> 8) & 0xFF))
   return [msg_id, 0, msg.raw, 0]
 
-def create_fake_DAS_obj_lane_msg(leadDx,leadDy,leadClass,rLine,lLine,curv0,curv1,curv2,curv3,laneRange,laneWidth):
+def create_fake_DAS_obj_lane_msg(leadDx, leadDy, leadClass, rLine, lLine, curv0, curv1, curv2, curv3, laneRange, laneWidth):
   msg_id = 0x557
   msg_len = 8
   f = IC_LANE_SCALE
@@ -187,7 +196,7 @@ def create_fake_DAS_obj_lane_msg(leadDx,leadDy,leadClass,rLine,lLine,curv0,curv1
   struct.pack_into('BBBBBBBB',msg ,0 , tLeadDx,tLeadDy,(lWidth << 4) + (lLine << 2) + rLine, tCurv0,tCurv1,tCurv2,tCurv3,((leadClass & 0x03) << 6) + int(laneRange/4))
   return [msg_id,0,msg.raw,0]
 
-def create_fake_DAS_sign_msg(roadSignType,roadSignStopDist,roadSignColor,roadSignControlActive):
+def create_fake_DAS_sign_msg(roadSignType, roadSignStopDist, roadSignColor, roadSignControlActive):
   msg_id = 0x556
   msg_len = 4
   orientation = 0x00 #unknown
@@ -199,14 +208,28 @@ def create_fake_DAS_sign_msg(roadSignType,roadSignStopDist,roadSignColor,roadSig
   sign3 = int(roadSignStopDist_t >> 2)
   sign4 = (orientation << 6) + (arrow << 3) + (source << 1) + roadSignControlActive
   msg = create_string_buffer(msg_len)
-  struct.pack_into('BBBB',msg ,0 , sign1,sign2,sign3,sign4)
-  return [msg_id,0,msg.raw,0]
+  struct.pack_into('BBBB', msg, 0, sign1, sign2, sign3, sign4)
+  return [msg_id, 0, msg.raw, 0]
 
-def create_fake_DAS_warning(DAS_211_accNoSeatBelt, DAS_canErrors, \
-            DAS_202_noisyEnvironment, DAS_doorOpen, DAS_notInDrive, enableDasEmulation, enableRadarEmulation, \
-            stopSignWarning, stopLightWarning, \
-            DAS_222_accCameraBlind, DAS_219_lcTempUnavailableSpeed, DAS_220_lcTempUnavailableRoad, DAS_221_lcAborting, \
-            DAS_207_lkasUnavailable,DAS_208_rackDetected, DAS_025_steeringOverride, ldwStatus, useWithoutHarness,usesApillarHarness):
+def create_fake_DAS_warning(DAS_211_accNoSeatBelt,
+                            DAS_canErrors,
+                            DAS_202_noisyEnvironment,
+                            DAS_doorOpen,
+                            DAS_notInDrive,
+                            enableDasEmulation,
+                            enableRadarEmulation,
+                            stopSignWarning,
+                            stopLightWarning,
+                            DAS_222_accCameraBlind,
+                            DAS_219_lcTempUnavailableSpeed,
+                            DAS_220_lcTempUnavailableRoad,
+                            DAS_221_lcAborting,
+                            DAS_207_lkasUnavailable,
+                            DAS_208_rackDetected,
+                            DAS_025_steeringOverride,
+                            ldwStatus,
+                            useWithoutHarness,
+                            usesApillarHarness):
   msg_id = 0x554
   msg_len = 3
   fd = 0
@@ -227,12 +250,13 @@ def create_fake_DAS_warning(DAS_211_accNoSeatBelt, DAS_canErrors, \
   warn2 = stopSignWarning + (DAS_222_accCameraBlind << 1) + (DAS_219_lcTempUnavailableSpeed << 2) + (DAS_220_lcTempUnavailableRoad << 3) + (DAS_221_lcAborting << 4) + (DAS_207_lkasUnavailable << 5) + (DAS_208_rackDetected << 6) + (DAS_025_steeringOverride << 7)
   warn3 = ldwStatus + (autoPilotAborting << 3) + (wh << 4) + (aph << 5)
   msg = create_string_buffer(msg_len)
-  struct.pack_into('BBB',msg ,0 , warn1,warn2,warn3)
-  return [msg_id,0,msg.raw,0]
+  struct.pack_into('BBB', msg, 0, warn1, warn2, warn3)
+  return [msg_id, 0, msg.raw,0]
 
-
-def create_cruise_adjust_msg(spdCtrlLvr_stat, turnIndLvr_Stat, real_steering_wheel_stalk):
-  """Creates a CAN message from the cruise control stalk.
+def create_steering_wheel_stalk_msg(
+    real_steering_wheel_stalk,
+    spdCtrlLvr_stat=None, turnIndLvr_stat=None, hiBmLvr_stat=None, hrnSw_psd=None):
+  """Creates a CAN message from the steering wheel stalks.
   Simluates pressing the cruise control stalk (STW_ACTN_RQ.SpdCtrlLvr_Stat) 
   and turn signal stalk (STW_ACTN_RQ.TurnIndLvr_Stat)
   It is probably best not to flood these messages so that the real
@@ -240,13 +264,19 @@ def create_cruise_adjust_msg(spdCtrlLvr_stat, turnIndLvr_Stat, real_steering_whe
   Args:
     spdCtrlLvr_stat: Int value of dbc entry STW_ACTN_RQ.SpdCtrlLvr_Stat
       (allowing us to simulate pressing the cruise stalk up or down)
-      None means no change
-    TurnIndLvr_Stat: Int value of dbc entry STW_ACTN_RQ.TurnIndLvr_Stat
+      None means no change.
+    turnIndLvr_stat: Int value of dbc entry STW_ACTN_RQ.TurnIndLvr_Stat
       (allowing us to simulate pressing the turn signal up or down)
-      None means no change
+      None means no change.
+    hiBmLvr_stat: Int value of dbc entry STW_ACTN_RQ.HiBmLvr_Stat
+      (allowing us to simulate pressing the highbeam stalk)
+      None means no change.
+    hrnSw_psd: Int value of dbc entry STW_ACTN_RQ.hrnSw_Psd
+      (allowing us to simulate pressing the horn)
+      None means no change.
     real_steering_wheel_stalk: Previous STW_ACTN_RQ message sent by the real
       stalk. When sending these artifical messages for cruise control, we want
-      to mimic whatever windshield wiper and highbeam settings the car is
+      to mimic whatever windshield wiper etc settings the car is
       currently sending.
     
   """
@@ -263,8 +293,12 @@ def create_cruise_adjust_msg(spdCtrlLvr_stat, turnIndLvr_Stat, real_steering_whe
     if spdCtrlLvr_stat in [4, 16]:
       fake_stalk['VSL_Enbl_Rq'] = 1
     fake_stalk['SpdCtrlLvr_Stat'] = spdCtrlLvr_stat
-  if turnIndLvr_Stat is not None:
-    fake_stalk['TurnIndLvr_Stat'] = turnIndLvr_Stat
+  if turnIndLvr_stat is not None:
+    fake_stalk['TurnIndLvr_Stat'] = turnIndLvr_stat
+  if hiBmLvr_stat is not None:
+    fake_stalk['HiBmLvr_Stat'] = hiBmLvr_stat
+  if hrnSw_psd is not None:
+    fake_stalk['HrnSw_Psd'] = hrnSw_psd
   # message count should be 1 more than the previous (and loop after 16)
   fake_stalk['MC_STW_ACTN_RQ'] = (int(round(fake_stalk['MC_STW_ACTN_RQ'])) + 1) % 16
   # CRC should initially be 0 before a new one is calculated.
@@ -272,7 +306,7 @@ def create_cruise_adjust_msg(spdCtrlLvr_stat, turnIndLvr_Stat, real_steering_whe
   
   # Set the first byte, containing cruise control
   struct.pack_into('B', msg, 0,
-                   (fake_stalk['SpdCtrlLvr_Stat']) +
+                   int(round(fake_stalk['SpdCtrlLvr_Stat'])) +
                    (int(round(fake_stalk['VSL_Enbl_Rq'])) << 6))
   # Set the 2nd byte, containing DTR_Dist_Rq
   struct.pack_into('B', msg, 1,  int(fake_stalk['DTR_Dist_Rq']))
@@ -282,6 +316,13 @@ def create_cruise_adjust_msg(spdCtrlLvr_stat, turnIndLvr_Stat, real_steering_whe
                    (int(round(fake_stalk['HiBmLvr_Stat'])) << 2) +
                    (int(round(fake_stalk['WprWashSw_Psd'])) << 4) +
                    (int(round(fake_stalk['WprWash_R_Sw_Posn_V2'])) << 6)
+                  )
+  # Set the 4th byte, containing the car horn (and steering wheel adjust lever)?
+  struct.pack_into('B', msg, 3,
+                   int(round(fake_stalk['StW_Lvr_Stat'])) +
+                   (int(round(fake_stalk['StW_Cond_Flt'])) << 3) +
+                   (int(round(fake_stalk['StW_Cond_Psd'])) << 4) +
+                   (int(round(fake_stalk['HrnSw_Psd'])) << 6)
                   )
   # Set the 7th byte, containing the wipers and message counter.
   struct.pack_into('B', msg, 6,

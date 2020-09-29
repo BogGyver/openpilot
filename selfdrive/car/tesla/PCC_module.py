@@ -23,7 +23,7 @@ RESET_PID_ON_DISENGAGE = False
 # TODO: these should end up in values.py at some point, probably variable by trim
 # Accel limits
 MAX_RADAR_DISTANCE = 120. #max distance to take in consideration radar reading
-MAX_PEDAL_VALUE = 112.
+MAX_PEDAL_VALUE = 100.
 PEDAL_HYST_GAP = 1.0  # don't change pedal command for small oscilalitons within this value
 # Cap the pedal to go from 0 to max in 2 seconds
 PEDAL_MAX_UP = MAX_PEDAL_VALUE * _DT / 2
@@ -149,7 +149,7 @@ class PCCController():
     self.prev_tesla_pedal = 0.
     self.torqueLevel_last = 0.
     self.prev_v_ego = 0.
-    self.PedalForZeroTorque = 18. #starting number, works on my S85
+    self.PedalForZeroTorque = 18. # starting number for a S85, adjusts down automatically
     self.lastTorqueForPedalForZeroTorque = TORQUE_LEVEL_DECEL
     self.v_pid = 0.
     self.a_pid = 0.
@@ -397,7 +397,7 @@ class PCCController():
         self.reset(CS.v_ego)
 
       if self.enable_pedal_cruise and not self.accelerator_pedal_pressed:
-        self.v_pid = self.calc_follow_speed_ms(CS,alca_enabled)
+        self.v_pid = self.calc_follow_speed_ms(CS, alca_enabled) or 0
 
         if mapd is not None:
           v_curve = max_v_in_mapped_curve_ms(mapd.liveMapData, self.pedal_speed_kph)
@@ -462,11 +462,11 @@ class PCCController():
     ##############################################################
     # This mode uses the longitudinal MPC built in OP
     #
-    # we use the values from actuator.accel and actuator.brake
+    # we use the values from actuators.gas and actuators.brake
     ##############################################################
     elif PCCModes.is_selected(OpMode(), CS.cstm_btns):
       output_gb = actuators.gas - actuators.brake
-      self.v_pid = pcm_override
+      self.v_pid = pcm_speed
       MPC_BRAKE_MULTIPLIER = 12.
 
     self.last_output_gb = output_gb
@@ -479,11 +479,9 @@ class PCCController():
     if CS.v_ego >= 5.* CV.MPH_TO_MS:
       pedal_zero = self.PedalForZeroTorque
     tesla_brake = clip((1. - apply_brake) * pedal_zero, 0, pedal_zero)
-    tesla_accel = clip(apply_accel * (MAX_PEDAL_VALUE - pedal_zero) , 0, MAX_PEDAL_VALUE - pedal_zero)
+    tesla_accel = clip(apply_accel * (MAX_PEDAL_VALUE - pedal_zero), 0, MAX_PEDAL_VALUE - pedal_zero)
     tesla_pedal = tesla_brake + tesla_accel
-
     tesla_pedal = self.pedal_hysteresis(tesla_pedal, enabled)
-    
     tesla_pedal = clip(tesla_pedal, self.prev_tesla_pedal - PEDAL_MAX_DOWN, self.prev_tesla_pedal + PEDAL_MAX_UP)
     tesla_pedal = clip(tesla_pedal, 0., MAX_PEDAL_VALUE) if self.enable_pedal_cruise else 0.
     enable_pedal = 1. if self.enable_pedal_cruise else 0.
@@ -500,7 +498,7 @@ class PCCController():
   def calc_follow_speed_ms(self, CS, alca_enabled):
     # Make sure we were able to populate lead_1.
     if self.lead_1 is None:
-      return None, None, None
+      return None
     # dRel is in meters.
     lead_dist_m = self.lead_1.dRel
     if not CS.useTeslaRadar:

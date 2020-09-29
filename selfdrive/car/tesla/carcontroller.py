@@ -400,7 +400,7 @@ class CarController():
       useRadar=0
       if CS.useTeslaRadar:
         useRadar=1
-      can_sends.append(teslacan.create_radar_VIN_msg(self.radarVin_idx,CS.radarVIN,1,0x108,useRadar,CS.radarPosition,CS.radarEpasType))
+      can_sends.append(teslacan.create_radar_VIN_msg(self.radarVin_idx, CS.radarVIN, 1, 0x108, useRadar, CS.radarPosition, CS.radarEpasType))
       self.radarVin_idx += 1
       self.radarVin_idx = self.radarVin_idx  % 3
 
@@ -436,14 +436,14 @@ class CarController():
         if radarStateMsg is not None:
           #to show lead car on IC
           if self.icLeadsData is not None:
-            can_messages = self.showLeadCarOnICCanMessage(radarStateMsg = radarStateMsg)
+            can_messages = self.showLeadCarOnICCanMessage(radarStateMsg=radarStateMsg)
             can_sends.extend(can_messages)
         if alcaStateMsg is not None:
           self.alcaStateData =  tesla.ALCAState.from_bytes(alcaStateMsg)
         if pathPlanMsg is not None:
           #to show curvature and lanes on IC
           if self.alcaStateData is not None:
-            self.handlePathPlanSocketForCurvatureOnIC(pathPlanMsg = pathPlanMsg, alcaStateData = self.alcaStateData,CS = CS)
+            self.handlePathPlanSocketForCurvatureOnIC(pathPlanMsg=pathPlanMsg, alcaStateData=self.alcaStateData, CS=CS)
         if icCarLRMsg is not None:
           can_messages = self.showLeftAndRightCarsOnICCanMessages(icCarLRMsg = tesla.ICCarsLR.from_bytes(icCarLRMsg))
           can_sends.extend(can_messages)
@@ -526,9 +526,7 @@ class CarController():
         cc_state = 2
         if not self.ACC.adaptive:
             cc_state = 3
-        CS.speed_control_enabled = 1
       else:
-        CS.speed_control_enabled = 0
         if (CS.pcm_acc_status == 4):
           #car CC enabled but not OP, display the HOLD message
           cc_state = 3
@@ -546,7 +544,18 @@ class CarController():
       if frame % 60 == 0:
         send_fake_warning = True
     if frame % 10 == 0:
-      can_sends.append(teslacan.create_fake_DAS_obj_lane_msg(self.leadDx,self.leadDy,self.leadClass,self.rLine,self.lLine,self.curv0,self.curv1,self.curv2,self.curv3,self.laneRange,self.laneWidth))
+      can_sends.append(teslacan.create_fake_DAS_obj_lane_msg(
+              self.leadDx,
+              self.leadDy,
+              self.leadClass,
+              self.rLine,
+              self.lLine,
+              self.curv0,
+              self.curv1,
+              self.curv2,
+              self.curv3,
+              self.laneRange,
+              self.laneWidth))
     speed_override = 0
     if (CS.pedal_interceptor_value > 10) and (cc_state > 1):
       speed_override = 0 #force zero for now
@@ -560,7 +569,7 @@ class CarController():
       self.warningCounter = 300
       self.warningNeeded = 1
     if CS.hasTeslaIcIntegration:
-      highLowBeamStatus,highLowBeamReason,ahbIsEnabled = self.AHB.update(CS,frame,self.ahbLead1)
+      highLowBeamStatus,highLowBeamReason,ahbIsEnabled = self.AHB.update(CS, frame, self.ahbLead1)
       if frame % 5 == 0:
         self.cc_counter = (self.cc_counter + 1) % 40 #use this to change status once a second
         self.fleet_speed_state = 0x00 #fleet speed unavailable
@@ -569,7 +578,7 @@ class CarController():
             self.fleet_speed_state = 0x02 #fleet speed enabled
           else:
             self.fleet_speed_state = 0x01 #fleet speed available
-        can_sends.append(teslacan.create_fake_DAS_msg2(highLowBeamStatus,highLowBeamReason,ahbIsEnabled,self.fleet_speed_state))
+        can_sends.append(teslacan.create_fake_DAS_msg2(highLowBeamStatus, highLowBeamReason, ahbIsEnabled, self.fleet_speed_state))
     if (self.cc_counter < 3) and (self.fleet_speed_state == 0x02):
       CS.v_cruise_pcm = CS.v_cruise_pcm + 1 
       send_fake_msg = True
@@ -582,22 +591,47 @@ class CarController():
       if park_brake_request == 1:
         print("Park Brake Request received")
       adaptive_cruise = 1 if (not self.PCC.pcc_available and self.ACC.adaptive) or self.PCC.pcc_available else 0
-      can_sends.append(teslacan.create_fake_DAS_msg(speed_control_enabled,speed_override,self.DAS_206_apUnavailable, collision_warning, op_status, \
-            acc_speed_kph, \
-            self.blinker.override_direction,forward_collision_warning, adaptive_cruise,  hands_on_state, \
-            cc_state, 1 if self.PCC.pcc_available else 0, alca_state, \
-            CS.v_cruise_pcm,
-            CS.DAS_fusedSpeedLimit,
-            apply_angle,
-            1 if enable_steer_control else 0,
-            park_brake_request))
+      can_sends.append(teslacan.create_fake_DAS_msg(
+              speed_control_enabled,
+              speed_override,
+              self.DAS_206_apUnavailable,
+              collision_warning,
+              op_status,
+              acc_speed_kph,
+              self.blinker.override_direction,
+              forward_collision_warning,
+              adaptive_cruise,
+              hands_on_state,
+              cc_state,
+              1 if self.PCC.pcc_available else 0,
+              alca_state,
+              CS.v_cruise_pcm,
+              CS.DAS_fusedSpeedLimit,
+              apply_angle,
+              1 if enable_steer_control else 0,
+              park_brake_request))
     if send_fake_warning or (self.opState == 2) or (self.opState == 5) or (self.stopSignWarning != self.stopSignWarning_last) or (self.stopLightWarning != self.stopLightWarning_last) or (self.warningNeeded == 1) or (frame % 100 == 0):
       #if it's time to send OR we have a warning or emergency disable
-      can_sends.append(teslacan.create_fake_DAS_warning(self.DAS_211_accNoSeatBelt, CS.DAS_canErrors, \
-            self.DAS_202_noisyEnvironment, CS.DAS_doorOpen, CS.DAS_notInDrive, CS.enableDasEmulation, CS.enableRadarEmulation, \
-            self.stopSignWarning, self.stopLightWarning, \
-            self.DAS_222_accCameraBlind, self.DAS_219_lcTempUnavailableSpeed, self.DAS_220_lcTempUnavailableRoad, self.DAS_221_lcAborting, \
-            self.DAS_207_lkasUnavailable,self.DAS_208_rackDetected, self.DAS_025_steeringOverride,self.ldwStatus,CS.useWithoutHarness,CS.usesApillarHarness))
+      can_sends.append(teslacan.create_fake_DAS_warning(
+              self.DAS_211_accNoSeatBelt,
+              CS.DAS_canErrors,
+              self.DAS_202_noisyEnvironment,
+              CS.DAS_doorOpen,
+              CS.DAS_notInDrive,
+              CS.enableDasEmulation,
+              CS.enableRadarEmulation,
+              self.stopSignWarning,
+              self.stopLightWarning,
+              self.DAS_222_accCameraBlind,
+              self.DAS_219_lcTempUnavailableSpeed,
+              self.DAS_220_lcTempUnavailableRoad,
+              self.DAS_221_lcAborting,
+              self.DAS_207_lkasUnavailable,
+              self.DAS_208_rackDetected,
+              self.DAS_025_steeringOverride,
+              self.ldwStatus,
+              CS.useWithoutHarness,
+              CS.usesApillarHarness))
       self.stopLightWarning_last = self.stopLightWarning
       self.stopSignWarning_last = self.stopSignWarning
       self.warningNeeded = 0
@@ -614,10 +648,10 @@ class CarController():
                     self.speed_limit_ms * CV.MS_TO_KPH,
                     self.set_speed_limit_active, self.speed_limit_offset)
       if cruise_btn:
-          cruise_msg = teslacan.create_cruise_adjust_msg(
+          cruise_msg = teslacan.create_steering_wheel_stalk_msg(
+            real_steering_wheel_stalk=CS.steering_wheel_stalk,
             spdCtrlLvr_stat=cruise_btn,
-            turnIndLvr_Stat= 0,
-            real_steering_wheel_stalk=CS.steering_wheel_stalk)
+            turnIndLvr_Stat=0)
           # Send this CAN msg first because it is racing against the real stalk.
           can_sends.insert(0, cruise_msg)
     apply_accel = 0.
@@ -626,14 +660,14 @@ class CarController():
       if CS.useWithoutHarness:
         pedalcan = 0
       apply_accel, accel_needed, accel_idx = self.PCC.update_pdl(
-                    enabled,
-                    CS,
-                    frame,
-                    actuators,
-                    pcm_speed,
-                    pcm_override,
-                    self.speed_limit_ms,
-                    self.set_speed_limit_active, self.speed_limit_offset * CV.KPH_TO_MS, self.alca_enabled)
+          enabled,
+          CS,
+          frame,
+          actuators,
+          pcm_speed,
+          pcm_override,
+          self.speed_limit_ms,
+          self.set_speed_limit_active, self.speed_limit_offset * CV.KPH_TO_MS, self.alca_enabled)
       can_sends.append(teslacan.create_pedal_command_msg(apply_accel, int(accel_needed), accel_idx,pedalcan))
     self.last_angle = apply_angle
     self.last_accel = apply_accel

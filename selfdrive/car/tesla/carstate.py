@@ -188,7 +188,6 @@ class CarState(CarStateBase):
   def __init__(self, CP):
     super().__init__(CP)
     self.params = Params()
-    self.speed_control_enabled = 0
     self.CL_MIN_V = 8.9
     self.CL_MAX_A = 20.
     # labels for buttons
