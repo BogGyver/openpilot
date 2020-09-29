@@ -547,10 +547,7 @@ class CarInterface(CarInterfaceBase):
       snd_beep = snd_beep,
       snd_chime = snd_chime,
       leftLaneVisible = c.hudControl.leftLaneVisible,
-      rightLaneVisible = c.hudControl.rightLaneVisible,
-      lights = c.lights,
-      horn = c.horn,
-      laneChange = c.laneChange)
+      rightLaneVisible = c.hudControl.rightLaneVisible)
 
     self.frame += 1
     return can_sends
