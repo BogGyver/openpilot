@@ -617,7 +617,6 @@ def create_fake_DAS_warning(
         fd = 1
     if enableRadarEmulation:
         rd = 1
-    utr = 0
     wh = 0
     if useWithoutHarness:
         wh = 1

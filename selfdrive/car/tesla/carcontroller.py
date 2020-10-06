@@ -555,8 +555,6 @@ class CarController:
         speed_override = 0
         collision_warning = 0x00
         speed_control_enabled = 0
-        accel_min = -15
-        accel_max = 5
         acc_speed_kph = 0
         send_fake_warning = False
         send_fake_msg = False
@@ -793,7 +791,7 @@ class CarController:
                 cruise_msg = teslacan.create_steering_wheel_stalk_msg(
                     real_steering_wheel_stalk=CS.steering_wheel_stalk,
                     spdCtrlLvr_stat=cruise_btn,
-                    turnIndLvr_Stat=0,
+                    turnIndLvr_stat=0,
                 )
                 # Send this CAN msg first because it is racing against the real stalk.
                 can_sends.insert(0, cruise_msg)
