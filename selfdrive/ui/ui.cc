@@ -1658,7 +1658,8 @@ static void update_status(UIState *s, int status) {
   int old_status = s->status;
   if (s->status != status) {
     s->status = status;
-    set_awake(s, true);
+    if (!s->b.keepEonOff || status >= STATUS_ALERT)
+        set_awake(s, true);
     // wake up bg thread to change
     pthread_cond_signal(&s->bg_cond);
   }

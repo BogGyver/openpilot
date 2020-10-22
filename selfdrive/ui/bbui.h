@@ -1313,16 +1313,14 @@ void  bb_ui_poll_update( UIState *s) {
           strcpy(s->b.custom_message,datad.caText.str);
           s->b.custom_message_status = datad.caStatus;
 
-          if ((strlen(s->b.custom_message) > 0) && (strlen(s->scene.alert_text1)==0)){
-            if ((!((bb_get_button_status(s,(char *)"msg") == 0) && (s->b.custom_message_status<=3))) && (s->vision_connected == true)) {
+          if (strlen(s->scene.alert_text1) > 0 || strlen(s->scene.alert_text2) > 0) {
+            set_awake(s, true);
+          } else if (s->vision_connected && strlen(s->b.custom_message) > 0) {
+            if (bb_get_button_status(s,(char *)"msg") != 0 && !s->b.keepEonOff || s->b.custom_message_status > 3) {
               set_awake(s, true);
             }
           }
 
-          if ((strlen(s->scene.alert_text1) > 0) || (strlen(s->scene.alert_text2) > 0) ) {
-            set_awake(s, true);
-          }
-          
           capn_free(&ctx);
           // wakeup bg thread since status changed
           pthread_cond_signal(&s->bg_cond);
