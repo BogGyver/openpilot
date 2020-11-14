@@ -29,6 +29,7 @@
 #include "drivers/clock.h"
 
 #include "gpio.h"
+#include "drivers/lin.h"
 
 #ifndef EON
 #include "drivers/spi.h"
@@ -39,6 +40,7 @@
 
 #include "drivers/can.h"
 
+uint16_t prev_safety_mode = 0;
 extern int _app_start[0xc000]; // Only first 3 sectors of size 0x4000 are used
 
 struct __attribute__((packed)) health_t {
@@ -107,12 +109,23 @@ void debug_ring_callback(uart_ring *ring) {
 
 // this is the only way to leave silent mode
 void set_safety_mode(uint16_t mode, int16_t param) {
+  //BB to prevent any changes to safety
+  UNUSED(mode);
+  UNUSED(param);
+}
+
+// this is the only way to leave silent mode
+void set_safety_mode2(uint16_t mode, int16_t param) {
+  if (prev_safety_mode == mode) {
+    return;
+  }
+  //BB we had this now they changed it to below: int err = safety_set_mode2(mode, param);
   uint16_t mode_copy = mode;
-  int err = set_safety_hooks(mode_copy, param);
+  int err = set_safety_hooks2(mode_copy, param);
   if (err == -1) {
     puts("Error: safety set mode failed. Falling back to SILENT\n");
     mode_copy = SAFETY_SILENT;
-    err = set_safety_hooks(mode_copy, 0);
+    err = set_safety_hooks2(mode_copy, 0);
     if (err == -1) {
       puts("Error: Failed setting SILENT mode. Hanging\n");
       while (true) {
@@ -152,6 +165,7 @@ void set_safety_mode(uint16_t mode, int16_t param) {
       can_silent = ALL_CAN_LIVE;
       break;
   }
+  prev_safety_mode = mode;
   can_init_all();
 }
 
@@ -695,6 +709,9 @@ void TIM1_BRK_TIM9_IRQ_Handler(void) {
       heartbeat_counter += 1U;
     }
 
+    // check heartbeat counter if we are running EON code. If the heartbeat has been gone for a while, go to NOOUTPUT safety mode.
+    //BB we do not want to disable safety mode when on tesla
+    /*
     #ifdef EON
     // check heartbeat counter if we are running EON code.
     // if the heartbeat has been gone for a while, go to SILENT safety mode and enter power save
@@ -719,6 +736,7 @@ void TIM1_BRK_TIM9_IRQ_Handler(void) {
       current_board->set_usb_power_mode(USB_POWER_CDP);
     }
     #endif
+    */
 
     // check registers
     check_registers();
@@ -807,7 +825,8 @@ int main(void) {
   // use TIM2->CNT to read
 
   // init to SILENT and can silent
-  set_safety_mode(SAFETY_SILENT, 0);
+  //set_safety_mode(SAFETY_SILENT, 0);
+  set_safety_mode2(SAFETY_TESLA,0 );
 
   // enable CAN TXs
   current_board->enable_can_transcievers(true);

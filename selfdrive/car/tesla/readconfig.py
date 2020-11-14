@@ -1,6 +1,9 @@
 import configparser
+from common.params import Params
+import subprocess
+from common.basedir import BASEDIR
 
-default_config_file_path = '/data/bb_openpilot.cfg'
+default_config_file_path = '%s/../bb_openpilot.cfg' % BASEDIR
 
 class ConfigFile():
   config_file_r = 'r'
@@ -10,6 +13,7 @@ class ConfigFile():
   def read(self, into, config_path):
       configr = configparser.RawConfigParser()
       file_changed = False
+      params = Params()
 
       try:
         configr.read(config_path)
@@ -22,10 +26,12 @@ class ConfigFile():
 
       main_section = 'OP_CONFIG'
       pref_section = 'OP_PREFERENCES'
+      jetson_section = 'JETSON_PREFERENCES'
       logging_section = 'LOGGING'
       config = configparser.RawConfigParser(allow_no_value=True)
       config.add_section(main_section)
       config.add_section(pref_section)
+      config.add_section(jetson_section)
       config.add_section(logging_section)
 
       #user_handle -> userHandle
@@ -43,6 +49,15 @@ class ConfigFile():
         entry = 'force_fingerprint_tesla', entry_type = bool,
         default_value = False,
         comment = 'Forces the fingerprint to Tesla Model S if OpenPilot fails to identify car via fingerprint.'
+      )
+      file_changed |= didUpdate
+
+      #uses_a_pillar_harness -> usesApillarHarness
+      into.usesApillarHarness, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = main_section,
+        entry = 'uses_a_pillar_harness', entry_type = bool,
+        default_value = False,
+        comment = 'Enable when using the new A pillar harness.'
       )
       file_changed |= didUpdate
 
@@ -208,6 +223,7 @@ class ConfigFile():
         comment = 'If you use an aftermarket Tesla Bosch Radar that already has a coded VIN, you will have to enter that VIN value here.'
       )
       file_changed |= didUpdate
+      
       if into.radarVIN == '':
         into.radarVIN = default_radar_vin
         file_changed = True
@@ -329,6 +345,90 @@ class ConfigFile():
       )
       file_changed |= didUpdate
 
+      #jetson_road_camera_id -> roadCameraID
+      into.roadCameraID, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = jetson_section,
+        entry = 'jetson_road_camera_id', entry_type = str,
+        default_value = 'NotSet',
+        comment = 'ID of camera facing road, as seen in ls -al /dev/v4l/by-id'
+      )
+      file_changed |= didUpdate
+
+      #jetson_driver_camera_id -> driverCameraID
+      into.driverCameraID, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = jetson_section,
+        entry = 'jetson_driver_camera_id', entry_type = str,
+        default_value = 'NotSet',
+        comment = 'ID of camera facing driver, as seen in ls -al /dev/v4l/by-id'
+      )
+      file_changed |= didUpdate
+
+      #jetson_road_camera_fx -> roadCameraFx
+      into.roadCameraFx, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = jetson_section,
+        entry = 'jetson_road_camera_fx', entry_type = float,
+        default_value = 0.73,
+        comment = 'Focal length correction factor to match the EON camera view window'
+      )
+      file_changed |= didUpdate
+
+      #jetson_driver_camera_fx -> driverCameraFx
+      into.driverCameraFx, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = jetson_section,
+        entry = 'jetson_driver_camera_fx', entry_type = float,
+        default_value = 0.75,
+        comment = 'Focal length correction factor to match the EON camera view window'
+      )
+      file_changed |= didUpdate
+
+      #jetson_driver_camera_flip -> driverCameraFlip
+      into.driverCameraFlip, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = jetson_section,
+        entry = 'jetson_driver_camera_flip', entry_type = int,
+        default_value = 0,
+        comment = 'Flip the image for the driver camera'
+      )
+      file_changed |= didUpdate
+
+      #jetson_road_camera_flip -> roadCameraFlip
+      into.roadCameraFlip, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = jetson_section,
+        entry = 'jetson_road_camera_flip', entry_type = int,
+        default_value = 0,
+        comment = 'Flip the image for the road camera'
+      )
+      file_changed |= didUpdate
+
+      #jetson_monitor_forced_resolution -> monitorForcedRes
+      into.monitorForcedRes, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = jetson_section,
+        entry = 'jetson_monitor_forced_resolution', entry_type = str,
+        default_value = "-rez 1280 720",
+        comment = 'To use the Pi 7" HDMI screen this has to be set to "-rez 800 480"'
+      )
+      file_changed |= didUpdate
+
+      #check camera_id values against LiveParams
+      savedRoadCameraID = params.get("RoadUsbCameraID")
+      savedDriverCameraID = params.get("DriverUsbCameraID")
+      savedRoadCameraFx = params.get("RoadUsbCameraFx")
+      savedDriverCameraFx = params.get("DriverUsbCameraFx")
+      savedRoadCameraFlip = params.get("RoadUsbCameraFlip")
+      savedDriverCameraFlip = params.get("DriverUsbCameraFlip")
+      if into.driverCameraID != savedDriverCameraID:
+          params.put("DriverUsbCameraID",into.driverCameraID)
+      if into.roadCameraID != savedRoadCameraID:
+          params.put("RoadUsbCameraID",into.roadCameraID)
+      if into.driverCameraFx != savedDriverCameraFx:
+          params.put("DriverUsbCameraFx","%f" % into.driverCameraFx)
+      if into.roadCameraFx != savedRoadCameraFx:
+          params.put("RoadUsbCameraFx","%f" % into.roadCameraFx)
+      if into.driverCameraFlip != savedDriverCameraFlip:
+          params.put("DriverUsbCameraFlip","%d" % into.driverCameraFlip)
+      if into.roadCameraFlip != savedRoadCameraFlip:
+          params.put("RoadUsbCameraFlip","%d" % into.roadCameraFlip)
+      
+      
       into.shouldLogCanErrors, didUpdate = self.read_config_entry(
         config, configr, prev_file_contents, section = logging_section,
         entry = 'should_log_can_errors', entry_type = bool,
@@ -417,6 +517,14 @@ class CarSettings():
   ldwNumbPeriod = None
   tapBlinkerExtension = None
   ahbOffDuration = None
+  usesApillarHarness = None
+  roadCameraID = None
+  driverCameraID = None
+  roadCameraFx = None
+  driverCameraFx = None
+  roadCameraFlip = None
+  driverCameraFlip = None
+  monitorForcedRes = None
 
   def __init__(self, optional_config_file_path = default_config_file_path):
     config_file = ConfigFile()

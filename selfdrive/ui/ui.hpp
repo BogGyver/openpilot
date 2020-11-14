@@ -1,3 +1,4 @@
+#pragma once
 #ifndef _UI_H
 #define _UI_H
 
@@ -12,6 +13,7 @@
 #define nvgCreate nvgCreateGLES3
 #endif
 
+#include <capnp/serialize.h>
 #include <pthread.h>
 
 #include "nanovg.h"
@@ -22,10 +24,10 @@
 #include "common/framebuffer.h"
 #include "common/modeldata.h"
 #include "messaging.hpp"
-
 #include "cereal/gen/c/log.capnp.h"
-
+#include "bbuistate.h"
 #include "sound.hpp"
+
 
 #define STATUS_STOPPED 0
 #define STATUS_DISENGAGED 1
@@ -33,16 +35,22 @@
 #define STATUS_WARNING 3
 #define STATUS_ALERT 4
 
+#define NET_CONNECTED 0
+#define NET_DISCONNECTED 1
+#define NET_ERROR 2
+
 #define ALERTSIZE_NONE 0
 #define ALERTSIZE_SMALL 1
 #define ALERTSIZE_MID 2
 #define ALERTSIZE_FULL 3
 
-#define COLOR_BLACK_ALPHA nvgRGBA(0, 0, 0, 85)
+#define COLOR_BLACK nvgRGBA(0, 0, 0, 255)
+#define COLOR_BLACK_ALPHA(x) nvgRGBA(0, 0, 0, x)
 #define COLOR_WHITE nvgRGBA(255, 255, 255, 255)
-#define COLOR_WHITE_ALPHA nvgRGBA(255, 255, 255, 85)
+#define COLOR_WHITE_ALPHA(x) nvgRGBA(255, 255, 255, x)
 #define COLOR_YELLOW nvgRGBA(218, 202, 37, 255)
 #define COLOR_RED nvgRGBA(201, 34, 49, 255)
+#define COLOR_OCHRE nvgRGBA(218, 111, 37, 255)
 
 #ifndef QCOM
   #define UI_60FPS
@@ -51,6 +59,7 @@
 #define UI_BUF_COUNT 4
 //#define SHOW_SPEEDLIMIT 1
 //#define DEBUG_TURN
+
 
 const int vwp_w = 1920;
 const int vwp_h = 1080;
@@ -63,6 +72,7 @@ const int box_y = bdr_s;
 const int box_w = vwp_w-sbr_w-(bdr_s*2);
 const int box_h = vwp_h-(bdr_s*2);
 const int viz_w = vwp_w-(bdr_s*2);
+const int ff_xoffset = 32;
 const int header_h = 420;
 const int footer_h = 280;
 const int footer_y = vwp_h-bdr_s-footer_h;
@@ -122,6 +132,7 @@ typedef struct UIScene {
 
   bool uilayout_sidebarcollapsed;
   bool uilayout_mapenabled;
+  bool uilayout_mockengaged;
   // responsive layout
   int ui_viz_rx;
   int ui_viz_rw;
@@ -132,6 +143,10 @@ typedef struct UIScene {
 
   int lead_status2;
   float lead_d_rel2, lead_y_rel2, lead_v_rel2;
+
+  float face_prob;
+  bool is_rhd;
+  float face_x, face_y;
 
   int front_box_x, front_box_y, front_box_width, front_box_height;
 
@@ -155,6 +170,7 @@ typedef struct UIScene {
   int paTemp;
   int hwType;
   int satelliteCount;
+  uint8_t athenaStatus;
 } UIScene;
 
 typedef struct {
@@ -172,9 +188,15 @@ typedef struct {
 } track_vertices_data;
 
 
+
 typedef struct UIState {
+
+  //BB define BBUIState
+  BBUIState b;
+  int plus_state;
+  //BB end
+
   pthread_mutex_t lock;
-  pthread_cond_t bg_cond;
 
   // framebuffer
   FramebufferState *fb;
@@ -209,6 +231,9 @@ typedef struct UIState {
   SubSocket *thermal_sock;
   SubSocket *health_sock;
   SubSocket *ubloxgnss_sock;
+  SubSocket *driverstate_sock;
+  SubSocket *dmonitoring_sock;
+  PubSocket *offroad_sock;
   Poller * poller;
   Poller * ublox_poller;
 
@@ -255,9 +280,12 @@ typedef struct UIState {
   int longitudinal_control_timeout;
   int limit_set_speed_timeout;
   int hardware_timeout;
+  int last_athena_ping_timeout;
+  int offroad_layout_timeout;
 
   bool controls_seen;
 
+  uint64_t last_athena_ping;
   int status;
   bool is_metric;
   bool longitudinal_control;
@@ -269,6 +297,9 @@ typedef struct UIState {
   int alert_size;
   float alert_blinking_alpha;
   bool alert_blinked;
+  bool started;
+  bool thermal_started, preview_started;
+  bool vision_seen;
 
   float light_sensor;
 
@@ -291,6 +322,36 @@ void ui_draw_vision_alert(UIState *s, int va_size, int va_color,
                           const char* va_text1, const char* va_text2);
 void ui_draw(UIState *s);
 void ui_draw_sidebar(UIState *s);
+void ui_draw_image(NVGcontext *vg, float x, float y, float w, float h, int image, float alpha);
 void ui_nvg_init(UIState *s);
+static void set_awake(UIState *s, bool awake); 
 
+#if !defined(QCOM) && !defined(QCOM2)
+#include "GLFW/glfw3.h"
+FramebufferState* framebuffer_init_linux(
+    const char* name, int32_t layer, int alpha,
+    int *out_w, int *out_h, GLFWmousebuttonfun mouse_event_handler);
 #endif
+#endif
+// TODO: this is also hardcoded in common/transformations/camera.py
+const mat3 intrinsic_matrix = (mat3){{
+  910., 0., 582.,
+  0., 910., 437.,
+  0.,   0.,   1.
+}};
+
+const uint8_t alert_colors[][4] = {
+  [STATUS_STOPPED] = {0x07, 0x23, 0x39, 0xf1},
+  [STATUS_DISENGAGED] = {0x17, 0x33, 0x49, 0xc8},
+  [STATUS_ENGAGED] = {0x17, 0x86, 0x44, 0xf1},
+  [STATUS_WARNING] = {0xDA, 0x6F, 0x25, 0xf1},
+  [STATUS_ALERT] = {0xC9, 0x22, 0x31, 0xf1},
+};
+
+const int alert_sizes[] = {
+  [ALERTSIZE_NONE] = 0,
+  [ALERTSIZE_SMALL] = 241,
+  [ALERTSIZE_MID] = 390,
+  [ALERTSIZE_FULL] = vwp_h,
+};
+

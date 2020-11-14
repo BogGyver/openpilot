@@ -5,14 +5,12 @@ from common.realtime import DT_CTRL
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.drive_helpers import create_event, EventTypes as ET, get_events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
-from selfdrive.car.tesla.carstate import CarState, get_can_parser, get_epas_parser, get_pedal_parser
 from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR,DBC
 from common.params import read_db
-from selfdrive.car import STD_CARGO_KG
+from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, is_ecu_disconnected, gen_empty_fingerprint
 from selfdrive.car.tesla.readconfig import CarSettings
-import selfdrive.messaging as messaging
-from selfdrive.services import service_list
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V
+from selfdrive.car.interfaces import CarInterfaceBase
 
 A_ACC_MAX = max(_A_CRUISE_MAX_V)
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
@@ -21,12 +19,11 @@ VisualAlert = car.CarControl.HUDControl.VisualAlert
 K_MULT = 0.8 
 K_MULTi = 280000.
 
-def tesla_compute_gb(accel, speed):
-  return float(accel) / 3.
 
 
-class CarInterface():
-  def __init__(self, CP, CarController):
+class CarInterface(CarInterfaceBase):
+  def __init__(self, CP, CarController, CarState):
+    super().__init__(CP, CarController, CarState)
     self.CP = CP
 
     self.frame = 0
@@ -43,20 +40,25 @@ class CarInterface():
     mydbc = DBC[CP.carFingerprint]['pt']
     if CP.carFingerprint == CAR.MODELS and self.CS.fix1916:
       mydbc = mydbc + "1916"
-    self.cp = get_can_parser(CP,mydbc)
+    self.cp = self.CS.get_can_parser2(CP,mydbc)
     self.epas_cp = None
+    self.pedal_cp = None
     if self.CS.useWithoutHarness:
-      self.epas_cp = get_epas_parser(CP,0)
+      self.epas_cp = self.CS.get_epas_parser(CP,0)
+      self.pedal_cp = self.CS.get_pedal_parser(CP,0)
     else:
-      self.epas_cp = get_epas_parser(CP,2)
-    self.pedal_cp = get_pedal_parser(CP)
+      self.epas_cp = self.CS.get_epas_parser(CP,2)
+      self.pedal_cp = self.CS.get_pedal_parser(CP,2)
 
     self.CC = None
     if CarController is not None:
-      self.CC = CarController(self.cp.dbc_name)
+      self.CC = CarController(self.cp.dbc_name,CP,self.VM)
 
-    self.compute_gb = tesla_compute_gb
-    
+
+  @staticmethod
+  def compute_gb(accel, speed):
+    return float(accel) / 3.
+
 
 
   @staticmethod
@@ -91,18 +93,17 @@ class CarInterface():
     return float(max(max_accel, a_target / A_ACC_MAX)) * min(speedLimiter, accelLimiter)
 
   @staticmethod
-  def get_params(candidate, fingerprint, vin="", is_panda_black=False):
+  def get_params(candidate, fingerprint=gen_empty_fingerprint(), has_relay=False, car_fw=[]):
 
     # Scaled tire stiffness
     ts_factor = 8 
 
-    ret = car.CarParams.new_message()
+    ret = CarInterfaceBase.get_std_params(candidate, fingerprint, has_relay)
 
     ret.carName = "tesla"
     ret.carFingerprint = candidate
-    ret.isPandaBlack = is_panda_black
 
-    teslaModel = read_db('/data/params','TeslaModel')
+    teslaModel = read_db('/data/params/d/','TeslaModel')
     if teslaModel is not None:
       teslaModel = teslaModel.decode()
     if teslaModel is None:
@@ -110,7 +111,7 @@ class CarInterface():
 
     ret.safetyModel = car.CarParams.SafetyModel.tesla
     ret.safetyParam = 1
-    ret.carVin = vin
+    ret.carVin = "TESLAFAKEVIN12345"
 
     ret.enableCamera = True
     ret.enableGasInterceptor = False #keep this False for now
@@ -146,31 +147,31 @@ class CarInterface():
           
       # Kp and Ki for the longitudinal control
       if teslaModel == "S":
-        ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.50, 0.45, 0.4]
-        ret.longitudinalTuning.kiBP = [0., 5., 35.]
-        ret.longitudinalTuning.kiV = [0.01,0.01,0.01]
+        ret.longitudinalTuning.kpBP = [0., 5., 22.,  35.]
+        ret.longitudinalTuning.kpV = [0.50, 0.45, 0.4, 0.4]
+        ret.longitudinalTuning.kiBP = [0., 5., 22., 35.]
+        ret.longitudinalTuning.kiV = [0.01,0.01,0.01,0.01]
       elif teslaModel == "SP":
-        ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.325]
-        ret.longitudinalTuning.kiBP = [0., 5., 35.]
-        ret.longitudinalTuning.kiV = [0.00915,0.00825,0.00725]
+        ret.longitudinalTuning.kpBP = [0., 5., 22., 35.] # 0km/h, 18 km/h, 80, 128km/h
+        ret.longitudinalTuning.kiBP = [0., 5., 22., 35.]
+        ret.longitudinalTuning.kpV = [0.3, 0.3, 0.35, 0.37]
+        ret.longitudinalTuning.kiV = [0.07, 0.07, 0.093, 0.092]
       elif teslaModel == "SD":
-        ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.50, 0.45, 0.4]
-        ret.longitudinalTuning.kiBP = [0., 5., 35.]
-        ret.longitudinalTuning.kiV = [0.01,0.01,0.01]
+        ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
+        ret.longitudinalTuning.kpV = [0.50, 0.45, 0.4,0.4]
+        ret.longitudinalTuning.kiBP = [0., 5., 22., 35.]
+        ret.longitudinalTuning.kiV = [0.01,0.01,0.01,0.01]
       elif teslaModel == "SPD":
-        ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.325]
-        ret.longitudinalTuning.kiBP = [0., 5., 35.]
-        ret.longitudinalTuning.kiV = [0.00915,0.00825,0.00725]
+        ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
+        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.325, 0.325]
+        ret.longitudinalTuning.kiBP = [0., 5., 22.,35.]
+        ret.longitudinalTuning.kiV = [0.00915,0.00825,0.00725, 0.00725]
       else:
         #use S numbers if we can't match anything
-        ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.3]
-        ret.longitudinalTuning.kiBP = [0., 5., 35.]
-        ret.longitudinalTuning.kiV = [0.08,0.08,0.08]
+        ret.longitudinalTuning.kpBP = [0., 5., 22., 35.]
+        ret.longitudinalTuning.kpV = [0.375, 0.325, 0.3, 0.3]
+        ret.longitudinalTuning.kiBP = [0., 5., 22., 35.]
+        ret.longitudinalTuning.kiV = [0.08,0.08,0.08, 0.08]
       
 
     else:
@@ -204,13 +205,13 @@ class CarInterface():
     ret.steerMaxBP = [0.,15.]  # m/s
     ret.steerMaxV = [420.,420.]   # max steer allowed
 
-    ret.gasMaxBP = [0.]  # m/s
-    ret.gasMaxV = [0.3] #if ret.enableGasInterceptor else [0.] # max gas allowed
-    ret.brakeMaxBP = [0., 20.]  # m/s
-    ret.brakeMaxV = [1., 1.]   # max brake allowed - BB: since we are using regen, make this even
+    ret.gasMaxBP = [0., 20.]  # m/s
+    ret.gasMaxV = [0.225, 0.525] #if ret.enableGasInterceptor else [0.] # max gas allowed
+    ret.brakeMaxBP = [0.]  # m/s
+    ret.brakeMaxV = [1.]   # max brake allowed - BB: since we are using regen, make this even
 
-    ret.longitudinalTuning.deadzoneBP = [0., 9.] #BB: added from Toyota to start pedal work; need to tune
-    ret.longitudinalTuning.deadzoneV = [0., 0.] #BB: added from Toyota to start pedal work; need to tune; changed to 0 for now
+    ret.longitudinalTuning.deadzoneBP = [0.] #BB: added from Toyota to start pedal work; need to tune
+    ret.longitudinalTuning.deadzoneV = [0.] #BB: added from Toyota to start pedal work; need to tune; changed to 0 for now
 
     ret.stoppingControl = True
     ret.openpilotLongitudinalControl = True
@@ -219,6 +220,7 @@ class CarInterface():
     ret.steerRateCost = 1.0
 
     ret.radarOffCan = not CarSettings().get_value("useTeslaRadar")
+    ret.radarTimeStep = 0.05 #20Hz
 
     return ret
 
@@ -391,6 +393,8 @@ class CarInterface():
       self.CS.DAS_notInDrive = 1
       if self.CC.opState == 1:
           self.CC.opState = 0
+    if ret.gearShifter == 'drive':
+        self.CS.DAS_notInDrive =0
     if self.CS.brake_hold:
       events.append(create_event('brakeHold', [ET.NO_ENTRY, ET.USER_DISABLE]))
       if self.CC.opState == 1:
@@ -417,8 +421,8 @@ class CarInterface():
     #else:
     #  if ret.brakePressed:
     #    events.append(create_event('pedalPressed', [ET.NO_ENTRY, ET.USER_DISABLE]))
-    if ret.gasPressed:
-      events.append(create_event('pedalPressed', [ET.PRE_ENABLE]))
+    #if ret.gasPressed:
+    #  events.append(create_event('pedalPressed', [ET.PRE_ENABLE]))
 
     # it can happen that car cruise disables while comma system is enabled: need to
     # keep braking if needed or if the speed is very low

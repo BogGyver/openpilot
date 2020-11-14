@@ -37,7 +37,7 @@ def add_tesla_checksum(msg_id,msg):
  return checksum
 
 
-def create_pedal_command_msg(accelCommand, enable, idx):
+def create_pedal_command_msg(accelCommand, enable, idx, pedalcan):
   """Create GAS_COMMAND (0x551) message to comma pedal"""
   msg_id = 0x551
   msg_len = 6
@@ -55,7 +55,7 @@ def create_pedal_command_msg(accelCommand, enable, idx):
   struct.pack_into('BBBBB', msg, 0, int((int_accelCommand >> 8) & 0xFF), int_accelCommand & 0xFF, \
       int((int_accelCommand2 >> 8) & 0xFF), int_accelCommand2 & 0XFF,((enable << 7) + idx) & 0xFF)
   struct.pack_into('B', msg, msg_len-1, add_tesla_checksum(msg_id,msg))
-  return [msg_id, 0, msg.raw, 2]    
+  return [msg_id, 0, msg.raw, pedalcan]    
 
 def create_enabled_eth_msg(status):
   msg_id = 0x018
@@ -206,7 +206,7 @@ def create_fake_DAS_warning(DAS_211_accNoSeatBelt, DAS_canErrors, \
             DAS_202_noisyEnvironment, DAS_doorOpen, DAS_notInDrive, enableDasEmulation, enableRadarEmulation, \
             stopSignWarning, stopLightWarning, \
             DAS_222_accCameraBlind, DAS_219_lcTempUnavailableSpeed, DAS_220_lcTempUnavailableRoad, DAS_221_lcAborting, \
-            DAS_207_lkasUnavailable,DAS_208_rackDetected, DAS_025_steeringOverride, ldwStatus,FLAG_notUsed,useWithoutHarness):
+            DAS_207_lkasUnavailable,DAS_208_rackDetected, DAS_025_steeringOverride, ldwStatus, useWithoutHarness,usesApillarHarness):
   msg_id = 0x554
   msg_len = 3
   fd = 0
@@ -219,9 +219,13 @@ def create_fake_DAS_warning(DAS_211_accNoSeatBelt, DAS_canErrors, \
   wh = 0
   if useWithoutHarness:
     wh = 1
+  aph = 0
+  if usesApillarHarness:
+    aph=1
+  autoPilotAborting = 0 #not used at the moment
   warn1 = (stopLightWarning<< 7) + (rd << 6) + (fd << 5) + (DAS_211_accNoSeatBelt << 4) + (DAS_canErrors << 3) + (DAS_202_noisyEnvironment << 2) + (DAS_doorOpen << 1) + DAS_notInDrive
   warn2 = stopSignWarning + (DAS_222_accCameraBlind << 1) + (DAS_219_lcTempUnavailableSpeed << 2) + (DAS_220_lcTempUnavailableRoad << 3) + (DAS_221_lcAborting << 4) + (DAS_207_lkasUnavailable << 5) + (DAS_208_rackDetected << 6) + (DAS_025_steeringOverride << 7)
-  warn3 = ldwStatus + (FLAG_notUsed << 3) + (wh << 4)
+  warn3 = ldwStatus + (autoPilotAborting << 3) + (wh << 4) + (aph << 5)
   msg = create_string_buffer(msg_len)
   struct.pack_into('BBB',msg ,0 , warn1,warn2,warn3)
   return [msg_id,0,msg.raw,0]

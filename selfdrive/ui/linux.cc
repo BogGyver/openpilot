@@ -18,11 +18,9 @@
 typedef struct FramebufferState FramebufferState;
 typedef struct TouchState TouchState;
 
-extern "C" {
-
-FramebufferState* framebuffer_init(
+FramebufferState* framebuffer_init_linux(
     const char* name, int32_t layer, int alpha,
-    int *out_w, int *out_h) {
+    int *out_w, int *out_h, GLFWmousebuttonfun mouse_event_handler) {
   glfwInit();
 
 #ifndef __APPLE__
@@ -41,7 +39,9 @@ FramebufferState* framebuffer_init(
   if (!window) {
     printf("glfwCreateWindow failed\n");
   }
-
+  if (mouse_event_handler != NULL) {
+    glfwSetMouseButtonCallback(window,mouse_event_handler);
+  }
   glfwMakeContextCurrent(window);
   glfwSwapInterval(0);
 
@@ -55,6 +55,8 @@ FramebufferState* framebuffer_init(
 
   return (FramebufferState*)window;
 }
+extern "C" {
+
 
 void framebuffer_set_power(FramebufferState *s, int mode) {
 }

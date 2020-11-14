@@ -45,6 +45,7 @@ class TxType(Enum):
   PERSISTENT = 1
   CLEAR_ON_MANAGER_START = 2
   CLEAR_ON_PANDA_DISCONNECT = 3
+  CLEAR_ON_CAR_START = 4
 
 
 class UnknownKeyName(Exception):
@@ -52,10 +53,10 @@ class UnknownKeyName(Exception):
 
 
 keys = {
-  "AccessToken": [TxType.PERSISTENT],
+  "AccessToken": [TxType.CLEAR_ON_MANAGER_START], #BB what happends if no int connection?
   "AthenadPid": [TxType.PERSISTENT],
   "CalibrationParams": [TxType.PERSISTENT],
-  "CarParams": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT],
+  "CarParams": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT], #BB we had [TxType.CLEAR_ON_CAR_START],
   "CarParamsCache": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT],
   "CarVin": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT],
   "CommunityFeaturesToggle": [TxType.PERSISTENT],
@@ -70,6 +71,7 @@ keys = {
   "GithubSshKeys": [TxType.PERSISTENT],
   "HasAcceptedTerms": [TxType.PERSISTENT],
   "HasCompletedSetup": [TxType.PERSISTENT],
+  "IsDriverViewEnabled": [TxType.CLEAR_ON_MANAGER_START],
   "IsLdwEnabled": [TxType.PERSISTENT],
   "IsGeofenceEnabled": [TxType.PERSISTENT],
   "IsMetric": [TxType.PERSISTENT],
@@ -78,6 +80,7 @@ keys = {
   "IsTakingSnapshot": [TxType.CLEAR_ON_MANAGER_START],
   "IsUpdateAvailable": [TxType.CLEAR_ON_MANAGER_START],
   "IsUploadRawEnabled": [TxType.PERSISTENT],
+  "LastAthenaPingTime": [TxType.PERSISTENT],
   "LastUpdateTime": [TxType.PERSISTENT],
   "LimitSetSpeed": [TxType.PERSISTENT],
   "LimitSetSpeedNeural": [TxType.PERSISTENT],
@@ -106,6 +109,13 @@ keys = {
   "Offroad_PandaFirmwareMismatch": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT],
   "Offroad_InvalidTime": [TxType.CLEAR_ON_MANAGER_START],
   "Offroad_IsTakingSnapshot": [TxType.CLEAR_ON_MANAGER_START],
+  "DriverUsbCameraID": [TxType.PERSISTENT],
+  "RoadUsbCameraID": [TxType.PERSISTENT],
+  "DriverUsbCameraFx": [TxType.PERSISTENT],
+  "DriverUsbCameraFlip": [TxType.PERSISTENT],
+  "RoadUsbCameraFx": [TxType.PERSISTENT],
+  "RoadUsbCameraFlip": [TxType.PERSISTENT],
+  "TeslaModel": [TxType.PERSISTENT],
 }
 
 
@@ -355,6 +365,9 @@ class Params():
 
   def panda_disconnect(self):
     self._clear_keys_with_type(TxType.CLEAR_ON_PANDA_DISCONNECT)
+  
+  def car_start(self):
+    self._clear_keys_with_type(TxType.CLEAR_ON_CAR_START)
 
   def delete(self, key):
     with self.transaction(write=True) as txn:

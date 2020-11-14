@@ -7,7 +7,7 @@ $Java.outerClassname("Alca");
 
 @0xca61a35dedbd6327;
 
-const interfaceVersion :Float32 = 4.0;
+#const interfaceVersion :Float32 = 4.0;
 
 struct ALCAStatus { 
   # ALCA info

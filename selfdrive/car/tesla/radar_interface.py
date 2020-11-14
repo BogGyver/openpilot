@@ -2,13 +2,14 @@
 import os
 import time
 from cereal import car, tesla
-from selfdrive.can.parser import CANParser
-from common.realtime import DT_RDR
-from selfdrive.services import service_list
-import selfdrive.messaging as messaging
+from opendbc.can.parser import CANParser
+from cereal.services import service_list
+import cereal.messaging as messaging
 from selfdrive.car.interfaces import RadarInterfaceBase
 from selfdrive.car.tesla.readconfig import CarSettings
 from selfdrive.tinklad.tinkla_interface import TinklaClient
+from selfdrive.car.interfaces import RadarInterfaceBase
+
 
 BOSCH_MAX_DIST = 250. #max distance for radar
 #use these for tracks (5 tracks)
@@ -67,18 +68,21 @@ class RadarInterface(RadarInterfaceBase):
   tinklaClient = TinklaClient()
 
   def __init__(self,CP):
-    super().__init__(self)
     # radar
     self.pts = {}
     self.extPts = {}
-    self.delay = int(0.1 / DT_RDR)
-    self.useTeslaRadar = CarSettings().get_value("useTeslaRadar")
+    self.delay = 0 
     self.TRACK_LEFT_LANE = True
     self.TRACK_RIGHT_LANE = True
     self.updated_messages = set()
     self.canErrorCounter = 0
     self.AHB_car_detected = False
-    if self.useTeslaRadar:
+    self.track_id = 0
+    self.radar_fault = False
+    self.radar_wrong_config = False
+    self.radar_off_can = CP.radarOffCan
+    self.radar_ts = CP.radarTimeStep
+    if not self.radar_off_can:
       self.pts = {}
       self.extPts = {}
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
@@ -88,12 +92,13 @@ class RadarInterface(RadarInterfaceBase):
       self.trigger_start_msg = RADAR_A_MSGS[0]
       self.trigger_end_msg = RADAR_B_MSGS[-1]
 
-
+    self.delay = int(round(0.1 / CP.radarTimeStep))   # 0.1s delay of radar
 
   def update(self, can_strings,v_ego):
     # radard at 20Hz and return no points
-    if not self.useTeslaRadar:
-      time.sleep(0.05)
+    if self.radar_off_can:
+      if 'NO_RADAR_SLEEP' not in os.environ:
+        time.sleep(self.radar_ts)
       return car.RadarData.new_message(),self.extPts.values(),self.AHB_car_detected
 
     if can_strings is not None:

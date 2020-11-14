@@ -1,6 +1,6 @@
 from common.kalman.simple_kalman import KF1D
 from selfdrive.config import RADAR_TO_CAMERA
-
+from common.numpy_fast import clip, interp
 
 # the longer lead decels, the more likely it will keep decelerating
 # TODO is this a good default?
@@ -22,15 +22,32 @@ class Track():
     self.K_K = kalman_params.K
     self.kf = KF1D([[v_lead], [0.0]], self.K_A, self.K_C, self.K_K)
 
-  def update(self, d_rel, y_rel, v_rel, v_lead, measured):
+  def update(self, d_rel, y_rel, v_rel,measured, a_rel, vy_rel, oClass, length, track_id,movingState, d_path, v_ego_t_aligned,v_lead,use_tesla_radar):
+    
     # relative values, copy
     self.dRel = d_rel   # LONG_DIST
     self.yRel = y_rel   # -LAT_DIST
     self.vRel = v_rel   # REL_SPEED
     self.vLead = v_lead
     self.measured = measured   # measured or estimate
+    self.track_id = track_id
+    self.oClass = oClass # object class
 
-    # computed velocity and accelerations
+    if use_tesla_radar:
+      self.aRel = a_rel   # rel acceleration
+      self.vLat = vy_rel  # rel lateral speed
+      self.length = length #length
+      self.measured = measured   # measured or estimate
+      self.dPath = d_path
+      self.stationary = (movingState == 3)
+    else:
+      self.aRel = float('nan')   # rel acceleration
+      self.vLat = float('nan')  # rel lateral speed
+      self.length = 0.  #length
+      self.dPath = 0.
+      self.stationary = False
+
+      
     if self.cnt > 0:
       self.kf.update(self.vLead)
 
@@ -49,6 +66,10 @@ class Track():
     # Weigh y higher since radar is inaccurate in this dimension
     return [self.dRel, self.yRel*2, self.vRel]
 
+  def get_key_for_cluster_dy(self, dy):
+    # Weigh y higher since radar is inaccurate in this dimension
+    return [self.dRel, (self.yRel-dy)*2, self.vRel]
+
   def reset_a_lead(self, aLeadK, aLeadTau):
     self.kf = KF1D([[self.vLead], [aLeadK]], self.K_A, self.K_C, self.K_K)
     self.aLeadK = aLeadK
@@ -59,8 +80,11 @@ def mean(l):
 
 
 class Cluster():
-  def __init__(self):
+  def __init__(self,use_tesla_radar):
     self.tracks = set()
+    #BB frame delay for dRel calculation, in seconds
+    self.frame_delay = 0.2
+    self.useTeslaRadar = use_tesla_radar
 
   def add(self, t):
     # add the first track
@@ -69,7 +93,7 @@ class Cluster():
   # TODO: make generic
   @property
   def dRel(self):
-    return mean([t.dRel for t in self.tracks])
+    return min([t.dRel for t in self.tracks])
 
   @property
   def yRel(self):
@@ -117,9 +141,28 @@ class Cluster():
   def measured(self):
     return any(t.measured for t in self.tracks)
 
+  @property
+  def oClass(self):
+    return min([t.oClass for t in self.tracks])
+
+  @property
+  def length(self):
+    return max([t.length for t in self.tracks])
+  
+  @property
+  def track_id(self):
+    return max([t.track_id for t in self.tracks])
+ 
+  @property
+  def stationary(self):
+    return all([t.stationary for t in self.tracks])
+
   def get_RadarState(self, model_prob=0.0):
+    dRel_delta_estimate = 0.
+    if self.useTeslaRadar:
+      dRel_delta_estimate = (self.vRel + self.aRel * self.frame_delay / 2.) * self.frame_delay
     return {
-      "dRel": float(self.dRel),
+      "dRel": float(self.dRel + dRel_delta_estimate),
       "yRel": float(self.yRel),
       "vRel": float(self.vRel),
       "vLead": float(self.vLead),
@@ -127,9 +170,13 @@ class Cluster():
       "aLeadK": float(self.aLeadK),
       "status": True,
       "fcw": self.is_potential_fcw(model_prob),
+      "aLeadTau": float(self.aLeadTau),
       "modelProb": model_prob,
       "radar": True,
-      "aLeadTau": float(self.aLeadTau)
+    }, {
+      "trackId": int(self.track_id % 32),
+      "oClass": int(self.oClass),
+      "length": float(self.length),
     }
 
   def get_RadarState_from_vision(self, lead_msg, v_ego):
@@ -151,6 +198,65 @@ class Cluster():
     ret = "x: %4.1f  y: %4.1f  v: %4.1f  a: %4.1f" % (self.dRel, self.yRel, self.vRel, self.aLeadK)
     return ret
 
+  def is_potential_lead(self, v_ego):
+    # predict cut-ins by extrapolating lateral speed by a lookahead time
+    # lookahead time depends on cut-in distance. more attentive for close cut-ins
+    # also, above 50 meters the predicted path isn't very reliable
+
+    # average dist
+    d_path = self.dPath
+
+    # correct d_path for lookahead time, considering only cut-ins and no more than 1m impact.
+    lat_corr = 0. # BB disables for now : clip(t_lookahead * self.vLat, -1., 1.) if self.measured else 0.
+
+    # consider only cut-ins
+    d_path = clip(d_path + lat_corr, min(0., d_path), max(0.,d_path))
+
+    return abs(d_path) < 1.5 and not self.stationary #and not self.oncoming
+
+  def is_potential_lead_dy(self, v_ego,dy):
+    # predict cut-ins by extrapolating lateral speed by a lookahead time
+    # lookahead time depends on cut-in distance. more attentive for close cut-ins
+    # also, above 50 meters the predicted path isn't very reliable
+
+    # the distance at which v_lat matters is higher at higher speed
+    lookahead_dist = 40. + v_ego/1.2   #40m at 0mph, ~70m at 80mph
+
+    t_lookahead_v  = [1., 0.]
+    t_lookahead_bp = [10., lookahead_dist]
+
+    # average dist
+    d_path = self.dPath - dy
+
+    # lat_corr used to be gated on enabled, now always running
+    t_lookahead = interp(self.dRel, t_lookahead_bp, t_lookahead_v)
+
+    # correct d_path for lookahead time, considering only cut-ins and no more than 1m impact.
+    lat_corr = clip(t_lookahead * self.vLat, -1., 1.) if self.measured else 0.
+
+    # consider only cut-ins
+    d_path = clip(d_path + lat_corr, min(0., d_path), max(0.,d_path))
+
+    return abs(d_path) < abs(dy/2.)  and not self.stationary #and not self.oncoming
+
+  def is_truck(self,lead_clusters):
+    return False
+    if len(lead_clusters) > 0:
+      lead_cluster = lead_clusters[0]
+      # check if the new lead is too close and roughly at the same speed of the first lead:
+      # it might just be the second axle of the same vehicle
+      return (self.dRel - lead_cluster.dRel < 4.5) and (self.dRel - lead_cluster.dRel > 0.5) and (abs(self.yRel - lead_cluster.yRel) < 2.) and (abs(self.vRel - lead_cluster.vRel) < 0.2)
+    else:
+      return False
+
+  def is_potential_lead2(self, lead_clusters):
+    if len(lead_clusters) > 0:
+      lead_cluster = lead_clusters[0]
+      return ((self.dRel - lead_cluster.dRel > 8.) and (lead_cluster.oClass > 0))  or ((self.dRel - lead_cluster.dRel > 15.) and (lead_cluster.oClass == 0)) or abs(self.vRel - lead_cluster.vRel) > 1.
+    else:
+      return False
+
+      
   def potential_low_speed_lead(self, v_ego):
     # stop for stuff in front of you and low speed, even without model confirmation
     return abs(self.yRel) < 1.5 and (v_ego < v_ego_stationary) and self.dRel < 25

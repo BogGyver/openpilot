@@ -24,7 +24,7 @@ class LatControlPID():
       pid_log.active = False
       self.pid.reset()
     else:
-      self.angle_steers_des = path_plan.angleSteers  # get from MPC/PathPlanner
+      self.angle_steers_des = path_plan.angleSteers
 
       steers_max = get_steer_max(CP, v_ego)
       self.pid.pos_limit = steers_max
@@ -46,4 +46,9 @@ class LatControlPID():
       pid_log.output = output_steer
       pid_log.saturated = bool(self.pid.saturated)
 
-    return output_steer, float(self.angle_steers_des), pid_log
+    
+    # we only deal with Tesla, so we return two angles, no torque info
+    if CP.carName == "tesla":
+      return float(self.angle_steers_des), path_plan.angleSteers, pid_log
+    else:
+      return output_steer, float(self.angle_steers_des), pid_log

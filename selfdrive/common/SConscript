@@ -16,7 +16,14 @@ files = [
   'visionimg.cc',
 ]
 
-if arch == "aarch64":
+
+if arch == "jarch64":
+  defines = {} #{"CLU_NO_CACHE": None}   
+  files += [                         
+    'visionbuf_cl.c',                
+  ]                                                                     
+  _gpu_libs = ["GL"] 
+elif arch == "aarch64":
   defines = {}
   files += [
     'framebuffer.cc',

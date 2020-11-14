@@ -1,4 +1,9 @@
 #!/bin/sh
 export LD_LIBRARY_PATH="/system/lib64:$LD_LIBRARY_PATH"
-exec ./_ui
-
+. /data/openpilot/selfdrive/car/tesla/readconfig.sh
+TBP=/data/tinkla_buddy_pro
+if test -f "$TBP"; then
+  exec /usr/bin/startx ./_ui $jetson_monitor_forced_resolution
+else
+  exec ./_ui
+fi

@@ -62,6 +62,7 @@ class ObservationKind():
   ANGLE_OFFSET_FAST = 27  # [rad]
   STIFFNESS = 28  # [-]
   STEER_RATIO = 29  # [-]
+  ROAD_FRAME_X_SPEED = 30  # (x) [m/s]
 
   names = [
     'Unknown',
@@ -108,7 +109,7 @@ SAT_OBS = [ObservationKind.PSEUDORANGE_GPS,
 
 
 def run_car_ekf_offline(kf, observations_by_kind):
-  from laika.raw_gnss import GNSSMeasurement
+  from laika.laika.raw_gnss import GNSSMeasurement
   observations = []
   # create list of observations with element format: [kind, time, data]
   for kind in observations_by_kind:

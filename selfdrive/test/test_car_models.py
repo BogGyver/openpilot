@@ -21,6 +21,7 @@ from selfdrive.car.chrysler.values import CAR as CHRYSLER
 from selfdrive.car.subaru.values import CAR as SUBARU
 from selfdrive.car.volkswagen.values import CAR as VOLKSWAGEN
 from selfdrive.car.nissan.values import CAR as NISSAN
+from selfdrive.car.tesla.values import CAR as TESLA
 
 
 os.environ['NOCRASH'] = '1'
@@ -333,6 +334,10 @@ routes = {
   },
   "fbbfa6af821552b9|2020-03-03--08-09-43": {
     'carFingerprint': NISSAN.XTRAIL,
+    'enableCamera': True,
+  },
+  "d3126df386f83c4d|2020-04-22--13-17-39": {
+    'carFingerprint': TESLA.MODELS,
     'enableCamera': True,
   },
 }

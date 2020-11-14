@@ -142,6 +142,7 @@ class SubMaster():
     self.data = {}
     self.logMonoTime = {}
     self.valid = {}
+    self.valid_cnt = {s: 0 for s in services}
 
     if ignore_alive is not None:
       self.ignore_alive = ignore_alive
@@ -162,6 +163,10 @@ class SubMaster():
       self.data[s] = getattr(data, s)
       self.logMonoTime[s] = 0
       self.valid[s] = data.valid
+      if data.valid:
+        self.valid_cnt[s] = 0
+      else:
+        self.valid_cnt[s] +=1
 
   def __getitem__(self, s):
     return self.data[s]
@@ -211,6 +216,60 @@ class SubMaster():
       service_list = self.alive.keys()
     return self.all_alive(service_list=service_list) and self.all_valid(service_list=service_list)
 
+  def all_alive_with_info(self, service_list=None):
+    """Returns alive state for tracked processes.
+    Args:
+        service_list (list): Optional service list.
+    Returns:
+        tuple: areAllAlive, processName, count
+    """
+    if service_list is None:  # check all
+      service_list = self.alive.keys()
+    areAllAlive = True
+    processName = ""
+    count = 0
+    for s in service_list:
+      if not self.alive[s]:
+        areAllAlive = False
+        processName = s
+        count = self.valid_cnt[s]
+        break
+    return (areAllAlive, processName, count)
+
+  def all_valid_with_info(self, service_list=None):
+    """Returns valid state for tracked processes.
+    Args:
+        service_list (list): Optional service list.
+    Returns:
+        tuple: areAllValid, processName, count
+    """
+    if service_list is None:  # check all
+      service_list = self.valid.keys()
+    areAllValid = True
+    processName = ""
+    count = 0
+    for s in service_list:
+      if not self.valid[s]:
+        areAllValid = False
+        processName = s
+        count = self.valid_cnt[s]
+        break
+    return (areAllValid, processName, count)
+
+  def all_alive_and_valid_with_info(self, service_list=None):
+    """Returns alive and valid state for tracked processes.
+    Args:
+        service_list (list): Optional service list.
+    Returns:
+        tuple: areAllAlive, areAllValid, aliveProcessName, aliveCount, validProcessName, validCount
+    """
+    if service_list is None:  # check all
+      service_list = self.alive.keys()
+    areAllAlive, aliveProcessName, aliveCount = self.all_alive(service_list=service_list)
+    areAllValid, validProcessName, validCount = self.all_valid(service_list=service_list)
+    return (areAllAlive, areAllValid, aliveProcessName, aliveCount, validProcessName, )
+
+
 
 class PubMaster():
   def __init__(self, services):
@@ -223,3 +282,4 @@ class PubMaster():
     if not isinstance(dat, bytes):
       dat = dat.to_bytes()
     self.sock[s].send(dat)
+

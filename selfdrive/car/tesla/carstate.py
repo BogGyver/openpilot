@@ -1,5 +1,5 @@
 from common.kalman.simple_kalman import KF1D
-from selfdrive.can.parser import CANParser
+from opendbc.can.parser import CANParser
 from selfdrive.config import Conversions as CV
 from selfdrive.car.tesla.ACC_module import ACCMode
 from selfdrive.car.tesla.PCC_module import PCCModes
@@ -7,9 +7,10 @@ from selfdrive.car.tesla.values import CAR, DBC
 from selfdrive.car.modules.UIBT_module import UIButtons
 from selfdrive.car.modules.UIEV_module import UIEvents
 from selfdrive.car.tesla.readconfig import read_config_file
+from selfdrive.car.interfaces import CarStateBase
 import os
 import subprocess
-from common.params import read_db, write_db
+from common.params import Params
 
 def parse_gear_shifter(can_gear_shifter, car_fingerprint):
 
@@ -150,7 +151,6 @@ def get_can_signals(CP):
   return signals, checks
 
 def get_epas_can_signals(CP):
-# this function generates lists for signal, messages and initial values
   signals = [
       ("EPAS_torsionBarTorque", "EPAS_sysStatus", 0), # Used in interface.py
       ("EPAS_eacStatus", "EPAS_sysStatus", 0),
@@ -158,11 +158,16 @@ def get_epas_can_signals(CP):
       ("EPAS_handsOnLevel", "EPAS_sysStatus", 0),
       ("EPAS_steeringFault", "EPAS_sysStatus", 0),
       ("EPAS_internalSAS",  "EPAS_sysStatus", 0), #BB see if this works better than STW_ANGLHP_STAT for angle
+      ("SDM_bcklDrivStatus", "SDM1", 0),
+      ("LoBm_On_Rq","BODY_R1" , 0),
+      ("HiBm_On", "BODY_R1", 0),
+      ("LgtSens_Night", "BODY_R1", 0),
   ]
 
   checks = [
       ("EPAS_sysStatus", 12), #JCT Actual message freq is 1.3 Hz (0.76 sec)
   ]
+
 
   #checks = []
   return signals, checks
@@ -179,20 +184,10 @@ def get_pedal_can_signals(CP):
   checks = []
   return signals, checks
 
-def get_can_parser(CP,mydbc):
-  signals, checks = get_can_signals(CP)
-  return CANParser(mydbc, signals, checks, 0)
-
-def get_epas_parser(CP,epascan):
-  signals, checks = get_epas_can_signals(CP)
-  return CANParser(DBC[CP.carFingerprint]['pt']+"_epas", signals, checks, epascan)
-
-def get_pedal_parser(CP):
-  signals, checks = get_pedal_can_signals(CP)
-  return CANParser(DBC[CP.carFingerprint]['pt']+"_pedal", signals, checks, 2)
-
-class CarState():
+class CarState(CarStateBase):
   def __init__(self, CP):
+    super().__init__(CP)
+    self.params = Params()
     self.speed_control_enabled = 0
     self.CL_MIN_V = 8.9
     self.CL_MAX_A = 20.
@@ -207,6 +202,7 @@ class CarState():
     ### START OF MAIN CONFIG OPTIONS ###
     ### Do NOT modify here, modify in /data/bb_openpilot.cfg and reboot
     self.forcePedalOverCC = True
+    self.usesApillarHarness = False
     self.enableHSO = True
     self.enableALCA = True
     self.enableDasEmulation = True
@@ -238,6 +234,13 @@ class CarState():
     self.ldwNumbPeriod = 1.5
     self.tapBlinkerExtension = 2
     self.ahbOffDuration = 5
+    self.roadCameraID = ""
+    self.driverCameraID = ""
+    self.roadCameraFx = 0.73
+    self.driverCameraFx = 0.75
+    self.roadCameraFlip = 0
+    self.driverCameraFlip = 0
+    self.monitorForcedRes = ""
     #read config file
     read_config_file(self)
     ### END OF MAIN CONFIG OPTIONS ###
@@ -250,7 +253,7 @@ class CarState():
 
     # Tesla Model
     self.teslaModelDetected = 1
-    self.teslaModel = read_db('/data/params','TeslaModel')
+    self.teslaModel = self.params.get('TeslaModel')
     if self.teslaModel is not None:
       self.teslaModel = self.teslaModel.decode()
     if self.teslaModel is None:
@@ -420,6 +423,28 @@ class CarState():
     self.ahbLoBeamOn = 0
     self.ahbHiBeamOn = 0
     self.ahbNightMode = 0
+
+  @staticmethod
+  def get_can_parser(CP):
+    signals, checks = get_can_signals(CP)
+    return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 0)
+
+  @staticmethod
+  def get_can_parser2(CP,mydbc):
+    signals, checks = get_can_signals(CP)
+    return CANParser(mydbc, signals, checks, 0)
+
+  @staticmethod
+  def get_epas_parser(CP,epascan):
+    signals, checks = get_epas_can_signals(CP)
+    return CANParser(DBC[CP.carFingerprint]['pt']+"_epas", signals, checks, epascan)
+
+  @staticmethod
+  def get_pedal_parser(CP,pedalcan):
+    signals, checks = get_pedal_can_signals(CP)
+    return CANParser(DBC[CP.carFingerprint]['pt']+"_pedal", signals, checks, pedalcan)
+
+
    
   def config_ui_buttons(self, pcc_available, pcc_blocked_by_acc_mode):
     if pcc_available:
@@ -489,7 +514,10 @@ class CarState():
     # ******************* parse out can *******************
     self.door_all_closed = not any([cp.vl["GTW_carState"]['DOOR_STATE_FL'], cp.vl["GTW_carState"]['DOOR_STATE_FR'],
                                cp.vl["GTW_carState"]['DOOR_STATE_RL'], cp.vl["GTW_carState"]['DOOR_STATE_RR']])  #JCT
-    self.seatbelt = cp.vl["SDM1"]['SDM_bcklDrivStatus']
+    if self.usesApillarHarness:
+      self.seatbelt = epas_cp.vl["SDM1"]['SDM_bcklDrivStatus']
+    else:
+      self.seatbelt = cp.vl["SDM1"]['SDM_bcklDrivStatus']
     #self.seatbelt = cp.vl["SDM1"]['SDM_bcklDrivStatus'] and cp.vl["GTW_status"]['GTW_driverPresent']
     if (cp.vl["GTW_carConfig"]['GTW_performanceConfig']) and (cp.vl["GTW_carConfig"]['GTW_performanceConfig'] > 0):
       prev_teslaModel = self.teslaModel
@@ -499,7 +527,7 @@ class CarState():
       if (cp.vl["GTW_carConfig"]['GTW_fourWheelDrive'] == 1):
         self.teslaModel = self.teslaModel + "D"
       if (self.teslaModelDetected == 0) or (prev_teslaModel != self.teslaModel):
-        write_db('/data/params','TeslaModel',self.teslaModel)
+        self.params.put('TeslaModel',self.teslaModel)
         self.teslaModelDetected = 1
 
     #Nav Map Data
@@ -538,9 +566,14 @@ class CarState():
       #AHB info
       self.ahbHighBeamStalkPosition = cp.vl["STW_ACTN_RQ"]["HiBmLvr_Stat"]
       self.ahbEnabled = cp.vl["MCU_chassisControl"]["MCU_ahlbEnable"]
-      self.ahbLoBeamOn = cp.vl["BODY_R1"]["LoBm_On_Rq"]
-      self.ahbHiBeamOn = cp.vl["BODY_R1"]["HiBm_On"]
-      self.ahbNightMode = cp.vl["BODY_R1"]["LgtSens_Night"]
+      if self.usesApillarHarness:
+        self.ahbLoBeamOn = epas_cp.vl["BODY_R1"]["LoBm_On_Rq"]
+        self.ahbHiBeamOn = epas_cp.vl["BODY_R1"]["HiBm_On"]
+        self.ahbNightMode = epas_cp.vl["BODY_R1"]["LgtSens_Night"]
+      else:
+        self.ahbLoBeamOn = cp.vl["BODY_R1"]["LoBm_On_Rq"]
+        self.ahbHiBeamOn = cp.vl["BODY_R1"]["HiBm_On"]
+        self.ahbNightMode = cp.vl["BODY_R1"]["LgtSens_Night"]
 
     usu = cp.vl['UI_gpsVehicleSpeed']["UI_userSpeedOffsetUnits"]
     if usu == 1:
@@ -627,7 +660,6 @@ class CarState():
     self.prev_turn_signal_stalk_state = self.turn_signal_stalk_state
     self.turn_signal_stalk_state = 0 if cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'] == 3 else int(cp.vl["STW_ACTN_RQ"]['TurnIndLvr_Stat'])
 
-    self.park_brake = 0  # TODO
     self.brake_hold = 0  # TODO
 
     self.main_on = 1 #cp.vl["SCM_BUTTONS"]['MAIN_ON']
@@ -635,6 +667,7 @@ class CarState():
     if self.imperial_speed_units:
       self.DI_cruiseSet = self.DI_cruiseSet * CV.MPH_TO_KPH
     self.gear_shifter = parse_gear_shifter(can_gear_shifter, self.CP.carFingerprint)
+    self.park_brake = self.gear_shifter == 'park'  # TODO
 
     self.pedal_gas = 0. # cp.vl["DI_torque1"]['DI_pedalPos'] / 102 #BB: to make it between 0..1
     self.car_gas = self.pedal_gas

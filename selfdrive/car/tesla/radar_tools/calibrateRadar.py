@@ -8,10 +8,10 @@ except ValueError:
 from cereal import car
 import time
 import os
-from selfdrive.can.parser import CANParser
+from opendbc.can.parser import CANParser
 from common.realtime import sec_since_boot
-from selfdrive.services import service_list
-import selfdrive.messaging as messaging
+from cereal.services import service_list
+import cereal.messaging as messaging
 from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
 from selfdrive.car.tesla.radar_interface import RadarInterface
 

@@ -1,6 +1,6 @@
 from cereal import ui
 from common import realtime
-import selfdrive.messaging as messaging
+import cereal.messaging as messaging
 
 class UIEvents():
     def __init__(self,carstate):

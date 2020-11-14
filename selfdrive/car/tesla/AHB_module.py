@@ -1,6 +1,6 @@
 from selfdrive.config import Conversions as CV
 from cereal import tesla,log
-import selfdrive.messaging as messaging
+import cereal.messaging as messaging
 import time
 
 DEBUG = False
