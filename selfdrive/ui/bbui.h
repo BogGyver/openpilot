@@ -448,7 +448,7 @@ void bb_draw_buttons( UIState *s) {
 }
 
 void bb_ui_draw_custom_alert( UIState *s) {
-    if ((strlen(s->b.custom_message) > 0) && (strlen(s->scene.alert_text1)==0)){
+    if ((strlen(s->b.custom_message) > 0) && (s->scene.alert_text1.length()==0)){
       if ((!((bb_get_button_status(s,(char *)"msg") == 0) && (s->b.custom_message_status<=3))) && (s->vision_connected == true)) {
         bb_ui_draw_vision_alert(s, ALERTSIZE_SMALL, s->b.custom_message_status,
                               s->b.custom_message,"");
@@ -1348,13 +1348,13 @@ void  bb_ui_poll_update( UIState *s) {
           strcpy(s->b.custom_message,datad.caText.str);
           s->b.custom_message_status = datad.caStatus;
 
-          if ((strlen(s->b.custom_message) > 0) && (strlen(s->scene.alert_text1)==0)){
+          if ((strlen(s->b.custom_message) > 0) && (s->scene.alert_text1.length()==0)){
             if ((!((bb_get_button_status(s,(char *)"msg") == 0) && (s->b.custom_message_status<=3))) && (s->vision_connected == true)) {
               set_awake(s, true);
             }
           }
 
-          if ((strlen(s->scene.alert_text1) > 0) || (strlen(s->scene.alert_text2) > 0) ) {
+          if ((s->scene.alert_text1.length() > 0) || (s->scene.alert_text2.length() > 0)) {
             set_awake(s, true);
           }
           

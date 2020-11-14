@@ -5,15 +5,21 @@ messaging_dir = Dir('messaging')
 # TODO: remove src-prefix and cereal from command string. can we set working directory?
 env.Command(["gen/c/include/c++.capnp.h", "gen/c/include/java.capnp.h"], [], "mkdir -p " + gen_dir.path + "/c/include && touch $TARGETS")
 env.Command(
-  ['gen/cpp/car.capnp.c++', 'gen/cpp/log.capnp.c++', 'gen/cpp/car.capnp.h', 'gen/cpp/log.capnp.h'],
-  ['car.capnp', 'log.capnp'],
-  ['tesla.capnp', 'tinkla.capnp', 'ui.capnp', 'gen/c/tinkla.capnp.c', 'gen/c/tinkla.capnp.h', 'gen/c/tesla.capnp.c', 'gen/c/tesla.capnp.h', 'gen/c/ui.capnp.c'],
+  ['gen/cpp/car.capnp.c++', 'gen/cpp/log.capnp.c++', 'gen/cpp/car.capnp.h', 'gen/cpp/log.capnp.h',
+  'gen/cpp/tesla.capnp.c++', 'gen/cpp/tesla.capnp.h', 'gen/cpp/tinkla.capnp.c++', 'gen/cpp/tinkla.capnp.h', 'gen/cpp/ui.capnp.c++', 'gen/cpp/ui.capnp.h'],
+  ['car.capnp', 'log.capnp',
+  'tesla.capnp', 'tinkla.capnp', 'ui.capnp'],
   'capnpc $SOURCES --src-prefix=cereal -o c++:' + gen_dir.path + '/cpp/')
+env.Command(
+  ['gen/c/car.capnp.c', 'gen/c/log.capnp.c', 'gen/c/ui.capnp.c', 
+  'gen/c/tinkla.capnp.c', 'gen/c/tesla.capnp.c', 'gen/c/car.capnp.h', 'gen/c/log.capnp.h', 'gen/c/ui.capnp.h', 'gen/c/tinkla.capnp.h', 'gen/c/tesla.capnp.h'],
+  ['car.capnp', 'log.capnp', 'tesla.capnp', 'tinkla.capnp', 'ui.capnp'],
+  'capnpc $SOURCES --src-prefix=cereal -o c:' + gen_dir.path + '/c/')
 import shutil
 if shutil.which('capnpc-java'):
   env.Command(
     ['gen/java/Car.java', 'gen/java/Log.java', 'gen/java/Tesla.java', 'gen/java/Tinkla.java', 'gen/java/Ui.java'],
-    ['car.capnp', 'log.capnp', 'tesla.capnp','tinkla.capnp', 'ui.capnp'],
+    ['car.capnp', 'log.capnp', 'tesla.capnp', 'tinkla.capnp', 'ui.capnp'],
     'capnpc $SOURCES --src-prefix=cereal -o java:' + gen_dir.path + '/java/')
 
 # TODO: remove non shared cereal and messaging
@@ -31,7 +37,7 @@ cereal_objects = env.SharedObject([
   ])
 
 env.Library('cereal', cereal_objects)
-env.SharedLibrary('cereal_shared', cereal_objects)
+env.SharedLibrary('cereal_shared', cereal_objects, LIBS=["capnp_c"])
 
 cereal_dir = Dir('.')
 services_h = env.Command(
