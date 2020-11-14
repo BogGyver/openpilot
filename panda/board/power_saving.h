@@ -1,3 +1,6 @@
+// WARNING: To stay in compliance with the SIL2 rules laid out in STM UM1840, we should never implement any of the available hardware low power modes.
+// See rule: CoU_3
+
 #define POWER_SAVE_STATUS_DISABLED 0
 #define POWER_SAVE_STATUS_ENABLED 1
 
@@ -46,10 +49,9 @@ void set_power_save_state(int state) {
       set_gpio_output(GPIOA, 14, enable);
     }
 
-    // Switch off IR and fan when in power saving
+    // Switch off IR when in power saving
     if(!enable){
       current_board->set_ir_power(0U);
-      current_board->set_fan_power(0U);
     }   
 
     power_save_status = state;

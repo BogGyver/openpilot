@@ -6,8 +6,8 @@ from cereal import car, log
 from common.numpy_fast import clip
 from common.realtime import sec_since_boot, set_realtime_priority, Ratekeeper, DT_CTRL
 from common.profiler import Profiler
-from common.params import Params, put_nonblocking
-import selfdrive.messaging as messaging
+from common.params import Params
+import cereal.messaging as messaging
 from selfdrive.config import Conversions as CV
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.car.car_helpers import get_car, get_startup_alert
@@ -23,17 +23,28 @@ from selfdrive.controls.lib.latcontrol_indi import LatControlINDI
 from selfdrive.controls.lib.latcontrol_lqr import LatControlLQR
 from selfdrive.controls.lib.alertmanager import AlertManager
 from selfdrive.controls.lib.vehicle_model import VehicleModel
-from selfdrive.controls.lib.driver_monitor import DriverStatus, MAX_TERMINAL_ALERTS
 from selfdrive.controls.lib.planner import LON_MPC_STEP
-from selfdrive.controls.lib.gps_helpers import is_rhd_region
 from selfdrive.locationd.calibration_helpers import Calibration, Filter
-from selfdrive.tinklad.tinkla_interface import TinklaClient
-from selfdrive.car.tesla.readconfig import CarSettings
 
+LANE_DEPARTURE_THRESHOLD = 0.1
 
 ThermalStatus = log.ThermalData.ThermalStatus
 State = log.ControlsState.OpenpilotState
 HwType = log.HealthData.HwType
+
+LaneChangeState = log.PathPlan.LaneChangeState
+LaneChangeDirection = log.PathPlan.LaneChangeDirection
+
+
+def add_lane_change_event(events, path_plan):
+  if path_plan.laneChangeState == LaneChangeState.preLaneChange:
+    if path_plan.laneChangeDirection == LaneChangeDirection.left:
+      events.append(create_event('preLaneChangeLeft', [ET.WARNING]))
+    else:
+      events.append(create_event('preLaneChangeRight', [ET.WARNING]))
+  elif path_plan.laneChangeState in [LaneChangeState.laneChangeStarting, LaneChangeState.laneChangeFinishing]:
+      events.append(create_event('laneChange', [ET.WARNING]))
+
 
 def isActive(state):
   """Check if the actuators are enabled"""
@@ -50,12 +61,13 @@ def events_to_bytes(events):
   for e in events:
     if isinstance(e, capnp.lib.capnp._DynamicStructReader):
       e = e.as_builder()
+    if not e.is_root:
+      e = e.copy()
     ret.append(e.to_bytes())
   return ret
 
 
-def data_sample(CI, CC, sm, can_sock, cal_status, cal_perc, overtemp, free_space, low_battery,
-                driver_status, state, mismatch_counter, params):
+def data_sample(CI, CC, sm, can_sock, state, mismatch_counter, can_error_counter, params):
   """Receive data from sockets and create events for battery, temperature and disk space"""
 
   # Update carstate from CAN and create events
@@ -65,16 +77,19 @@ def data_sample(CI, CC, sm, can_sock, cal_status, cal_perc, overtemp, free_space
   sm.update(0)
 
   events = list(CS.events)
+  events += list(sm['dMonitoringState'].events)
+  add_lane_change_event(events, sm['pathPlan'])
   enabled = isEnabled(state)
 
   # Check for CAN timeout
   if not can_strs:
+    can_error_counter += 1
     events.append(create_event('canError', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
 
-  if sm.updated['thermal']:
-    overtemp = sm['thermal'].thermalStatus >= ThermalStatus.red
-    free_space = sm['thermal'].freeSpace < 0.07  # under 7% of space free no enable allowed
-    low_battery = sm['thermal'].batteryPercent < 1 and sm['thermal'].chargingError  # at zero percent battery, while discharging, OP should not allowed
+  overtemp = sm['thermal'].thermalStatus >= ThermalStatus.red
+  free_space = sm['thermal'].freeSpace < 0.07  # under 7% of space free no enable allowed
+  low_battery = sm['thermal'].batteryPercent < 1 and sm['thermal'].chargingError  # at zero percent battery, while discharging, OP should not allowed
+  mem_low = sm['thermal'].memUsedPercent > 90
 
   # Create events for battery, temperature and disk space
   if low_battery:
@@ -83,29 +98,21 @@ def data_sample(CI, CC, sm, can_sock, cal_status, cal_perc, overtemp, free_space
     events.append(create_event('overheat', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
   if free_space:
     events.append(create_event('outOfSpace', [ET.NO_ENTRY]))
+  if mem_low:
+    events.append(create_event('lowMemory', [ET.NO_ENTRY, ET.SOFT_DISABLE, ET.PERMANENT]))
 
-  # GPS coords RHD parsing, once every restart
-  if sm.updated['gpsLocation'] and not driver_status.is_rhd_region_checked:
-    is_rhd = is_rhd_region(sm['gpsLocation'].latitude, sm['gpsLocation'].longitude)
-    driver_status.is_rhd_region = is_rhd
-    driver_status.is_rhd_region_checked = True
-    put_nonblocking("IsRHD", "1" if is_rhd else "0")
+  if CS.stockAeb:
+    events.append(create_event('stockAeb', []))
 
   # Handle calibration
-  if sm.updated['liveCalibration']:
-    cal_status = sm['liveCalibration'].calStatus
-    cal_perc = sm['liveCalibration'].calPerc
+  cal_status = sm['liveCalibration'].calStatus
+  cal_perc = sm['liveCalibration'].calPerc
 
-  cal_rpy = [0,0,0]
   if cal_status != Calibration.CALIBRATED:
     if cal_status == Calibration.UNCALIBRATED:
       events.append(create_event('calibrationIncomplete', [ET.NO_ENTRY, ET.SOFT_DISABLE, ET.PERMANENT]))
     else:
       events.append(create_event('calibrationInvalid', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
-  else:
-    rpy = sm['liveCalibration'].rpyCalib
-    if len(rpy) == 3:
-      cal_rpy = rpy
 
   # When the panda and controlsd do not agree on controls_allowed
   # we want to disengage openpilot. However the status from the panda goes through
@@ -114,21 +121,13 @@ def data_sample(CI, CC, sm, can_sock, cal_status, cal_perc, overtemp, free_space
   if not enabled:
     mismatch_counter = 0
 
-  if sm.updated['health']:
-    controls_allowed = sm['health'].controlsAllowed
-    if not controls_allowed and enabled:
-      mismatch_counter += 1
-    if mismatch_counter >= 2:
-      events.append(create_event('controlsMismatch', [ET.IMMEDIATE_DISABLE]))
+  controls_allowed = sm['health'].controlsAllowed
+  if not controls_allowed and enabled:
+    mismatch_counter += 1
+  if mismatch_counter >= 200:
+    events.append(create_event('controlsMismatch', [ET.IMMEDIATE_DISABLE]))
 
-  # Driver monitoring
-  if sm.updated['driverMonitoring']:
-    driver_status.get_pose(sm['driverMonitoring'], cal_rpy, CS.vEgo, enabled)
-
-  if driver_status.terminal_alert_cnt >= MAX_TERMINAL_ALERTS:
-    events.append(create_event("tooDistracted", [ET.NO_ENTRY]))
-
-  return CS, events, cal_status, cal_perc, overtemp, free_space, low_battery, mismatch_counter
+  return CS, events, cal_perc, mismatch_counter, can_error_counter
 
 
 def state_transition(frame, CS, CP, state, events, soft_disable_timer, v_cruise_kph, AM):
@@ -219,7 +218,7 @@ def state_transition(frame, CS, CP, state, events, soft_disable_timer, v_cruise_
 
 
 def state_control(frame, rcv_frame, plan, path_plan, CS, CP, state, events, v_cruise_kph, v_cruise_kph_last,
-                  AM, rk, driver_status, LaC, LoC, read_only, is_metric, cal_perc, dm_enabled):
+                  AM, rk, LaC, LoC, read_only, is_metric, cal_perc, last_blinker_frame):
   """Given the state, this function returns an actuators packet"""
 
   actuators = car.CarControl.Actuators.new_message()
@@ -227,18 +226,16 @@ def state_control(frame, rcv_frame, plan, path_plan, CS, CP, state, events, v_cr
   enabled = isEnabled(state)
   active = isActive(state)
 
-  # check if user has interacted with the car
-  driver_engaged = len(CS.buttonEvents) > 0 or \
-                   v_cruise_kph != v_cruise_kph_last or \
-                   CS.steeringPressed or \
-                   not dm_enabled
+  if CS.leftBlinker or CS.rightBlinker:
+    last_blinker_frame = frame
 
-  # add eventual driver distracted events
-  events = driver_status.update(events, driver_engaged, isActive(state), CS.standstill)
-
-  # send FCW alert if triggered by planner
   if plan.fcw:
+    # send FCW alert if triggered by planner
     AM.add(frame, "fcw", enabled)
+
+  elif CS.stockFcw:
+    # send a silent alert when stock fcw triggers, since the car is already beeping
+    AM.add(frame, "fcwStock", enabled)
 
   # State specific actions
 
@@ -267,11 +264,16 @@ def state_control(frame, rcv_frame, plan, path_plan, CS, CP, state, events, v_cr
   actuators.gas, actuators.brake = LoC.update(active, CS.vEgo, CS.brakePressed, CS.standstill, CS.cruiseState.standstill,
                                               v_cruise_kph, v_acc_sol, plan.vTargetFuture, a_acc_sol, CP)
   # Steering PID loop and lateral MPC
-  actuators.steer, actuators.steerAngle, lac_log = LaC.update(active, CS.vEgo, CS.steeringAngle, CS.steeringRate, CS.steeringTorqueEps, CS.steeringPressed, CP, path_plan)
+  actuators.steer, actuators.steerAngle, lac_log = LaC.update(active, CS.vEgo, CS.steeringAngle, CS.steeringRate, CS.steeringTorqueEps, CS.steeringPressed, CS.steeringRateLimited, CP, path_plan)
 
   # Send a "steering required alert" if saturation count has reached the limit
-  if LaC.sat_flag and CP.steerLimitAlert:
-    AM.add(frame, "steerSaturated", enabled)
+  if lac_log.saturated and not CS.steeringPressed:
+    # Check if we deviated from the path
+    left_deviation = actuators.steer > 0 and path_plan.dPoly[3] > 0.1
+    right_deviation = actuators.steer < 0 and path_plan.dPoly[3] < -0.1
+
+    if left_deviation or right_deviation:
+      AM.add(frame, "steerSaturated", enabled)
 
   # Parse permanent warnings to display constantly
   for e in get_events(events, [ET.PERMANENT]):
@@ -284,13 +286,12 @@ def state_control(frame, rcv_frame, plan, path_plan, CS, CP, state, events, v_cr
         extra_text_2 = str(int(round(Filter.MIN_SPEED * CV.MS_TO_MPH))) + " mph"
     AM.add(frame, str(e) + "Permanent", enabled, extra_text_1=extra_text_1, extra_text_2=extra_text_2)
 
-  AM.process_alerts(frame)
-
-  return actuators, v_cruise_kph, driver_status, v_acc_sol, a_acc_sol, lac_log
+  return actuators, v_cruise_kph, v_acc_sol, a_acc_sol, lac_log, last_blinker_frame
 
 
 def data_send(sm, pm, CS, CI, CP, VM, state, events, actuators, v_cruise_kph, rk, AM,
-              driver_status, LaC, LoC, read_only, start_time, v_acc, a_acc, lac_log, events_prev):
+              LaC, LoC, read_only, start_time, v_acc, a_acc, lac_log, events_prev,
+              last_blinker_frame, is_ldw_enabled, can_error_counter):
   """Send actuators and hud commands to the car, send controlsstate and MPC logging"""
 
   CC = car.CarControl.new_message()
@@ -312,18 +313,30 @@ def data_send(sm, pm, CS, CI, CP, VM, state, events, actuators, v_cruise_kph, rk
 
   right_lane_visible = sm['pathPlan'].rProb > 0.5
   left_lane_visible = sm['pathPlan'].lProb > 0.5
-
   CC.hudControl.rightLaneVisible = bool(right_lane_visible)
   CC.hudControl.leftLaneVisible = bool(left_lane_visible)
 
-  blinker = CS.leftBlinker or CS.rightBlinker
-  ldw_allowed = CS.vEgo > 12.5 and not blinker
+  recent_blinker = (sm.frame - last_blinker_frame) * DT_CTRL < 5.0  # 5s blinker cooldown
+  calibrated = sm['liveCalibration'].calStatus == Calibration.CALIBRATED
+  ldw_allowed = CS.vEgo > 31 * CV.MPH_TO_MS and not recent_blinker and is_ldw_enabled and not isActive(state) and calibrated
 
-  if len(list(sm['pathPlan'].rPoly)) == 4:
-    CC.hudControl.rightLaneDepart = bool(ldw_allowed and sm['pathPlan'].rPoly[3] > -(1.08 + CAMERA_OFFSET) and right_lane_visible)
-  if len(list(sm['pathPlan'].lPoly)) == 4:
-    CC.hudControl.leftLaneDepart = bool(ldw_allowed and sm['pathPlan'].lPoly[3] < (1.08 - CAMERA_OFFSET) and left_lane_visible)
+  md = sm['model']
+  if len(md.meta.desirePrediction):
+    l_lane_change_prob = md.meta.desirePrediction[log.PathPlan.Desire.laneChangeLeft - 1]
+    r_lane_change_prob = md.meta.desirePrediction[log.PathPlan.Desire.laneChangeRight - 1]
 
+    l_lane_close = left_lane_visible and (sm['pathPlan'].lPoly[3] < (1.08 - CAMERA_OFFSET))
+    r_lane_close = right_lane_visible and (sm['pathPlan'].rPoly[3] > -(1.08 + CAMERA_OFFSET))
+
+    if ldw_allowed:
+      CC.hudControl.leftLaneDepart = bool(l_lane_change_prob > LANE_DEPARTURE_THRESHOLD and l_lane_close)
+      CC.hudControl.rightLaneDepart = bool(r_lane_change_prob > LANE_DEPARTURE_THRESHOLD and r_lane_close)
+
+  if CC.hudControl.rightLaneDepart or CC.hudControl.leftLaneDepart:
+    AM.add(sm.frame, 'ldwPermanent', False)
+    events.append(create_event('ldw', [ET.PERMANENT]))
+
+  AM.process_alerts(sm.frame)
   CC.hudControl.visualAlert = AM.visual_alert
 
   if not read_only:
@@ -331,11 +344,10 @@ def data_send(sm, pm, CS, CI, CP, VM, state, events, actuators, v_cruise_kph, rk
     can_sends = CI.apply(CC)
     pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
 
-  force_decel = driver_status.awareness < 0.
+  force_decel = sm['dMonitoringState'].awarenessStatus < 0.
 
   # controlsState
-  dat = messaging.new_message()
-  dat.init('controlsState')
+  dat = messaging.new_message('controlsState')
   dat.valid = CS.canValid
   dat.controlsState = {
     "alertText1": AM.alert_text_1,
@@ -345,8 +357,7 @@ def data_send(sm, pm, CS, CI, CP, VM, state, events, actuators, v_cruise_kph, rk
     "alertBlinkingRate": AM.alert_rate,
     "alertType": AM.alert_type,
     "alertSound": AM.audible_alert,
-    "awarenessStatus": max(driver_status.awareness, -0.1) if isEnabled(state) else 1.0,
-    "driverMonitoringOn": bool(driver_status.face_detected),
+    "driverMonitoringOn": sm['dMonitoringState'].faceDetected,
     "canMonoTimes": list(CS.canMonoTimes),
     "planMonoTime": sm.logMonoTime['plan'],
     "pathPlanMonoTime": sm.logMonoTime['pathPlan'],
@@ -376,6 +387,7 @@ def data_send(sm, pm, CS, CI, CP, VM, state, events, actuators, v_cruise_kph, rk
     "startMonoTime": int(start_time * 1e9),
     "mapValid": sm['plan'].mapValid,
     "forceDecel": bool(force_decel),
+    "canErrorCounter": can_error_counter,
   }
 
   if CP.lateralTuning.which() == 'pid':
@@ -387,8 +399,7 @@ def data_send(sm, pm, CS, CI, CP, VM, state, events, actuators, v_cruise_kph, rk
   pm.send('controlsState', dat)
 
   # carState
-  cs_send = messaging.new_message()
-  cs_send.init('carState')
+  cs_send = messaging.new_message('carState')
   cs_send.valid = CS.canValid
   cs_send.carState = CS
   cs_send.carState.events = events
@@ -397,34 +408,24 @@ def data_send(sm, pm, CS, CI, CP, VM, state, events, actuators, v_cruise_kph, rk
   # carEvents - logged every second or on change
   events_bytes = events_to_bytes(events)
   if (sm.frame % int(1. / DT_CTRL) == 0) or (events_bytes != events_prev):
-    ce_send = messaging.new_message()
-    ce_send.init('carEvents', len(events))
+    ce_send = messaging.new_message('carEvents', len(events))
     ce_send.carEvents = events
     pm.send('carEvents', ce_send)
 
   # carParams - logged every 50 seconds (> 1 per segment)
   if (sm.frame % int(50. / DT_CTRL) == 0):
-    cp_send = messaging.new_message()
-    cp_send.init('carParams')
+    cp_send = messaging.new_message('carParams')
     cp_send.carParams = CP
     pm.send('carParams', cp_send)
 
   # carControl
-  cc_send = messaging.new_message()
-  cc_send.init('carControl')
+  cc_send = messaging.new_message('carControl')
   cc_send.valid = CS.canValid
   cc_send.carControl = CC
   pm.send('carControl', cc_send)
 
   return CC, events_bytes
 
-def logAllAliveAndValidInfoToTinklad(sm, tinklaClient):
-  areAllAlive,aliveProcessName,aliveCount = sm.all_alive_with_info()
-  areAllValid, validProcessName, validCount = sm.all_valid_with_info()
-  if not areAllAlive:
-    tinklaClient.logProcessCommErrorEvent(source="carcontroller", processName=aliveProcessName, count=aliveCount, eventType="Not Alive")
-  else:
-    tinklaClient.logProcessCommErrorEvent(source="carcontroller", processName=validProcessName, count=validCount, eventType="Not Valid")
 
 def controlsd_thread(sm=None, pm=None, can_sock=None):
   gc.disable()
@@ -434,10 +435,11 @@ def controlsd_thread(sm=None, pm=None, can_sock=None):
 
   params = Params()
 
-  tinklaClient = TinklaClient()
   is_metric = params.get("IsMetric", encoding='utf8') == "1"
+  is_ldw_enabled = params.get("IsLdwEnabled", encoding='utf8') == "1"
   passive = params.get("Passive", encoding='utf8') == "1"
   openpilot_enabled_toggle = params.get("OpenpilotEnabledToggle", encoding='utf8') == "1"
+  community_feature_toggle = params.get("CommunityFeaturesToggle", encoding='utf8') == "1"
 
   passive = passive or not openpilot_enabled_toggle
 
@@ -446,8 +448,8 @@ def controlsd_thread(sm=None, pm=None, can_sock=None):
     pm = messaging.PubMaster(['sendcan', 'controlsState', 'carState', 'carControl', 'carEvents', 'carParams'])
 
   if sm is None:
-    sm = messaging.SubMaster(['thermal', 'health', 'liveCalibration', 'driverMonitoring', 'plan', 'pathPlan', \
-                              'gpsLocation'], ignore_alive=['gpsLocation'])
+    sm = messaging.SubMaster(['thermal', 'health', 'liveCalibration', 'dMonitoringState', 'plan', 'pathPlan', \
+                              'model'])
 
 
   if can_sock is None:
@@ -465,12 +467,15 @@ def controlsd_thread(sm=None, pm=None, can_sock=None):
   car_recognized = CP.carName != 'mock'
   # If stock camera is disconnected, we loaded car controls and it's not chffrplus
   controller_available = CP.enableCamera and CI.CC is not None and not passive
-  read_only = not car_recognized or not controller_available or CP.dashcamOnly
+  community_feature_disallowed = CP.communityFeature and not community_feature_toggle
+  read_only = not car_recognized or not controller_available or CP.dashcamOnly or community_feature_disallowed
   if read_only:
     CP.safetyModel = car.CarParams.SafetyModel.noOutput
 
   # Write CarParams for radard and boardd safety mode
-  params.put("CarParams", CP.to_bytes())
+  cp_bytes = CP.to_bytes()
+  params.put("CarParams", cp_bytes)
+  params.put("CarParamsCache", cp_bytes)
   params.put("LongitudinalControl", "1" if CP.openpilotLongitudinalControl else "0")
 
   CC = car.CarControl.new_message()
@@ -489,25 +494,22 @@ def controlsd_thread(sm=None, pm=None, can_sock=None):
   elif CP.lateralTuning.which() == 'lqr':
     LaC = LatControlLQR(CP)
 
-  driver_status = DriverStatus()
-  is_rhd = params.get("IsRHD")
-  if is_rhd is not None:
-    driver_status.is_rhd = bool(int(is_rhd))
-
   state = State.disabled
   soft_disable_timer = 0
   v_cruise_kph = 255
   v_cruise_kph_last = 0
-  overtemp = False
-  free_space = False
-  cal_status = Calibration.INVALID
-  cal_perc = 0
   mismatch_counter = 0
-  low_battery = False
+  can_error_counter = 0
+  last_blinker_frame = 0
   events_prev = []
 
+  sm['liveCalibration'].calStatus = Calibration.INVALID
   sm['pathPlan'].sensorValid = True
   sm['pathPlan'].posenetValid = True
+  sm['thermal'].freeSpace = 1.
+  sm['dMonitoringState'].events = []
+  sm['dMonitoringState'].awarenessStatus = 1.
+  sm['dMonitoringState'].faceDetected = False
 
   # detect sound card presence
   sounds_available = not os.path.isfile('/EON') or (os.path.isdir('/proc/asound/card0') and open('/proc/asound/card0/state').read().strip() == 'ONLINE')
@@ -519,22 +521,19 @@ def controlsd_thread(sm=None, pm=None, can_sock=None):
 
   prof = Profiler(False)  # off by default
 
-  dm_enabled = CarSettings().get_value("enableDriverMonitor")
-
   while True:
     start_time = sec_since_boot()
     prof.checkpoint("Ratekeeper", ignore=True)
 
     # Sample data and compute car events
-    CS, events, cal_status, cal_perc, overtemp, free_space, low_battery, mismatch_counter =\
-      data_sample(CI, CC, sm, can_sock, cal_status, cal_perc, overtemp, free_space, low_battery,
-                  driver_status, state, mismatch_counter, params)
+    CS, events, cal_perc, mismatch_counter, can_error_counter = data_sample(CI, CC, sm, can_sock, state, mismatch_counter, can_error_counter, params)
     prof.checkpoint("Sample")
 
     # Create alerts
-    if not sm.all_alive_and_valid():
+    if not sm.alive['plan'] and sm.alive['pathPlan']:  # only plan not being received: radar not communicating
+      events.append(create_event('radarCommIssue', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
+    elif not sm.all_alive_and_valid():
       events.append(create_event('commIssue', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
-      logAllAliveAndValidInfoToTinklad(sm=sm, tinklaClient=tinklaClient)
     if not sm['pathPlan'].mpcSolutionValid:
       events.append(create_event('plannerError', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
     if not sm['pathPlan'].sensorValid:
@@ -542,18 +541,21 @@ def controlsd_thread(sm=None, pm=None, can_sock=None):
     if not sm['pathPlan'].paramsValid:
       events.append(create_event('vehicleModelInvalid', [ET.WARNING]))
     if not sm['pathPlan'].posenetValid:
-      events.append(create_event('posenetInvalid', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
+      events.append(create_event('posenetInvalid', [ET.NO_ENTRY, ET.WARNING]))
     if not sm['plan'].radarValid:
       events.append(create_event('radarFault', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
     if sm['plan'].radarCanError:
       events.append(create_event('radarCanError', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
     if not CS.canValid:
       events.append(create_event('canError', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
-      tinklaClient.logCANErrorEvent(source="carcontroller", canMessage=0, additionalInformation="Invalid CAN")
     if not sounds_available:
       events.append(create_event('soundsUnavailable', [ET.NO_ENTRY, ET.PERMANENT]))
     if internet_needed:
       events.append(create_event('internetConnectivityNeeded', [ET.NO_ENTRY, ET.PERMANENT]))
+    if community_feature_disallowed:
+      events.append(create_event('communityFeatureDisallowed', [ET.PERMANENT]))
+    if read_only and not passive:
+      events.append(create_event('carUnrecognized', [ET.PERMANENT]))
 
     # Only allow engagement with brake pressed when stopped behind another stopped car
     if CS.brakePressed and sm['plan'].vTargetFuture >= STARTING_TARGET_SPEED and not CP.radarOffCan and CS.vEgo < 0.3:
@@ -566,15 +568,16 @@ def controlsd_thread(sm=None, pm=None, can_sock=None):
       prof.checkpoint("State transition")
 
     # Compute actuators (runs PID loops and lateral MPC)
-    actuators, v_cruise_kph, driver_status, v_acc, a_acc, lac_log = \
+    actuators, v_cruise_kph, v_acc, a_acc, lac_log, last_blinker_frame = \
       state_control(sm.frame, sm.rcv_frame, sm['plan'], sm['pathPlan'], CS, CP, state, events, v_cruise_kph, v_cruise_kph_last, AM, rk,
-                    driver_status, LaC, LoC, read_only, is_metric, cal_perc, dm_enabled)
+                    LaC, LoC, read_only, is_metric, cal_perc, last_blinker_frame)
 
     prof.checkpoint("State Control")
 
     # Publish data
-    CC, events_prev = data_send(sm, pm, CS, CI, CP, VM, state, events, actuators, v_cruise_kph, rk, AM, driver_status, LaC,
-                                LoC, read_only, start_time, v_acc, a_acc, lac_log, events_prev)
+    CC, events_prev = data_send(sm, pm, CS, CI, CP, VM, state, events, actuators, v_cruise_kph, rk, AM, LaC,
+                                LoC, read_only, start_time, v_acc, a_acc, lac_log, events_prev, last_blinker_frame,
+                                is_ldw_enabled, can_error_counter)
     prof.checkpoint("Sent")
 
     rk.monitor_time()

@@ -2,7 +2,7 @@
 from cereal import car
 from selfdrive.config import Conversions as CV
 from selfdrive.swaglog import cloudlog
-import selfdrive.messaging as messaging
+import cereal.messaging as messaging
 from selfdrive.car import gen_empty_fingerprint
 from selfdrive.car.interfaces import CarInterfaceBase
 
@@ -14,7 +14,7 @@ LPG = 2 * 3.1415 * YAW_FR * TS / (1 + 2 * 3.1415 * YAW_FR * TS)
 
 
 class CarInterface(CarInterfaceBase):
-  def __init__(self, CP, CarController):
+  def __init__(self, CP, CarController, CarState):
     self.CP = CP
     self.CC = CarController
 
@@ -34,18 +34,10 @@ class CarInterface(CarInterfaceBase):
     return accel
 
   @staticmethod
-  def get_params(candidate, fingerprint=gen_empty_fingerprint(), vin="", has_relay=False):
-
-    ret = car.CarParams.new_message()
-
+  def get_params(candidate, fingerprint=gen_empty_fingerprint(), has_relay=False, car_fw=[]):
+    ret = CarInterfaceBase.get_std_params(candidate, fingerprint, has_relay)
     ret.carName = "mock"
-    ret.carFingerprint = candidate
-
     ret.safetyModel = car.CarParams.SafetyModel.noOutput
-    ret.openpilotLongitudinalControl = False
-
-    # FIXME: hardcoding honda civic 2016 touring params so they can be used to
-    # scale unknown params for other cars
     ret.mass = 1700.
     ret.rotationalInertia = 2500.
     ret.wheelbase = 2.70
@@ -53,25 +45,6 @@ class CarInterface(CarInterfaceBase):
     ret.steerRatio = 13. # reasonable
     ret.tireStiffnessFront = 1e6    # very stiff to neglect slip
     ret.tireStiffnessRear = 1e6     # very stiff to neglect slip
-    ret.steerRatioRear = 0.
-
-    ret.steerMaxBP = [0.]
-    ret.steerMaxV = [0.]  # 2/3rd torque allowed above 45 kph
-    ret.gasMaxBP = [0.]
-    ret.gasMaxV = [0.]
-    ret.brakeMaxBP = [0.]
-    ret.brakeMaxV = [0.]
-
-    ret.longitudinalTuning.kpBP = [0.]
-    ret.longitudinalTuning.kpV = [0.]
-    ret.longitudinalTuning.kiBP = [0.]
-    ret.longitudinalTuning.kiV = [0.]
-    ret.longitudinalTuning.deadzoneBP = [0.]
-    ret.longitudinalTuning.deadzoneV = [0.]
-    ret.steerActuatorDelay = 0.
-    # ret.steerReactance = 0.7
-    # ret.steerInductance = 1.0
-    # ret.steerResistance = 1.0
 
     return ret
 

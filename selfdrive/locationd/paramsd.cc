@@ -20,6 +20,7 @@
 #include "locationd_yawrate.h"
 #include "params_learner.h"
 
+#include "common/util.h"
 
 void sigpipe_handler(int sig) {
   LOGE("SIGPIPE received");
@@ -34,6 +35,12 @@ int main(int argc, char *argv[]) {
   SubSocket * sensor_events_sock = SubSocket::create(c, "sensorEvents");
   SubSocket * camera_odometry_sock = SubSocket::create(c, "cameraOdometry");
   PubSocket * live_parameters_sock = PubSocket::create(c, "liveParameters");
+
+  assert(controls_state_sock != NULL);
+  assert(sensor_events_sock != NULL);
+  assert(camera_odometry_sock != NULL);
+  assert(live_parameters_sock != NULL);
+
   Poller * poller = Poller::create({controls_state_sock, sensor_events_sock, camera_odometry_sock});
 
   Localizer localizer;
@@ -98,7 +105,7 @@ int main(int argc, char *argv[]) {
   // Main loop
   int save_counter = 0;
   while (true){
-    for (auto s : poller->poll(-1)){
+    for (auto s : poller->poll(100)){
       Message * msg = s->receive();
 
       auto amsg = kj::heapArray<capnp::word>((msg->getSize() / sizeof(capnp::word)) + 1);
@@ -136,7 +143,7 @@ int main(int argc, char *argv[]) {
         auto live_params = event.initLiveParameters();
         live_params.setValid(valid);
         live_params.setYawRate(localizer.x[0]);
-        live_params.setGyroBias(localizer.x[2]);
+        live_params.setGyroBias(localizer.x[1]);
         live_params.setSensorValid(sensor_data_age < 5.0);
         live_params.setAngleOffset(angle_offset_degrees);
         live_params.setAngleOffsetAverage(angle_offset_average_degrees);

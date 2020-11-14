@@ -3,13 +3,18 @@ from common.params import Params
 from common.basedir import BASEDIR
 from selfdrive.car.fingerprints import eliminate_incompatible_cars, all_known_cars
 from selfdrive.car.vin import get_vin, VIN_UNKNOWN
+from selfdrive.car.fw_versions import get_fw_versions, match_fw_to_car
 from selfdrive.swaglog import cloudlog
-import selfdrive.messaging as messaging
+import cereal.messaging as messaging
 from selfdrive.car import gen_empty_fingerprint
-from selfdrive.car.tesla.readconfig import CarSettings
+
+from cereal import car
 
 def get_startup_alert(car_recognized, controller_available):
   alert = 'startup'
+  if Params().get("GitRemote", encoding="utf8") in ['git@github.com:commaai/openpilot.git', 'https://github.com/commaai/openpilot.git']:
+    if Params().get("GitBranch", encoding="utf8") not in ['devel', 'release2-staging', 'dashcam-staging', 'release2', 'dashcam']:
+      alert = 'startupMaster'
   if not car_recognized:
     alert = 'startupNoCar'
   elif car_recognized and not controller_available:
@@ -24,10 +29,12 @@ def load_interfaces(brand_names):
     CarInterface = __import__(path + '.interface', fromlist=['CarInterface']).CarInterface
     if os.path.exists(BASEDIR + '/' + path.replace('.', '/') + '/carcontroller.py'):
       CarController = __import__(path + '.carcontroller', fromlist=['CarController']).CarController
+      CarState = __import__(path + '.carstate', fromlist=['CarState']).CarState
     else:
       CarController = None
+      CarState = None
     for model_name in brand_names[brand_name]:
-      ret[model_name] = (CarInterface, CarController)
+      ret[model_name] = (CarInterface, CarController, CarState)
   return ret
 
 
@@ -49,20 +56,39 @@ def _get_interface_names():
 
 
 # imports from directory selfdrive/car/<name>/
-interfaces = load_interfaces(_get_interface_names())
+interface_names = _get_interface_names()
+interfaces = load_interfaces(interface_names)
+
 
 def only_toyota_left(candidate_cars):
   return all(("TOYOTA" in c or "LEXUS" in c) for c in candidate_cars) and len(candidate_cars) > 0
 
-# BOUNTY: every added fingerprint in selfdrive/car/*/values.py is a $100 coupon code on shop.comma.ai
+
 # **** for use live only ****
 def fingerprint(logcan, sendcan, has_relay):
-
   if has_relay:
     # Vin query only reliably works thorugh OBDII
-    vin = get_vin(logcan, sendcan, 1)
+    bus = 1
+
+    cached_params = Params().get("CarParamsCache")
+    if cached_params is not None:
+      cached_params = car.CarParams.from_bytes(cached_params)
+      if cached_params.carName == "mock":
+        cached_params = None
+
+    if cached_params is not None and len(cached_params.carFw) > 0 and cached_params.carVin is not VIN_UNKNOWN:
+      cloudlog.warning("Using cached CarParams")
+      vin = cached_params.carVin
+      car_fw = list(cached_params.carFw)
+    else:
+      cloudlog.warning("Getting VIN & FW versions")
+      _, vin = get_vin(logcan, sendcan, bus)
+      car_fw = get_fw_versions(logcan, sendcan, bus)
+
+    fw_candidates = match_fw_to_car(car_fw)
   else:
     vin = VIN_UNKNOWN
+    fw_candidates, car_fw = set(), []
 
   cloudlog.warning("VIN %s", vin)
   Params().put("CarVin", vin)
@@ -100,13 +126,6 @@ def fingerprint(logcan, sendcan, has_relay):
         if frame > frame_fingerprint:
           # fingerprint done
           car_fingerprint = candidate_cars[b][0]
-    
-    
-    if (car_fingerprint is None) and CarSettings().forceFingerprintTesla:
-          print ("Fingerprinting Failed: Returning Tesla (based on branch)")
-          car_fingerprint = "TESLA MODEL S"
-          vin = "TESLAFAKEVIN12345"
-
 
     # bail if no cars left or we've been waiting for more than 2s
     failed = all(len(cc) == 0 for cc in candidate_cars.values()) or frame > 200
@@ -115,25 +134,33 @@ def fingerprint(logcan, sendcan, has_relay):
 
     frame += 1
 
+  source = car.CarParams.FingerprintSource.can
+
+  # If FW query returns exactly 1 candidate, use it
+  if len(fw_candidates) == 1:
+    car_fingerprint = list(fw_candidates)[0]
+    source = car.CarParams.FingerprintSource.fw
+
+  fixed_fingerprint = os.environ.get('FINGERPRINT', "")
+  if len(fixed_fingerprint):
+    car_fingerprint = fixed_fingerprint
+    source = car.CarParams.FingerprintSource.fixed
+
   cloudlog.warning("fingerprinted %s", car_fingerprint)
-  return car_fingerprint, finger, vin
+  return car_fingerprint, finger, vin, car_fw, source
 
 
-def get_car(logcan, sendcan, has_relay = False):
-  if CarSettings().forceFingerprintTesla:
-    candidate="TESLA MODEL S"
-    fingerprints=["","",""]
-    vin="TESLAFORCED123456"
-    cloudlog.warning("VIN %s", vin)
-    Params().put("CarVin", vin)
-  else:
-    candidate, fingerprints, vin = fingerprint(logcan, sendcan, has_relay)
+def get_car(logcan, sendcan, has_relay=False):
+  candidate, fingerprints, vin, car_fw, source = fingerprint(logcan, sendcan, has_relay)
 
   if candidate is None:
     cloudlog.warning("car doesn't match any fingerprints: %r", fingerprints)
     candidate = "mock"
 
-  CarInterface, CarController = interfaces[candidate]
-  car_params = CarInterface.get_params(candidate, fingerprints, vin, has_relay)
+  CarInterface, CarController, CarState = interfaces[candidate]
+  car_params = CarInterface.get_params(candidate, fingerprints, has_relay, car_fw)
+  car_params.carVin = vin
+  car_params.carFw = car_fw
+  car_params.fingerprintSource = source
 
-  return CarInterface(car_params, CarController), car_params
+  return CarInterface(car_params, CarController, CarState), car_params

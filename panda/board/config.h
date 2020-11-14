@@ -5,6 +5,7 @@
 //#define DEBUG_UART
 //#define DEBUG_USB
 //#define DEBUG_SPI
+//#define DEBUG_FAULTS
 
 #ifdef STM32F4
   #define PANDA
@@ -35,7 +36,14 @@
      __typeof__ (b) _b = (b); \
    (_a > _b) ? _a : _b; })
 
+#define ABS(a) \
+ ({ __typeof__ (a) _a = (a); \
+   (_a > 0) ? _a : (-_a); })
+
 #define MAX_RESP_LEN 0x40U
+
+// Around (1Mbps / 8 bits/byte / 12 bytes per message)
+#define CAN_INTERRUPT_RATE 12000U
 
 #endif
 

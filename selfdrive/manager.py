@@ -5,17 +5,28 @@ import sys
 import fcntl
 import errno
 import signal
+import shutil
 import subprocess
-import time
-from selfdrive.tinklad.tinkla_interface import TinklaClient
-from cereal import tinkla
-from selfdrive.car.tesla.readconfig import CarSettings
 import datetime
-from common.spinner import Spinner
 
-from common.basedir import BASEDIR
+from common.basedir import BASEDIR, PARAMS
+from common.android import ANDROID
 sys.path.append(os.path.join(BASEDIR, "pyextra"))
 os.environ['BASEDIR'] = BASEDIR
+
+TOTAL_SCONS_NODES = 1195
+prebuilt = os.path.exists(os.path.join(BASEDIR, 'prebuilt'))
+
+# Create folders needed for msgq
+try:
+  os.mkdir("/dev/shm")
+except FileExistsError:
+  pass
+except PermissionError:
+  print("WARNING: failed to make /dev/shm")
+
+if ANDROID:
+  os.chmod("/dev/shm", 0o777)
 
 def unblock_stdout():
   # get a non-blocking stdout
@@ -42,72 +53,127 @@ def unblock_stdout():
 
       try:
         sys.stdout.write(dat.decode('utf8'))
-      except (OSError, IOError):
+      except (OSError, IOError, UnicodeDecodeError):
         pass
 
-    os._exit(os.wait()[1])
+    # os.wait() returns a tuple with the pid and a 16 bit value
+    # whose low byte is the signal number and whose high byte is the exit satus
+    exit_status = os.wait()[1] >> 8
+    os._exit(exit_status)
+
 
 if __name__ == "__main__":
   unblock_stdout()
+  from common.spinner import Spinner
+else:
+  from common.spinner import FakeSpinner as Spinner
 
-import glob
-import shutil
-import hashlib
 import importlib
 import traceback
 from multiprocessing import Process
 
-from setproctitle import setproctitle  #pylint: disable=no-name-in-module
+# Run scons
+spinner = Spinner()
+spinner.update("0")
+
+if not prebuilt:
+  for retry in [True, False]:
+    # run scons
+    env = os.environ.copy()
+    env['SCONS_PROGRESS'] = "1"
+    env['SCONS_CACHE'] = "1"
+
+    nproc = os.cpu_count()
+    j_flag = "" if nproc is None else "-j%d" % (nproc - 1)
+    scons = subprocess.Popen(["scons", j_flag], cwd=BASEDIR, env=env, stderr=subprocess.PIPE)
+
+    # Read progress from stderr and update spinner
+    while scons.poll() is None:
+      try:
+        line = scons.stderr.readline()
+        if line is None:
+          continue
+
+        line = line.rstrip()
+        prefix = b'progress: '
+        if line.startswith(prefix):
+          i = int(line[len(prefix):])
+          if spinner is not None:
+            spinner.update("%d" % (50.0 * (i / TOTAL_SCONS_NODES)))
+        elif len(line):
+          print(line.decode('utf8'))
+      except Exception:
+        pass
+
+    if scons.returncode != 0:
+      if retry:
+        print("scons build failed, cleaning in")
+        for i in range(3,-1,-1):
+          print("....%d" % i)
+          time.sleep(1)
+        subprocess.check_call(["scons", "-c"], cwd=BASEDIR, env=env)
+        shutil.rmtree("/tmp/scons_cache")
+      else:
+        raise RuntimeError("scons build failed")
+    else:
+      break
+
+import cereal
+import cereal.messaging as messaging
 
 from common.params import Params
-import cereal
-ThermalStatus = cereal.log.ThermalData.ThermalStatus
-
+import selfdrive.crash as crash
 from selfdrive.swaglog import cloudlog
-import selfdrive.messaging as messaging
 from selfdrive.registration import register
 from selfdrive.version import version, dirty
-import selfdrive.crash as crash
-
 from selfdrive.loggerd.config import ROOT
+from selfdrive.launcher import launcher
+from common import android
+from common.apk import update_apks, pm_apply_packages, start_offroad
+from common.manager_helpers import print_cpu_usage
+
+ThermalStatus = cereal.log.ThermalData.ThermalStatus
 
 # comment out anything you don't want to run
 managed_processes = {
-  "tinklad":  "selfdrive.tinklad.tinklad",
-  "thermald": "selfdrive.thermald",
+  "thermald": "selfdrive.thermald.thermald",
   "uploader": "selfdrive.loggerd.uploader",
   "deleter": "selfdrive.loggerd.deleter",
   "controlsd": "selfdrive.controls.controlsd",
   "plannerd": "selfdrive.controls.plannerd",
   "radard": "selfdrive.controls.radard",
+  "dmonitoringd": "selfdrive.controls.dmonitoringd",
   "ubloxd": ("selfdrive/locationd", ["./ubloxd"]),
   "loggerd": ("selfdrive/loggerd", ["./loggerd"]),
   "logmessaged": "selfdrive.logmessaged",
+  "locationd": "selfdrive.locationd.locationd",
   "tombstoned": "selfdrive.tombstoned",
   "logcatd": ("selfdrive/logcatd", ["./logcatd"]),
   "proclogd": ("selfdrive/proclogd", ["./proclogd"]),
   "boardd": ("selfdrive/boardd", ["./boardd"]),   # not used directly
   "pandad": "selfdrive.pandad",
-  "ui": ("selfdrive/ui", ["./start.py"]),
+  "ui": ("selfdrive/ui", ["./ui"]),
   "calibrationd": "selfdrive.locationd.calibrationd",
   "paramsd": ("selfdrive/locationd", ["./paramsd"]),
-  "visiond": ("selfdrive/visiond", ["./start.py"]),
-  "sensord": ("selfdrive/sensord", ["./start_sensord.py"]),
-  "gpsd": ("selfdrive/sensord", ["./start_gpsd.py"]),
+  "camerad": ("selfdrive/camerad", ["./camerad"]),
+  "sensord": ("selfdrive/sensord", ["./sensord"]),
+  "clocksd": ("selfdrive/clocksd", ["./clocksd"]),
+  "gpsd": ("selfdrive/sensord", ["./gpsd"]),
   "updated": "selfdrive.updated",
+  "dmonitoringmodeld": ("selfdrive/modeld", ["./dmonitoringmodeld"]),
+  "modeld": ("selfdrive/modeld", ["./modeld"]),
 }
 
 daemon_processes = {
   "manage_athenad": ("selfdrive.athena.manage_athenad", "AthenadPid"),
 }
-android_packages = ("ai.comma.plus.offroad", "ai.comma.plus.frame")
 
 running = {}
 def get_running():
   return running
 
-# due to qualcomm kernel bugs SIGKILLing visiond sometimes causes page table corruption
-unkillable_processes = ['visiond']
+# due to qualcomm kernel bugs SIGKILLing camerad sometimes causes page table corruption
+unkillable_processes = ['camerad']
 
 # processes to end with SIGINT instead of SIGTERM
 interrupt_processes = []
@@ -115,31 +181,44 @@ interrupt_processes = []
 # processes to end with SIGKILL instead of SIGTERM
 kill_processes = ['sensord', 'paramsd']
 
+# processes to end if thermal conditions exceed Green parameters
+green_temp_processes = ['uploader']
+
 persistent_processes = [
-  'tinklad',
   'thermald',
   'logmessaged',
-  'logcatd',
-  'tombstoned',
-  'uploader',
   'ui',
-  'updated',
+  'uploader',
 ]
+if ANDROID:
+  persistent_processes += [
+    'logcatd',
+    'tombstoned',
+    'updated',
+  ]
 
 car_started_processes = [
   'controlsd',
   'plannerd',
   'loggerd',
-  'sensord',
   'radard',
+  'dmonitoringd',
   'calibrationd',
   'paramsd',
-  'visiond',
+  'camerad',
+  'modeld',
   'proclogd',
   'ubloxd',
-  'gpsd',
-  'deleter',
+  'locationd',
 ]
+if ANDROID:
+  car_started_processes += [
+    'sensord',
+    'clocksd',
+    'gpsd',
+    'dmonitoringmodeld',
+    'deleter',
+  ]
 
 def register_managed_process(name, desc, car_started=False):
   global managed_processes, car_started_processes, persistent_processes
@@ -151,27 +230,6 @@ def register_managed_process(name, desc, car_started=False):
     persistent_processes.append(name)
 
 # ****************** process management functions ******************
-def launcher(proc):
-  try:
-    # import the process
-    mod = importlib.import_module(proc)
-
-    # rename the process
-    setproctitle(proc)
-
-    # create now context since we forked
-    messaging.context = messaging.Context()
-
-    # exec the process
-    mod.main()
-  except KeyboardInterrupt:
-    cloudlog.warning("child %s got SIGINT" % proc)
-  except Exception:
-    # can't install the crash handler becuase sys.excepthook doesn't play nice
-    # with threads, so catch it here.
-    crash.capture_exception()
-    raise
-
 def nativelauncher(pargs, cwd):
   # exec the process
   os.chdir(cwd)
@@ -195,22 +253,25 @@ def start_managed_process(name):
     running[name] = Process(name=name, target=nativelauncher, args=(pargs, cwd))
   running[name].start()
 
-def start_daemon_process(name, params):
+def start_daemon_process(name):
+  params = Params()
   proc, pid_param = daemon_processes[name]
-  pid = params.get(pid_param)
+  pid = params.get(pid_param, encoding='utf-8')
 
   if pid is not None:
     try:
       os.kill(int(pid), 0)
-      # process is running (kill is a poorly-named system call)
-      return
-    except OSError:
+      with open(f'/proc/{pid}/cmdline') as f:
+        if proc in f.read():
+          # daemon is running
+          return
+    except (OSError, FileNotFoundError):
       # process is dead
       pass
 
   cloudlog.info("starting daemon %s" % name)
   proc = subprocess.Popen(['python', '-m', proc],
-                         cwd='/',
+                         stdin=open('/dev/null', 'r'),
                          stdout=open('/dev/null', 'w'),
                          stderr=open('/dev/null', 'w'),
                          preexec_fn=os.setpgrp)
@@ -223,7 +284,7 @@ def prepare_managed_process(p):
     # import this python
     cloudlog.info("preimporting %s" % proc)
     importlib.import_module(proc)
-  else:
+  elif os.path.isfile(os.path.join(BASEDIR, proc[0], "Makefile")):
     # build this process
     cloudlog.info("building %s" % (proc,))
     try:
@@ -233,6 +294,15 @@ def prepare_managed_process(p):
       cloudlog.warning("building %s failed, make clean" % (proc, ))
       subprocess.check_call(["make", "clean"], cwd=os.path.join(BASEDIR, proc[0]))
       subprocess.check_call(["make", "-j4"], cwd=os.path.join(BASEDIR, proc[0]))
+
+
+def join_process(process, timeout):
+  # Process().join(timeout) will hang due to a python 3 bug: https://bugs.python.org/issue28382
+  # We have to poll the exitcode instead
+  t = time.time()
+  while time.time() - t < timeout and process.exitcode is None:
+    time.sleep(0.001)
+
 
 def kill_managed_process(name):
   if name not in running or name not in managed_processes:
@@ -247,18 +317,12 @@ def kill_managed_process(name):
     else:
       running[name].terminate()
 
-    # Process().join(timeout) will hang due to a python 3 bug: https://bugs.python.org/issue28382
-    # We have to poll the exitcode instead
-    # running[name].join(5.0)
-
-    t = time.time()
-    while time.time() - t < 5 and running[name].exitcode is None:
-      time.sleep(0.001)
+    join_process(running[name], 5)
 
     if running[name].exitcode is None:
       if name in unkillable_processes:
         cloudlog.critical("unkillable process %s failed to exit! rebooting in 15 if it doesn't die" % name)
-        running[name].join(15.0)
+        join_process(running[name], 15)
         if running[name].exitcode is None:
           cloudlog.critical("FORCE REBOOTING PHONE!")
           os.system("date >> /sdcard/unkillable_reboot")
@@ -272,19 +336,16 @@ def kill_managed_process(name):
   cloudlog.info("%s is dead with %d" % (name, running[name].exitcode))
   del running[name]
 
-def pm_apply_packages(cmd):
-  for p in android_packages:
-    system("pm %s %s" % (cmd, p))
 
 def cleanup_all_processes(signal, frame):
   cloudlog.info("caught ctrl-c %s %s" % (signal, frame))
 
-  pm_apply_packages('disable')
+  if ANDROID:
+    pm_apply_packages('disable')
 
   for name in list(running.keys()):
     kill_managed_process(name)
   cloudlog.info("everything is dead")
-
 
 # ****************** run loop ******************
 
@@ -316,35 +377,18 @@ def manager_init(should_register=True):
   except OSError:
     pass
 
-def system(cmd):
-  try:
-    cloudlog.info("running %s" % cmd)
-    subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
-  except subprocess.CalledProcessError as e:
-    cloudlog.event("running failed",
-      cmd=e.cmd,
-      output=e.output[-1024:],
-      returncode=e.returncode)
-
-def sendUserInfoToTinkla(params, tinklaClient):
-  carSettings = CarSettings()
-  gitRemote = params.get("GitRemote")
-  gitBranch = params.get("GitBranch")
-  gitHash = params.get("GitCommit")
-  dongleId = params.get("DongleId")
-  userHandle = carSettings.userHandle
-  info = tinkla.Interface.UserInfo.new_message(
-      openPilotId=dongleId,
-      userHandle=userHandle,
-      gitRemote=gitRemote,
-      gitBranch=gitBranch,
-      gitHash=gitHash
-  )
-  tinklaClient.setUserInfo(info)
+  # ensure shared libraries are readable by apks
+  if ANDROID:
+    os.chmod(BASEDIR, 0o755)
+    os.chmod(os.path.join(BASEDIR, "cereal"), 0o755)
+    os.chmod(os.path.join(BASEDIR, "cereal", "libmessaging_shared.so"), 0o755)
 
 def manager_thread():
   # now loop
   thermal_sock = messaging.sub_sock('thermal')
+
+  if os.getenv("GET_CPU_USAGE"):
+    proc_sock = messaging.sub_sock('procLog', conflate=True)
 
   cloudlog.info("manager start")
   cloudlog.info({"environ": os.environ})
@@ -356,42 +400,41 @@ def manager_thread():
 
   # start daemon processes
   for p in daemon_processes:
-    start_daemon_process(p, params)
+    start_daemon_process(p)
 
   # start persistent processes
   for p in persistent_processes:
     start_managed_process(p)
 
-  # start frame
-  pm_apply_packages('enable')
-  system("LD_LIBRARY_PATH= appops set ai.comma.plus.offroad SU allow")
-  system("am start -n ai.comma.plus.frame/.MainActivity")
+  # start offroad
+  if ANDROID:
+    pm_apply_packages('enable')
+    start_offroad()
 
   if os.getenv("NOBOARD") is None:
     start_managed_process("pandad")
 
+  if os.getenv("BLOCK") is not None:
+    for k in os.getenv("BLOCK").split(","):
+      del managed_processes[k]
+
   logger_dead = False
 
-  # Tinkla interface
-  last_tinklad_send_attempt_time = 0
-  tinklaClient = TinklaClient()
-  sendUserInfoToTinkla(params=params, tinklaClient=tinklaClient)
+  start_t = time.time()
+  first_proc = None
 
   while 1:
     msg = messaging.recv_sock(thermal_sock, wait=True)
 
-    # uploader is gated based on the phone temperature
+    # heavyweight batch processes are gated on favorable thermal conditions
     if msg.thermal.thermalStatus >= ThermalStatus.yellow:
-      kill_managed_process("uploader")
+      for p in green_temp_processes:
+        if p in persistent_processes:
+          kill_managed_process(p)
     else:
-      start_managed_process("uploader")
-
-    # Attempt to send pending messages if there's any that queued while offline
-    # Seems this loop runs every second or so, throttle to once every 30s
-    now = time.time()
-    if now - last_tinklad_send_attempt_time >= 30:
-      tinklaClient.attemptToSendPendingMessages()
-      last_tinklad_send_attempt_time = now
+      for p in green_temp_processes:
+        if p in persistent_processes:
+          start_managed_process(p)
 
     if msg.thermal.freeSpace < 0.05:
       logger_dead = True
@@ -404,90 +447,42 @@ def manager_thread():
           start_managed_process(p)
     else:
       logger_dead = False
-      # print "msg.thermal.started is False"
-      for p in car_started_processes:
+      for p in reversed(car_started_processes):
         kill_managed_process(p)
 
     # check the status of all processes, did any of them die?
-    running_list = ["   running %s %s" % (p, running[p]) for p in running]
-    #cloudlog.debug('\n'.join(running_list))
+    running_list = ["%s%s\u001b[0m" % ("\u001b[32m" if running[p].is_alive() else "\u001b[31m", p) for p in running]
+    cloudlog.debug(' '.join(running_list))
 
     # Exit main loop when uninstall is needed
     if params.get("DoUninstall", encoding='utf8') == "1":
       break
 
-def get_installed_apks():
-  dat = subprocess.check_output(["pm", "list", "packages", "-f"], encoding='utf8').strip().split("\n")  # pylint: disable=unexpected-keyword-arg
-  ret = {}
-  for x in dat:
-    if x.startswith("package:"):
-      v,k = x.split("package:")[1].split("=")
-      ret[k] = v
-  return ret
+    if os.getenv("GET_CPU_USAGE"):
+      dt = time.time() - start_t
 
-def install_apk(path):
-  # can only install from world readable path
-  install_path = "/sdcard/%s" % os.path.basename(path)
-  shutil.copyfile(path, install_path)
+      # Get first sample
+      if dt > 30 and first_proc is None:
+        first_proc = messaging.recv_sock(proc_sock)
 
-  ret = subprocess.call(["pm", "install", "-r", install_path])
-  os.remove(install_path)
-  return ret == 0
+      # Get last sample and exit
+      if dt > 90:
+        first_proc = first_proc
+        last_proc = messaging.recv_sock(proc_sock, wait=True)
 
-def update_apks():
-  # install apks
-  installed = get_installed_apks()
-
-  install_apks = glob.glob(os.path.join(BASEDIR, "apk/*.apk"))
-  for apk in install_apks:
-    app = os.path.basename(apk)[:-4]
-    if app not in installed:
-      installed[app] = None
-
-  cloudlog.info("installed apks %s" % (str(installed), ))
-
-  for app in installed.keys():
-
-    apk_path = os.path.join(BASEDIR, "apk/"+app+".apk")
-    if not os.path.exists(apk_path):
-      continue
-
-    h1 = hashlib.sha1(open(apk_path, 'rb').read()).hexdigest()
-    h2 = None
-    if installed[app] is not None:
-      h2 = hashlib.sha1(open(installed[app], 'rb').read()).hexdigest()
-      cloudlog.info("comparing version of %s  %s vs %s" % (app, h1, h2))
-
-    if h2 is None or h1 != h2:
-      cloudlog.info("installing %s" % app)
-
-      success = install_apk(apk_path)
-      if not success:
-        cloudlog.info("needing to uninstall %s" % app)
-        system("pm uninstall %s" % app)
-        success = install_apk(apk_path)
-
-      assert success
-
-def manager_update():
-  update_apks()
-
-  uninstall = [app for app in get_installed_apks().keys() if app in ("com.spotify.music", "com.waze")]
-  for app in uninstall:
-    cloudlog.info("uninstalling %s" % app)
-    os.system("pm uninstall % s" % app)
+        cleanup_all_processes(None, None)
+        sys.exit(print_cpu_usage(first_proc, last_proc))
 
 def manager_prepare(spinner=None):
-  # build cereal first
-  subprocess.check_call(["make", "-j4"], cwd=os.path.join(BASEDIR, "cereal"))
-  carSettings = CarSettings()
   # build all processes
   os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+  # Spinner has to start from 70 here
+  total = 100.0 if prebuilt else 50.0
+
   for i, p in enumerate(managed_processes):
     if spinner is not None:
-      spinText = carSettings.spinnerText
-      spinner.update(spinText % (100.0 * (i + 1) / len(managed_processes),))
+      spinner.update("%d" % ((100.0 - total) + total * (i + 1) / len(managed_processes),))
     prepare_managed_process(p)
 
 def uninstall():
@@ -495,74 +490,43 @@ def uninstall():
   with open('/cache/recovery/command', 'w') as f:
     f.write('--wipe_data\n')
   # IPowerManager.reboot(confirm=false, reason="recovery", wait=true)
-  os.system("service call power 16 i32 0 s16 recovery i32 1")
+  android.reboot(reason="recovery")
 
 def main():
+  os.environ['PARAMS_PATH'] = PARAMS
+
   # the flippening!
   os.system('LD_LIBRARY_PATH="" content insert --uri content://settings/system --bind name:s:user_rotation --bind value:i:1')
 
   # disable bluetooth
   os.system('service call bluetooth_manager 8')
 
-  if os.getenv("NOLOG") is not None:
-    del managed_processes['loggerd']
-    del managed_processes['tombstoned']
-  if os.getenv("NOUPLOAD") is not None:
-    del managed_processes['uploader']
-  if os.getenv("NOVISION") is not None:
-    del managed_processes['visiond']
-  if os.getenv("LEAN") is not None:
-    del managed_processes['uploader']
-    del managed_processes['loggerd']
-    del managed_processes['logmessaged']
-    del managed_processes['logcatd']
-    del managed_processes['tombstoned']
-    del managed_processes['proclogd']
-  if os.getenv("NOCONTROL") is not None:
-    del managed_processes['controlsd']
-    del managed_processes['plannerd']
-    del managed_processes['radard']
-
-  # support additional internal only extensions
-  try:
-    import selfdrive.manager_extensions
-    selfdrive.manager_extensions.register(register_managed_process) # pylint: disable=no-member
-  except ImportError:
-    pass
-
   params = Params()
   params.manager_start()
 
+  default_params = [
+    ("CommunityFeaturesToggle", "0"),
+    ("CompletedTrainingVersion", "0"),
+    ("IsMetric", "0"),
+    ("RecordFront", "0"),
+    ("HasAcceptedTerms", "0"),
+    ("HasCompletedSetup", "0"),
+    ("IsUploadRawEnabled", "1"),
+    ("IsLdwEnabled", "1"),
+    ("IsGeofenceEnabled", "-1"),
+    ("SpeedLimitOffset", "0"),
+    ("LongitudinalControl", "0"),
+    ("LimitSetSpeed", "0"),
+    ("LimitSetSpeedNeural", "0"),
+    ("LastUpdateTime", datetime.datetime.now().isoformat().encode('utf8')),
+    ("OpenpilotEnabledToggle", "1"),
+    ("LaneChangeEnabled", "1"),
+  ]
+
   # set unset params
-  if params.get("CompletedTrainingVersion") is None:
-    params.put("CompletedTrainingVersion", "0")
-  if params.get("IsMetric") is None:
-    params.put("IsMetric", "0")
-  if params.get("RecordFront") is None:
-    params.put("RecordFront", "0")
-  if params.get("HasAcceptedTerms") is None:
-    params.put("HasAcceptedTerms", "0")
-  if params.get("HasCompletedSetup") is None:
-    params.put("HasCompletedSetup", "0")
-  if params.get("IsUploadRawEnabled") is None:
-    params.put("IsUploadRawEnabled", "1")
-  if params.get("IsUploadVideoOverCellularEnabled") is None:
-    params.put("IsUploadVideoOverCellularEnabled", "1")
-  if params.get("IsGeofenceEnabled") is None:
-    params.put("IsGeofenceEnabled", "-1")
-  if params.get("SpeedLimitOffset") is None:
-    params.put("SpeedLimitOffset", "0")
-  if params.get("LongitudinalControl") is None:
-    params.put("LongitudinalControl", "0")
-  if params.get("LimitSetSpeed") is None:
-    params.put("LimitSetSpeed", "0")
-  if params.get("LimitSetSpeedNeural") is None:
-    params.put("LimitSetSpeedNeural", "0")
-  if params.get("LastUpdateTime") is None:
-    t = datetime.datetime.now().isoformat()
-    params.put("LastUpdateTime", t.encode('utf8'))
-  if params.get("OpenpilotEnabledToggle") is None:
-    params.put("OpenpilotEnabledToggle", "1")
+  for k, v in default_params:
+    if params.get(k) is None:
+      params.put(k, v)
 
   # is this chffrplus?
   if os.getenv("PASSIVE") is not None:
@@ -571,11 +535,11 @@ def main():
   if params.get("Passive") is None:
     raise Exception("Passive must be set to continue")
 
-  with Spinner() as spinner:
-      spinner.update("0") # Show progress bar
-      manager_update()
-      manager_init()
-      manager_prepare(spinner)
+  if ANDROID:
+    update_apks()
+  manager_init()
+  manager_prepare(spinner)
+  spinner.close()
 
   if os.getenv("PREPAREONLY") is not None:
     return
@@ -585,10 +549,11 @@ def main():
 
   try:
     manager_thread()
+  except SystemExit:
+    raise
   except Exception:
     traceback.print_exc()
     crash.capture_exception()
-    print ("EXIT ON EXCEPTION")
   finally:
     cleanup_all_processes(None, None)
 

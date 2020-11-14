@@ -1,28 +1,37 @@
 import os
 from common.basedir import BASEDIR
 
-def get_fingerprint_list():
+
+def get_attr_from_cars(attr, result=dict):
   # read all the folders in selfdrive/car and return a dict where:
-  # - keys are all the car models for which we have a fingerprint
-  # - values are lists dicts of messages that constitute the unique
-  #   CAN fingerprint of each car model and all its variants
-  fingerprints = {}
+  # - keys are all the car models
+  # - values are attr values from all car folders
+  result = result()
+
   for car_folder in [x[0] for x in os.walk(BASEDIR + '/selfdrive/car')]:
     try:
       car_name = car_folder.split('/')[-1]
-      values = __import__('selfdrive.car.%s.values' % car_name, fromlist=['FINGERPRINTS'])
-      if hasattr(values, 'FINGERPRINTS'):
-        car_fingerprints = values.FINGERPRINTS
+      values = __import__('selfdrive.car.%s.values' % car_name, fromlist=[attr])
+      if hasattr(values, attr):
+        attr_values = getattr(values, attr)
       else:
         continue
-      for f, v in car_fingerprints.items():
-        fingerprints[f] = v
+
+      if isinstance(attr_values, dict):
+        for f, v in attr_values.items():
+          result[f] = v
+      elif isinstance(attr_values, list):
+        result += attr_values
+
     except (ImportError, IOError):
       pass
-  return fingerprints
+
+  return result
 
 
-_FINGERPRINTS = get_fingerprint_list()
+FW_VERSIONS = get_attr_from_cars('FW_VERSIONS')
+_FINGERPRINTS = get_attr_from_cars('FINGERPRINTS')
+IGNORED_FINGERPRINTS = get_attr_from_cars('IGNORED_FINGERPRINTS', list)
 
 _DEBUG_ADDRESS = {1880: 8}   # reserved for debug purposes
 
@@ -45,6 +54,9 @@ def eliminate_incompatible_cars(msg, candidate_cars):
   compatible_cars = []
 
   for car_name in candidate_cars:
+    if car_name in IGNORED_FINGERPRINTS:
+      continue
+
     car_fingerprints = _FINGERPRINTS[car_name]
 
     for fingerprint in car_fingerprints:

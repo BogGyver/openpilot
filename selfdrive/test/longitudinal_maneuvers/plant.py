@@ -10,21 +10,34 @@ from opendbc import DBC_PATH
 
 from common.realtime import Ratekeeper
 from selfdrive.config import Conversions as CV
-import selfdrive.messaging as messaging
+import cereal.messaging as messaging
 from selfdrive.car import crc8_pedal
-from selfdrive.car.honda.hondacan import fix
 from selfdrive.car.honda.values import CAR
 from selfdrive.car.honda.carstate import get_can_signals
-from selfdrive.boardd.boardd import can_capnp_to_can_list, can_list_to_can_capnp
+from selfdrive.boardd.boardd import can_list_to_can_capnp
 
-from selfdrive.can.plant_can_parser import CANParser
+from opendbc.can.parser import CANParser
 from selfdrive.car.honda.interface import CarInterface
 
-from common.dbc import dbc
+from opendbc.can.dbc import dbc
 honda = dbc(os.path.join(DBC_PATH, "honda_civic_touring_2016_can_generated.dbc"))
 
 # Trick: set 0x201 (interceptor) in fingerprints for gas is controlled like if there was an interceptor
 CP = CarInterface.get_params(CAR.CIVIC, {0: {0x201: 6}, 1: {}, 2: {}, 3: {}})
+
+# Honda checksum
+def can_cksum(mm):
+  s = 0
+  for c in mm:
+    s += (c>>4)
+    s += c & 0xF
+  s = 8-s
+  s %= 0x10
+  return s
+
+def fix(msg, addr):
+  msg2 = msg[0:-1] + (msg[-1] | can_cksum(struct.pack("I", addr)+msg)).to_bytes(1, 'little')
+  return msg2
 
 
 def car_plant(pos, speed, grade, gas, brake):
@@ -65,7 +78,7 @@ def car_plant(pos, speed, grade, gas, brake):
   return speed, acceleration
 
 def get_car_can_parser():
-  dbc_f = 'honda_civic_touring_2016_can_generated.dbc'
+  dbc_f = 'honda_civic_touring_2016_can_generated'
   signals = [
     ("STEER_TORQUE", 0xe4, 0),
     ("STEER_TORQUE_REQUEST", 0xe4, 0),
@@ -78,7 +91,7 @@ def get_car_can_parser():
     (0x1fa, 50),
     (0x200, 50),
   ]
-  return CANParser(dbc_f, signals, checks)
+  return CANParser(dbc_f, signals, checks, 0)
 
 def to_3_byte(x):
   # Convert into 12 bit value
@@ -102,7 +115,7 @@ class Plant():
       Plant.live_params = messaging.pub_sock('liveParameters')
       Plant.health = messaging.pub_sock('health')
       Plant.thermal = messaging.pub_sock('thermal')
-      Plant.driverMonitoring = messaging.pub_sock('driverMonitoring')
+      Plant.driverState = messaging.pub_sock('driverState')
       Plant.cal = messaging.pub_sock('liveCalibration')
       Plant.controls_state = messaging.sub_sock('controlsState')
       Plant.plan = messaging.sub_sock('plan')
@@ -167,15 +180,13 @@ class Plant():
     cks_msgs.add(0x30C)
 
     # ******** get messages sent to the car ********
-    can_msgs = []
-    for a in messaging.drain_sock(Plant.sendcan, wait_for_one=self.response_seen):
-      can_msgs.extend(can_capnp_to_can_list(a.sendcan, [0,2]))
+    can_strings = messaging.drain_sock_raw(Plant.sendcan, wait_for_one=self.response_seen)
 
     # After the first response the car is done fingerprinting, so we can run in lockstep with controlsd
-    if can_msgs:
+    if can_strings:
       self.response_seen = True
 
-    self.cp.update_can(can_msgs)
+    self.cp.update_strings(can_strings, sendcan=True)
 
     # ******** get controlsState messages for plotting ***
     controls_state_msgs = []
@@ -261,6 +272,7 @@ class Plant():
            'INTERCEPTOR_GAS',
            'INTERCEPTOR_GAS2',
            'IMPERIAL_UNIT',
+           'MOTOR_TORQUE',
            ])
     vls = vls_tuple(
            self.speed_sensor(speed),
@@ -293,7 +305,8 @@ class Plant():
            0,  # Brake hold
            0,  # Interceptor feedback
            0,  # Interceptor 2 feedback
-           False
+           False,
+           0,
            )
 
     # TODO: publish each message at proper frequency
@@ -344,8 +357,7 @@ class Plant():
 
 
     # Fake sockets that controlsd subscribes to
-    live_parameters = messaging.new_message()
-    live_parameters.init('liveParameters')
+    live_parameters = messaging.new_message('liveParameters')
     live_parameters.liveParameters.valid = True
     live_parameters.liveParameters.sensorValid = True
     live_parameters.liveParameters.posenetValid = True
@@ -353,19 +365,16 @@ class Plant():
     live_parameters.liveParameters.stiffnessFactor = 1.0
     Plant.live_params.send(live_parameters.to_bytes())
 
-    driver_monitoring = messaging.new_message()
-    driver_monitoring.init('driverMonitoring')
-    driver_monitoring.driverMonitoring.faceOrientation = [0.] * 3
-    driver_monitoring.driverMonitoring.facePosition = [0.] * 2
-    Plant.driverMonitoring.send(driver_monitoring.to_bytes())
+    driver_state = messaging.new_message('driverState')
+    driver_state.driverState.faceOrientation = [0.] * 3
+    driver_state.driverState.facePosition = [0.] * 2
+    Plant.driverState.send(driver_state.to_bytes())
 
-    health = messaging.new_message()
-    health.init('health')
+    health = messaging.new_message('health')
     health.health.controlsAllowed = True
     Plant.health.send(health.to_bytes())
 
-    thermal = messaging.new_message()
-    thermal.init('thermal')
+    thermal = messaging.new_message('thermal')
     thermal.thermal.freeSpace = 1.
     thermal.thermal.batteryPercent = 100
     Plant.thermal.send(thermal.to_bytes())
@@ -373,10 +382,8 @@ class Plant():
     # ******** publish a fake model going straight and fake calibration ********
     # note that this is worst case for MPC, since model will delay long mpc by one time step
     if publish_model and self.frame % 5 == 0:
-      md = messaging.new_message()
-      cal = messaging.new_message()
-      md.init('model')
-      cal.init('liveCalibration')
+      md = messaging.new_message('model')
+      cal = messaging.new_message('liveCalibration')
       md.model.frameId = 0
       for x in [md.model.path, md.model.leftLane, md.model.rightLane]:
         x.points = [0.0]*50

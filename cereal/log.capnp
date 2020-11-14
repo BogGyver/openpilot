@@ -126,6 +126,9 @@ struct FrameData {
   lensErr @13 :Float32;
   lensTruePos @14 :Float32;
   image @6 :Data;
+  gainFrac @15 :Float32;
+  focusVal @16 :List(Int16);
+  focusConf @17 :List(UInt8);
 
   frameType @7 :FrameType;
   timestampSof @8 :UInt64;
@@ -137,6 +140,7 @@ struct FrameData {
     unknown @0;
     neo @1;
     chffrAndroid @2;
+    front @3;
   }
 
   struct AndroidCaptureResult {
@@ -268,6 +272,7 @@ struct ThermalData {
   mem @4 :UInt16;
   gpu @5 :UInt16;
   bat @6 :UInt32;
+  pa0 @21 :UInt16;
 
   # not thermal
   freeSpace @7 :Float32;
@@ -276,6 +281,9 @@ struct ThermalData {
   batteryCurrent @15 :Int32;
   batteryVoltage @16 :Int32;
   usbOnline @12 :Bool;
+  networkType @22 :NetworkType;
+  offroadPowerUsage @23 :UInt32;  # Power usage since going offroad in uWh
+  networkStrength @24 :NetworkStrength;
 
   fanSpeed @10 :UInt16;
   started @11 :Bool;
@@ -285,11 +293,31 @@ struct ThermalData {
   chargingError @17 :Bool;
   chargingDisabled @18 :Bool;
 
+  memUsedPercent @19 :Int8;
+  cpuPerc @20 :Int8;
+
   enum ThermalStatus {
     green @0;   # all processes run
     yellow @1;  # critical processes run (kill uploader), engage still allowed
     red @2;     # no engage, will disengage
     danger @3;  # immediate process shutdown
+  }
+
+  enum NetworkType {
+    none @0;
+    wifi @1;
+    cell2G @2;
+    cell3G @3;
+    cell4G @4;
+    cell5G @5;
+  }
+
+  enum NetworkStrength {
+    unknown @0;
+    poor @1;
+    moderate @2;
+    good @3;
+    great @4;
   }
 }
 
@@ -304,12 +332,27 @@ struct HealthData {
   hasGps @6 :Bool;
   canSendErrs @7 :UInt32;
   canFwdErrs @8 :UInt32;
+  canRxErrs @19 :UInt32;
   gmlanSendErrs @9 :UInt32;
   hwType @10 :HwType;
   fanSpeedRpm @11 :UInt16;
   usbPowerMode @12 :UsbPowerMode;
   ignitionCan @13 :Bool;
   safetyModel @14 :Car.CarParams.SafetyModel;
+  faultStatus @15 :FaultStatus;
+  powerSaveEnabled @16 :Bool;
+  uptime @17 :UInt32;
+  faults @18 :List(FaultType);
+
+  enum FaultStatus {
+    none @0;
+    faultTemp @1;
+    faultPerm @2;
+  }
+
+  enum FaultType {
+    relayMalfunction @0;
+  }
 
   enum HwType {
     unknown @0;
@@ -464,6 +507,7 @@ struct ControlsState @0x97ff69c53601abf1 {
   decelForTurn @47 :Bool;
 
   decelForModel @54 :Bool;
+  canErrorCounter @57 :UInt32;
 
   lateralControlState :union {
     indiState @52 :LateralINDIState;
@@ -509,6 +553,7 @@ struct ControlsState @0x97ff69c53601abf1 {
     delayedOutput @7 :Float32;
     delta @8 :Float32;
     output @9 :Float32;
+    saturated @10 :Bool;
   }
 
   struct LateralPIDState {
@@ -529,6 +574,7 @@ struct ControlsState @0x97ff69c53601abf1 {
     i @2 :Float32;
     output @3 :Float32;
     lqrOutput @4 :Float32;
+    saturated @5 :Bool;
    }
 
 
@@ -552,6 +598,8 @@ struct ModelData {
   settings @5 :ModelSettings;
   leadFuture @7 :LeadData;
   speed @8 :List(Float32);
+  meta @10 :MetaData;
+  longitudinal @11 :LongitudinalData;
 
   struct PathData {
     points @0 :List(Float32);
@@ -581,6 +629,21 @@ struct ModelData {
     boxProjection @4 :List(Float32);
     yuvCorrection @5 :List(Float32);
     inputTransform @6 :List(Float32);
+  }
+
+  struct MetaData {
+    engagedProb @0 :Float32;
+    desirePrediction @1 :List(Float32);
+    brakeDisengageProb @2 :Float32;
+    gasDisengageProb @3 :Float32;
+    steerOverrideProb @4 :Float32;
+    desireState @5 :List(Float32);
+  }
+
+  struct LongitudinalData {
+    distances @2 :List(Float32);
+    speeds @0 :List(Float32);
+    accelerations @1 :List(Float32);
   }
 }
 
@@ -737,6 +800,52 @@ struct PathPlan {
     none @0;
     left @1;
     right @2;
+  }
+}
+
+struct LiveLocationKalman {
+
+  # More info on reference frames: 
+  # https://github.com/commaai/openpilot/tree/master/common/transformations
+
+  positionECEF @0 : Measurement;
+  positionGeodetic @1 : Measurement;
+  velocityECEF @2 : Measurement;
+  velocityNED @3 : Measurement;
+  velocityDevice @4 : Measurement;
+  accelerationDevice @5: Measurement;
+
+
+  # These angles are all eulers and roll, pitch, yaw
+  # orientationECEF transforms to rot matrix: ecef_from_device
+  orientationECEF @6 : Measurement;
+  orientationNED @7 : Measurement;
+  angularVelocityDevice @8 : Measurement;
+  
+  # orientationNEDCalibrated transforms to rot matrix: NED_from_calibrated
+  orientationNEDCalibrated @9 : Measurement;
+  
+  # Calibrated frame is simply device frame
+  # aligned with the vehicle
+  velocityCalibrated @10 : Measurement;
+  accelerationCalibrated @11 : Measurement;
+  angularVelocityCalibrated @12 : Measurement;
+
+  gpsWeek @13 :Int32;
+  gpsTimeOfWeek @14 :Float64;
+  status @15 :Status;
+  unixTimestampMillis @16 :Int64;
+  
+  enum Status {
+    uninitialized @0;
+    uncalibrated @1;
+    valid @2;
+  }
+
+  struct Measurement {
+    value @0 : List(Float64);
+    std @1 : List(Float64);
+    valid @2 : Bool;
   }
 }
 
@@ -1383,6 +1492,7 @@ struct UbloxGnss {
     measurementReport @0 :MeasurementReport;
     ephemeris @1 :Ephemeris;
     ionoData @2 :IonoData;
+    hwStatus @3 :HwStatus;
   }
 
   struct MeasurementReport {
@@ -1506,8 +1616,29 @@ struct UbloxGnss {
     healthValid @5 :Bool;
     ionoCoeffsValid @6 :Bool;
   }
-}
 
+  struct HwStatus {
+    noisePerMS @0 :UInt16;
+    agcCnt @1 :UInt16;
+    aStatus @2 :AntennaSupervisorState;
+    aPower @3 :AntennaPowerStatus;
+    jamInd @4 :UInt8;
+
+    enum AntennaSupervisorState {
+      init @0;
+      dontknow @1;
+      ok @2;
+      short @3;
+      open @4;
+    }
+
+    enum AntennaPowerStatus {
+      off @0;
+      on @1;
+      dontknow @2;
+    }
+  }
+}
 
 struct Clocks {
   bootTimeNanos @0 :UInt64;
@@ -1649,6 +1780,7 @@ struct UiLayoutState {
     home @0;
     music @1;
     nav @2;
+    settings @3;
   }
 }
 
@@ -1714,7 +1846,7 @@ struct OrbKeyFrame {
   descriptors @3 :Data;
 }
 
-struct DriverMonitoring {
+struct DriverState {
   frameId @0 :UInt32;
   descriptorDEPRECATED @1 :List(Float32);
   stdDEPRECATED @2 :Float32;
@@ -1725,7 +1857,28 @@ struct DriverMonitoring {
   rightEyeProb @7 :Float32;
   leftBlinkProb @8 :Float32;
   rightBlinkProb @9 :Float32;
-  irPwr @10 :Float32;
+  irPwrDEPRECATED @10 :Float32;
+  faceOrientationStd @11 :List(Float32);
+  facePositionStd @12 :List(Float32);
+}
+
+struct DMonitoringState {
+  # TODO: deprecate old fields in controlsState
+  events @0 :List(Car.CarEvent);
+  faceDetected @1 :Bool;
+  isDistracted @2 :Bool;
+  awarenessStatus @3 :Float32;
+  isRHD @4 :Bool;
+  rhdChecked @5 :Bool;
+  posePitchOffset @6 :Float32;
+  posePitchValidCount @7 :UInt32;
+  poseYawOffset @8 :Float32;
+  poseYawValidCount @9 :UInt32;
+  stepChange @10 :Float32;
+  awarenessActive @11 :Float32;
+  awarenessPassive @12 :Float32;
+  isLowStd @13 :Bool;
+  hiStdCount @14 :UInt32;
 }
 
 struct Boot {
@@ -1781,6 +1934,16 @@ struct KalmanOdometry {
   rot @1 :List(Float32); # rad/s in device frame
   transStd @2 :List(Float32); # std m/s in device frame
   rotStd @3 :List(Float32); # std rad/s in device frame
+}
+
+struct Sentinel {
+  enum SentinelType {
+    endOfSegment @0;
+    endOfRoute @1;
+    startOfSegment @2;
+    startOfRoute @3;
+  }
+  type @0 :SentinelType;
 }
 
 struct Event {
@@ -1839,7 +2002,7 @@ struct Event {
     gpsLocationExternal @48 :GpsLocationData;
     location @49 :LiveLocationData;
     uiNavigationEvent @50 :UiNavigationEvent;
-    liveLocationKalman @51 :LiveLocationData;
+    liveLocationKalmanDEPRECATED @51 :LiveLocationData;
     testJoystick @52 :Joystick;
     orbOdometry @53 :OrbOdometry;
     orbFeatures @54 :OrbFeatures;
@@ -1847,7 +2010,7 @@ struct Event {
     orbKeyFrame @56 :OrbKeyFrame;
     uiLayoutState @57 :UiLayoutState;
     orbFeaturesSummary @58 :OrbFeaturesSummary;
-    driverMonitoring @59 :DriverMonitoring;
+    driverState @59 :DriverState;
     boot @60 :Boot;
     liveParameters @61 :LiveParametersData;
     liveMapData @62 :LiveMapData;
@@ -1857,5 +2020,9 @@ struct Event {
     thumbnail @66: Thumbnail;
     carEvents @68: List(Car.CarEvent);
     carParams @69: Car.CarParams;
+    frontFrame @70: FrameData;
+    dMonitoringState @71: DMonitoringState;
+    liveLocationKalman @72 :LiveLocationKalman;
+    sentinel @73 :Sentinel;
   }
 }
