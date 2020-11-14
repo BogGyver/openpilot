@@ -23,7 +23,7 @@ if arch == "jarch64":
 elif arch == "aarch64":
   libs += ['SNPE', 'gsl', 'CB', 'gnustl_shared']
 elif arch == "larch64":
-  libs += ['SNPE', 'gsl', 'CB', 'symphony-cpu', 'pthread']  
+  libs += ['gsl', 'CB', 'symphony-cpu', 'pthread']
 else:
   libs += ['SNPE', 'symphony-cpu', 'pthread']
   # for tensorflow support

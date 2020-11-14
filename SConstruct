@@ -17,7 +17,7 @@ if arch == "aarch64" and is_tbp:
   arch = "jarch64"
 if platform.system() == "Darwin":
   arch = "Darwin"
-if arch == "aarch64" and (not os.path.isdir("/system")):
+if arch == "aarch64" and not os.path.isdir("/system"):
   arch = "larch64"
 
 webcam = bool(ARGUMENTS.get("use_webcam", 0))
@@ -101,7 +101,6 @@ else:
   }
   cpppath = [
     "#phonelibs/capnp-cpp/include",
-    "#phonelibs/capnp-c/include",
     "#phonelibs/zmq/x64/include",
     "#external/tensorflow/include",
     "#phonelibs/snpe/include",
@@ -110,7 +109,6 @@ else:
   if arch == "Darwin":
     libpath = [
       "#phonelibs/capnp-cpp/mac/lib",
-      "#phonelibs/capnp-c/mac/lib",
       "#phonelibs/libyuv/mac/lib",
       "#cereal",
       "#selfdrive/common",
@@ -120,7 +118,6 @@ else:
   else:
     libpath = [
       "#phonelibs/capnp-cpp/x64/lib",
-      "#phonelibs/capnp-c/x64/lib",
       "#phonelibs/snpe/x86_64-linux-clang",
       "#phonelibs/zmq/x64/lib",
       "#phonelibs/libyuv/x64/lib",
@@ -169,11 +166,10 @@ env = Environment(
     "#phonelibs/bzip2",
     "#phonelibs/libyuv/include",
     "#phonelibs/openmax/include",
-    "#phonelibs/json/src",
     "#phonelibs/json11",
     "#phonelibs/eigen",
     "#phonelibs/curl/include",
-    #"#phonelibs/opencv/include",
+    #"#phonelibs/opencv/include", # use opencv4 instead
     "#phonelibs/libgralloc/include",
     "#phonelibs/android_frameworks_native/include",
     "#phonelibs/android_hardware_libhardware/include",
@@ -255,7 +251,7 @@ Import('_common', '_visionipc', '_gpucommon', '_gpu_libs')
 if SHARED:
   common, visionipc, gpucommon = abspath(common), abspath(visionipc), abspath(gpucommon)
 else:
-  common = [_common, 'json']
+  common = [_common, 'json11']
   visionipc = _visionipc
   gpucommon = [_gpucommon] + _gpu_libs
 
@@ -289,5 +285,4 @@ if arch == "aarch64":
 
 SConscript(['selfdrive/locationd/SConscript'])
 SConscript(['selfdrive/locationd/kalman/SConscript'])
-
-# TODO: finish cereal, dbcbuilder, MPC
+SConscript(['tools/lib/index_log/SConscript'])

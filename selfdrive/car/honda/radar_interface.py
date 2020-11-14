@@ -20,8 +20,8 @@ def _create_nidec_can_parser():
 
 class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
-    # radar
-    self.pts = {}
+    super().__init__(CP)
+    self.track_id = 0
     self.delay = 0.1
     self.TRACK_LEFT_LANE = False
     self.TRACK_RIGHT_LANE = False

@@ -243,10 +243,14 @@ car_started_processes = [
   'modeld',
   'proclogd',
   'ubloxd',
-  'locationd',
+  #'locationd',
 ]
 
-if not WEBCAM:
+if WEBCAM:
+  car_started_processes += [
+   'dmonitoringmodeld',
+  ]
+else:
   car_started_processes += [
     'loggerd',
   ]
@@ -259,11 +263,6 @@ if ANDROID:
     'dmonitoringmodeld',
     'deleter',
   ]
-
-if WEBCAM:
-    car_started_processes += [
-    'dmonitoringmodeld',
-]
 
 def register_managed_process(name, desc, car_started=False):
   global managed_processes, car_started_processes, persistent_processes

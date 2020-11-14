@@ -815,7 +815,6 @@ ALERTS = [
       AlertStatus.normal, AlertSize.small,
       Priority.LOWEST, VisualAlert.steerRequired, AudibleAlert.none, .0, .0, .1),
 
-  # offroad alerts
   Alert(
       "ldwPermanent",
       "TAKE CONTROL",

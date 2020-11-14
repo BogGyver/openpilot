@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _UI_H
 #define _UI_H
-
+#include "cereal/gen/cpp/log.capnp.h"
 #ifdef __APPLE__
 #include <OpenGL/gl3.h>
 #define NANOVG_GL3_IMPLEMENTATION
@@ -15,7 +15,6 @@
 
 #include <capnp/serialize.h>
 #include <pthread.h>
-
 #include "nanovg.h"
 
 #include "common/mat.h"
@@ -151,9 +150,9 @@ typedef struct UIScene {
   int front_box_x, front_box_y, front_box_width, front_box_height;
 
   uint64_t alert_ts;
-  char alert_text1[1024];
-  char alert_text2[1024];
-  uint8_t alert_size;
+  std::string alert_text1;
+  std::string alert_text2;
+  cereal::ControlsState::AlertSize alert_size;
   float alert_blinkingrate;
 
   float awareness_status;
@@ -161,14 +160,14 @@ typedef struct UIScene {
   // Used to show gps planner status
   bool gps_planner_active;
 
-  uint8_t networkType;
-  uint8_t networkStrength;
+  cereal::ThermalData::NetworkType networkType;
+  cereal::ThermalData::NetworkStrength networkStrength;
   int batteryPercent;
-  char batteryStatus[64];
+  bool batteryCharging;
   float freeSpace;
-  uint8_t thermalStatus;
+  cereal::ThermalData::ThermalStatus thermalStatus;
   int paTemp;
-  int hwType;
+  cereal::HealthData::HwType hwType;
   int satelliteCount;
   uint8_t athenaStatus;
 } UIScene;
@@ -237,7 +236,7 @@ typedef struct UIState {
   Poller * poller;
   Poller * ublox_poller;
 
-  int active_app;
+  cereal::UiLayoutState::App active_app;
 
   // vision state
   bool vision_connected;
@@ -292,9 +291,8 @@ typedef struct UIState {
   bool limit_set_speed;
   float speed_lim_off;
   bool is_ego_over_limit;
-  char alert_type[64];
+  std::string alert_type;
   AudibleAlert alert_sound;
-  int alert_size;
   float alert_blinking_alpha;
   bool alert_blinked;
   bool started;
@@ -318,11 +316,13 @@ typedef struct UIState {
 } UIState;
 
 // API
-void ui_draw_vision_alert(UIState *s, int va_size, int va_color,
+void ui_draw_vision_alert(UIState *s, cereal::ControlsState::AlertSize va_size, int va_color,
                           const char* va_text1, const char* va_text2);
 void ui_draw(UIState *s);
 void ui_draw_sidebar(UIState *s);
 void ui_draw_image(NVGcontext *vg, float x, float y, float w, float h, int image, float alpha);
+void ui_draw_rect(NVGcontext *vg, float x, float y, float w, float h, NVGcolor color, float r = 0, int width = 0);
+void ui_draw_rect(NVGcontext *vg, float x, float y, float w, float h, NVGpaint paint, float r = 0);
 void ui_nvg_init(UIState *s);
 static void set_awake(UIState *s, bool awake); 
 
