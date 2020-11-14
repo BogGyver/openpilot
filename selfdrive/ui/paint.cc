@@ -746,7 +746,7 @@ void ui_draw(UIState *s) {
   ui_draw_sidebar(s);
   if (s->started && s->active_app == cereal::UiLayoutState::App::NONE && s->status != STATUS_STOPPED && s->vision_seen) {
       ui_draw_vision(s);
-  } 
+  }
   nvgEndFrame(s->vg);
   glDisable(GL_BLEND);
 }

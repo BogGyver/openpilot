@@ -14,8 +14,6 @@
 #include "common/touch.h"
 #include "common/visionimg.h"
 #include "common/params.h"
-#include "ui.hpp"
-#include "sound.hpp"
 
 #if !defined(QCOM) && !defined(QCOM2)
 #include <X11/Xlib.h>
@@ -25,6 +23,8 @@ int force_rez_h = 0;
 #endif
 
 #include "bbui.h"
+#include "dashcam.h"
+#include "tbui.h"
 
 static int last_brightness = -1;
 static void set_brightness(UIState *s, int brightness) {
@@ -81,34 +81,17 @@ static void set_awake(UIState *s, bool awake) {
 }
 
 static void update_offroad_layout_state(UIState *s) {
-  struct capn rc;
-  capn_init_malloc(&rc);
-  struct capn_segment *cs = capn_root(&rc).seg;
-
-  cereal_UiLayoutState_ptr layoutp = cereal_new_UiLayoutState(cs);
-  struct cereal_UiLayoutState layoutd = {
-    .activeApp = (cereal_UiLayoutState_App)s->active_app,
-    .sidebarCollapsed = s->scene.uilayout_sidebarcollapsed,
-  };
-  cereal_write_UiLayoutState(&layoutd, layoutp);
-  LOGD("setting active app to %d with sidebar %d", layoutd.activeApp, layoutd.sidebarCollapsed);
-
-  cereal_Event_ptr eventp = cereal_new_Event(cs);
-  struct cereal_Event event = {
-    .logMonoTime = nanos_since_boot(),
-    .which = cereal_Event_uiLayoutState,
-    .uiLayoutState = layoutp,
-  };
-  cereal_write_Event(&event, eventp);
-  capn_setp(capn_root(&rc), 0, eventp.p);
-  uint8_t buf[4096];
-  ssize_t rs = capn_write_mem(&rc, buf, sizeof(buf), 0);
-  s->offroad_sock->send((char*)buf, rs);
-  capn_free(&rc);
+  capnp::MallocMessageBuilder msg;
+  auto event = msg.initRoot<cereal::Event>();
+  event.setLogMonoTime(nanos_since_boot());
+  auto layout = event.initUiLayoutState();
+  layout.setActiveApp(s->active_app);
+  layout.setSidebarCollapsed(s->scene.uilayout_sidebarcollapsed);
+  auto words = capnp::messageToFlatArray(msg);
+  auto bytes = words.asBytes();
+  s->offroad_sock->send((char*)bytes.begin(), bytes.size());
+  LOGD("setting active app to %d with sidebar %d", (int)s->active_app, s->scene.uilayout_sidebarcollapsed);
 }
-
-#include "dashcam.h"
-#include "tbui.h"
 
 static void navigate_to_settings(UIState *s) {
 #ifdef QCOM
@@ -150,7 +133,7 @@ static void handle_sidebar_touch(UIState *s, int touch_x, int touch_y) {
 }
 
 static void handle_driver_view_touch(UIState *s, int touch_x, int touch_y) {
-  int err = write_db_value(NULL, "IsDriverViewEnabled", "0", 1);
+  int err = write_db_value("IsDriverViewEnabled", "0", 1);
 }
 
 static void handle_vision_touch(UIState *s, int touch_x, int touch_y) {
@@ -191,7 +174,7 @@ static int read_param_float(float* param, const char* param_name, bool persisten
 
 static int read_param_uint64(uint64_t* dest, const char* param_name, bool persistent_param = false) {
   char *s;
-  const int result = read_db_value(NULL, param_name, &s, NULL, persistent_param);
+  const int result = read_db_value(param_name, &s, NULL, persistent_param);
   if (result == 0) {
     *dest = strtoull(s, NULL, 0);
     free(s);
@@ -297,7 +280,7 @@ static void ui_init(UIState *s) {
 #if defined(QCOM) || defined(QCOM2)
   s->fb = framebuffer_init("ui", 0, true, &s->fb_w, &s->fb_h);
 #else
-  s->fb = framebuffer_init_linux("ui", 0x00010000, true, &s->fb_w, &s->fb_h,bb_mouse_event_handler);
+  s->fb = framebuffer_init_linux("ui", 0, true, &s->fb_w, &s->fb_h, bb_mouse_event_handler);
 #endif 
   assert(s->fb);
 
@@ -438,20 +421,19 @@ void handle_message(UIState *s,  Message* msg) {
   capnp::FlatArrayMessageReader cmsg(amsg);
   cereal::Event::Reader event = cmsg.getRoot<cereal::Event>();
 
-  auto which = event.which();
-  UIScene &scene = s->scene;
-  if (which == cereal::Event::CONTROLS_STATE && s->started) {
-    auto data = event.getControlsState();
+  struct capn ctx;
+  capn_init_mem(&ctx, (uint8_t*)msg->getData(), msg->getSize(), 0);
 
   cereal_Event_ptr eventp;
   eventp.p = capn_getp(capn_root(&ctx), 0, 1);
   struct cereal_Event eventd;
   cereal_read_Event(&eventd, eventp);
 
+  auto which = event.which();
+  UIScene &scene = s->scene;
   int bts = bb_get_button_status(s,(char *)"sound");
-  if (eventd.which == cereal_Event_controlsState) {
-    struct cereal_ControlsState datad;
-    cereal_read_ControlsState(&datad, eventd.controlsState);
+  if (which == cereal::Event::CONTROLS_STATE && s->started) {
+    auto data = event.getControlsState();
 
     s->controls_timeout = 1 * UI_FREQ;
     scene.frontview = data.getRearViewCam();
@@ -464,8 +446,8 @@ void handle_message(UIState *s,  Message* msg) {
     scene.v_ego = data.getVEgo();
     scene.curvature = data.getCurvature();
     //BB get angles
-    s->b.angleSteers = datad.angleSteers;
-    s->b.angleSteersDes = datad.angleSteersDes;
+    s->b.angleSteers = data.getAngleSteers();
+    s->b.angleSteersDes = data.getAngleSteersDes();
     //BB END
     scene.engaged = data.getEnabled();
     scene.engageable = data.getEngageable();
@@ -496,8 +478,6 @@ void handle_message(UIState *s,  Message* msg) {
       update_status(s, STATUS_ALERT);
     } else{
       update_status(s, scene.engaged ? STATUS_ENGAGED : STATUS_DISENGAGED);
-    } else {
-      update_status(s, STATUS_DISENGAGED);
     }
 
     scene.alert_blinkingrate = data.getAlertBlinkingRate();
@@ -561,12 +541,6 @@ void handle_message(UIState *s,  Message* msg) {
     }
   } else if (which == cereal::Event::LIVE_MAP_DATA) {
     scene.map_valid = event.getLiveMapData().getMapValid();
-    cereal_read_UiLayoutState(&datad, eventd.uiLayoutState);
-    s->active_app = datad.activeApp;
-    s->scene.uilayout_sidebarcollapsed = datad.sidebarCollapsed;
-    if (datad.mockEngaged != s->scene.uilayout_mockengaged) {
-      s->scene.uilayout_mockengaged = datad.mockEngaged;
-    }
   } else if (which == cereal::Event::THERMAL) {
     auto data = event.getThermal();
 
@@ -580,30 +554,29 @@ void handle_message(UIState *s,  Message* msg) {
 
     s->thermal_started = data.getStarted();
     //BB CPU TEMP
-    s->b.maxCpuTemp=datad.cpu0;
-    if (s->b.maxCpuTemp<datad.cpu1)
+    s->b.maxCpuTemp=data.getCpu0();
+    if (s->b.maxCpuTemp<data.getCpu1())
     {
-        s->b.maxCpuTemp=datad.cpu1;
+        s->b.maxCpuTemp=data.getCpu1();
     }
-    else if (s->b.maxCpuTemp<datad.cpu2)
+    else if (s->b.maxCpuTemp<data.getCpu2())
     {
-        s->b.maxCpuTemp=datad.cpu2;
+        s->b.maxCpuTemp=data.getCpu2();
     }
-    else if (s->b.maxCpuTemp<datad.cpu3)
+    else if (s->b.maxCpuTemp<data.getCpu3())
     {
-        s->b.maxCpuTemp=datad.cpu3;
+        s->b.maxCpuTemp=data.getCpu3();
     }
-    s->b.maxBatTemp=datad.bat;
-    s->b.freeSpace=datad.freeSpace;
-    s->b.batteryPercent=datad.batteryPercent;
-    s->b.chargingEnabled=!datad.chargingDisabled;
-    s->b.fanSpeed=datad.fanSpeed;
+    s->b.maxBatTemp=data.getBat();
+    s->b.freeSpace=data.getFreeSpace();
+    s->b.batteryPercent=data.getBatteryPercent();
+    s->b.chargingEnabled=!data.getChargingDisabled();
+    s->b.fanSpeed=data.getFanSpeed();
     //BB END CPU TEMP
+
   } else if (which == cereal::Event::UBLOX_GNSS) {
     auto data = event.getUbloxGnss();
-    s->b.maxCpuTemp=datad.cpu0;
     if (data.which() == cereal::UbloxGnss::MEASUREMENT_REPORT) {
-    {
       scene.satelliteCount = data.getMeasurementReport().getNumMeas();
     }
   } else if (which == cereal::Event::HEALTH) {
@@ -611,18 +584,12 @@ void handle_message(UIState *s,  Message* msg) {
     s->hardware_timeout = 5*30; // 5 seconds at 30 fps
   } else if (which == cereal::Event::DRIVER_STATE) {
     auto data = event.getDriverState();
-    cereal_read_DriverState(&datad, eventd.driverState);
-
     scene.face_prob = data.getFaceProb();
-
     auto fxy_list = data.getFacePosition();
-    capn_resolve(&fxy_list.p);
     scene.face_x = fxy_list[0];
     scene.face_y = fxy_list[1];
   } else if (which == cereal::Event::D_MONITORING_STATE) {
     auto data = event.getDMonitoringState();
-    cereal_read_DMonitoringState(&datad, eventd.dMonitoringState);
-
     scene.is_rhd = data.getIsRHD();
     scene.awareness_status = data.getAwarenessStatus();
     s->preview_started = data.getIsPreview();
@@ -645,8 +612,6 @@ void handle_message(UIState *s,  Message* msg) {
     s->active_app = cereal::UiLayoutState::App::NONE;
     update_offroad_layout_state(s);
   }
-
-  capn_free(&ctx);
 }
 
 static void check_messages(UIState *s) {
@@ -670,7 +635,6 @@ static void ui_update(UIState *s) {
   int err;
 
   if (s->vision_connect_firstrun) {
-    set_awake(s, true);
     // cant run this in connector thread because opengl.
     // do this here for now in lieu of a run_on_main_thread event
 
@@ -812,10 +776,6 @@ static void ui_update(UIState *s) {
         s->cur_vision_idx = idx;
         // printf("v %d\n", ((uint8_t*)s->bufs[idx].addr)[0]);
       }
-      //BB merge: not sure where this will go for now
-      //if (((awake) && (s->b.tri_state_switch != 3) && (!s->b.keepEonOff)) || (s->b.recording)){
-      //  set_awake(s, true);
-      //}
     } else {
       assert(false);
     }
@@ -986,22 +946,13 @@ int main(int argc, char* argv[]) {
 
   zsys_handler_set(NULL);
   signal(SIGINT, (sighandler_t)set_do_exit);
-#if !defined(QCOM) && !defined(QCOM2)
-  if (argc == 4) {
-    if (strcmp(argv[1],"-rez")==0) {
-	 force_rez = 1;
-	 force_rez_w = atoi(argv[2]);
-	 force_rez_h = atoi(argv[3]);
-    }
-  }
-#endif
 
   UIState uistate;
   UIState *s = &uistate;
   ui_init(s);
   //BB init our UI
   bb_ui_init(s);
-  
+
   enable_event_processing(true);
 
   pthread_t connect_thread_handle;
@@ -1073,7 +1024,6 @@ int main(int argc, char* argv[]) {
 
     // poll for touch events
     int touch_x = -1, touch_y = -1;
-    int dc_touch_x = -1, dc_touch_y = -1;
     s->b.touch_timeout --;
     if (s->b.touch_timeout < 0) {
       s->b.touch_timeout = 0;
@@ -1089,6 +1039,7 @@ int main(int argc, char* argv[]) {
       s->b.touch_timeout = touch_timeout;
     }
     //BB check touch
+    int dc_touch_x = -1, dc_touch_y = -1;
     if ((s->b.touch_last) && (s->b.touch_last_width != s->scene.ui_viz_rw)) {
       s->b.touch_last_width=s->scene.ui_viz_rw;
       bb_handle_ui_touch(s,s->b.touch_last_x,s->b.touch_last_y);
@@ -1099,7 +1050,6 @@ int main(int argc, char* argv[]) {
       s->b.touch_last_y = 0;
     }
 
-    
     //s->b.touch_last_width = s->scene.ui_viz_rw;
     //BB Update our cereal polls
     bb_ui_poll_update(s);
@@ -1108,7 +1058,7 @@ int main(int argc, char* argv[]) {
       // always process events offroad
       check_messages(s);
     } else {
-      //set_awake(s, true);
+      set_awake(s, true);
       // Car started, fetch a new rgb image from ipc
       if (s->vision_connected){
         ui_update(s);
@@ -1118,7 +1068,6 @@ int main(int argc, char* argv[]) {
 
       // Visiond process is just stopped, force a redraw to make screen blank again.
       if (!s->started) {
-        s->scene.satelliteCount = -1;
         s->scene.uilayout_sidebarcollapsed = false;
         update_offroad_layout_state(s);
         ui_draw(s);
@@ -1145,9 +1094,9 @@ int main(int argc, char* argv[]) {
     if (s->awake) {
       ui_draw(s);
       if (s->vision_connected) {
-	nvgScale(s->vg,s->b.scr_scale_x,s->b.scr_scale_y);
+        nvgScale(s->vg, s->b.scr_scale_x, s->b.scr_scale_y);
         dashcam(s, dc_touch_x, dc_touch_y);
-        bb_ui_draw_UI(s) ;
+        bb_ui_draw_UI(s);
         ui_draw_infobar(s);
       }
       glFinish();

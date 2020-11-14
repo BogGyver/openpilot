@@ -52,6 +52,9 @@ sound_file* get_sound_file(AudibleAlert alert) {
 void play_alert_sound(AudibleAlert alert) {
   sound_file* sound = get_sound_file(alert);
   char* error = NULL;
+  if (sound == NULL) {
+    return;
+  }
 
   slplay_play(sound->uri, sound->loop, &error);
   if(error) {
