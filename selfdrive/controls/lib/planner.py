@@ -13,6 +13,7 @@ from selfdrive.controls.lib.speed_smoother import speed_smoother
 from selfdrive.controls.lib.longcontrol import LongCtrlState, MIN_CAN_SPEED
 from selfdrive.controls.lib.fcw import FCWChecker
 from selfdrive.controls.lib.long_mpc import LongitudinalMpc
+from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX
 
 MAX_SPEED = 255.0
 
@@ -24,7 +25,7 @@ AWARENESS_DECEL = -0.2     # car smoothly decel at .2m/s^2 when user is distract
 # make sure these accelerations are smaller than mpc limits
 #BB editing for TESLA only
 _A_CRUISE_MIN_V_TESLA  = [-4.0, -4.0, -4.0, -4.0, -4.0]
-_A_CRUISE_MIN_V  = [-1.0, -.8, -.67, -.5, -.30]
+_A_CRUISE_MIN_V = [-1.0, -.8, -.67, -.5, -.30]
 _A_CRUISE_MIN_BP = [   0., 5.,  10., 20.,  40.]
 
 # need fast accel at very low speed for stop and go
@@ -43,6 +44,7 @@ _A_TOTAL_MAX_BP = [20., 40.]
 
 # 75th percentile
 SPEED_PERCENTILE_IDX = 7
+
 
 
 def calc_cruise_accel_limits(v_ego, following, is_tesla = False):
@@ -140,6 +142,8 @@ class Planner():
     long_control_state = sm['controlsState'].longControlState
     v_cruise_kph = sm['controlsState'].vCruise
     force_slow_decel = sm['controlsState'].forceDecel
+
+    v_cruise_kph = min(v_cruise_kph, V_CRUISE_MAX)
     v_cruise_setpoint = v_cruise_kph * CV.KPH_TO_MS
 
     lead_1 = sm['radarState'].leadOne

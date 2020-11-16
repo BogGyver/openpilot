@@ -1,7 +1,9 @@
-Import('env', 'arch', 'messaging', 'zmq', 'common', 'gpucommon', 'visionipc')
+Import('env', 'arch', 'cereal', 'messaging', 'zmq', 'common', 'gpucommon', 'visionipc')
 lenv = env.Clone()
 
-libs = [messaging, common, 'OpenCL', 'capnp', zmq, 'kj', 'yuv', gpucommon, visionipc]
+libs = [cereal, messaging, common, 'OpenCL', 'SNPE', 'capnp', 'zmq', 'kj', 'yuv', gpucommon, visionipc]
+
+TEST_THNEED = False
 
 common_src = [
   "models/commonmodel.c",
@@ -9,30 +11,24 @@ common_src = [
   "transforms/loadyuv.c",
   "transforms/transform.c"]
 
-if arch == "jarch64":
-  libs += ['pthread']
-  # for tensorflow support
-  common_src = [
-  "models/commonmodel.c",
-  "transforms/loadyuv.c",
-  "transforms/transform.c"]
-  common_src += ['runners/tfmodel.cc']
-  # tell runners to use it
-  lenv['CFLAGS'].append("-DUSE_TF_MODEL")
-  lenv['CXXFLAGS'].append("-DUSE_TF_MODEL")
-elif arch == "aarch64":
-  libs += ['SNPE', 'gsl', 'CB', 'gnustl_shared']
+if arch == "aarch64":
+  libs += ['gsl', 'CB', 'gnustl_shared']
+  if not TEST_THNEED:
+    common_src += ["thneed/thneed.cc"]
+    lenv['CFLAGS'].append("-DUSE_THNEED")
+    lenv['CXXFLAGS'].append("-DUSE_THNEED")
 elif arch == "larch64":
   libs += ['gsl', 'CB', 'symphony-cpu', 'pthread']
 else:
-  libs += ['SNPE', 'symphony-cpu', 'pthread']
+  libs += ['symphony-cpu', 'pthread']
+
   # for tensorflow support
   common_src += ['runners/tfmodel.cc']
   # tell runners to use it
   lenv['CFLAGS'].append("-DUSE_TF_MODEL")
   lenv['CXXFLAGS'].append("-DUSE_TF_MODEL")
 
-common = lenv.Object(common_src)
+common = lenv.Object(common_src)    
 
 lenv.Program('_dmonitoringmodeld', [
     "dmonitoringmodeld.cc",
@@ -43,4 +39,9 @@ lenv.Program('_modeld', [
     "modeld.cc",
     "models/driving.cc",
   ]+common, LIBS=libs)
+
+if TEST_THNEED:
+  lenv.Program('thneed/debug/_thneed', [
+      "thneed/thneed.cc", "thneed/debug/test.cc"
+    ]+common, LIBS=libs)
 

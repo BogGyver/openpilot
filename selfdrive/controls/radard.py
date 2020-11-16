@@ -56,7 +56,7 @@ def match_vision_to_cluster(v_ego, lead, clusters):
   # if no 'sane' match is found return -1
   # stationary radar points can be false positives
   dist_sane = abs(cluster.dRel - offset_vision_dist) < max([(offset_vision_dist)*.25, 5.0])
-  vel_sane = (abs(cluster.vRel - lead.relVel) < 10) or (v_ego + cluster.vRel > 2)
+  vel_sane = (abs(cluster.vRel - lead.relVel) < 10) or (v_ego + cluster.vRel > 3)
   if dist_sane and vel_sane:
     return cluster
   else:
@@ -104,9 +104,6 @@ class RadarD():
     self.RI = RI
     self.tracks = defaultdict(dict)
     self.kalman_params = KalmanParams(radar_ts)
-
-    self.last_md_ts = 0
-    self.last_controls_state_ts = 0
 
     self.active = 0
 
@@ -348,10 +345,10 @@ class RadarD():
     # *** publish radarState ***
     dat = messaging.new_message('radarState')
     dat.valid = sm.all_alive_and_valid(service_list=['controlsState', 'model'])
-    dat.radarState.mdMonoTime = self.last_md_ts
+    dat.radarState.mdMonoTime = sm.logMonoTime['model']
     dat.radarState.canMonoTimes = list(rr.canMonoTimes)
     dat.radarState.radarErrors = list(rr.errors)
-    dat.radarState.controlsStateMonoTime = self.last_controls_state_ts
+    dat.radarState.controlsStateMonoTime = sm.logMonoTime['controlsState']
 
     datext = tesla.ICLeads.new_message()
     if has_radar:

@@ -181,7 +181,7 @@ class Uploader():
       if url_resp.status_code == 412:
         self.last_resp = url_resp
         return
-        
+
       url_resp_json = json.loads(url_resp.text)
       url = url_resp_json['url']
       headers = url_resp_json['headers']
@@ -189,9 +189,11 @@ class Uploader():
 
       if fake_upload:
         cloudlog.info("*** WARNING, THIS IS A FAKE UPLOAD TO %s ***" % url)
+
         class FakeResponse():
           def __init__(self):
             self.status_code = 200
+
         self.last_resp = FakeResponse()
       else:
         with open(fn, "rb") as f:

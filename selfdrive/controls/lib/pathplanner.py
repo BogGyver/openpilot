@@ -129,7 +129,7 @@ class PathPlanner():
 
       # starting
       elif self.lane_change_state == LaneChangeState.laneChangeStarting:
-        # fade out lanelines over .5s
+        # fade out over .5s
         self.lane_change_ll_prob = max(self.lane_change_ll_prob - 2*DT_MDL, 0.0)
         # 98% certainty
         if lane_change_prob < 0.02 and self.lane_change_ll_prob < 0.01:
@@ -216,8 +216,6 @@ class PathPlanner():
     plan_send.pathPlan.angleOffset = float(sm['liveParameters'].angleOffsetAverage)
     plan_send.pathPlan.mpcSolutionValid = bool(plan_solution_valid)
     plan_send.pathPlan.paramsValid = bool(sm['liveParameters'].valid)
-    plan_send.pathPlan.sensorValid = bool(sm['liveParameters'].sensorValid)
-    plan_send.pathPlan.posenetValid = bool(sm['liveParameters'].posenetValid)
 
     plan_send.pathPlan.desire = desire
     plan_send.pathPlan.laneChangeState = self.lane_change_state

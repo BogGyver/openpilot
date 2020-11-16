@@ -12,4 +12,3 @@ elif is_tbp:
 else:
   PERSIST = os.path.join(BASEDIR, "persist")
   PARAMS = os.path.join(BASEDIR, "persist", "params")
-

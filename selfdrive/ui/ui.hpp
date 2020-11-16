@@ -1,7 +1,9 @@
 #pragma once
 #ifndef _UI_H
 #define _UI_H
-#include "cereal/gen/cpp/log.capnp.h"
+
+#include "messaging.hpp"
+
 #ifdef __APPLE__
 #include <OpenGL/gl3.h>
 #define NANOVG_GL3_IMPLEMENTATION
@@ -12,8 +14,7 @@
 #define NANOVG_GLES3_IMPLEMENTATION
 #define nvgCreate nvgCreateGLES3
 #endif
-
-#include <capnp/serialize.h>
+#include <atomic>
 #include <pthread.h>
 #include "nanovg.h"
 
@@ -26,7 +27,6 @@
 #include "cereal/gen/c/log.capnp.h"
 #include "bbuistate.h"
 #include "sound.hpp"
-
 
 #define STATUS_STOPPED 0
 #define STATUS_DISENGAGED 1
@@ -187,7 +187,6 @@ typedef struct {
 } track_vertices_data;
 
 
-
 typedef struct UIState {
 
   //BB define BBUIState
@@ -220,21 +219,8 @@ typedef struct UIState {
   int img_network[6];
 
   // sockets
-  Context *ctx;
-  SubSocket *model_sock;
-  SubSocket *controlsstate_sock;
-  SubSocket *livecalibration_sock;
-  SubSocket *radarstate_sock;
-  SubSocket *map_data_sock;
-  SubSocket *uilayout_sock;
-  SubSocket *thermal_sock;
-  SubSocket *health_sock;
-  SubSocket *ubloxgnss_sock;
-  SubSocket *driverstate_sock;
-  SubSocket *dmonitoring_sock;
-  PubSocket *offroad_sock;
-  Poller * poller;
-  Poller * ublox_poller;
+  SubMaster *sm;
+  PubMaster *pm;
 
   cereal::UiLayoutState::App active_app;
 
@@ -299,7 +285,7 @@ typedef struct UIState {
   bool thermal_started, preview_started;
   bool vision_seen;
 
-  float light_sensor;
+  std::atomic<float> light_sensor;
 
   int touch_fd;
 
@@ -322,7 +308,7 @@ void ui_draw(UIState *s);
 void ui_draw_sidebar(UIState *s);
 void ui_draw_image(NVGcontext *vg, float x, float y, float w, float h, int image, float alpha);
 void ui_draw_rect(NVGcontext *vg, float x, float y, float w, float h, NVGcolor color, float r = 0, int width = 0);
-void ui_draw_rect(NVGcontext *vg, float x, float y, float w, float h, NVGpaint paint, float r = 0);
+void ui_draw_rect(NVGcontext *vg, float x, float y, float w, float h, NVGpaint &paint, float r = 0);
 void ui_nvg_init(UIState *s);
 static void set_awake(UIState *s, bool awake); 
 

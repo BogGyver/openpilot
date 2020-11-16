@@ -9,12 +9,15 @@ from selfdrive.tinklad.tinkla_interface import TinklaClient
 from common.android import ANDROID
 
 if os.getenv("NOLOG") or os.getenv("NOCRASH") or not ANDROID:
-  def capture_exception(*exc_info):
+  def capture_exception(*args, **kwargs):
     pass
+
   def bind_user(**kwargs):
     pass
+
   def bind_extra(**kwargs):
     pass
+
   def install():
     pass
 else:
@@ -43,6 +46,7 @@ else:
   def install():
     # installs a sys.excepthook
     __excepthook__ = sys.excepthook
+
     def handle_exception(*exc_info):
       if exc_info[0] not in (KeyboardInterrupt, SystemExit):
         capture_exception()
