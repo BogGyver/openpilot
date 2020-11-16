@@ -38,9 +38,13 @@ LaneChangeDirection = log.PathPlan.LaneChangeDirection
 EventName = car.CarEvent.EventName
 
 class Controls:
+
+  tinklaClient = None
+
   def __init__(self, sm=None, pm=None, can_sock=None):
     gc.disable()
     set_realtime_priority(3)
+    self.tinklaClient = TinklaClient()
 
     # Setup sockets
     self.pm = pm
@@ -204,6 +208,7 @@ class Controls:
       self.events.add(EventName.radarCommIssue)
     elif not self.sm.all_alive_and_valid():
       self.events.add(EventName.commIssue)
+      logAllAliveAndValidInfoToTinklad(sm=self.sm, tinklaClient=self.tinklaClient)
     if not self.sm['pathPlan'].mpcSolutionValid:
       self.events.add(EventName.plannerError)
     if not self.sm['liveLocationKalman'].inputsOK and os.getenv("NOSENSOR") is None:
@@ -383,14 +388,6 @@ class Controls:
 
     return actuators, v_acc_sol, a_acc_sol, lac_log
 
-def logAllAliveAndValidInfoToTinklad(sm, tinklaClient):
-  areAllAlive,aliveProcessName,aliveCount = sm.all_alive_with_info()
-  areAllValid, validProcessName, validCount = sm.all_valid_with_info()
-  if not areAllAlive:
-    tinklaClient.logProcessCommErrorEvent(source="carcontroller", processName=aliveProcessName, count=aliveCount, eventType="Not Alive")
-  else:
-    tinklaClient.logProcessCommErrorEvent(source="carcontroller", processName=validProcessName, count=validCount, eventType="Not Valid")
-
   def publish_logs(self, CS, start_time, actuators, v_acc, a_acc, lac_log):
     """Send actuators and hud commands to the car, send controlsstate and MPC logging"""
 
@@ -556,16 +553,22 @@ def logAllAliveAndValidInfoToTinklad(sm, tinklaClient):
     self.prof.checkpoint("Sent")
 
   def controlsd_thread(self):
-    tinklaClient = TinklaClient()
     while True:
       self.step()
       self.rk.monitor_time()
       self.prof.display()
 
+def logAllAliveAndValidInfoToTinklad(sm, tinklaClient):
+  areAllAlive, aliveProcessName, aliveCount = sm.all_alive_with_info()
+  areAllValid, validProcessName, validCount = sm.all_valid_with_info()
+  if not areAllAlive:
+    tinklaClient.logProcessCommErrorEvent(source="carcontroller", processName=aliveProcessName, count=aliveCount, eventType="Not Alive")
+  else:
+    tinklaClient.logProcessCommErrorEvent(source="carcontroller", processName=validProcessName, count=validCount, eventType="Not Valid")
+
 def main(sm=None, pm=None, logcan=None):
   controls = Controls(sm, pm, logcan)
   controls.controlsd_thread()
-
 
 if __name__ == "__main__":
   main()

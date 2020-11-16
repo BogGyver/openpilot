@@ -73,7 +73,7 @@ class Publisher():
             await self.__update_user(data_dict)
         
         self.latest_info_dict = data_dict
-        print(LOG_PREFIX + "*send_info competed*")
+        print(LOG_PREFIX + "*send_info completed*")
 
     async def send_event(self, event):
         if self.openPilotId is None and self.latest_info_dict is not None:
@@ -85,7 +85,7 @@ class Publisher():
         if self.__is_error_response(response):
             print(LOG_PREFIX + "Error sending airtable event. %s" % (response))
             raise Exception(response)
-        print(LOG_PREFIX + "*send_event competed*")
+        print(LOG_PREFIX + "*send_event completed*")
 
 
     def __generate_airtable_user_info_dict(self, info):

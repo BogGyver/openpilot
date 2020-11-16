@@ -94,7 +94,7 @@ int ubloxd_main(poll_ubloxraw_msg_func poll_func, send_gps_event_func send_func)
             auto words = parser.gen_nav_data();
             if(words.size() > 0) {
               auto bytes = words.asBytes();
-                send_func(ubloxGnss, bytes.begin(), bytes.size());
+                pm.send("ubloxGnss", bytes.begin(), bytes.size());
               }
             } else
               LOGW("Unknown rxm msg id: 0x%02X", parser.msg_id());
@@ -122,18 +122,13 @@ int ubloxd_main(poll_ubloxraw_msg_func poll_func, send_gps_event_func send_func)
           parser.reset();
         }
       }
-      delete msg;
     }
-    delete poller;
-    delete ubloxRaw;
-    delete ubloxGnss;
-    delete gpsLocationExternal;
-    delete c;
-    return 0;
+    } 
   } else {
     LOGW("Using tesla gps...");
     while (!do_exit) {
       sleep(1);
     }
   }
+  return 0;
 }

@@ -62,6 +62,9 @@ class Events:
   def create_alerts(self, event_types, callback_args=[]):
     ret = []
     for e in self.events:
+      if e not in EVENTS: #Raf: Avoid crash if key doesn't exist
+        print("** Trying to create alert with invalid event key: ", e)
+        continue
       types = EVENTS[e].keys()
       for et in event_types:
         if et in types:

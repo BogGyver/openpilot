@@ -22,29 +22,38 @@ const struct lookup_t TESLA_LOOKUP_MAX_ANGLE = {
     {2., 29., 38.},
     {500., 500., 500.}};
 
-const AddrBus TESLA_TX_MSGS[] = {//chassis CAN
-{0x045,0}, {0x209,0}, {0x219,0}, {0x229,0}, {0x239,0}, {0x249,0}, 
-  {0x2B9,0}, {0x309,0}, {0x329,0}, {0x349,0}, {0x369,0}, {0x379,0}, {0x389,0}, 
-  {0x399,0}, {0x3A9,0}, {0x3B1,0}, {0x3D9,0}, {0x3E9,0}, {0x400,0}, {0x488,0}, 
-  {0x409,0}, {0x551,0}, {0x539,0}, {0x554,0}, {0x556,0}, {0x557,0}, {0x559,0}, 
-  {0x560,0}, {0x5D9,0}, {0x5F9,0}, {0x609,0}, {0x639,0}, {0x659,0}, {0x65A,0}, 
-  {0x669,0}, {0x720,0}, 
-//radar CAN
-{0x101,1}, {0x109,1}, {0x119,1}, {0x129,1}, {0x149,1}, {0x159,1}, {0x169,1}, 
-  {0x199,1}, {0x1A9,1}, {0x209,1}, {0x219,1}, {0x2A9,1}, {0x2B9,1}, {0x2D9,1}, 
-  {0x641,1}, 
-//epas CAN
-{0x488,2}, {0x551,2},};  
+const CanMsg TESLA_TX_MSGS[] = {
+  //chassis CAN
+  {0x045,0,8}, {0x209,0,8}, {0x219,0,8}, {0x229,0,8}, {0x239,0,8}, {0x249,0,8}, 
+  {0x2B9,0,8}, {0x309,0,8}, {0x329,0,8}, {0x349,0,8}, {0x369,0,8}, {0x379,0,8}, {0x389,0,8}, 
+  {0x399,0,8}, {0x3A9,0,8}, {0x3B1,0,8}, {0x3D9,0,8}, {0x3E9,0,8}, {0x400,0,8}, {0x488,0,8}, 
+  {0x409,0,8}, {0x551,0,8}, {0x539,0,8}, {0x554,0,8}, {0x556,0,8}, {0x557,0,8}, {0x559,0,8}, 
+  {0x560,0,8}, {0x5D9,0,8}, {0x5F9,0,8}, {0x609,0,8}, {0x639,0,8}, {0x659,0,8}, {0x65A,0,8}, 
+  {0x669,0,8}, {0x720,0,8}, 
+  //radar CAN
+  {0x101,1,8}, {0x109,1,8}, {0x119,1,8}, {0x129,1,8}, {0x149,1,8}, {0x159,1,8}, {0x169,1,8}, 
+  {0x199,1,8}, {0x1A9,1,8}, {0x209,1,8}, {0x219,1,8}, {0x2A9,1,8}, {0x2B9,1,8}, {0x2D9,1,8}, 
+  {0x641,1,8}, 
+  //epas CAN
+  {0x488,2,8}, {0x551,2,8},
+};  
 
 // TODO: do checksum and counter checks. Add correct timestep, 0.1s for now.
 AddrCheckStruct tesla_rx_checks[] = {
-  {.addr = {0x00E}, .bus =0, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U},
-  {.addr = {0x045}, .bus =0, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U},
-  {.addr = {0x108}, .bus =0, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U},
-  {.addr = {0x118}, .bus =0, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U},
-  {.addr = {0x318}, .bus =0, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U},
-  {.addr = {0x348}, .bus =0, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U},
-  {.addr = {0x368}, .bus =0, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U},
+  //STW_ANGLHP_STAT
+  {.msg = {{ 0x00E, 0, 8, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U}}},
+  //STW_ACTN_RQ
+  {.msg = {{ 0x045, 0, 8, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U}}},
+  //DI_torque1
+  {.msg = {{ 0x108, 0, 8, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U}}},
+  //DI_torque2
+  {.msg = {{ 0x118, 0, 6, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U}}},
+  //GTW_carState
+  {.msg = {{ 0x318, 0, 8, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U}}},
+  //GTW_status
+  {.msg = {{ 0x348, 0, 8, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U}}},
+  //DI_state
+  {.msg = {{ 0x368, 0, 8, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U}}},
 };
 const int TESLA_RX_CHECK_LEN = sizeof(tesla_rx_checks) / sizeof(tesla_rx_checks[0]);
 
