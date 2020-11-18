@@ -1,30 +1,29 @@
 import os
 from common.params import Params
 from common.basedir import BASEDIR
+from selfdrive.version import comma_remote, tested_branch
 from selfdrive.car.fingerprints import eliminate_incompatible_cars, all_known_cars
 from selfdrive.car.vin import get_vin, VIN_UNKNOWN
 from selfdrive.car.fw_versions import get_fw_versions, match_fw_to_car
 from selfdrive.swaglog import cloudlog
 import cereal.messaging as messaging
 from selfdrive.car import gen_empty_fingerprint
-from selfdrive.car.tesla.readconfig import CarSettings
 
 from cereal import car, log
 EventName = car.CarEvent.EventName
 HwType = log.HealthData.HwType
 
 
-def get_startup_event(car_recognized, controller_available, hw_type):
-  event = EventName.startup
-  if Params().get("GitRemote", encoding="utf8") in ['git@github.com:commaai/openpilot.git', 'https://github.com/commaai/openpilot.git']:
-    if Params().get("GitBranch", encoding="utf8") not in ['devel', 'release2-staging', 'dashcam-staging', 'release2', 'dashcam']:
-      event = EventName.startupMaster
+def get_startup_event(car_recognized, controller_available):
+  if comma_remote and tested_branch:
+    event = EventName.startup
+  else:
+    event = EventName.startupMaster
+
   if not car_recognized:
     event = EventName.startupNoCar
   elif car_recognized and not controller_available:
     event = EventName.startupNoControl
-  # elif hw_type == HwType.whitePanda:
-  #   event = EventName.startupWhitePanda
   return event
 
 
@@ -140,13 +139,6 @@ def fingerprint(logcan, sendcan, has_relay):
         if frame > frame_fingerprint:
           # fingerprint done
           car_fingerprint = candidate_cars[b][0]
-    
-    
-    if (car_fingerprint is None) and CarSettings().forceFingerprintTesla:
-          print ("Fingerprinting Failed: Returning Tesla (based on branch)")
-          car_fingerprint = "TESLA MODEL S"
-          vin = "TESLAFAKEVIN12345"
-
 
     # bail if no cars left or we've been waiting for more than 2s
     failed = all(len(cc) == 0 for cc in candidate_cars.values()) or frame > 200
@@ -170,18 +162,8 @@ def fingerprint(logcan, sendcan, has_relay):
   return car_fingerprint, finger, vin, car_fw, source
 
 
-def get_car(logcan, sendcan, has_relay = False):
-  if CarSettings().forceFingerprintTesla:
-    candidate="TESLA MODEL S"
-    fingerprints=["","",""]
-    vin="TESLAFORCED123456"
-    #BB
-    car_fw = []
-    source=car.CarParams.FingerprintSource.fixed
-    cloudlog.warning("VIN %s", vin)
-    Params().put("CarVin", vin)
-  else:
-    candidate, fingerprints, vin, car_fw, source = fingerprint(logcan, sendcan, has_relay)
+def get_car(logcan, sendcan, has_relay=False):
+  candidate, fingerprints, vin, car_fw, source = fingerprint(logcan, sendcan, has_relay)
 
   if candidate is None:
     cloudlog.warning("car doesn't match any fingerprints: %r", fingerprints)

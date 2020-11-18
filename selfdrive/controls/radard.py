@@ -172,7 +172,6 @@ class RadarD():
     idens = list(sorted(self.tracks.keys()))
     track_pts = list([self.tracks[iden].get_key_for_cluster() for iden in idens])
 
-
     # If we have multiple points, cluster them
     if len(track_pts) > 1:
       cluster_idxs = cluster_points_centroid(track_pts, 2.5)
@@ -368,7 +367,7 @@ class RadarD():
 
 # fuses camera and radar data for best lead detection
 def radard_thread(sm=None, pm=None, can_sock=None):
-  set_realtime_priority(2)
+  set_realtime_priority(52)
 
   # wait for stats about the car to come in from controls
   cloudlog.info("radard is waiting for CarParams")

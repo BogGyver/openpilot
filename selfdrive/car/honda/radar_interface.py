@@ -53,7 +53,6 @@ class RadarInterface(RadarInterfaceBase):
     self.updated_messages.clear()
     return rr
 
-
   def _update(self, updated_messages):
     ret = car.RadarData.new_message()
 

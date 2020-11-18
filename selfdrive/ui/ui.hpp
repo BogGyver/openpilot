@@ -1,7 +1,4 @@
 #pragma once
-#ifndef _UI_H
-#define _UI_H
-
 #include "messaging.hpp"
 
 #ifdef __APPLE__
@@ -23,9 +20,6 @@
 #include "common/visionimg.h"
 #include "common/framebuffer.h"
 #include "common/modeldata.h"
-#include "messaging.hpp"
-#include "cereal/gen/c/log.capnp.h"
-#include "bbuistate.h"
 #include "sound.hpp"
 
 #define STATUS_STOPPED 0
@@ -37,11 +31,6 @@
 #define NET_CONNECTED 0
 #define NET_DISCONNECTED 1
 #define NET_ERROR 2
-
-#define ALERTSIZE_NONE 0
-#define ALERTSIZE_SMALL 1
-#define ALERTSIZE_MID 2
-#define ALERTSIZE_FULL 3
 
 #define COLOR_BLACK nvgRGBA(0, 0, 0, 255)
 #define COLOR_BLACK_ALPHA(x) nvgRGBA(0, 0, 0, x)
@@ -58,7 +47,6 @@
 #define UI_BUF_COUNT 4
 //#define SHOW_SPEEDLIMIT 1
 //#define DEBUG_TURN
-
 
 const int vwp_w = 1920;
 const int vwp_h = 1080;
@@ -100,7 +88,6 @@ const uint8_t bg_colors[][4] = {
   [STATUS_ALERT] = {0xC9, 0x22, 0x31, 0xff},
 };
 
-
 typedef struct UIScene {
   int frontview;
   int fullview;
@@ -115,61 +102,36 @@ typedef struct UIScene {
   bool world_objects_visible;
   mat4 extrinsic_matrix;      // Last row is 0 so we can use mat4.
 
-  float v_cruise;
-  uint64_t v_cruise_update_ts;
-  float v_ego;
-  bool decel_for_model;
-
   float speedlimit;
   bool speedlimit_valid;
+
+  bool is_rhd;
   bool map_valid;
-
-  float curvature;
-  int engaged;
-  bool engageable;
-  bool monitoring_active;
-
   bool uilayout_sidebarcollapsed;
   bool uilayout_mapenabled;
-  bool uilayout_mockengaged;
   // responsive layout
   int ui_viz_rx;
   int ui_viz_rw;
   int ui_viz_ro;
 
-  int lead_status;
-  float lead_d_rel, lead_y_rel, lead_v_rel;
-
-  int lead_status2;
-  float lead_d_rel2, lead_y_rel2, lead_v_rel2;
-
-  float face_prob;
-  bool is_rhd;
-  float face_x, face_y;
-
   int front_box_x, front_box_y, front_box_width, front_box_height;
 
-  uint64_t alert_ts;
   std::string alert_text1;
   std::string alert_text2;
+  std::string alert_type;
   cereal::ControlsState::AlertSize alert_size;
-  float alert_blinkingrate;
-
-  float awareness_status;
 
   // Used to show gps planner status
   bool gps_planner_active;
 
-  cereal::ThermalData::NetworkType networkType;
-  cereal::ThermalData::NetworkStrength networkStrength;
-  int batteryPercent;
-  bool batteryCharging;
-  float freeSpace;
-  cereal::ThermalData::ThermalStatus thermalStatus;
-  int paTemp;
   cereal::HealthData::HwType hwType;
   int satelliteCount;
   uint8_t athenaStatus;
+
+  cereal::ThermalData::Reader thermal;
+  cereal::RadarState::LeadData::Reader lead_data[2];
+  cereal::ControlsState::Reader controls_state;
+  cereal::DriverState::Reader driver_state;
 } UIScene;
 
 typedef struct {
@@ -188,12 +150,6 @@ typedef struct {
 
 
 typedef struct UIState {
-
-  //BB define BBUIState
-  BBUIState b;
-  int plus_state;
-  //BB end
-
   pthread_mutex_t lock;
 
   // framebuffer
@@ -257,16 +213,13 @@ typedef struct UIState {
 
   // timeouts
   int awake_timeout;
-  int volume_timeout;
   int controls_timeout;
-  int alert_sound_timeout;
   int speed_lim_off_timeout;
   int is_metric_timeout;
   int longitudinal_control_timeout;
   int limit_set_speed_timeout;
   int hardware_timeout;
   int last_athena_ping_timeout;
-  int offroad_layout_timeout;
 
   bool controls_seen;
 
@@ -277,21 +230,15 @@ typedef struct UIState {
   bool limit_set_speed;
   float speed_lim_off;
   bool is_ego_over_limit;
-  std::string alert_type;
-  AudibleAlert alert_sound;
   float alert_blinking_alpha;
   bool alert_blinked;
   bool started;
-  bool thermal_started, preview_started;
+  bool preview_started;
   bool vision_seen;
 
   std::atomic<float> light_sensor;
 
   int touch_fd;
-
-  // Hints for re-calculations and redrawing
-  bool model_changed;
-  bool livempc_or_radarstate_changed;
 
   GLuint frame_vao[2], frame_vbo[2], frame_ibo[2];
   mat4 rear_frame_mat, front_frame_mat;
@@ -299,6 +246,8 @@ typedef struct UIState {
   model_path_vertices_data model_path_vertices[MODEL_LANE_PATH_CNT * 2];
 
   track_vertices_data track_vertices[2];
+
+  Sound sound;
 } UIState;
 
 // API
@@ -310,34 +259,3 @@ void ui_draw_image(NVGcontext *vg, float x, float y, float w, float h, int image
 void ui_draw_rect(NVGcontext *vg, float x, float y, float w, float h, NVGcolor color, float r = 0, int width = 0);
 void ui_draw_rect(NVGcontext *vg, float x, float y, float w, float h, NVGpaint &paint, float r = 0);
 void ui_nvg_init(UIState *s);
-static void set_awake(UIState *s, bool awake); 
-
-#if !defined(QCOM) && !defined(QCOM2)
-#include "GLFW/glfw3.h"
-FramebufferState* framebuffer_init_linux(
-    const char* name, int32_t layer, int alpha,
-    int *out_w, int *out_h, GLFWmousebuttonfun mouse_event_handler);
-#endif
-#endif
-// TODO: this is also hardcoded in common/transformations/camera.py
-const mat3 intrinsic_matrix = (mat3){{
-  910., 0., 582.,
-  0., 910., 437.,
-  0.,   0.,   1.
-}};
-
-const uint8_t alert_colors[][4] = {
-  [STATUS_STOPPED] = {0x07, 0x23, 0x39, 0xf1},
-  [STATUS_DISENGAGED] = {0x17, 0x33, 0x49, 0xc8},
-  [STATUS_ENGAGED] = {0x17, 0x86, 0x44, 0xf1},
-  [STATUS_WARNING] = {0xDA, 0x6F, 0x25, 0xf1},
-  [STATUS_ALERT] = {0xC9, 0x22, 0x31, 0xf1},
-};
-
-const int alert_sizes[] = {
-  [ALERTSIZE_NONE] = 0,
-  [ALERTSIZE_SMALL] = 241,
-  [ALERTSIZE_MID] = 390,
-  [ALERTSIZE_FULL] = vwp_h,
-};
-

@@ -4,10 +4,10 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sched.h>
+#include <errno.h>
 #include <sys/time.h>
 #include <sys/cdefs.h>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <assert.h>
 #include <math.h>
 #include <ctime>
@@ -28,42 +28,36 @@ void set_do_exit(int sig) {
 }
 
 using namespace ublox;
-const long ZMQ_POLL_TIMEOUT = 1000; // In miliseconds
 int ubloxd_main(poll_ubloxraw_msg_func poll_func, send_gps_event_func send_func) {
   LOGW("starting ubloxd");
   signal(SIGINT, (sighandler_t) set_do_exit);
   signal(SIGTERM, (sighandler_t) set_do_exit);
-  int useTeslaGps = 0;
-  char line[500];
-  int linenum=0;
-  FILE *stream;
-  stream = fopen("/data/bb_openpilot.cfg","r");
-  while(fgets(line, 500, stream) != NULL)
-  {
-          char setting[256], value[256], oper[10];
-          linenum++;
-          if(line[0] == '#') continue;
-          if(sscanf(line, "%s %s %s", setting, oper , value) != 3)
-          {
-                  //fprintf(stderr, "Syntax error, line %d\n", linenum);
-                  continue;
-          }       
-          //printf("Found [%s] %s [%s]\n", setting, oper, value);
-          if ((strcmp("use_tesla_gps",setting) == 0) && (strcmp("True",value) == 0)) {
-            useTeslaGps = 1;
-          }
-  }
-  fclose(stream);
-  if (useTeslaGps == 0) {
-    UbloxMsgParser parser;
 
-    SubMaster sm({"ubloxRaw"});
-    PubMaster pm({"ubloxGnss", "gpsLocationExternal"});
+  UbloxMsgParser parser;
 
-    while (!do_exit) {
-    if (sm.update(ZMQ_POLL_TIMEOUT) == 0) continue;
+  Context * context = Context::create();
+  SubSocket * subscriber = SubSocket::create(context, "ubloxRaw");
+  assert(subscriber != NULL);
+  subscriber->setTimeout(100);
 
-    auto ubloxRaw = sm["ubloxRaw"].getUbloxRaw();
+  PubMaster pm({"ubloxGnss", "gpsLocationExternal"});
+
+  while (!do_exit) {
+    Message * msg = subscriber->receive();
+    if (!msg){
+      if (errno == EINTR) {
+        do_exit = true;
+      }
+      continue;
+    }
+
+    auto amsg = kj::heapArray<capnp::word>((msg->getSize() / sizeof(capnp::word)) + 1);
+    memcpy(amsg.begin(), msg->getData(), msg->getSize());
+
+    capnp::FlatArrayMessageReader cmsg(amsg);
+    cereal::Event::Reader event = cmsg.getRoot<cereal::Event>();
+    auto ubloxRaw = event.getUbloxRaw();
+
     const uint8_t *data = ubloxRaw.begin();
     size_t len = ubloxRaw.size();
     size_t bytes_consumed = 0;
@@ -94,23 +88,10 @@ int ubloxd_main(poll_ubloxraw_msg_func poll_func, send_gps_event_func send_func)
             auto words = parser.gen_nav_data();
             if(words.size() > 0) {
               auto bytes = words.asBytes();
-                pm.send("ubloxGnss", bytes.begin(), bytes.size());
-              }
-            } else
-              LOGW("Unknown rxm msg id: 0x%02X", parser.msg_id());
-          } else if(parser.msg_class() == CLASS_MON) {
-            if(parser.msg_id() == MSG_MON_HW) {
-              //LOGD("MSG_MON_HW");
-              auto words = parser.gen_mon_hw();
-              if(words.size() > 0) {
-                auto bytes = words.asBytes();
               pm.send("ubloxGnss", bytes.begin(), bytes.size());
-              }
-            } else {
-              LOGW("Unknown mon msg id: 0x%02X", parser.msg_id());
             }
           } else
-            LOGW("Unknown msg class: 0x%02X", parser.msg_class());
+            LOGW("Unknown rxm msg id: 0x%02X", parser.msg_id());
         } else if(parser.msg_class() == CLASS_MON) {
           if(parser.msg_id() == MSG_MON_HW) {
             //LOGD("MSG_MON_HW");
@@ -119,16 +100,20 @@ int ubloxd_main(poll_ubloxraw_msg_func poll_func, send_gps_event_func send_func)
               auto bytes = words.asBytes();
               pm.send("ubloxGnss", bytes.begin(), bytes.size());
             }
-          parser.reset();
-        }
+          } else {
+            LOGW("Unknown mon msg id: 0x%02X", parser.msg_id());
+          }
+        } else
+          LOGW("Unknown msg class: 0x%02X", parser.msg_class());
+        parser.reset();
       }
+      bytes_consumed += bytes_consumed_this_time;
     }
-    } 
-  } else {
-    LOGW("Using tesla gps...");
-    while (!do_exit) {
-      sleep(1);
-    }
+    delete msg;
   }
+
+  delete subscriber;
+  delete context;
+
   return 0;
 }
