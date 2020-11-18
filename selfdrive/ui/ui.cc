@@ -17,6 +17,16 @@
 #include "common/utilpp.h"
 #include "ui.hpp"
 
+#if !defined(QCOM) && !defined(QCOM2)
+int force_rez = 0;
+int force_rez_w = 0;
+int force_rez_h = 0;
+#endif
+
+#include "bbui.h"
+#include "dashcam.h"
+#include "tbui.h"
+
 static void ui_set_brightness(UIState *s, int brightness) {
   static int last_brightness = -1;
   if (last_brightness != brightness && (s->awake || brightness == 0)) {
@@ -41,7 +51,11 @@ static void set_awake(UIState *s, bool awake) {
 #ifdef QCOM
   if (awake) {
     // 30 second timeout
-    s->awake_timeout = 30*UI_FREQ;
+    if (((s->b.tri_state_switch == 3) || (s->b.keepEonOff)) && !s->b.recording) {
+      s->awake_timeout = 30*UI_FREQ;
+    } else {
+      s->awake_timeout = 30*30;
+    }
   }
   if (s->awake != awake) {
     s->awake = awake;
@@ -181,10 +195,41 @@ static void ui_init(UIState *s) {
   s->vision_seen = false;
 
   // init display
+#if defined(QCOM) || defined(QCOM2)
   s->fb = framebuffer_init("ui", 0, true, &s->fb_w, &s->fb_h);
+#else
+  s->fb = framebuffer_init_linux("ui", 0, true, &s->fb_w, &s->fb_h, bb_mouse_event_handler);
+#endif 
   assert(s->fb);
 
   set_awake(s, true);
+
+#if defined(QCOM) || defined(QCOM2)
+  s->b.scr_w = vwp_w;
+  s->b.scr_h = vwp_h;
+  s->b.scr_scale_x = 1.0f;
+  s->b.scr_scale_y = 1.0f;
+  s->b.scr_device_factor = 1.0f;
+  s->b.scr_scissor_offset = 0.0f;
+#else
+  //scale
+  if (force_rez == 1) {
+    s->b.scr_w = force_rez_w;
+    s->b.scr_h = force_rez_h;
+    printf("Forcing rezolution to %d x %d \n",force_rez_w,force_rez_h);
+
+  } else {
+    s->b.scr_display = XOpenDisplay(NULL);
+    Screen*  xorg_s = DefaultScreenOfDisplay(s->b.scr_display);
+    s->b.scr_w = xorg_s->width;
+    s->b.scr_h = xorg_s->height;
+  }
+  s->b.scr_scale_x = (float)(s->b.scr_w) / (float)(vwp_w);
+  s->b.scr_scale_y = (float)(s->b.scr_h) / (float)(vwp_h);
+  s->b.scr_device_factor = (float)(1164) / (float)(s->b.scr_w);
+  s->b.scr_scissor_offset = (float)(s->b.scr_w * 3) / 4.0f - (float)(s->b.scr_h);
+  mouse_ui_state = s;
+#endif
 
   ui_nvg_init(s);
 }
@@ -281,12 +326,18 @@ static void update_status(UIState *s, int status) {
 
 void handle_message(UIState *s, SubMaster &sm) {
   UIScene &scene = s->scene;
+  // int bts = bb_get_button_status(s,(char *)"sound");
   if (s->started && sm.updated("controlsState")) {
     auto event = sm["controlsState"];
     scene.controls_state = event.getControlsState();
     s->controls_timeout = 1 * UI_FREQ;
     scene.frontview = scene.controls_state.getRearViewCam();
     if (!scene.frontview){ s->controls_seen = true; }
+
+    //BB get angles
+    s->b.angleSteers = scene.controls_state.getAngleSteers();
+    s->b.angleSteersDes = scene.controls_state.getAngleSteersDes();
+    //BB END
 
     auto alert_sound = scene.controls_state.getAlertSound();
     if (scene.alert_type.compare(scene.controls_state.getAlertType()) != 0) {
@@ -364,6 +415,28 @@ void handle_message(UIState *s, SubMaster &sm) {
 #endif
   if (sm.updated("thermal")) {
     scene.thermal = sm["thermal"].getThermal();
+
+    auto data = scene.thermal;
+    //BB CPU TEMP
+    s->b.maxCpuTemp=data.getCpu0();
+    if (s->b.maxCpuTemp<data.getCpu1())
+    {
+        s->b.maxCpuTemp=data.getCpu1();
+    }
+    else if (s->b.maxCpuTemp<data.getCpu2())
+    {
+        s->b.maxCpuTemp=data.getCpu2();
+    }
+    else if (s->b.maxCpuTemp<data.getCpu3())
+    {
+        s->b.maxCpuTemp=data.getCpu3();
+    }
+    s->b.maxBatTemp=data.getBat();
+    s->b.freeSpace=data.getFreeSpace();
+    s->b.batteryPercent=data.getBatteryPercent();
+    s->b.chargingEnabled=!data.getChargingDisabled();
+    s->b.fanSpeed=data.getFanSpeed();
+    //BB END CPU TEMP
   }
   if (sm.updated("ubloxGnss")) {
     auto data = sm["ubloxGnss"].getUbloxGnss();
@@ -708,6 +781,8 @@ int main(int argc, char* argv[]) {
   UIState uistate = {};
   UIState *s = &uistate;
   ui_init(s);
+  //BB init our UI
+  bb_ui_init(s);
 
   enable_event_processing(true);
 
@@ -722,7 +797,7 @@ int main(int argc, char* argv[]) {
                        light_sensor_thread, s);
   assert(err == 0);
 #endif
-
+  s->b.touch_last_width = s->scene.ui_viz_rw;
   TouchState touch = {0};
   touch_init(&touch);
   s->touch_fd = touch.fd;
@@ -774,12 +849,35 @@ int main(int argc, char* argv[]) {
 
     // poll for touch events
     int touch_x = -1, touch_y = -1;
+    s->b.touch_timeout --;
+    if (s->b.touch_timeout < 0) {
+      s->b.touch_timeout = 0;
+    }
     int touched = touch_poll(&touch, &touch_x, &touch_y, 0);
     if (touched == 1) {
       set_awake(s, true);
       handle_sidebar_touch(s, touch_x, touch_y);
       handle_vision_touch(s, touch_x, touch_y);
+      s->b.touch_last = true;
+      s->b.touch_last_x = touch_x;
+      s->b.touch_last_y = touch_y;
+      s->b.touch_timeout = touch_timeout;
     }
+    //BB check touch
+    int dc_touch_x = -1, dc_touch_y = -1;
+    if ((s->b.touch_last) && (s->b.touch_last_width != s->scene.ui_viz_rw)) {
+      s->b.touch_last_width=s->scene.ui_viz_rw;
+      bb_handle_ui_touch(s,s->b.touch_last_x,s->b.touch_last_y);
+      dc_touch_x = s->b.touch_last_x;
+      dc_touch_y = s->b.touch_last_y;
+      s->b.touch_last = false;
+      s->b.touch_last_x = 0;
+      s->b.touch_last_y = 0;
+    }
+
+    //s->b.touch_last_width = s->scene.ui_viz_rw;
+    //BB Update our cereal polls
+    bb_ui_poll_update(s);
 
     if (!s->started) {
       // always process events offroad
@@ -823,6 +921,12 @@ int main(int argc, char* argv[]) {
     // Don't waste resources on drawing in case screen is off
     if (s->awake) {
       ui_draw(s);
+      if (s->vision_connected) {
+        nvgScale(s->vg, s->b.scr_scale_x, s->b.scr_scale_y);
+        dashcam(s, dc_touch_x, dc_touch_y);
+        bb_ui_draw_UI(s);
+        ui_draw_infobar(s);
+      }
       glFinish();
       should_swap = true;
     }

@@ -233,10 +233,10 @@ int main(int argc, char **argv) {
         posenet_publish(pm, extra.frame_id, frame_id, vipc_dropped_frames, frame_drop_perc, model_buf, extra.timestamp_eof);
 
         LOGD("model process: %.2fms, from last %.2fms, vipc_frame_id %zu, frame_id, %zu, frame_drop %.3f%", mt2-mt1, mt1-last, extra.frame_id, frame_id, frame_drop_perc);
+	printf("model process: %.2fms, from last %.2fms\n", mt2-mt1, mt1-last);
         last = mt1;
         last_vipc_frame_id = extra.frame_id;
       }
-
     }
     visionbuf_free(&yuv_ion);
   }
@@ -253,3 +253,4 @@ int main(int argc, char **argv) {
 
   return 0;
 }
+

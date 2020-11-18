@@ -27,12 +27,44 @@ void set_do_exit(int sig) {
   do_exit = 1;
 }
 
+bool is_tesla_gps_enabled() {
+  char line[500];
+  int linenum = 0;
+  FILE *stream;
+  stream = fopen("/data/bb_openpilot.cfg","r");
+  while(fgets(line, 500, stream) != NULL)
+  {
+          char setting[256], value[256], oper[10];
+          linenum++;
+          if(line[0] == '#') continue;
+          if(sscanf(line, "%s %s %s", setting, oper , value) != 3)
+          {
+                  //fprintf(stderr, "Syntax error, line %d\n", linenum);
+                  continue;
+          }       
+          //printf("Found [%s] %s [%s]\n", setting, oper, value);
+          if ((strcmp("use_tesla_gps",setting) == 0) && (strcmp("True",value) == 0)) {
+            return true;
+          }
+  }
+  fclose(stream);
+  return false;
+}
+
 using namespace ublox;
 int ubloxd_main(poll_ubloxraw_msg_func poll_func, send_gps_event_func send_func) {
   LOGW("starting ubloxd");
   signal(SIGINT, (sighandler_t) set_do_exit);
   signal(SIGTERM, (sighandler_t) set_do_exit);
 
+  if (is_tesla_gps_enabled()) {
+    LOGW("Using tesla gps...");
+    while (!do_exit) {
+      sleep(1);
+    }
+    return 0;
+  }
+  
   UbloxMsgParser parser;
 
   Context * context = Context::create();
@@ -117,3 +149,4 @@ int ubloxd_main(poll_ubloxraw_msg_func poll_func, send_gps_event_func send_func)
 
   return 0;
 }
+

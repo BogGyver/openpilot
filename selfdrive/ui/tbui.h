@@ -22,21 +22,23 @@ static void ui_draw_infobar(UIState *s) {
   char uom_str[5];
   snprintf(uom_str, sizeof(uom_str), s->is_metric ? "km/h" : "mph");
   char spd[6];
-  snprintf(spd, sizeof(spd), "%.1f ", s->is_metric ? s->scene.v_ego * 3.6 : s->scene.v_ego * 2.2369363);
+  float v_ego = s->scene.controls_state.getVEgo();
+  snprintf(spd, sizeof(spd), "%.1f ", s->is_metric ? v_ego * 3.6 : v_ego * 2.2369363);
 
   char ang_steer[9];
   snprintf(ang_steer, sizeof(ang_steer), "%s%03.1f°", s->b.angleSteers < 0? "-" : "+", fabs(s->b.angleSteers));
 
   char lead_dist[8];
-  if (s->scene.lead_status) {
-    snprintf(lead_dist, sizeof(lead_dist), "%05.2fm", s->scene.lead_d_rel);
+  if (s->scene.lead_data[0].getStatus()) {
+    snprintf(lead_dist, sizeof(lead_dist), "%05.2fm", s->scene.lead_data[0].getDRel());
   } else {
     snprintf(lead_dist, sizeof(lead_dist), "%3s", "N/A");
   }
 
   char maxspeed_str[7];
-  if (s->scene.engaged && s->scene.v_cruise > 0) {
-    float maxspeed = s->is_metric ? s->scene.v_cruise : s->scene.v_cruise / 1.609;
+  float v_cruise = s->scene.controls_state.getVCruise();
+  if (s->scene.controls_state.getEnabled() && v_cruise > 0) {
+    float maxspeed = s->is_metric ? v_cruise : v_cruise / 1.609;
     snprintf(maxspeed_str, sizeof(maxspeed_str), "/%.1f", maxspeed);
   }
 

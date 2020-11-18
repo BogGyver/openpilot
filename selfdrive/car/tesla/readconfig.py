@@ -410,13 +410,13 @@ class ConfigFile():
 
       #check camera_id values against LiveParams
       savedRoadCameraID = params.get("RoadUsbCameraID")
-      savedDriverCameraID = params.get("DriverUsbCameraID")
+      # savedDriverCameraID = params.get("DriverUsbCameraID")
       savedRoadCameraFx = params.get("RoadUsbCameraFx")
       savedDriverCameraFx = params.get("DriverUsbCameraFx")
       savedRoadCameraFlip = params.get("RoadUsbCameraFlip")
       savedDriverCameraFlip = params.get("DriverUsbCameraFlip")
-      if into.driverCameraID != savedDriverCameraID:
-          params.put("DriverUsbCameraID",into.driverCameraID)
+      # if into.driverCameraID != savedDriverCameraID:
+      #     params.put("DriverUsbCameraID",into.driverCameraID)
       if into.roadCameraID != savedRoadCameraID:
           params.put("RoadUsbCameraID",into.roadCameraID)
       if into.driverCameraFx != savedDriverCameraFx:

@@ -17,6 +17,7 @@ UIState *mouse_ui_state;
 #endif
 // TODO: this is also hardcoded in common/transformations/camera.py
 
+static void set_awake(UIState *s, bool awake); 
 
 vec3 bb_car_space_to_full_frame(const  UIState *s, vec4 car_space_projective) {
   const UIScene *scene = &s->scene;
@@ -96,7 +97,7 @@ void bb_ui_draw_car(  UIState *s) {
   // replaces the draw_chevron function when button in mid position
   //static void draw_chevron(UIState *s, float x_in, float y_in, float sz,
   //                        NVGcolor fillColor, NVGcolor glowColor) {
-  if (!s->scene.lead_status) {
+  if (!s->scene.lead_data[0].getStatus()) {
     //no lead car to draw
     return;
   }
@@ -104,9 +105,8 @@ void bb_ui_draw_car(  UIState *s) {
     return;
   }
   const UIScene *scene = &s->scene;
-  float x_in = scene->lead_d_rel+2.7;
-  float y_in = scene->lead_y_rel;
-  float sz = 1.0;
+  float x_in = scene->lead_data[0].getDRel()+2.7;
+  float y_in = scene->lead_data[0].getYRel();
 
   nvgSave(s->vg);
   nvgTranslate(s->vg, 240.0f, 0.0);
@@ -230,8 +230,8 @@ int bb_get_status( UIState *s) {
 int bb_ui_draw_measure( UIState *s,  const char* bb_value, const char* bb_uom, const char* bb_label, 
 		int bb_x, int bb_y, int bb_uom_dx,
 		NVGcolor bb_valueColor, NVGcolor bb_labelColor, NVGcolor bb_uomColor, 
-		int bb_valueFontSize, int bb_labelFontSize, int bb_uomFontSize )  {
-  const UIScene *scene = &s->scene;	
+		int bb_valueFontSize, int bb_labelFontSize, int bb_uomFontSize ) {
+  
   nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
   int dx = 0;
   if (strlen(bb_uom) > 0) {
@@ -458,8 +458,7 @@ void bb_ui_draw_custom_alert( UIState *s) {
 
 
 void bb_ui_draw_measures_left( UIState *s, int bb_x, int bb_y, int bb_w ) {
-	const UIScene *scene = &s->scene;		
-	int bb_rx = bb_x + (int)(bb_w/2);
+  int bb_rx = bb_x + (int)(bb_w/2);
 	int bb_ry = bb_y;
 	int bb_h = 5; 
 	NVGcolor lab_color = nvgRGBA(255, 255, 255, 200);
@@ -583,7 +582,6 @@ void bb_ui_draw_measures_left( UIState *s, int bb_x, int bb_y, int bb_w ) {
 }
 
 void bb_ui_draw_measures_left2( UIState *s, int bb_x, int bb_y, int bb_w ) {
-	const UIScene *scene = &s->scene;		
 	int bb_rx = bb_x + (int)(bb_w/2);
 	int bb_ry = bb_y;
 	int bb_h = 5; 
@@ -718,20 +716,20 @@ void bb_ui_draw_measures_right( UIState *s, int bb_x, int bb_y, int bb_w ) {
 		char val_str[16];
 		char uom_str[6];
 		NVGcolor val_color = nvgRGBA(255, 255, 255, 200);
-		if (scene->lead_status) {
+		if (scene->lead_data[0].getStatus()) {
 			//show RED if less than 5 meters
 			//show orange if less than 15 meters
-			if((int)(scene->lead_d_rel) < 15) {
+			if((int)(scene->lead_data[0].getDRel()) < 15) {
 				val_color = nvgRGBA(255, 188, 3, 200);
 			}
-			if((int)(scene->lead_d_rel) < 5) {
+			if((int)(scene->lead_data[0].getDRel()) < 5) {
 				val_color = nvgRGBA(255, 0, 0, 200);
 			}
 			// lead car relative distance is always in meters
 			if (s->is_metric) {
-				 snprintf(val_str, sizeof(val_str), "%d", (int)scene->lead_d_rel);
+				 snprintf(val_str, sizeof(val_str), "%d", (int)scene->lead_data[0].getDRel());
 			} else {
-				 snprintf(val_str, sizeof(val_str), "%d", (int)(scene->lead_d_rel * 3.28084));
+				 snprintf(val_str, sizeof(val_str), "%d", (int)(scene->lead_data[0].getDRel() * 3.28084));
 			}
 		} else {
 		   snprintf(val_str, sizeof(val_str), "-");
@@ -753,20 +751,20 @@ void bb_ui_draw_measures_right( UIState *s, int bb_x, int bb_y, int bb_w ) {
 		char val_str[16];
 		char uom_str[6];
 		NVGcolor val_color = nvgRGBA(255, 255, 255, 200);
-		if (scene->lead_status) {
+		if (scene->lead_data[0].getStatus()) {
 			//show Orange if negative speed (approaching)
 			//show Orange if negative speed faster than 5mph (approaching fast)
-			if((int)(scene->lead_v_rel) < 0) {
+			if((int)(scene->lead_data[0].getVRel()) < 0) {
 				val_color = nvgRGBA(255, 188, 3, 200);
 			}
-			if((int)(scene->lead_v_rel) < -5) {
+			if((int)(scene->lead_data[0].getVRel()) < -5) {
 				val_color = nvgRGBA(255, 0, 0, 200);
 			}
 			// lead car relative speed is always in meters
 			if (s->is_metric) {
-				 snprintf(val_str, sizeof(val_str), "%d", (int)(scene->lead_v_rel * 3.6 + 0.5));
+				 snprintf(val_str, sizeof(val_str), "%d", (int)(scene->lead_data[0].getVRel() * 3.6 + 0.5));
 			} else {
-				 snprintf(val_str, sizeof(val_str), "%d", (int)(scene->lead_v_rel * 2.2374144 + 0.5));
+				 snprintf(val_str, sizeof(val_str), "%d", (int)(scene->lead_data[0].getVRel() * 2.2374144 + 0.5));
 			}
 		} else {
 		   snprintf(val_str, sizeof(val_str), "-");
@@ -842,7 +840,6 @@ void bb_ui_draw_measures_right( UIState *s, int bb_x, int bb_y, int bb_w ) {
 }
 
 void bb_ui_draw_measures_right2( UIState *s, int bb_x, int bb_y, int bb_w ) {
-	const UIScene *scene = &s->scene;		
 	int bb_rx = bb_x + (int)(bb_w/2);
 	int bb_ry = bb_y;
 	int bb_h = 5; 
@@ -1036,7 +1033,7 @@ void bb_ui_draw_logo( UIState *s) {
   const int viz_event_h = 820;
   const int viz_event_x = (ui_viz_rx + (ui_viz_rw - viz_event_w - bdr_s*2)/2);
   const int viz_event_y = 200;
-  bool is_engageable = scene->engageable;
+  // bool is_engageable = scene->controls_state.getEngageable();
   float viz_event_alpha = 1.0f;
   nvgBeginPath(s->vg);
   NVGpaint imgPaint = nvgImagePattern(s->vg, viz_event_x, viz_event_y,
@@ -1140,8 +1137,8 @@ void bb_ui_draw_gyro(UIState *s) {
 
 void bb_ui_read_triState_switch( UIState *s) {
   //get 3-state switch position
-  int tri_state_fd;
-  char buffer[10];
+  // int tri_state_fd;
+  // char buffer[10];
   if  (bb_currentTimeInMilis() - s->b.tri_state_switch_last_read > 2000)  {
     //tri_stated_fd = open ("/sys/devices/virtual/switch/tri-state-key/state", O_RDONLY);
     //if we can't open then switch should be considered in the middle, nothing done
@@ -1201,14 +1198,14 @@ void bb_ui_draw_UI( UIState *s) {
     bb_ui_draw_logo(s);
 	 }
    if (s->b.tri_state_switch ==2) {
-	 	const UIScene *scene = &s->scene;
-	  const int bb_dml_w = 180;
-	  const int bb_dml_x =  (scene->ui_viz_rx + (bdr_s*2));
-	  const int bb_dml_y = (box_y + (bdr_s*1.5))+220;
+	 	// const UIScene *scene = &s->scene;
+	  // const int bb_dml_w = 180;
+	  // const int bb_dml_x =  (scene->ui_viz_rx + (bdr_s*2));
+	  // const int bb_dml_y = (box_y + (bdr_s*1.5))+220;
 	  
-	  const int bb_dmr_w = 180;
-	  const int bb_dmr_x = scene->ui_viz_rx + scene->ui_viz_rw - bb_dmr_w - (bdr_s*2) ; 
-	  const int bb_dmr_y = (box_y + (bdr_s*1.5))+220;
+	  // const int bb_dmr_w = 180;
+	  // const int bb_dmr_x = scene->ui_viz_rx + scene->ui_viz_rw - bb_dmr_w - (bdr_s*2) ; 
+	  // const int bb_dmr_y = (box_y + (bdr_s*1.5))+220;
     bb_draw_buttons(s);
     bb_ui_draw_custom_alert(s);
     bb_ui_draw_logo(s);
@@ -1230,14 +1227,14 @@ void bb_ui_draw_UI( UIState *s) {
 	 }
    if (s->b.tri_state_switch ==4) {
     //we use the state 4 for gyro info
-    const UIScene *scene = &s->scene;
-    const int bb_dml_w = 180;
-    const int bb_dml_x =  (scene->ui_viz_rx + (bdr_s*2));
-    const int bb_dml_y = (box_y + (bdr_s*1.5))+220;
+    // const UIScene *scene = &s->scene;
+    // const int bb_dml_w = 180;
+    // const int bb_dml_x =  (scene->ui_viz_rx + (bdr_s*2));
+    // const int bb_dml_y = (box_y + (bdr_s*1.5))+220;
     
-    const int bb_dmr_w = 180;
-    const int bb_dmr_x = scene->ui_viz_rx + scene->ui_viz_rw - bb_dmr_w - (bdr_s*2) ; 
-    const int bb_dmr_y = (box_y + (bdr_s*1.5))+220;
+    // const int bb_dmr_w = 180;
+    // const int bb_dmr_x = scene->ui_viz_rx + scene->ui_viz_rw - bb_dmr_w - (bdr_s*2) ; 
+    // const int bb_dmr_y = (box_y + (bdr_s*1.5))+220;
     bb_draw_buttons(s);
     bb_ui_draw_custom_alert(s);
     bb_ui_draw_gyro(s);
@@ -1304,7 +1301,7 @@ void bb_ui_set_car( UIState *s, char *model, char *folder) {
 
 void  bb_ui_poll_update( UIState *s) {
 
-    int err;
+    // int err;
     
     //check tri-state switch
     bb_ui_read_triState_switch(s);
@@ -1411,7 +1408,7 @@ void  bb_ui_poll_update( UIState *s) {
           struct cereal_UIPlaySound datad;
           cereal_read_UIPlaySound(&datad, stp);
 
-          int snd = datad.sndSound;
+          // int snd = datad.sndSound;
           // bb_ui_play_sound(s,snd);
           
           capn_free(&ctx);

@@ -1,4 +1,5 @@
 #pragma once
+
 #include "messaging.hpp"
 
 #ifdef __APPLE__
@@ -20,6 +21,9 @@
 #include "common/visionimg.h"
 #include "common/framebuffer.h"
 #include "common/modeldata.h"
+#include "messaging.hpp"
+#include "cereal/gen/c/log.capnp.h"
+#include "bbuistate.h"
 #include "sound.hpp"
 
 #define STATUS_STOPPED 0
@@ -31,6 +35,11 @@
 #define NET_CONNECTED 0
 #define NET_DISCONNECTED 1
 #define NET_ERROR 2
+
+#define ALERTSIZE_NONE 0
+#define ALERTSIZE_SMALL 1
+#define ALERTSIZE_MID 2
+#define ALERTSIZE_FULL 3
 
 #define COLOR_BLACK nvgRGBA(0, 0, 0, 255)
 #define COLOR_BLACK_ALPHA(x) nvgRGBA(0, 0, 0, x)
@@ -150,6 +159,12 @@ typedef struct {
 
 
 typedef struct UIState {
+
+  //BB define BBUIState
+  BBUIState b;
+  int plus_state;
+  //BB end
+
   pthread_mutex_t lock;
 
   // framebuffer
@@ -259,3 +274,33 @@ void ui_draw_image(NVGcontext *vg, float x, float y, float w, float h, int image
 void ui_draw_rect(NVGcontext *vg, float x, float y, float w, float h, NVGcolor color, float r = 0, int width = 0);
 void ui_draw_rect(NVGcontext *vg, float x, float y, float w, float h, NVGpaint &paint, float r = 0);
 void ui_nvg_init(UIState *s);
+
+#if !defined(QCOM) && !defined(QCOM2)
+#include "GLFW/glfw3.h"
+FramebufferState* framebuffer_init_linux(
+    const char* name, int32_t layer, int alpha,
+    int *out_w, int *out_h, GLFWmousebuttonfun mouse_event_handler);
+#endif
+
+// TODO: this is also hardcoded in common/transformations/camera.py
+const mat3 intrinsic_matrix = (mat3){{
+  910., 0., 582.,
+  0., 910., 437.,
+  0.,   0.,   1.
+}};
+
+const uint8_t alert_colors[][4] = {
+  [STATUS_STOPPED] = {0x07, 0x23, 0x39, 0xf1},
+  [STATUS_DISENGAGED] = {0x17, 0x33, 0x49, 0xc8},
+  [STATUS_ENGAGED] = {0x17, 0x86, 0x44, 0xf1},
+  [STATUS_WARNING] = {0xDA, 0x6F, 0x25, 0xf1},
+  [STATUS_ALERT] = {0xC9, 0x22, 0x31, 0xf1},
+};
+
+const int alert_sizes[] = {
+  [ALERTSIZE_NONE] = 0,
+  [ALERTSIZE_SMALL] = 241,
+  [ALERTSIZE_MID] = 390,
+  [ALERTSIZE_FULL] = vwp_h,
+};
+
