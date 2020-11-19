@@ -43,7 +43,6 @@ class TxType(Enum):
   PERSISTENT = 1
   CLEAR_ON_MANAGER_START = 2
   CLEAR_ON_PANDA_DISCONNECT = 3
-  CLEAR_ON_CAR_START = 4
 
 
 class UnknownKeyName(Exception):
@@ -51,10 +50,10 @@ class UnknownKeyName(Exception):
 
 
 keys = {
-  "AccessToken": [TxType.CLEAR_ON_MANAGER_START], #BB what happends if no int connection?
+  "AccessToken": [TxType.CLEAR_ON_MANAGER_START],
   "AthenadPid": [TxType.PERSISTENT],
   "CalibrationParams": [TxType.PERSISTENT],
-  "CarParams": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT], #BB we had [TxType.CLEAR_ON_CAR_START],
+  "CarParams": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT],
   "CarParamsCache": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT],
   "CarVin": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT],
   "CommunityFeaturesToggle": [TxType.PERSISTENT],
@@ -81,6 +80,7 @@ keys = {
   "IsUploadRawEnabled": [TxType.PERSISTENT],
   "LastAthenaPingTime": [TxType.PERSISTENT],
   "LastUpdateTime": [TxType.PERSISTENT],
+  "LastUpdateException": [TxType.PERSISTENT],
   "LimitSetSpeed": [TxType.PERSISTENT],
   "LimitSetSpeedNeural": [TxType.PERSISTENT],
   "LiveParameters": [TxType.PERSISTENT],
@@ -109,12 +109,7 @@ keys = {
   "Offroad_InvalidTime": [TxType.CLEAR_ON_MANAGER_START],
   "Offroad_IsTakingSnapshot": [TxType.CLEAR_ON_MANAGER_START],
   "Offroad_NeosUpdate": [TxType.CLEAR_ON_MANAGER_START],
-  "RoadUsbCameraID": [TxType.PERSISTENT],
-  "DriverUsbCameraFx": [TxType.PERSISTENT],
-  "DriverUsbCameraFlip": [TxType.PERSISTENT],
-  "RoadUsbCameraFx": [TxType.PERSISTENT],
-  "RoadUsbCameraFlip": [TxType.PERSISTENT],
-  "TeslaModel": [TxType.PERSISTENT],
+  "Offroad_UpdateFailed": [TxType.CLEAR_ON_MANAGER_START],
 }
 
 
@@ -326,14 +321,15 @@ def write_db(params_path, key, value):
   lock.acquire()
 
   try:
-    tmp_path = tempfile.mktemp(prefix=".tmp", dir=params_path)
-    with open(tmp_path, "wb") as f:
+    tmp_path = tempfile.NamedTemporaryFile(mode="wb", prefix=".tmp", dir=params_path, delete=False)
+    with tmp_path as f:
       f.write(value)
       f.flush()
       os.fsync(f.fileno())
+    os.chmod(tmp_path.name, 0o666)
 
     path = "%s/d/%s" % (params_path, key)
-    os.rename(tmp_path, path)
+    os.rename(tmp_path.name, path)
     fsync_dir(os.path.dirname(path))
   finally:
     os.umask(prev_umask)
@@ -371,9 +367,6 @@ class Params():
 
   def panda_disconnect(self):
     self._clear_keys_with_type(TxType.CLEAR_ON_PANDA_DISCONNECT)
-  
-  def car_start(self):
-    self._clear_keys_with_type(TxType.CLEAR_ON_CAR_START)
 
   def delete(self, key):
     with self.transaction(write=True) as txn:

@@ -1,39 +1,19 @@
 #!/usr/bin/bash
 
-export OMP_NUM_THREADS=1
-export MKL_NUM_THREADS=1
-export NUMEXPR_NUM_THREADS=1
-export OPENBLAS_NUM_THREADS=1
-export VECLIB_MAXIMUM_THREADS=1
-
 if [ -z "$BASEDIR" ]; then
   BASEDIR="/data/openpilot"
 fi
 
-if [ -z "$PASSIVE" ]; then
-  export PASSIVE="1"
-fi
+source "$BASEDIR/launch_env.sh"
 
-. /data/openpilot/selfdrive/car/tesla/readconfig.sh
-STAGING_ROOT="/data/safe_staging"
-
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 function launch {
   # Wifi scan
   wpa_cli IFNAME=wlan0 SCAN
 
-  #BB here was to prevent the autoupdate; need to find another way
-  # # apply update
-  # if [ $do_auto_update == "True" ]; then
-  #   if [ "$(git rev-parse HEAD)" != "$(git rev-parse @{u})" ]; then
-  #     git reset --hard @{u} &&
-  #     git clean -xdf &&
-
-  #     # Touch all files on release2 after checkout to prevent rebuild
-  #     BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  #     if [[ "$BRANCH" == "release2" ]]; then
-  #         touch **
-  #     fi
+  # Remove orphaned git lock if it exists on boot
+  [ -f "$DIR/.git/index.lock" ] && rm -f $DIR/.git/index.lock
 
   # Check to see if there's a valid overlay-based update available. Conditions
   # are as follows:
@@ -43,10 +23,8 @@ function launch {
   #    switching branches/forks, which should not be overwritten.
   # 2. The FINALIZED consistent file has to exist, indicating there's an update
   #    that completed successfully and synced to disk.
- 
 
-
-  if [ $do_auto_update == "True" ] && [ -f "${BASEDIR}/.overlay_init" ]; then
+  if [ -f "${BASEDIR}/.overlay_init" ]; then
     find ${BASEDIR}/.git -newer ${BASEDIR}/.overlay_init | grep -q '.' 2> /dev/null
     if [ $? -eq 0 ]; then
       echo "${BASEDIR} has been modified, skipping overlay update installation"
@@ -66,6 +44,7 @@ function launch {
           git submodule foreach --recursive git reset --hard
 
           echo "Restarting launch script ${LAUNCHER_LOCATION}"
+          unset REQUIRED_NEOS_VERSION
           exec "${LAUNCHER_LOCATION}"
         else
           echo "openpilot backup found, not updating"
@@ -92,26 +71,21 @@ function launch {
   [ -d "/proc/irq/733" ] && echo 3 > /proc/irq/733/smp_affinity_list # USB for LeEco
   [ -d "/proc/irq/736" ] && echo 3 > /proc/irq/736/smp_affinity_list # USB for OP3T
 
-  DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-
-  # Remove old NEOS update file
-  # TODO: move this code to the updater
-  if [ -d /data/neoupdate ]; then
-    rm -rf /data/neoupdate
-  fi
 
   # Check for NEOS update
-  if [ $(< /VERSION) != "14" ]; then
+  if [ $(< /VERSION) != "$REQUIRED_NEOS_VERSION" ]; then
     if [ -f "$DIR/scripts/continue.sh" ]; then
       cp "$DIR/scripts/continue.sh" "/data/data/com.termux/files/continue.sh"
     fi
 
     if [ ! -f "$BASEDIR/prebuilt" ]; then
-      echo "Clearing build products and resetting scons state prior to NEOS update"
-      cd $BASEDIR && scons --clean
-      rm -rf /tmp/scons_cache
-      rm -r $BASEDIR/.sconsign.dblite
+      # Clean old build products, but preserve the scons cache
+      cd $DIR
+      scons --clean
+      git clean -xdf
+      git submodule foreach --recursive git clean -xdf
     fi
+
     "$DIR/installer/updater/updater" "file://$DIR/installer/updater/update.json"
   else
     if [[ $(uname -v) == "#1 SMP PREEMPT Wed Jun 10 12:40:53 PDT 2020" ]]; then
