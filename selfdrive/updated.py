@@ -311,7 +311,7 @@ def main():
     raise RuntimeError("updates are disabled by the DisableUpdates param")
 
   if not doAutoUpdate:
-    raise RuntimeError("updates are disabled by the doAutoUpdate configuration entry")
+    print("Updates are disabled by the doAutoUpdate configuration entry")
 
   if ANDROID and os.geteuid() != 0:
     raise RuntimeError("updated must be launched as root!")
@@ -345,6 +345,10 @@ def main():
   while not wait_helper.shutdown:
     update_now = wait_helper.ready_event.is_set()
     wait_helper.ready_event.clear()
+
+    if not doAutoUpdate:
+      wait_helper.sleep(30)
+      continue
 
     # Don't run updater while onroad or if the time's wrong
     time_wrong = datetime.datetime.utcnow().year < 2019
