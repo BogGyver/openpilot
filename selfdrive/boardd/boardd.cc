@@ -90,7 +90,8 @@ void safety_setter_thread() {
   }
 
   // VIN query done, stop listening to OBDII
-  panda->set_safety_model(cereal::CarParams::SafetyModel::NO_OUTPUT);
+  //Tesla prevent changes to safety model 
+//panda->set_safety_model(cereal::CarParams::SafetyModel::NO_OUTPUT);
 
   std::vector<char> params;
   LOGW("waiting for params to set safety model");
@@ -117,9 +118,10 @@ void safety_setter_thread() {
   auto safety_param = car_params.getSafetyParam();
   LOGW("setting safety model: %d with param %d", (int)safety_model, safety_param);
 
-  panda->set_safety_model(safety_model, safety_param);
+//Tesla: Avoid changes to safety model
+  //panda->set_safety_model(safety_model, safety_param);
 
-  safety_setter_thread_running = false;
+  //safety_setter_thread_running = false;
 }
 
 

@@ -39,6 +39,8 @@ from common.params import Params
 from selfdrive.swaglog import cloudlog
 from selfdrive.controls.lib.alertmanager import set_offroad_alert
 
+from selfdrive.car.tesla.readconfig import CarSettings
+
 TEST_IP = os.getenv("UPDATER_TEST_IP", "8.8.8.8")
 LOCK_FILE = os.getenv("UPDATER_LOCK_FILE", "/tmp/safe_staging_overlay.lock")
 STAGING_ROOT = os.getenv("UPDATER_STAGING_ROOT", "/data/safe_staging")
@@ -277,9 +279,14 @@ def attempt_update(wait_helper):
 
 def main():
   params = Params()
+  carSettings = CarSettings()
+  doAutoUpdate = carSettings.doAutoUpdate
 
   if params.get("DisableUpdates") == b"1":
     raise RuntimeError("updates are disabled by the DisableUpdates param")
+
+  if not doAutoUpdate:
+    raise RuntimeError("updates are disabled by the doAutoUpdate configuration entry")
 
   if os.geteuid() != 0:
     raise RuntimeError("updated must be launched as root!")
