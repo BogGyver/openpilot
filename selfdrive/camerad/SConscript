@@ -11,13 +11,10 @@ if arch == "aarch64":
 elif arch == "larch64":
   libs += []
   cameras = ['cameras/camera_qcom2.c']
-elif arch == "jarch64":
-    libs += ['opencv_core', 'opencv_highgui', 'opencv_video', 'opencv_imgproc', 'opencv_videoio']
-    cameras = ['cameras/camera_webcam.cc']
-    env = env.Clone()
-    env.Append(CXXFLAGS = '-DWEBCAM')
-    env.Append(CFLAGS = '-DWEBCAM')
-    #env.Append(CPPPATH = '/usr/local/include/opencv4')
+  # no screen
+  # env = env.Clone()
+  # env.Append(CXXFLAGS = '-DNOSCREEN')
+  # env.Append(CFLAGS = '-DNOSCREEN')
 else:
   if webcam:
     libs += ['opencv_core', 'opencv_highgui', 'opencv_imgproc', 'opencv_videoio']
@@ -27,8 +24,8 @@ else:
     env.Append(CFLAGS = '-DWEBCAM')
     env.Append(CPPPATH = '/usr/local/include/opencv4')
   else:
-    libs += []
     cameras = ['cameras/camera_frame_stream.cc']
+
   if arch == "Darwin":
     del libs[libs.index('OpenCL')]
     env = env.Clone()

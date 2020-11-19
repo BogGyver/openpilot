@@ -8,77 +8,15 @@ source "$BASEDIR/launch_env.sh"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
-. /data/openpilot/selfdrive/car/tesla/readconfig.sh
-STAGING_ROOT="/data/safe_staging"
+function two_init {
+  # Restrict Android and other system processes to the first two cores
+  echo 0-1 > /dev/cpuset/background/cpus
+  echo 0-1 > /dev/cpuset/system-background/cpus
+  echo 0-1 > /dev/cpuset/foreground/boost/cpus
+  echo 0-1 > /dev/cpuset/foreground/cpus
+  echo 0-1 > /dev/cpuset/android/cpus
 
-function launch {
-  # Wifi scan
-  wpa_cli IFNAME=wlan0 SCAN
-
-  # Remove orphaned git lock if it exists on boot
-  [ -f "$DIR/.git/index.lock" ] && rm -f $DIR/.git/index.lock
-
-  #BB here was to prevent the autoupdate; need to find another way
-  # # apply update
-  # if [ $do_auto_update == "True" ]; then
-  #   if [ "$(git rev-parse HEAD)" != "$(git rev-parse @{u})" ]; then
-  #     git reset --hard @{u} &&
-  #     git clean -xdf &&
-
-  #     # Touch all files on release2 after checkout to prevent rebuild
-  #     BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  #     if [[ "$BRANCH" == "release2" ]]; then
-  #         touch **
-  #     fi
-
-  # Check to see if there's a valid overlay-based update available. Conditions
-  # are as follows:
-  #
-  # 1. The BASEDIR init file has to exist, with a newer modtime than anything in
-  #    the BASEDIR Git repo. This checks for local development work or the user
-  #    switching branches/forks, which should not be overwritten.
-  # 2. The FINALIZED consistent file has to exist, indicating there's an update
-  #    that completed successfully and synced to disk.
- 
-
-
-  if [ $do_auto_update == "True" ] && [ -f "${BASEDIR}/.overlay_init" ]; then
-    find ${BASEDIR}/.git -newer ${BASEDIR}/.overlay_init | grep -q '.' 2> /dev/null
-    if [ $? -eq 0 ]; then
-      echo "${BASEDIR} has been modified, skipping overlay update installation"
-    else
-      if [ -f "${STAGING_ROOT}/finalized/.overlay_consistent" ]; then
-        if [ ! -d /data/safe_staging/old_openpilot ]; then
-          echo "Valid overlay update found, installing"
-          LAUNCHER_LOCATION="${BASH_SOURCE[0]}"
-
-          mv $BASEDIR /data/safe_staging/old_openpilot
-          mv "${STAGING_ROOT}/finalized" $BASEDIR
-          cd $BASEDIR
-
-          # Partial mitigation for symlink-related filesystem corruption
-          # Ensure all files match the repo versions after update
-          git reset --hard
-          git submodule foreach --recursive git reset --hard
-
-          echo "Restarting launch script ${LAUNCHER_LOCATION}"
-          unset REQUIRED_NEOS_VERSION
-          exec "${LAUNCHER_LOCATION}"
-        else
-          echo "openpilot backup found, not updating"
-          # TODO: restore backup? This means the updater didn't start after swapping
-        fi
-      fi
-    fi
-  fi
-
-  # Android and other system processes are not permitted to run on CPU 3
-  # NEOS installed app processes can run anywhere
-  echo 0-2 > /dev/cpuset/background/cpus
-  echo 0-2 > /dev/cpuset/system-background/cpus
-  [ -d "/dev/cpuset/foreground/boost/cpus" ] && echo 0-2 > /dev/cpuset/foreground/boost/cpus  # Not present in < NEOS 15
-  echo 0-2 > /dev/cpuset/foreground/cpus
-  echo 0-2 > /dev/cpuset/android/cpus
+  # openpilot gets all the cores
   echo 0-3 > /dev/cpuset/app/cpus
 
   # Collect RIL and other possibly long-running I/O interrupts onto CPU 1
@@ -115,13 +53,64 @@ function launch {
   # Remove and regenerate qcom sensor registry. Only done on OP3T mainboards.
   # Performed exactly once. The old registry is preserved just-in-case, and
   # doubles as a flag denoting we've already done the reset.
-  # TODO: we should really grow per-platform detect and setup routines
   if ! $(grep -q "letv" /proc/cmdline) && [ ! -f "/persist/comma/op3t-sns-reg-backup" ]; then
     echo "Performing OP3T sensor registry reset"
     mv /persist/sensors/sns.reg /persist/comma/op3t-sns-reg-backup &&
       rm -f /persist/sensors/sensors_settings /persist/sensors/error_log /persist/sensors/gyro_sensitity_cal &&
       echo "restart" > /sys/kernel/debug/msm_subsys/slpi &&
       sleep 5  # Give Android sensor subsystem a moment to recover
+  fi
+}
+
+function launch {
+  # Wifi scan
+  wpa_cli IFNAME=wlan0 SCAN
+
+  # Remove orphaned git lock if it exists on boot
+  [ -f "$DIR/.git/index.lock" ] && rm -f $DIR/.git/index.lock
+
+  # Check to see if there's a valid overlay-based update available. Conditions
+  # are as follows:
+  #
+  # 1. The BASEDIR init file has to exist, with a newer modtime than anything in
+  #    the BASEDIR Git repo. This checks for local development work or the user
+  #    switching branches/forks, which should not be overwritten.
+  # 2. The FINALIZED consistent file has to exist, indicating there's an update
+  #    that completed successfully and synced to disk.
+
+  if [ -f "${BASEDIR}/.overlay_init" ]; then
+    find ${BASEDIR}/.git -newer ${BASEDIR}/.overlay_init | grep -q '.' 2> /dev/null
+    if [ $? -eq 0 ]; then
+      echo "${BASEDIR} has been modified, skipping overlay update installation"
+    else
+      if [ -f "${STAGING_ROOT}/finalized/.overlay_consistent" ]; then
+        if [ ! -d /data/safe_staging/old_openpilot ]; then
+          echo "Valid overlay update found, installing"
+          LAUNCHER_LOCATION="${BASH_SOURCE[0]}"
+
+          mv $BASEDIR /data/safe_staging/old_openpilot
+          mv "${STAGING_ROOT}/finalized" $BASEDIR
+          cd $BASEDIR
+
+          # Partial mitigation for symlink-related filesystem corruption
+          # Ensure all files match the repo versions after update
+          git reset --hard
+          git submodule foreach --recursive git reset --hard
+
+          echo "Restarting launch script ${LAUNCHER_LOCATION}"
+          unset REQUIRED_NEOS_VERSION
+          exec "${LAUNCHER_LOCATION}"
+        else
+          echo "openpilot backup found, not updating"
+          # TODO: restore backup? This means the updater didn't start after swapping
+        fi
+      fi
+    fi
+  fi
+
+  # comma two init
+  if [ -f /EON ]; then
+    two_init
   fi
 
   # handle pythonpath

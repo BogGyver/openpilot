@@ -7,9 +7,6 @@ import errno
 import signal
 import shutil
 import subprocess
-from selfdrive.tinklad.tinkla_interface import TinklaClient
-from cereal import tinkla
-from selfdrive.car.tesla.readconfig import CarSettings
 import datetime
 import textwrap
 from typing import Dict, List
@@ -17,7 +14,7 @@ from selfdrive.swaglog import cloudlog, add_logentries_handler
 
 
 from common.basedir import BASEDIR, PARAMS
-from common.android import ANDROID
+from common.hardware import HARDWARE, ANDROID, PC
 WEBCAM = os.getenv("WEBCAM") is not None
 sys.path.append(os.path.join(BASEDIR, "pyextra"))
 os.environ['BASEDIR'] = BASEDIR
@@ -159,14 +156,12 @@ from selfdrive.registration import register
 from selfdrive.version import version, dirty
 from selfdrive.loggerd.config import ROOT
 from selfdrive.launcher import launcher
-from common import android
 from common.apk import update_apks, pm_apply_packages, start_offroad
 
 ThermalStatus = cereal.log.ThermalData.ThermalStatus
 
 # comment out anything you don't want to run
 managed_processes = {
-  "tinklad":  "selfdrive.tinklad.tinklad",
   "thermald": "selfdrive.thermald.thermald",
   "uploader": "selfdrive.loggerd.uploader",
   "deleter": "selfdrive.loggerd.deleter",
@@ -193,6 +188,7 @@ managed_processes = {
   "updated": "selfdrive.updated",
   "dmonitoringmodeld": ("selfdrive/modeld", ["./dmonitoringmodeld"]),
   "modeld": ("selfdrive/modeld", ["./modeld"]),
+  "rtshield": "selfdrive.rtshield",
 }
 
 daemon_processes = {
@@ -216,36 +212,35 @@ kill_processes = ['sensord']
 green_temp_processes = ['uploader']
 
 persistent_processes = [
-  'tinklad',
   'thermald',
+  'logmessaged',
   'ui',
+  'uploader',
+  'deleter',
 ]
-if not WEBCAM:
-    persistent_processes += [
-      'logmessaged',
-      'uploader',
-    ]
 
-if ANDROID:
+if not PC:
   persistent_processes += [
     'logcatd',
     'tombstoned',
+  ]
+
+if ANDROID:
+  persistent_processes += [
     'updated',
-    'deleter',
   ]
 
 car_started_processes = [
   'controlsd',
   'plannerd',
+  'loggerd',
   'radard',
-  'dmonitoringd',
   'calibrationd',
   'paramsd',
   'camerad',
-  'modeld',
   'proclogd',
-  'ubloxd',
   'locationd',
+  'clocksd',
 ]
 
 driver_view_processes = [
@@ -256,20 +251,27 @@ driver_view_processes = [
 
 if WEBCAM:
   car_started_processes += [
-   'dmonitoringmodeld',
+    'dmonitoringd',
+    'dmonitoringmodeld',
   ]
-else:
+
+if not PC:
   car_started_processes += [
-    'loggerd',
+    'ubloxd',
+    'sensord',
+    'dmonitoringd',
+    'dmonitoringmodeld',
   ]
 
 if ANDROID:
   car_started_processes += [
-    'sensord',
-    'clocksd',
     'gpsd',
-    'dmonitoringmodeld',
+    'rtshield',
   ]
+
+# starting dmonitoringmodeld when modeld is initializing can sometimes \
+# result in a weird snpe state where dmon constantly uses more cpu than normal.
+car_started_processes += ['modeld']
 
 def register_managed_process(name, desc, car_started=False):
   global managed_processes, car_started_processes, persistent_processes
@@ -376,6 +378,7 @@ def kill_managed_process(name):
         join_process(running[name], 15)
         if running[name].exitcode is None:
           cloudlog.critical("unkillable process %s failed to die!" % name)
+          # TODO: Use method from HARDWARE
           if ANDROID:
             cloudlog.critical("FORCE REBOOTING PHONE!")
             os.system("date >> /sdcard/unkillable_reboot")
@@ -419,9 +422,7 @@ def manager_init(should_register=True):
       raise Exception("server registration failed")
   else:
     dongle_id = "c"*16
-  #BB
-  if not dongle_id:
-      dongle_id = "nada"
+
   # set dongle id
   cloudlog.info("dongle id is " + dongle_id)
   os.environ['DONGLE_ID'] = dongle_id
@@ -445,32 +446,6 @@ def manager_init(should_register=True):
     os.chmod(BASEDIR, 0o755)
     os.chmod(os.path.join(BASEDIR, "cereal"), 0o755)
     os.chmod(os.path.join(BASEDIR, "cereal", "libmessaging_shared.so"), 0o755)
-
-def system(cmd):
-  try:
-    cloudlog.info("running %s" % cmd)
-    subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
-  except subprocess.CalledProcessError as e:
-    cloudlog.event("running failed",
-      cmd=e.cmd,
-      output=e.output[-1024:],
-      returncode=e.returncode)
-
-def sendUserInfoToTinkla(params, tinklaClient):
-  carSettings = CarSettings()
-  gitRemote = params.get("GitRemote")
-  gitBranch = params.get("GitBranch")
-  gitHash = params.get("GitCommit")
-  dongleId = params.get("DongleId")
-  userHandle = carSettings.userHandle
-  info = tinkla.Interface.UserInfo.new_message(
-      openPilotId=dongleId,
-      userHandle=userHandle,
-      gitRemote=gitRemote,
-      gitBranch=gitBranch,
-      gitHash=gitHash
-  )
-  tinklaClient.setUserInfo(info)
 
 def manager_thread():
   # now loop
@@ -507,13 +482,6 @@ def manager_thread():
   started_prev = False
   logger_dead = False
 
-  # Tinkla interface
-  last_tinklad_send_attempt_time = 0
-  tinklaClient = TinklaClient()
-  sendUserInfoToTinkla(params=params, tinklaClient=tinklaClient)
-  start_t = time.time()
-  first_proc = None
-
   while 1:
     msg = messaging.recv_sock(thermal_sock, wait=True)
 
@@ -526,13 +494,6 @@ def manager_thread():
       for p in green_temp_processes:
         if p in persistent_processes:
           start_managed_process(p)
-
-    # Attempt to send pending messages if there's any that queued while offline
-    # Seems this loop runs every second or so, throttle to once every 30s
-    now = time.time()
-    if now - last_tinklad_send_attempt_time >= 30:
-      tinklaClient.attemptToSendPendingMessages()
-      last_tinklad_send_attempt_time = now
 
     if msg.thermal.freeSpace < 0.05:
       logger_dead = True
@@ -565,16 +526,14 @@ def manager_thread():
     started_prev = msg.thermal.started
 
     # check the status of all processes, did any of them die?
-    # running_list = ["%s%s\u001b[0m" % ("\u001b[32m" if running[p].is_alive() else "\u001b[31m", p) for p in running]
-    #cloudlog.debug(' '.join(running_list))
+    running_list = ["%s%s\u001b[0m" % ("\u001b[32m" if running[p].is_alive() else "\u001b[31m", p) for p in running]
+    cloudlog.debug(' '.join(running_list))
 
     # Exit main loop when uninstall is needed
     if params.get("DoUninstall", encoding='utf8') == "1":
       break
 
 def manager_prepare(spinner=None):
-
-  carSettings = CarSettings()
   # build all processes
   os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -583,8 +542,7 @@ def manager_prepare(spinner=None):
 
   for i, p in enumerate(managed_processes):
     if spinner is not None:
-      spinText = carSettings.spinnerText
-      spinner.update(spinText % ((100.0 - total) + total * (i + 1) / len(managed_processes),))
+      spinner.update("%d" % ((100.0 - total) + total * (i + 1) / len(managed_processes),))
     prepare_managed_process(p)
 
 def uninstall():
@@ -592,7 +550,7 @@ def uninstall():
   with open('/cache/recovery/command', 'w') as f:
     f.write('--wipe_data\n')
   # IPowerManager.reboot(confirm=false, reason="recovery", wait=true)
-  android.reboot(reason="recovery")
+  HARDWARE.reboot(reason="recovery")
 
 def main():
   os.environ['PARAMS_PATH'] = PARAMS
@@ -617,11 +575,6 @@ def main():
     ("HasCompletedSetup", "0"),
     ("IsUploadRawEnabled", "1"),
     ("IsLdwEnabled", "1"),
-    ("IsGeofenceEnabled", "-1"),
-    ("SpeedLimitOffset", "0"),
-    ("LongitudinalControl", "0"),
-    ("LimitSetSpeed", "0"),
-    ("LimitSetSpeedNeural", "0"),
     ("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')),
     ("OpenpilotEnabledToggle", "1"),
     ("LaneChangeEnabled", "1"),
@@ -657,7 +610,6 @@ def main():
   except Exception:
     traceback.print_exc()
     crash.capture_exception()
-    print ("EXIT ON EXCEPTION")
   finally:
     cleanup_all_processes(None, None)
 
@@ -673,8 +625,7 @@ if __name__ == "__main__":
     cloudlog.exception("Manager failed to start")
 
     # Show last 3 lines of traceback
-    error = traceback.format_exc(3)
-
+    error = traceback.format_exc(-3)
     error = "Manager failed to start\n \n" + error
     with TextWindow(error) as t:
       t.wait_for_exit()
