@@ -40,6 +40,8 @@ from common.params import Params
 from selfdrive.swaglog import cloudlog
 from selfdrive.controls.lib.alertmanager import set_offroad_alert
 
+from selfdrive.car.tesla.readconfig import CarSettings
+
 LOCK_FILE = os.getenv("UPDATER_LOCK_FILE", "/tmp/safe_staging_overlay.lock")
 STAGING_ROOT = os.getenv("UPDATER_STAGING_ROOT", "/data/safe_staging")
 
@@ -251,8 +253,8 @@ def check_git_fetch_result(fetch_txt):
   err_msg = "Failed to add the host to the list of known hosts (/data/data/com.termux/files/home/.ssh/known_hosts).\n"
   return len(fetch_txt) > 0 and (fetch_txt != err_msg)
 
-
 def check_for_update() -> Tuple[bool, bool]:
+
   setup_git_options(OVERLAY_MERGED)
   try:
     git_fetch_output = run(["git", "fetch", "--dry-run"], OVERLAY_MERGED, low_priority=True)
@@ -302,9 +304,14 @@ def fetch_update(wait_helper: WaitTimeHelper) -> bool:
 
 def main():
   params = Params()
+  carSettings = CarSettings()
+  doAutoUpdate = carSettings.doAutoUpdate
 
   if params.get("DisableUpdates") == b"1":
     raise RuntimeError("updates are disabled by the DisableUpdates param")
+
+  if not doAutoUpdate:
+    raise RuntimeError("updates are disabled by the doAutoUpdate configuration entry")
 
   if ANDROID and os.geteuid() != 0:
     raise RuntimeError("updated must be launched as root!")

@@ -1,4 +1,7 @@
 #pragma once
+#ifndef _UI_H
+#define _UI_H
+
 #include "messaging.hpp"
 
 #ifdef __APPLE__
@@ -26,6 +29,9 @@
 #include "common/modeldata.h"
 #include "common/params.h"
 #include "sound.hpp"
+
+#include "cereal/gen/c/log.capnp.h"
+#include "bbuistate.h"
 
 #define COLOR_BLACK nvgRGBA(0, 0, 0, 255)
 #define COLOR_BLACK_ALPHA(x) nvgRGBA(0, 0, 0, x)
@@ -139,6 +145,11 @@ typedef struct {
 
 
 typedef struct UIState {
+  //BB define BBUIState
+  BBUIState b;
+  int plus_state;
+  //BB end
+
   // framebuffer
   FramebufferState *fb;
   int fb_w, fb_h;
@@ -227,3 +238,29 @@ int read_param(T* param, const char *param_name, bool persistent_param = false){
   }
   return result;
 }
+#endif
+
+// TODO: this is also hardcoded in common/transformations/camera.py
+// TODO: choose based on frame input size
+#ifdef QCOM2	
+const mat3 intrinsic_matrix = (mat3){{	
+  2648.0, 0.0, 1928.0/2,	
+  0.0, 2648.0, 1208.0/2,	
+  0.0,   0.0,   1.0	
+}};	
+#else
+const mat3 intrinsic_matrix = (mat3){{
+  910., 0., 582.,
+  0., 910., 437.,
+  0.,   0.,   1.
+}};
+#endif
+
+const uint8_t alert_colors[][4] = {
+  [STATUS_OFFROAD] = {0x07, 0x23, 0x39, 0xf1},
+  [STATUS_DISENGAGED] = {0x17, 0x33, 0x49, 0xc8},
+  [STATUS_ENGAGED] = {0x17, 0x86, 0x44, 0xf1},
+  [STATUS_WARNING] = {0xDA, 0x6F, 0x25, 0xf1},
+  [STATUS_ALERT] = {0xC9, 0x22, 0x31, 0xf1},
+};
+

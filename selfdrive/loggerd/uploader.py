@@ -20,7 +20,10 @@ from selfdrive.loggerd.xattr_cache import getxattr, setxattr
 from selfdrive.loggerd.config import ROOT
 from selfdrive.swaglog import cloudlog
 
+from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
+
 NetworkType = log.ThermalData.NetworkType
+
 UPLOAD_ATTR_NAME = 'user.upload'
 UPLOAD_ATTR_VALUE = b'1'
 
@@ -78,9 +81,15 @@ def is_on_hotspot():
   try:
     result = subprocess.check_output(["ifconfig", "wlan0"], stderr=subprocess.STDOUT, encoding='utf8')
     result = re.findall(r"inet addr:((\d+\.){3}\d+)", result)[0][0]
-    return (result.startswith('192.168.43.') or  # android
-            result.startswith('172.20.10.') or  # ios
-            result.startswith('10.0.2.'))  # toyota entune
+
+    is_android = result.startswith('192.168.43.')
+    is_ios = result.startswith('172.20.10.')
+    car_set = CarSettings()
+    blockUploadWhileTethering = car_set.get_value("blockUploadWhileTethering")
+    tetherIP = car_set.get_value("tetherIP")
+    is_other_tether = blockUploadWhileTethering and result.startswith(tetherIP)
+    is_entune = result.startswith('10.0.2.')
+    return (is_android or is_ios or is_other_tether or is_entune)
   except Exception:
     return False
 
@@ -97,6 +106,16 @@ class Uploader():
 
     self.immediate_priority = {"qlog.bz2": 0, "qcamera.ts": 1}
     self.high_priority = {"rlog.bz2": 0, "fcamera.hevc": 1, "dcamera.hevc": 2, "ecamera.hevc": 3}
+
+  def clean_dirs(self):
+    try:
+      for logname in os.listdir(self.root):
+        path = os.path.join(self.root, logname)
+        # remove empty directories
+        if not os.listdir(path):
+          os.rmdir(path)
+    except OSError:
+      cloudlog.exception("clean_dirs failed")
 
   def get_upload_sort(self, name):
     if name in self.immediate_priority:

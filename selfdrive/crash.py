@@ -4,9 +4,10 @@ import sys
 import threading
 import capnp
 from selfdrive.version import version, dirty
-
 from selfdrive.swaglog import cloudlog
 from common.hardware import PC
+
+from selfdrive.tinklad.tinkla_interface import TinklaClient
 
 if os.getenv("NOLOG") or os.getenv("NOCRASH") or PC:
   def capture_exception(*args, **kwargs):
@@ -26,8 +27,13 @@ else:
   client = Client('https://1994756b5e6f41cf939a4c65de45f4f2:cefebaf3a8aa40d182609785f7189bd7@app.getsentry.com/77924',
                   install_sys_hook=False, transport=HTTPTransport, release=version, tags={'dirty': dirty})
 
+  def sendCrashInfoToTinklad():
+    tinklaClient = TinklaClient()
+    tinklaClient.logCrashStackTraceEvent()
+
   def capture_exception(*args, **kwargs):
     exc_info = sys.exc_info()
+    sendCrashInfoToTinklad()
     if not exc_info[0] is capnp.lib.capnp.KjException:
       client.captureException(*args, **kwargs)
     cloudlog.error("crash", exc_info=kwargs.get('exc_info', 1))

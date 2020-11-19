@@ -43,6 +43,7 @@ class TxType(Enum):
   PERSISTENT = 1
   CLEAR_ON_MANAGER_START = 2
   CLEAR_ON_PANDA_DISCONNECT = 3
+  CLEAR_ON_CAR_START = 4
 
 
 class UnknownKeyName(Exception):
@@ -50,11 +51,11 @@ class UnknownKeyName(Exception):
 
 
 keys = {
-  "AccessToken": [TxType.CLEAR_ON_MANAGER_START],
+  "AccessToken": [TxType.CLEAR_ON_MANAGER_START], #BB what happends if no int connection?
   "AthenadPid": [TxType.PERSISTENT],
   "CalibrationParams": [TxType.PERSISTENT],
   "CarBatteryCapacity": [TxType.PERSISTENT],
-  "CarParams": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT],
+  "CarParams": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT], #BB we had [TxType.CLEAR_ON_CAR_START],
   "CarParamsCache": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT],
   "CarVin": [TxType.CLEAR_ON_MANAGER_START, TxType.CLEAR_ON_PANDA_DISCONNECT],
   "CommunityFeaturesToggle": [TxType.PERSISTENT],
@@ -105,6 +106,12 @@ keys = {
   "Offroad_IsTakingSnapshot": [TxType.CLEAR_ON_MANAGER_START],
   "Offroad_NeosUpdate": [TxType.CLEAR_ON_MANAGER_START],
   "Offroad_UpdateFailed": [TxType.CLEAR_ON_MANAGER_START],
+  #Tesla specific
+  "DriverUsbCameraFx": [TxType.PERSISTENT],
+  "DriverUsbCameraFlip": [TxType.PERSISTENT],
+  "RoadUsbCameraFx": [TxType.PERSISTENT],
+  "RoadUsbCameraFlip": [TxType.PERSISTENT],
+  "TeslaModel": [TxType.PERSISTENT],
 }
 
 
@@ -363,6 +370,9 @@ class Params():
 
   def panda_disconnect(self):
     self._clear_keys_with_type(TxType.CLEAR_ON_PANDA_DISCONNECT)
+  
+  def car_start(self):
+    self._clear_keys_with_type(TxType.CLEAR_ON_CAR_START)
 
   def delete(self, key):
     with self.transaction(write=True) as txn:

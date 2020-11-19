@@ -1,7 +1,7 @@
-
-static void ui_draw_infobar(UIState *s) {
+#pragma once
+void ui_draw_infobar(UIState *s) {
   const UIScene *scene = &s->scene;
-  int ui_viz_rx = scene->ui_viz_rx;
+  int ui_viz_rx = scene->viz_rect.x;
   bool hasSidebar = !s->scene.uilayout_sidebarcollapsed;
   int rect_w = vwp_w - ui_viz_rx - bdr_s;
   int rect_h = 60;

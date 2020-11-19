@@ -8,6 +8,9 @@ source "$BASEDIR/launch_env.sh"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
+. /data/openpilot/selfdrive/car/tesla/readconfig.sh
+STAGING_ROOT="/data/safe_staging"
+
 function two_init {
   # Restrict Android and other system processes to the first two cores
   echo 0-1 > /dev/cpuset/background/cpus
@@ -69,6 +72,19 @@ function launch {
   # Remove orphaned git lock if it exists on boot
   [ -f "$DIR/.git/index.lock" ] && rm -f $DIR/.git/index.lock
 
+  #BB here was to prevent the autoupdate; need to find another way
+  # # apply update
+  # if [ $do_auto_update == "True" ]; then
+  #   if [ "$(git rev-parse HEAD)" != "$(git rev-parse @{u})" ]; then
+  #     git reset --hard @{u} &&
+  #     git clean -xdf &&
+
+  #     # Touch all files on release2 after checkout to prevent rebuild
+  #     BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  #     if [[ "$BRANCH" == "release2" ]]; then
+  #         touch **
+  #     fi
+
   # Check to see if there's a valid overlay-based update available. Conditions
   # are as follows:
   #
@@ -77,8 +93,8 @@ function launch {
   #    switching branches/forks, which should not be overwritten.
   # 2. The FINALIZED consistent file has to exist, indicating there's an update
   #    that completed successfully and synced to disk.
-
-  if [ -f "${BASEDIR}/.overlay_init" ]; then
+ 
+  if [ $do_auto_update == "True" ] && [ -f "${BASEDIR}/.overlay_init" ]; then
     find ${BASEDIR}/.git -newer ${BASEDIR}/.overlay_init | grep -q '.' 2> /dev/null
     if [ $? -eq 0 ]; then
       echo "${BASEDIR} has been modified, skipping overlay update installation"

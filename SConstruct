@@ -21,6 +21,9 @@ cython_dependencies = [Value(v) for v in (sys.version, distutils.__version__, Cy
 Export('cython_dependencies')
 
 real_arch = arch = subprocess.check_output(["uname", "-m"], encoding='utf8').rstrip()
+is_tbp = os.path.isfile('/data/tinkla_buddy_pro')
+if arch == "aarch64" and is_tbp:
+  arch = "jarch64"
 if platform.system() == "Darwin":
   arch = "Darwin"
 
@@ -43,16 +46,18 @@ if arch == "aarch64" or arch == "larch64":
 
   cpppath = [
     "#phonelibs/opencl/include",
+    "#phonelibs/snpe/include",
   ]
 
   libpath = [
     "/usr/lib",
     "/system/vendor/lib64",
     "/system/comma/usr/lib",
-    "#phonelibs/nanovg",
+    "#phonelibs/nanovg",	
   ]
 
   if arch == "larch64":
+    cpppath += ["#phonelibs/capnp-cpp/include", "#phonelibs/capnp-c/include"]
     libpath += [
       "#phonelibs/snpe/larch64",
       "#phonelibs/libyuv/larch64/lib",
@@ -84,6 +89,7 @@ else:
   }
   cpppath = [
     "#external/tensorflow/include",
+    "#phonelibs/snpe/include",
   ]
 
   if arch == "Darwin":
@@ -154,7 +160,6 @@ env = Environment(
     "#phonelibs/android_hardware_libhardware/include",
     "#phonelibs/android_system_core/include",
     "#phonelibs/linux/include",
-    "#phonelibs/snpe/include",
     "#phonelibs/nanovg",
     "#selfdrive/common",
     "#selfdrive/camerad",

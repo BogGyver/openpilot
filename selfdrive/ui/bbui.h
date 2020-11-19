@@ -1,5 +1,7 @@
 #pragma once
 
+#include <math.h>
+#include <sys/stat.h>
 #include "cereal/gen/c/ui.capnp.h"
 
 #if !defined(QCOM) && !defined(QCOM2)
@@ -17,7 +19,24 @@ UIState *mouse_ui_state;
 #endif
 // TODO: this is also hardcoded in common/transformations/camera.py
 
-static void set_awake(UIState *s, bool awake); 
+#ifdef QCOM2
+const int vwp_w = 2160;
+#else
+const int vwp_w = 1920;
+#endif
+const int vwp_h = 1080;
+#include "tbui.h"
+
+void set_awake(UIState *s, bool awake); 
+
+void bb_ui_preinit(UIState *s) {
+  s->b.scr_w = vwp_w;
+  s->b.scr_h = vwp_h;
+  s->b.scr_scale_x = 1.0f;
+  s->b.scr_scale_y = 1.0f;
+  s->b.scr_device_factor = 1.0f;
+  s->b.scr_scissor_offset = 0.0f;
+}
 
 vec3 bb_car_space_to_full_frame(const  UIState *s, vec4 car_space_projective) {
   const UIScene *scene = &s->scene;
@@ -35,63 +54,8 @@ vec3 bb_car_space_to_full_frame(const  UIState *s, vec4 car_space_projective) {
   return p_image;
 }
 
-
-
-void bb_ui_draw_vision_alert( UIState *s, int va_size, int va_color,
-                                  const char* va_text1, const char* va_text2) {
-  const UIScene *scene = &s->scene;
-  int ui_viz_rx = scene->ui_viz_rx;
-  int ui_viz_rw = scene->ui_viz_rw;
-  bool hasSidebar = !s->scene.uilayout_sidebarcollapsed;
-  bool mapEnabled = s->scene.uilayout_mapenabled;
-  bool longAlert1 = strlen(va_text1) > 15;
-
-  const uint8_t *color = alert_colors[va_color];
-  const int alr_s = alert_sizes[va_size];
-  const int alr_x = ui_viz_rx-(mapEnabled?(hasSidebar?nav_w:(nav_ww)):0)-bdr_s;
-  const int alr_w = ui_viz_rw+(mapEnabled?(hasSidebar?nav_w:(nav_ww)):0)+(bdr_s*2);
-  const int alr_h = alr_s+(va_size==ALERTSIZE_NONE?0:bdr_s);
-  const int alr_y = vwp_h-alr_h;
-
-  nvgBeginPath(s->vg);
-  nvgRect(s->vg, alr_x, alr_y, alr_w, alr_h);
-  nvgFillColor(s->vg, nvgRGBA(color[0],color[1],color[2],(color[3]*s->alert_blinking_alpha)));
-  nvgFill(s->vg);
-
-  nvgBeginPath(s->vg);
-  NVGpaint gradient = nvgLinearGradient(s->vg, alr_x, alr_y, alr_x, alr_y+alr_h,
-                        nvgRGBAf(0.0,0.0,0.0,0.05), nvgRGBAf(0.0,0.0,0.0,0.35));
-  nvgFillPaint(s->vg, gradient);
-  nvgRect(s->vg, alr_x, alr_y, alr_w, alr_h);
-  nvgFill(s->vg);
-
-  nvgFillColor(s->vg, nvgRGBA(255, 255, 255, 255));
-  nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
-
-  if (va_size == ALERTSIZE_SMALL) {
-    nvgFontFace(s->vg, "sans-semibold");
-    nvgFontSize(s->vg, 40*2.5);
-    nvgText(s->vg, alr_x+alr_w/2, alr_y+alr_h/2+15, va_text1, NULL);
-  } else if (va_size== ALERTSIZE_MID) {
-    nvgFontFace(s->vg, "sans-bold");
-    nvgFontSize(s->vg, 48*2.5);
-    nvgText(s->vg, alr_x+alr_w/2, alr_y+alr_h/2-45, va_text1, NULL);
-    nvgFontFace(s->vg, "sans-regular");
-    nvgFontSize(s->vg, 36*2.5);
-    nvgText(s->vg, alr_x+alr_w/2, alr_y+alr_h/2+75, va_text2, NULL);
-  } else if (va_size== ALERTSIZE_FULL) {
-    nvgFontSize(s->vg, (longAlert1?72:96)*2.5);
-    nvgFontFace(s->vg, "sans-bold");
-    nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-    nvgTextBox(s->vg, alr_x, alr_y+(longAlert1?360:420), alr_w-60, va_text1, NULL);
-    nvgFontSize(s->vg, 48*2.5);
-    nvgFontFace(s->vg, "sans-regular");
-    nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_BOTTOM);
-    nvgTextBox(s->vg, alr_x, alr_h-(longAlert1?300:360), alr_w-60, va_text2, NULL);
-  }
-}
-
-
+void ui_draw_vision_alert(UIState *s, cereal::ControlsState::AlertSize va_size, int va_color,
+                          const char* va_text1, const char* va_text2);
 
 void bb_ui_draw_car(  UIState *s) {
   // replaces the draw_chevron function when button in mid position
@@ -112,7 +76,7 @@ void bb_ui_draw_car(  UIState *s) {
   nvgTranslate(s->vg, 240.0f, 0.0);
   nvgTranslate(s->vg, -1440.0f / 2, -1080.0f / 2);
   nvgScale(s->vg, 2.0, 2.0);
-  nvgScale(s->vg, 1440.0f / s->rgb_width, 1080.0f / s->rgb_height);
+  nvgScale(s->vg, 1440.0f / s->stream.bufs_info.width, 1080.0f / s->stream.bufs_info.height);
 
   const vec4 p_car_space = (vec4){{x_in, y_in, 0., 1.}};
   const vec3 p_full_frame = bb_car_space_to_full_frame(s, p_car_space);
@@ -148,30 +112,29 @@ void bb_draw_lane_fill ( UIState *s) {
   nvgTranslate(s->vg, 240.0f, 0.0); // rgb-box space
   nvgTranslate(s->vg, -1440.0f / 2, -1080.0f / 2); // zoom 2x
   nvgScale(s->vg, 2.0, 2.0);
-  nvgScale(s->vg, 1440.0f / s->rgb_width, 1080.0f / s->rgb_height);
+  nvgScale(s->vg, 1440.0f / s->stream.bufs_info.width, 1080.0f / s->stream.bufs_info.height);
   nvgBeginPath(s->vg);
 
   //BB let the magic begin
   //define variables
-  PathData path;
-  float *points;
   float off;
   NVGcolor bb_color = nvgRGBA(138, 140, 142,180);
   bool started = false;
   bool is_ghost = true;
   //left lane, first init
-  path = scene->model.left_lane;
-  points = path.points;
-  off = 0.025*path.prob;
+  auto path = scene->model.getLeftLane();
+  auto points = path.getPoints();
+  off = 0.025*path.getProb();
   //draw left
-  for (int i=0; i<49; i++) {
-    float px = (float)i;
-    float py = points[i] - off;
+  float px = 0;
+  for (auto point = points.begin(); point != points.end(); point++) {
+    float py = *point - off;
     vec4 p_car_space = (vec4){{px, py, 0., 1.}};
     vec3 p_full_frame = bb_car_space_to_full_frame(s, p_car_space);
     float x = p_full_frame.v[0];
     float y = p_full_frame.v[1];
     if (x < 0 || y < 0.) {
+      px++;
       continue;
     }
     if (!started) {
@@ -180,15 +143,18 @@ void bb_draw_lane_fill ( UIState *s) {
     } else {
       nvgLineTo(s->vg, x, y);
     }
+    px++;
   }
   //right lane, first init
-  path = scene->model.right_lane;
-  points = path.points;
-  off = 0.025*path.prob;
+  path = scene->model.getRightLane();
+  points = path.getPoints();
+  off = 0.025*path.getProb();
   //draw right
-  for (int i=49; i>0; i--) {
-    float px = (float)i;
-    float py = is_ghost?(points[i]-off):(points[i]+off);
+  px = points.size();
+  for (auto point = points.end(); point != points.begin();) {
+    --point;
+    px--;
+    float py = is_ghost?(*point- - off):(*point + off);
     vec4 p_car_space = (vec4){{px, py, 0., 1.}};
     vec3 p_full_frame = bb_car_space_to_full_frame(s, p_car_space);
     float x = p_full_frame.v[0];
@@ -203,7 +169,6 @@ void bb_draw_lane_fill ( UIState *s) {
   nvgFillColor(s->vg, bb_color);
   nvgFill(s->vg);
   nvgRestore(s->vg);
-
 }
 
 
@@ -338,6 +303,9 @@ int bb_get_button_status( UIState *s, char *btn_name) {
 void bb_draw_button( UIState *s, int btn_id) {
   const UIScene *scene = &s->scene;
 
+  const Rect &viz_rect = s->scene.viz_rect;
+  const int box_y = viz_rect.y;
+
   int viz_button_x = 0;
   int viz_button_y = (box_y + (bdr_s*1.5)) + 20;
   int viz_button_w = 140;
@@ -360,12 +328,12 @@ void bb_draw_button( UIState *s, int btn_id) {
   }
 
   if (btn_id >2) {
-    viz_button_x = scene->ui_viz_rx + scene->ui_viz_rw - (bdr_s*2) -dx2;
+    viz_button_x = scene->viz_rect.x + scene->viz_rect.w - (bdr_s*2) -dx2;
     viz_button_x -= (6-btn_id) * delta_x ;
     viz_button_y += (btn_id-3) * delta_y + dy;
     
   } else {
-    viz_button_x = scene->ui_viz_rx + (bdr_s*2) + dx1;
+    viz_button_x = scene->viz_rect.x + (bdr_s*2) + dx1;
     viz_button_x +=  (btn_id) * delta_x;
     viz_button_y += btn_id * delta_y + dy;
   }
@@ -450,7 +418,7 @@ void bb_draw_buttons( UIState *s) {
 void bb_ui_draw_custom_alert( UIState *s) {
     if ((strlen(s->b.custom_message) > 0) && (s->scene.alert_text1.length()==0)){
       if ((!((bb_get_button_status(s,(char *)"msg") == 0) && (s->b.custom_message_status<=3))) && (s->vision_connected == true)) {
-        bb_ui_draw_vision_alert(s, ALERTSIZE_SMALL, s->b.custom_message_status,
+        ui_draw_vision_alert(s, cereal::ControlsState::AlertSize::SMALL, s->b.custom_message_status,
                               s->b.custom_message,"");
       }
     } 
@@ -974,8 +942,11 @@ void ui_draw_vision_grid( UIState *s) {
   if (!is_cruise_set) {
     const int grid_spacing = 30;
 
-    int ui_viz_rx = scene->ui_viz_rx;
-    int ui_viz_rw = scene->ui_viz_rw;
+    const Rect &viz_rect = s->scene.viz_rect;
+    const int box_y = viz_rect.y;
+    const int box_h  = viz_rect.h;
+    int ui_viz_rx = scene->viz_rect.x;
+    int ui_viz_rw = scene->viz_rect.w;
 
     nvgSave(s->vg);
 
@@ -986,7 +957,7 @@ void ui_draw_vision_grid( UIState *s) {
     nvgTranslate(s->vg, -1440.0f / 2, -1080.0f / 2);
     nvgScale(s->vg, 2.0, 2.0);
 
-    nvgScale(s->vg, 1440.0f / s->rgb_width, 1080.0f / s->rgb_height);
+    nvgScale(s->vg, 1440.0f / s->stream.bufs_info.width, 1080.0f / s->stream.bufs_info.height);
 
     nvgBeginPath(s->vg);
     nvgStrokeColor(s->vg, nvgRGBA(255,255,255,128));
@@ -1008,7 +979,7 @@ void ui_draw_vision_grid( UIState *s) {
 }
 
 void bb_ui_draw_logo( UIState *s) {
-  if ((s->status != STATUS_DISENGAGED) && (s->status != STATUS_STOPPED)) { //(s->status != STATUS_DISENGAGED) {//
+  if ((s->status != STATUS_DISENGAGED)) { //&& (s->status != STATUS_STOPPED)) { //(s->status != STATUS_DISENGAGED) {//
     return;
   }
   if (!s->b.icShowLogo) {
@@ -1027,8 +998,8 @@ void bb_ui_draw_logo( UIState *s) {
   }
   float logop = fabs(4.0*logot/rduration);
   const UIScene *scene = &s->scene;
-  const int ui_viz_rx = scene->ui_viz_rx;
-  const int ui_viz_rw = scene->ui_viz_rw;
+  const int ui_viz_rx = scene->viz_rect.x;
+  const int ui_viz_rw = scene->viz_rect.w;
   const int viz_event_w = (int)(820 * logop);
   const int viz_event_h = 820;
   const int viz_event_x = (ui_viz_rx + (ui_viz_rw - viz_event_w - bdr_s*2)/2);
@@ -1048,8 +1019,8 @@ void bb_ui_draw_gyro(UIState *s) {
   const UIScene *scene = &s->scene;
   const float prc = 0.6;
   const int sc_h = 820;
-  const int sc_w = scene->ui_viz_rw;
-  const int sc_x = bdr_s + scene->ui_viz_rx;
+  const int sc_w = scene->viz_rect.w;
+  const int sc_x = bdr_s + scene->viz_rect.x;
   const int sc_y = 100;
   const int sc_cx = (int)(sc_x + sc_w /2);
   const int sc_cy =  (int)(sc_y + sc_h/2);
@@ -1181,15 +1152,18 @@ void bb_ui_read_triState_switch( UIState *s) {
 
 void bb_ui_draw_UI( UIState *s) {
   
-  
+  const UIScene *scene = &s->scene;
+  const Rect &viz_rect = s->scene.viz_rect;
+  const int box_y = viz_rect.y;
+
   if (s->b.tri_state_switch == 1) {
-	  const UIScene *scene = &s->scene;
+
 	  const int bb_dml_w = 180;
-	  const int bb_dml_x =  (scene->ui_viz_rx + (bdr_s*2));
+	  const int bb_dml_x =  (scene->viz_rect.x + (bdr_s*2));
 	  const int bb_dml_y = (box_y + (bdr_s*1.5))+220;
 	  
 	  const int bb_dmr_w = 180;
-	  const int bb_dmr_x = scene->ui_viz_rx + scene->ui_viz_rw - bb_dmr_w - (bdr_s*2) ; 
+	  const int bb_dmr_x = scene->viz_rect.x + scene->viz_rect.w - bb_dmr_w - (bdr_s*2) ; 
 	  const int bb_dmr_y = (box_y + (bdr_s*1.5))+220;
     bb_ui_draw_measures_left(s,bb_dml_x, bb_dml_y, bb_dml_w );
     bb_ui_draw_measures_right(s,bb_dmr_x, bb_dmr_y, bb_dmr_w );
@@ -1200,11 +1174,11 @@ void bb_ui_draw_UI( UIState *s) {
    if (s->b.tri_state_switch ==2) {
 	 	// const UIScene *scene = &s->scene;
 	  // const int bb_dml_w = 180;
-	  // const int bb_dml_x =  (scene->ui_viz_rx + (bdr_s*2));
+	  // const int bb_dml_x =  (scene->viz_rect.x + (bdr_s*2));
 	  // const int bb_dml_y = (box_y + (bdr_s*1.5))+220;
 	  
 	  // const int bb_dmr_w = 180;
-	  // const int bb_dmr_x = scene->ui_viz_rx + scene->ui_viz_rw - bb_dmr_w - (bdr_s*2) ; 
+	  // const int bb_dmr_x = scene->viz_rect.x + scene->viz_rect.w - bb_dmr_w - (bdr_s*2) ; 
 	  // const int bb_dmr_y = (box_y + (bdr_s*1.5))+220;
     bb_draw_buttons(s);
     bb_ui_draw_custom_alert(s);
@@ -1214,11 +1188,11 @@ void bb_ui_draw_UI( UIState *s) {
     //we now use the state 3 for minimalistic data alerts
 	 	const UIScene *scene = &s->scene;
 	  const int bb_dml_w = 180;
-	  const int bb_dml_x =  (scene->ui_viz_rx + (bdr_s*2));
+	  const int bb_dml_x =  (scene->viz_rect.x + (bdr_s*2));
 	  const int bb_dml_y = (box_y + (bdr_s*1.5))+220;
 	  
 	  const int bb_dmr_w = 180;
-	  const int bb_dmr_x = scene->ui_viz_rx + scene->ui_viz_rw - bb_dmr_w - (bdr_s*2) ; 
+	  const int bb_dmr_x = scene->viz_rect.x + scene->viz_rect.w - bb_dmr_w - (bdr_s*2) ; 
 	  const int bb_dmr_y = (box_y + (bdr_s*1.5))+220;
     bb_ui_draw_measures_left2(s,bb_dml_x, bb_dml_y, bb_dml_w );
     bb_ui_draw_measures_right2(s,bb_dmr_x, bb_dmr_y, bb_dmr_w );
@@ -1229,11 +1203,11 @@ void bb_ui_draw_UI( UIState *s) {
     //we use the state 4 for gyro info
     // const UIScene *scene = &s->scene;
     // const int bb_dml_w = 180;
-    // const int bb_dml_x =  (scene->ui_viz_rx + (bdr_s*2));
+    // const int bb_dml_x =  (scene->viz_rect.x + (bdr_s*2));
     // const int bb_dml_y = (box_y + (bdr_s*1.5))+220;
     
     // const int bb_dmr_w = 180;
-    // const int bb_dmr_x = scene->ui_viz_rx + scene->ui_viz_rw - bb_dmr_w - (bdr_s*2) ; 
+    // const int bb_dmr_x = scene->viz_rect.x + scene->viz_rect.w - bb_dmr_w - (bdr_s*2) ; 
     // const int bb_dmr_y = (box_y + (bdr_s*1.5))+220;
     bb_draw_buttons(s);
     bb_ui_draw_custom_alert(s);
@@ -1255,7 +1229,7 @@ void bb_ui_init(UIState *s) {
     s->b.touch_last = false;
     s->b.touch_last_x = 0;
     s->b.touch_last_y =0;
-    s->b.touch_last_width = s->scene.ui_viz_rw;
+    s->b.touch_last_width = s->scene.viz_rect.w;
 
     s->b.ctx = Context::create();
 

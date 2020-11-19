@@ -14,6 +14,9 @@
 #include "ui.hpp"
 #include "paint.hpp"
 
+#include "bbui.h"
+#include "dashcam.h"
+
 extern volatile sig_atomic_t do_exit;
 
 int write_param_float(float param, const char* param_name, bool persistent_param) {
@@ -31,7 +34,9 @@ void ui_init(UIState *s) {
   s->scene.satelliteCount = -1;
   read_param(&s->is_metric, "IsMetric");
 
+   // init display
   s->fb = framebuffer_init("ui", 0, true, &s->fb_w, &s->fb_h);
+ 
   assert(s->fb);
 
   ui_nvg_init(s);
@@ -125,6 +130,11 @@ void update_sockets(UIState *s) {
     auto event = sm["controlsState"];
     scene.controls_state = event.getControlsState();
 
+    //BB get angles
+    s->b.angleSteers = scene.controls_state.getAngleSteers();
+    s->b.angleSteersDes = scene.controls_state.getAngleSteersDes();
+    //BB END
+    
     // TODO: the alert stuff shouldn't be handled here
     auto alert_sound = scene.controls_state.getAlertSound();
     if (scene.alert_type.compare(scene.controls_state.getAlertType()) != 0) {
@@ -190,6 +200,28 @@ void update_sockets(UIState *s) {
   }
   if (sm.updated("thermal")) {
     scene.thermal = sm["thermal"].getThermal();
+  
+    //BB CPU TEMP
+    auto data = scene.thermal;
+    s->b.maxCpuTemp=data.getCpu0DEPRECATED();
+    if (s->b.maxCpuTemp<data.getCpu1DEPRECATED())
+    {
+        s->b.maxCpuTemp=data.getCpu1DEPRECATED();
+    }
+    else if (s->b.maxCpuTemp<data.getCpu2DEPRECATED())
+    {
+        s->b.maxCpuTemp=data.getCpu2DEPRECATED();
+    }
+    else if (s->b.maxCpuTemp<data.getCpu3DEPRECATED())
+    {
+        s->b.maxCpuTemp=data.getCpu3DEPRECATED();
+    }
+    s->b.maxBatTemp=data.getBat();
+    s->b.freeSpace=data.getFreeSpace();
+    s->b.batteryPercent=data.getBatteryPercent();
+    s->b.chargingEnabled=!data.getChargingDisabled();
+    s->b.fanSpeed=data.getFanSpeed();
+    //BB END CPU TEMP
   }
   if (sm.updated("ubloxGnss")) {
     auto data = sm["ubloxGnss"].getUbloxGnss();
