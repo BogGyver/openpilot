@@ -7,6 +7,7 @@ from selfdrive.car.tesla.values import CruiseState, CruiseButtons
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.speed_smoother import speed_smoother
 from selfdrive.controls.lib.planner import calc_cruise_accel_limits, limit_accel_in_turns
+from cereal import car
 import cereal.messaging as messaging
 import time
 import math
@@ -436,8 +437,21 @@ class PCCController():
         self.vTargetFuture = clip(self.v_acc_future, 0, self.v_pid)
         feedforward = self.a_acc_sol
         #feedforward = self.last_output_gb
-        t_go, t_brake = self.LoC.update(self.enable_pedal_cruise, CS.v_ego, CS.brake_pressed != 0, CS.standstill, False, 
-                    self.v_cruise , vTarget, self.vTargetFuture, feedforward, CS.CP)
+
+        carState = car.CarState.new_message()
+        carState.vEgo = CS.v_ego
+        carState.brakePressed = CS.brake_pressed != 0
+        carState.gasPressed = CS.user_gas_pressed
+        carState.standstill = CS.standstill
+        carState.cruiseState.standstill = False
+        t_go, t_brake = self.LoC.update(
+          self.enable_pedal_cruise, # active
+          carState,                 # CS
+          vTarget,                  # v_target
+          self.vTargetFuture,       # v_target_future
+          feedforward,              # a_target
+          CS.CP                     # CP
+        )
         output_gb = t_go - t_brake
         #print ("Output GB Follow:", output_gb)
       else:

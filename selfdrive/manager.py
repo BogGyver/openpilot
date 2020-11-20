@@ -417,7 +417,10 @@ def send_managed_process_signal(name, sig):
   if name not in running or name not in managed_processes:
     return
   cloudlog.info(f"sending signal {sig} to {name}")
-  os.kill(running[name].pid, sig)
+  try:
+    os.kill(running[name].pid, sig)
+  except:
+    print(f"Error while sending signal {sig} to {name}")
 
 
 # ****************** run loop ******************
