@@ -112,6 +112,14 @@ static void update_offroad_layout_state(UIState *s, PubMaster *pm) {
   }
 }
 
+void bb_ui_init(UIState *s);
+void bb_ui_preinit(UIState *s);
+void ui_draw_infobar(UIState *s);
+void bb_ui_draw_UI( UIState *s);
+void dashcam( UIState *s, int touch_x, int touch_y );
+void bb_ui_poll_update( UIState *s);
+bool bb_handle_ui_touch( UIState *s, int touch_x, int touch_y);
+
 int main(int argc, char* argv[]) {
   setpriority(PRIO_PROCESS, 0, -14);
   signal(SIGINT, (sighandler_t)set_do_exit);
@@ -119,9 +127,15 @@ int main(int argc, char* argv[]) {
 
   UIState uistate = {};
   UIState *s = &uistate;
+
+  bb_ui_preinit(s);
   ui_init(s);
   s->sound = &sound;
+  
+  //BB init our UI
+  bb_ui_init(s);
 
+  s->b.touch_last_width = s->scene.viz_rect.w;
   TouchState touch = {0};
   touch_init(&touch);
   handle_display_state(s, true);
@@ -156,10 +170,46 @@ int main(int argc, char* argv[]) {
 
     // poll for touch events
     int touch_x = -1, touch_y = -1;
+ 
+    s->b.touch_timeout --;
+    if (s->b.touch_timeout < 0) {
+      s->b.touch_timeout = 0;
+    }
+ 
     int touched = touch_poll(&touch, &touch_x, &touch_y, 0);
     if (touched == 1) {
       handle_sidebar_touch(s, touch_x, touch_y);
       handle_vision_touch(s, touch_x, touch_y);
+      s->b.touch_last = true;
+      s->b.touch_last_x = touch_x;
+      s->b.touch_last_y = touch_y;
+      s->b.touch_timeout = touch_timeout;
+    }
+    //BB check touch
+    int dc_touch_x = -1, dc_touch_y = -1;
+    if ((s->b.touch_last) && (s->b.touch_last_width != s->scene.viz_rect.w)) {
+      s->b.touch_last_width=s->scene.viz_rect.w;
+      bb_handle_ui_touch(s,s->b.touch_last_x,s->b.touch_last_y);
+      dc_touch_x = s->b.touch_last_x;
+      dc_touch_y = s->b.touch_last_y;
+      s->b.touch_last = false;
+      s->b.touch_last_x = 0;
+      s->b.touch_last_y = 0;
+    }
+
+    //s->b.touch_last_width = s->scene.viz_rect.w;
+    //BB Update our cereal polls
+    bb_ui_poll_update(s);
+
+    // manage wakefulness
+    if (s->started || s->ignition) {
+      set_awake(s, true);
+    }
+
+    if (s->awake_timeout > 0) {
+      s->awake_timeout--;
+    } else {
+      set_awake(s, false);
     }
 
     // Don't waste resources on drawing in case screen is off
@@ -179,6 +229,12 @@ int main(int argc, char* argv[]) {
     update_offroad_layout_state(s, pm);
 
     ui_draw(s);
+    if (s->vision_connected) {
+      nvgScale(s->vg,s->b.scr_scale_x,s->b.scr_scale_y);
+      dashcam(s, dc_touch_x, dc_touch_y);
+      bb_ui_draw_UI(s) ;
+      ui_draw_infobar(s);
+    }
     double u2 = millis_since_boot();
     if (!s->scene.frontview && (u2-u1 > 66)) {
       // warn on sub 15fps

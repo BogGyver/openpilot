@@ -481,6 +481,9 @@ static void ui_draw_driver_view(UIState *s) {
   // draw face box
   if (scene->dmonitoring_state.getFaceDetected()) {
     auto fxy_list = scene->driver_state.getFacePosition();
+    const Rect &viz_rect = s->scene.viz_rect;
+    const int box_y = viz_rect.y;
+    const int box_h  = viz_rect.h;
     const float face_x = fxy_list[0];
     const float face_y = fxy_list[1];
     float fbox_x;
