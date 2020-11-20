@@ -4,13 +4,10 @@ import inspect
 import json
 import os
 import random
-import re
-import subprocess
+import requests
 import threading
 import time
 import traceback
-
-import requests
 
 from cereal import log
 from common.hardware import HARDWARE
@@ -20,10 +17,7 @@ from selfdrive.loggerd.xattr_cache import getxattr, setxattr
 from selfdrive.loggerd.config import ROOT
 from selfdrive.swaglog import cloudlog
 
-from selfdrive.car.tesla.readconfig import read_config_file,CarSettings
-
 NetworkType = log.ThermalData.NetworkType
-
 UPLOAD_ATTR_NAME = 'user.upload'
 UPLOAD_ATTR_VALUE = b'1'
 
@@ -77,22 +71,6 @@ def clear_locks(root):
 def is_on_wifi():
   return HARDWARE.get_network_type() == NetworkType.wifi
 
-def is_on_hotspot():
-  try:
-    result = subprocess.check_output(["ifconfig", "wlan0"], stderr=subprocess.STDOUT, encoding='utf8')
-    result = re.findall(r"inet addr:((\d+\.){3}\d+)", result)[0][0]
-
-    is_android = result.startswith('192.168.43.')
-    is_ios = result.startswith('172.20.10.')
-    car_set = CarSettings()
-    blockUploadWhileTethering = car_set.get_value("blockUploadWhileTethering")
-    tetherIP = car_set.get_value("tetherIP")
-    is_other_tether = blockUploadWhileTethering and result.startswith(tetherIP)
-    is_entune = result.startswith('10.0.2.')
-    return (is_android or is_ios or is_other_tether or is_entune)
-  except Exception:
-    return False
-
 class Uploader():
   def __init__(self, dongle_id, root):
     self.dongle_id = dongle_id
@@ -106,16 +84,6 @@ class Uploader():
 
     self.immediate_priority = {"qlog.bz2": 0, "qcamera.ts": 1}
     self.high_priority = {"rlog.bz2": 0, "fcamera.hevc": 1, "dcamera.hevc": 2, "ecamera.hevc": 3}
-
-  def clean_dirs(self):
-    try:
-      for logname in os.listdir(self.root):
-        path = os.path.join(self.root, logname)
-        # remove empty directories
-        if not os.listdir(path):
-          os.rmdir(path)
-    except OSError:
-      cloudlog.exception("clean_dirs failed")
 
   def get_upload_sort(self, name):
     if name in self.immediate_priority:
@@ -257,25 +225,22 @@ def uploader_fn(exit_event):
 
   backoff = 0.1
   counter = 0
-  should_upload = False
+  on_wifi = False
   while not exit_event.is_set():
     offroad = params.get("IsOffroad") == b'1'
     allow_raw_upload = (params.get("IsUploadRawEnabled") != b"0") and offroad
-    check_network = (counter % 12 == 0 if offroad else True)
-    if check_network:
-      on_hotspot = is_on_hotspot()
+    if offroad and counter % 12 == 0:
       on_wifi = is_on_wifi()
-      should_upload = on_wifi and not on_hotspot
-
-    d = uploader.next_file_to_upload(with_raw=allow_raw_upload and should_upload)
     counter += 1
+
+    d = uploader.next_file_to_upload(with_raw=allow_raw_upload and on_wifi and offroad)
     if d is None:  # Nothing to upload
       time.sleep(60 if offroad else 5)
       continue
 
     key, fn = d
 
-    cloudlog.event("uploader_netcheck", is_on_hotspot=on_hotspot, is_on_wifi=on_wifi)
+    cloudlog.event("uploader_netcheck", is_on_wifi=on_wifi)
     cloudlog.info("to upload %r", d)
     success = uploader.upload(key, fn)
     if success:

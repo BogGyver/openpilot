@@ -34,7 +34,7 @@ def set_core_affinity(core):
       print("Unable to set core affinity")
 
 
-def config_rt_process(core, priority):
+def config_realtime_process(core, priority):
   gc.disable()
   set_realtime_priority(priority)
   set_core_affinity(core)

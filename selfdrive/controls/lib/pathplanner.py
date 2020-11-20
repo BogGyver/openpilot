@@ -41,14 +41,14 @@ DESIRES = {
 
 
 def calc_states_after_delay(states, v_ego, steer_angle, curvature_factor, steer_ratio, delay):
-  states[0].x = max(v_ego * delay, 0.0)
+  states[0].x = v_ego * delay
   states[0].psi = v_ego * curvature_factor * math.radians(steer_angle) / steer_ratio * delay
   return states
 
 
 class PathPlanner():
   def __init__(self, CP):
-    self.LP = LanePlanner(shouldUseAlca=(CP.carName=="tesla"))
+    self.LP = LanePlanner()
 
     self.last_cloudlog_t = 0
     self.steer_rate_cost = CP.steerRateCost
@@ -81,7 +81,6 @@ class PathPlanner():
   def update(self, sm, pm, CP, VM):
     v_ego = sm['carState'].vEgo
     angle_steers = sm['carState'].steeringAngle
-    #angle_steers_des = sm['controlsState'].angleSteersDes
     active = sm['controlsState'].active
 
     angle_offset = sm['liveParameters'].angleOffset
@@ -107,9 +106,7 @@ class PathPlanner():
     elif sm['carState'].rightBlinker:
       self.lane_change_direction = LaneChangeDirection.right
 
-    
-    #BB blocking comma ALCA for now
-    if (CP.carName == "tesla") or (not active) or (self.lane_change_timer > LANE_CHANGE_TIME_MAX) or (not one_blinker) or (not self.lane_change_enabled):
+    if (not active) or (self.lane_change_timer > LANE_CHANGE_TIME_MAX) or (not self.lane_change_enabled):
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
     else:
@@ -165,15 +162,9 @@ class PathPlanner():
     if desire == log.PathPlan.Desire.laneChangeRight or desire == log.PathPlan.Desire.laneChangeLeft:
       self.LP.l_prob *= self.lane_change_ll_prob
       self.LP.r_prob *= self.lane_change_ll_prob
-      self.libmpc.init_weights(MPC_COST_LAT.PATH / 3.0, MPC_COST_LAT.LANE, MPC_COST_LAT.HEADING, self.steer_rate_cost)
-    else:
-      self.libmpc.init_weights(MPC_COST_LAT.PATH, MPC_COST_LAT.LANE, MPC_COST_LAT.HEADING, self.steer_rate_cost)
-
-    self.LP.update_d_poly(v_ego, sm['model'],True)
+    self.LP.update_d_poly(v_ego)
 
     # account for actuation delay
-    
-
     self.cur_state = calc_states_after_delay(self.cur_state, v_ego, angle_steers - angle_offset, curvature_factor, VM.sR, CP.steerActuatorDelay)
 
     v_ego_mpc = max(v_ego, 5.0)  # avoid mpc roughness due to low speed
