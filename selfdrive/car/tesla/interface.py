@@ -6,7 +6,7 @@ from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.events import ET
 from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.car.tesla.values import CruiseButtons, CM, BP, AH, CAR,DBC
-from common.params import read_db
+from common.params import Params
 from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, is_ecu_disconnected, gen_empty_fingerprint
 from selfdrive.car.tesla.readconfig import CarSettings
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V
@@ -103,7 +103,8 @@ class CarInterface(CarInterfaceBase):
     ret.carName = "tesla"
     ret.carFingerprint = candidate
 
-    teslaModel = read_db('/data/params/d/','TeslaModel')
+    params = Params()
+    teslaModel = params.get("TeslaModel")
     if teslaModel is not None:
       teslaModel = teslaModel.decode()
     if teslaModel is None:
