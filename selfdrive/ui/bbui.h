@@ -26,8 +26,7 @@ const int vwp_w = 1920;
 #endif
 const int vwp_h = 1080;
 #include "tbui.h"
-
-void set_awake(UIState *s, bool awake); 
+#include "paint.hpp"
 
 void bb_ui_preinit(UIState *s) {
   s->b.scr_w = vwp_w;
@@ -53,9 +52,6 @@ vec3 bb_car_space_to_full_frame(const  UIState *s, vec4 car_space_projective) {
   const vec3 p_image = {{KEp.v[0] / KEp.v[2], KEp.v[1] / KEp.v[2], 1.}};
   return p_image;
 }
-
-void ui_draw_vision_alert(UIState *s, cereal::ControlsState::AlertSize va_size, int va_color,
-                          const char* va_text1, const char* va_text2);
 
 void bb_ui_draw_car(  UIState *s) {
   // replaces the draw_chevron function when button in mid position
@@ -290,7 +286,7 @@ void bb_mouse_event_handler(GLFWwindow* window, int button, int action, int mods
 #endif
 
 
-int bb_get_button_status( UIState *s, char *btn_name) {
+int bb_get_button_status(UIState *s, char *btn_name) {
   int ret_status = -1;
   for (int i = 0; i< 6; i++) {
     if (strcmp(s->b.btns[i].btn_name,btn_name)==0) {
@@ -1106,7 +1102,8 @@ void bb_ui_draw_gyro(UIState *s) {
   nvgStroke(s->vg);
 }
 
-void bb_ui_read_triState_switch( UIState *s) {
+/// returns true on user input
+bool bb_ui_read_triState_switch( UIState *s) {
   //get 3-state switch position
   // int tri_state_fd;
   // char buffer[10];
@@ -1136,18 +1133,10 @@ void bb_ui_read_triState_switch( UIState *s) {
       s->b.tri_state_switch = 4;
     }
     int i = bb_get_button_status(s,(char *)"dsp");
-    if (i==9) {
-      s->b.keepEonOff = true;
-      if (s->awake_timeout > 3*30) {
-        s->awake_timeout = 3*30;
-      }
-    } else {
-      s->b.keepEonOff = false;
-      if (s->awake_timeout > 30*30) {
-        s->awake_timeout = 30*30;
-      }
-    }
+    s->b.keepEonOff = (i==9);
+    return true;
   }
+  return false;
 }
 
 void bb_ui_draw_UI( UIState *s) {
@@ -1273,17 +1262,17 @@ void bb_ui_set_car( UIState *s, char *model, char *folder) {
     strcpy(s->b.car_folder, folder);
 }
 
-void  bb_ui_poll_update( UIState *s) {
+bool bb_ui_poll_update( UIState *s) {
 
     // int err;
     
     //check tri-state switch
-    bb_ui_read_triState_switch(s);
+    bool user_input = bb_ui_read_triState_switch(s);
     
     while (true) {
       auto polls = s->b.poller->poll(0);
       if (polls.size() == 0)
-        return;
+        return user_input;
 
       for (auto sock : polls) {
         Message * msg = sock->receive();
@@ -1317,16 +1306,16 @@ void  bb_ui_poll_update( UIState *s) {
           cereal_read_UICustomAlert(&datad, stp);
 
           strcpy(s->b.custom_message,datad.caText.str);
-          s->b.custom_message_status = datad.caStatus;
+          s->b.custom_message_status = (UIStatus)datad.caStatus;
 
           if ((strlen(s->b.custom_message) > 0) && (s->scene.alert_text1.length()==0)){
             if ((!((bb_get_button_status(s,(char *)"msg") == 0) && (s->b.custom_message_status<=3))) && (s->vision_connected == true)) {
-              set_awake(s, true);
+              user_input = true;
             }
           }
 
           if ((s->scene.alert_text1.length() > 0) || (s->scene.alert_text2.length() > 0)) {
-            set_awake(s, true);
+            user_input = true;
           }
           
           capn_free(&ctx);
@@ -1435,6 +1424,8 @@ void  bb_ui_poll_update( UIState *s) {
         delete msg; 
       }  
     }
+
+    return user_input;
 }
 
  

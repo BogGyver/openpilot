@@ -1,4 +1,6 @@
 #pragma once
+#include "ui.hpp"
+
 const int touch_timeout = 25;
 
 typedef struct UICstmButton {
@@ -39,7 +41,7 @@ typedef struct BBUIState {
     int btns_x[6];
     int btns_y[6];
     int btns_r[6];
-    int custom_message_status;
+    UIStatus custom_message_status;
     char custom_message[120];
     int img_logo;
     int img_logo2;

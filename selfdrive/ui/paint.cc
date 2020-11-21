@@ -17,24 +17,6 @@ extern "C"{
 #include "sidebar.hpp"
 
 
-// TODO: this is also hardcoded in common/transformations/camera.py
-// TODO: choose based on frame input size
-#ifdef QCOM2
-const float zoom = 1.5;
-const mat3 intrinsic_matrix = (mat3){{
-  2648.0, 0.0, 1928.0/2,
-  0.0, 2648.0, 1208.0/2,
-  0.0,   0.0,   1.0
-}};
-#else
-const float zoom = 2.35;
-const mat3 intrinsic_matrix = (mat3){{
-  910., 0., 1164.0/2,
-  0., 910., 874.0/2,
-  0.,   0.,   1.
-}};
-#endif
-
 // Projects a point in car to space to the corresponding point in full frame
 // image space.
 vec3 car_space_to_full_frame(const UIState *s, vec4 car_space_projective) {
@@ -481,9 +463,6 @@ static void ui_draw_driver_view(UIState *s) {
   // draw face box
   if (scene->dmonitoring_state.getFaceDetected()) {
     auto fxy_list = scene->driver_state.getFacePosition();
-    const Rect &viz_rect = s->scene.viz_rect;
-    const int box_y = viz_rect.y;
-    const int box_h  = viz_rect.h;
     const float face_x = fxy_list[0];
     const float face_y = fxy_list[1];
     float fbox_x;

@@ -31,7 +31,6 @@
 #include "sound.hpp"
 
 #include "cereal/gen/c/log.capnp.h"
-#include "bbuistate.h"
 
 #define COLOR_BLACK nvgRGBA(0, 0, 0, 255)
 #define COLOR_BLACK_ALPHA(x) nvgRGBA(0, 0, 0, x)
@@ -138,6 +137,7 @@ typedef struct {
   int cnt;
 } track_vertices_data;
 
+#include "bbuistate.h"
 
 typedef struct UIState {
   //BB define BBUIState
@@ -238,16 +238,18 @@ int read_param(T* param, const char *param_name, bool persistent_param = false){
 
 // TODO: this is also hardcoded in common/transformations/camera.py
 // TODO: choose based on frame input size
-#ifdef QCOM2	
-const mat3 intrinsic_matrix = (mat3){{	
-  2648.0, 0.0, 1928.0/2,	
-  0.0, 2648.0, 1208.0/2,	
-  0.0,   0.0,   1.0	
-}};	
-#else
+#ifdef QCOM2
+const float zoom = 1.5;
 const mat3 intrinsic_matrix = (mat3){{
-  910., 0., 582.,
-  0., 910., 437.,
+  2648.0, 0.0, 1928.0/2,
+  0.0, 2648.0, 1208.0/2,
+  0.0,   0.0,   1.0
+}};
+#else
+const float zoom = 2.35;
+const mat3 intrinsic_matrix = (mat3){{
+  910., 0., 1164.0/2,
+  0., 910., 874.0/2,
   0.,   0.,   1.
 }};
 #endif
@@ -259,4 +261,3 @@ const uint8_t alert_colors[][4] = {
   [STATUS_WARNING] = {0xDA, 0x6F, 0x25, 0xf1},
   [STATUS_ALERT] = {0xC9, 0x22, 0x31, 0xf1},
 };
-

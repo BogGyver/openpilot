@@ -117,7 +117,7 @@ void bb_ui_preinit(UIState *s);
 void ui_draw_infobar(UIState *s);
 void bb_ui_draw_UI( UIState *s);
 void dashcam( UIState *s, int touch_x, int touch_y );
-void bb_ui_poll_update( UIState *s);
+bool bb_ui_poll_update( UIState *s);
 bool bb_handle_ui_touch( UIState *s, int touch_x, int touch_y);
 
 int main(int argc, char* argv[]) {
@@ -199,21 +199,10 @@ int main(int argc, char* argv[]) {
 
     //s->b.touch_last_width = s->scene.viz_rect.w;
     //BB Update our cereal polls
-    bb_ui_poll_update(s);
+    bool bb_ui_user_input = bb_ui_poll_update(s);
 
-    // manage wakefulness
-    if (s->started || s->ignition) {
-      set_awake(s, true);
-    }
-
-    if (s->awake_timeout > 0) {
-      s->awake_timeout--;
-    } else {
-      set_awake(s, false);
-    }
-
-    // Don't waste resources on drawing in case screen is off
-    handle_display_state(s, touched == 1);
+     // Don't waste resources on drawing in case screen is off
+    handle_display_state(s, touched == 1 || bb_ui_user_input);
     if (!s->awake) {
       continue;
     }

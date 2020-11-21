@@ -131,17 +131,18 @@ void update_sockets(UIState *s) {
     auto event = sm["controlsState"];
     scene.controls_state = event.getControlsState();
 
-    //BB get angles
+    //Tesla
     s->b.angleSteers = scene.controls_state.getAngleSteers();
     s->b.angleSteersDes = scene.controls_state.getAngleSteersDes();
-    //BB END
+    int isSoundButtonEnabled = bb_get_button_status(s,(char *)"sound");
+    //
     
     // TODO: the alert stuff shouldn't be handled here
     auto alert_sound = scene.controls_state.getAlertSound();
     if (scene.alert_type.compare(scene.controls_state.getAlertType()) != 0) {
       if (alert_sound == AudibleAlert::NONE) {
         s->sound->stop();
-      } else {
+      } else if (isSoundButtonEnabled) {
         s->sound->play(alert_sound);
       }
     }
