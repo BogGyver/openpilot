@@ -7,9 +7,7 @@ import errno
 import signal
 import shutil
 import subprocess
-from selfdrive.tinklad.tinkla_interface import TinklaClient
 from cereal import tinkla
-from selfdrive.car.tesla.readconfig import CarSettings
 import datetime
 import textwrap
 from typing import Dict, List
@@ -127,8 +125,8 @@ if not prebuilt:
           for i in range(3, -1, -1):
             print("....%d" % i)
             time.sleep(1)
-          subprocess.check_call(["scons", "-c"], cwd=BASEDIR, env=env)
-          shutil.rmtree("/tmp/scons_cache")
+          #subprocess.check_call(["scons", "-c"], cwd=BASEDIR, env=env)
+          #shutil.rmtree("/tmp/scons_cache")
         else:
           print("scons build failed after retry")
           sys.exit(1)
@@ -160,6 +158,8 @@ from selfdrive.version import version, dirty
 from selfdrive.loggerd.config import ROOT
 from selfdrive.launcher import launcher
 from common.apk import update_apks, pm_apply_packages, start_offroad
+from selfdrive.car.tesla.readconfig import CarSettings
+from selfdrive.tinklad.tinkla_interface import TinklaClient
 
 ThermalStatus = cereal.log.ThermalData.ThermalStatus
 
