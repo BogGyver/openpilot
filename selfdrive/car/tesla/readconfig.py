@@ -108,10 +108,19 @@ class ConfigFile():
 
       #enable_driver_monitor -> enableDriverMonitor
       into.enableDriverMonitor, didUpdate = self.read_config_entry(
-        config, configr, prev_file_contents, section = main_section,
+        config, configr, prev_file_contents, section = pref_section,
         entry = 'enable_driver_monitor', entry_type = bool,
         default_value = True,
-        comment = 'When turned off, the OpenPilot is tricked into thinking you have your hands on the sterring wheel all the time.'
+        comment = 'Disable driver monitoring at your own risk, might get you banned from comma.ai'
+      )
+      file_changed |= didUpdate
+
+      #throttle_driver_monitor -> throttleDriverMonitor
+      into.throttleDriverMonitor, didUpdate = self.read_config_entry(
+        config, configr, prev_file_contents, section = pref_section,
+        entry = 'throttle_driver_monitor', entry_type = bool,
+        default_value = False,
+        comment = 'Throttle driver monitoring so it consumes less cpu cycles'
       )
       file_changed |= didUpdate
 
@@ -490,6 +499,7 @@ class CarSettings():
   enableDasEmulation = None
   enableRadarEmulation = None
   enableDriverMonitor = None
+  throttleDriverMonitor = None
   enableShowCar = None
   enableShowLogo = None
   hasNoctuaFan = None

@@ -44,6 +44,7 @@ bool is_tesla_gps_enabled() {
           }       
           //printf("Found [%s] %s [%s]\n", setting, oper, value);
           if ((strcmp("use_tesla_gps",setting) == 0) && (strcmp("True",value) == 0)) {
+            fclose(stream);
             return true;
           }
   }

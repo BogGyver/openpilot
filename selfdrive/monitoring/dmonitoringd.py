@@ -6,6 +6,34 @@ from selfdrive.controls.lib.events import Events
 from selfdrive.monitoring.driver_monitor import DriverStatus, MAX_TERMINAL_ALERTS, MAX_TERMINAL_DURATION
 from selfdrive.locationd.calibrationd import Calibration
 
+from selfdrive.monitoring.driver_monitor import DriverPose, DriverBlink
+from selfdrive.car.tesla.readconfig import CarSettings
+from common.realtime import DT_DMON
+class MockDriverStatus():
+  def __init__(self):
+    self.pose = DriverPose()
+    self.blink = DriverBlink()
+    self.awareness = 1.
+    self.awareness_active = 1.
+    self.awareness_passive = 1.
+    self.driver_distracted = False
+    self.face_detected = True
+    self.terminal_alert_cnt = 0
+    self.terminal_time = 0
+    self.step_change = DT_DMON / 11.
+    self.hi_stds = 0
+    self.is_rhd_region = False
+  def _set_timers(self, active_monitoring):
+    pass
+  def _is_driver_distracted(self, pose, blink):
+    return DistractedType.NOT_DISTRACTED
+  def set_policy(self, model_data):
+    pass
+  def get_pose(self, driver_state, cal_rpy, car_speed, op_engaged):
+    pass
+  def update(self, events, driver_engaged, ctrl_active, standstill):
+    pass
+
 
 def dmonitoringd_thread(sm=None, pm=None):
   if pm is None:
@@ -14,8 +42,12 @@ def dmonitoringd_thread(sm=None, pm=None):
   if sm is None:
     sm = messaging.SubMaster(['driverState', 'liveCalibration', 'carState', 'model'], poll=['driverState'])
 
-  driver_status = DriverStatus()
-  driver_status.is_rhd_region = Params().get("IsRHD") == b"1"
+  is_dm_enabled = CarSettings().get_value("enableDriverMonitor")
+  if is_dm_enabled:
+    driver_status = DriverStatus()
+    driver_status.is_rhd_region = Params().get("IsRHD") == b"1"
+  else:
+    driver_status = MockDriverStatus()
 
   offroad = Params().get("IsOffroad") == b"1"
 
@@ -45,7 +77,8 @@ def dmonitoringd_thread(sm=None, pm=None):
       driver_engaged = len(sm['carState'].buttonEvents) > 0 or \
                         v_cruise != v_cruise_last or \
                         sm['carState'].steeringPressed or \
-                        sm['carState'].gasPressed
+                        sm['carState'].gasPressed or \
+                        not is_dm_enabled
       if driver_engaged:
         driver_status.update(Events(), True, sm['carState'].cruiseState.enabled, sm['carState'].standstill)
       v_cruise_last = v_cruise
