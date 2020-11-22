@@ -78,6 +78,8 @@ keys = {
   b"RoadUsbCameraFx": [TxType.PERSISTENT],
   b"RoadUsbCameraFlip": [TxType.PERSISTENT],
   b"TeslaModel": [TxType.PERSISTENT],
+  b"SpeedLimitOffset": [TxType.PERSISTENT],
+  b"LimitSetSpeed": [TxType.PERSISTENT],
 }
 
 def ensure_bytes(v):

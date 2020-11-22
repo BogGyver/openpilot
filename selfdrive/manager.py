@@ -614,6 +614,9 @@ def main():
     ("OpenpilotEnabledToggle", "1"),
     ("LaneChangeEnabled", "1"),
     ("IsDriverViewEnabled", "0"),
+    #Tesla
+    ("SpeedLimitOffset", "0"),
+    ("LimitSetSpeed", "0"),
   ]
 
   # set unset params
