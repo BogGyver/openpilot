@@ -15,8 +15,8 @@
 #include "ui.hpp"
 #include "paint.hpp"
 
-#include "bbui.h"
-#include "dashcam.h"
+#include "bbui.hpp"
+#include "dashcam.hpp"
 
 extern volatile sig_atomic_t do_exit;
 

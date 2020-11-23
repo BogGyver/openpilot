@@ -1,7 +1,4 @@
-#pragma once
-
 #include <math.h>
-#include <sys/stat.h>
 #include "cereal/gen/c/ui.capnp.h"
 
 #if !defined(QCOM) && !defined(QCOM2)
@@ -25,7 +22,6 @@ const int vwp_w = 2160;
 const int vwp_w = 1920;
 #endif
 const int vwp_h = 1080;
-#include "tbui.h"
 #include "paint.hpp"
 
 void bb_ui_preinit(UIState *s) {

@@ -14,6 +14,7 @@
 #include "ui.hpp"
 #include "paint.hpp"
 #include "android/sl_sound.hpp"
+#include "bbui.hpp"
 
 volatile sig_atomic_t do_exit = 0;
 static void set_do_exit(int sig) {
@@ -111,14 +112,6 @@ static void update_offroad_layout_state(UIState *s, PubMaster *pm) {
     timeout = 2 * UI_FREQ;
   }
 }
-
-void bb_ui_init(UIState *s);
-void bb_ui_preinit(UIState *s);
-void ui_draw_infobar(UIState *s);
-void bb_ui_draw_UI( UIState *s);
-void dashcam( UIState *s, int touch_x, int touch_y );
-bool bb_ui_poll_update( UIState *s);
-bool bb_handle_ui_touch( UIState *s, int touch_x, int touch_y);
 
 int main(int argc, char* argv[]) {
   setpriority(PRIO_PROCESS, 0, -14);

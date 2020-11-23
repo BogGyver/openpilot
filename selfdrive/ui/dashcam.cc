@@ -1,4 +1,21 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <signal.h>
+#include <unistd.h>
+#include <assert.h>
+#include <math.h>
+#include <poll.h>
+#include <sys/mman.h>
 #include <time.h>
+#include <sys/stat.h>
+
+#include "common/util.h"
+#include "common/swaglog.h"
+#include "common/visionimg.h"
+#include "common/utilpp.h"
+#include "ui.hpp"
+#include "paint.hpp"
 
 #define CAPTURE_STATE_NONE 0
 #define CAPTURE_STATE_CAPTURING 1

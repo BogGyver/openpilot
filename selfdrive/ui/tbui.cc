@@ -1,13 +1,19 @@
-#pragma once
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <map>
+#include "ui.hpp"
+#include "paint.hpp"
+
 void ui_draw_infobar(UIState *s) {
   const UIScene *scene = &s->scene;
   int ui_viz_rx = scene->viz_rect.x;
   bool hasSidebar = !s->scene.uilayout_sidebarcollapsed;
-  int rect_w = vwp_w - ui_viz_rx - bdr_s;
+  int rect_w = s->b.scr_w - ui_viz_rx - bdr_s;
   int rect_h = 60;
   int rect_x = 0;
   // rect_y = screen height - board - background height
-  int rect_y = vwp_h - bdr_s - (int) (rect_h/2) - 5;
+  int rect_y = s->b.scr_h - bdr_s - (int) (rect_h/2) - 5;
   rect_x = rect_x + ui_viz_rx;
 
   int text_x = rect_w / 2;

@@ -1,0 +1,1 @@
+void ui_draw_infobar(UIState *s);
