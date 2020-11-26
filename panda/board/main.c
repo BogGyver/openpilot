@@ -30,7 +30,6 @@
 #include "drivers/clock.h"
 
 #include "gpio.h"
-#include "drivers/lin.h"
 
 #ifndef EON
 #include "drivers/spi.h"

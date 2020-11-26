@@ -242,7 +242,6 @@ class Panda(object):
   @staticmethod
   def flash_static(handle, code):
     # confirm flasher is present
-    print("checking for flasher")
     fr = handle.controlRead(Panda.REQUEST_IN, 0xb0, 0, 0, 0xc)
     assert fr[4:8] == b"\xde\xad\xd0\x0d"
 

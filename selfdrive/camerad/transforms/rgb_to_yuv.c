@@ -14,9 +14,8 @@ void rgb_to_yuv_init(RGBToYUVState* s, cl_context ctx, cl_device_id device_id, i
   s->width = width;
   s->height = height;
   char args[1024];
-  printf("snprintf");
   snprintf(args, sizeof(args),
-           "-cl-fast-relaxed-math  -cl-denorms-are-zero "
+           "-cl-fast-relaxed-math -cl-denorms-are-zero "
 #ifdef CL_DEBUG
            "-DCL_DEBUG "
 #endif

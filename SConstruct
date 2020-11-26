@@ -54,7 +54,7 @@ if arch == "aarch64" or arch == "larch64":
     "/usr/lib",
     "/system/vendor/lib64",
     "/system/comma/usr/lib",
-    "#phonelibs/nanovg",	
+    "#phonelibs/nanovg",
   ]
 
   if arch == "larch64":
@@ -163,6 +163,7 @@ env = Environment(
     "#phonelibs/android_hardware_libhardware/include",
     "#phonelibs/android_system_core/include",
     "#phonelibs/linux/include",
+    "#phonelibs/snpe/include",
     "#phonelibs/nanovg",
     "#selfdrive/common",
     "#selfdrive/camerad",

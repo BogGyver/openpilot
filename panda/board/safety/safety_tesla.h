@@ -22,22 +22,6 @@ const struct lookup_t TESLA_LOOKUP_MAX_ANGLE = {
     {2., 29., 38.},
     {500., 500., 500.}};
 
-const CanMsg TESLA_TX_MSGS[] = {
-  //chassis CAN
-  {0x045,0,8}, {0x209,0,8}, {0x219,0,8}, {0x229,0,8}, {0x239,0,8}, {0x249,0,8}, 
-  {0x2B9,0,8}, {0x309,0,8}, {0x329,0,8}, {0x349,0,8}, {0x369,0,8}, {0x379,0,8}, {0x389,0,8}, 
-  {0x399,0,8}, {0x3A9,0,8}, {0x3B1,0,8}, {0x3D9,0,8}, {0x3E9,0,8}, {0x400,0,8}, {0x488,0,8}, 
-  {0x409,0,8}, {0x551,0,8}, {0x539,0,8}, {0x554,0,8}, {0x556,0,8}, {0x557,0,8}, {0x559,0,8}, 
-  {0x560,0,8}, {0x5D9,0,8}, {0x5F9,0,8}, {0x609,0,8}, {0x639,0,8}, {0x659,0,8}, {0x65A,0,8}, 
-  {0x669,0,8}, {0x720,0,8}, 
-  //radar CAN
-  {0x101,1,8}, {0x109,1,8}, {0x119,1,8}, {0x129,1,8}, {0x149,1,8}, {0x159,1,8}, {0x169,1,8}, 
-  {0x199,1,8}, {0x1A9,1,8}, {0x209,1,8}, {0x219,1,8}, {0x2A9,1,8}, {0x2B9,1,8}, {0x2D9,1,8}, 
-  {0x641,1,8}, 
-  //epas CAN
-  {0x488,2,8}, {0x551,2,8},
-};  
-
 // TODO: do checksum and counter checks. Add correct timestep, 0.1s for now.
 AddrCheckStruct tesla_rx_checks[] = {
   //STW_ANGLHP_STAT
@@ -56,7 +40,6 @@ AddrCheckStruct tesla_rx_checks[] = {
   {.msg = {{ 0x368, 0, 8, .check_checksum = false, .max_counter = 15U, .expected_timestep = 100000U}}},
 };
 const int TESLA_RX_CHECK_LEN = sizeof(tesla_rx_checks) / sizeof(tesla_rx_checks[0]);
-
 
 const uint32_t TESLA_RT_INTERVAL = 250000; // 250ms between real time checks
 

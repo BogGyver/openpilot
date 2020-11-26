@@ -216,7 +216,6 @@ persistent_processes = [
   'tinklad',
   'thermald',
   'ui',
-  'uploader',
   'deleter',
 ]
 
@@ -237,6 +236,7 @@ if not PC:
 car_started_processes = [
   'controlsd',
   'plannerd',
+  'loggerd',
   'radard',
   'calibrationd',
   'paramsd',
