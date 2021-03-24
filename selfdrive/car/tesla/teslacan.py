@@ -70,7 +70,7 @@ class TeslaCAN:
     else:
       accState = 4
     values = {
-      "DAS_setSpeed" :  clip(speed*3.6,0,200), #kph
+      "DAS_setSpeed" :  clip(speed*3.6,0,410), #kph
       "DAS_accState" :  accState, # 4-ACC ON, 3-HOLD, 0-CANCEL
       "DAS_aebEvent" :  0, # 0 - AEB NOT ACTIVE
       "DAS_jerkMin" :  clip(jerk_limits[0],-7.67,0), #m/s^3 -8.67,0
