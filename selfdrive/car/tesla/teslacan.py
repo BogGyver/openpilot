@@ -57,11 +57,10 @@ class TeslaCAN:
       "DAS_steeringAngleRequest": -angle,
       "DAS_steeringHapticRequest": 0,
       "DAS_steeringControlType": 1 if enabled else 0,
-      "DAS_steeringControlCounter": (frame % 16),
+      "DAS_steeringControlCounter": 1,
+      "DAS_steeringControlChecksum": 0,
     }
 
-    data = self.packer.make_can_msg("DAS_steeringControl", CANBUS.chassis, values)[2]
-    values["DAS_steeringControlChecksum"] = self.checksum(0x488, data[:3])
     return self.packer.make_can_msg("DAS_steeringControl", CANBUS.chassis, values)
 
   def create_ap1_long_control(self, speed, accel_limits, jerk_limits, counter):
@@ -78,11 +77,9 @@ class TeslaCAN:
       "DAS_jerkMax" :  clip(jerk_limits[1],0,7.67), #m/s^3 0,8.67
       "DAS_accelMin" : clip(accel_limits[0],-12,3.44), #m/s^2 -15,5.44
       "DAS_accelMax" : clip(accel_limits[1],-12,3.44), #m/s^2 -15,5.44
-      "DAS_controlCounter": (counter % 8),
+      "DAS_controlCounter": 1,
       "DAS_controlChecksum" : 0,
     }
-    data = self.packer.make_can_msg("DAS_control", CANBUS.chassis, values)[2]
-    values["DAS_controlChecksum"] = self.checksum(0x2b9, data[:7])
     return self.packer.make_can_msg("DAS_control", CANBUS.chassis, values)
 
   def create_ap2_long_control(self, speed, accel_limits, jerk_limits, counter):
@@ -100,11 +97,9 @@ class TeslaCAN:
       "DAS_locSpeed" : clip(speed*3.6,0,200), #kph
       "DAS_locAccelMin" : clip(accel_limits[0],-12,3.44), #m/s^2 -15,5.44
       "DAS_locAccelMax" : clip(accel_limits[1],-12,3.44), #m/s^2 -15,5.44
-      "DAS_longControlCounter" : (counter % 8), #
+      "DAS_longControlCounter" : 1, #
       "DAS_longControlChecksum" : 0, #
     }
-    data = self.packer.make_can_msg("DAS_longControl", CANBUS.chassis, values)[2]
-    values["DAS_longControlChecksum"] = self.checksum(0x209, data[:7])
     return self.packer.make_can_msg("DAS_longControl", CANBUS.chassis, values)
 
 

@@ -38,7 +38,10 @@ def set_realtime_priority(level):
 
 def set_core_affinity(core):
   if not PC:
-    os.sched_setaffinity(0, [core,])
+    try:
+      os.sched_setaffinity(0, [core,])
+    except:
+      print("SetAffinity exception")
 
 
 def config_realtime_process(core, priority):
