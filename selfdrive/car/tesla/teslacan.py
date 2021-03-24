@@ -103,13 +103,13 @@ class TeslaCAN:
     return self.packer.make_can_msg("DAS_longControl", CANBUS.chassis, values)
 
 
-  def create_action_request(self, msg_stw_actn_req, cancel, bus):
+  def create_action_request(self, msg_stw_actn_req, cancel, bus, counter):
     values = copy.copy(msg_stw_actn_req)
 
     if cancel:
       values["SpdCtrlLvr_Stat"] = 1
       #for counter take the last received countr and increment by 1
-      values["MC_STW_ACTN_RQ"] = (values["MC_STW_ACTN_RQ"] + 1) % 16
+      values["MC_STW_ACTN_RQ"] = counter
 
     data = self.packer.make_can_msg("STW_ACTN_RQ", bus, values)[2]
     values["CRC_STW_ACTN_RQ"] = self.crc(data[:7])

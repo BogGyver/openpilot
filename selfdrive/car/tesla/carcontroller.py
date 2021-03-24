@@ -89,8 +89,12 @@ class CarController():
     #   LKAS can be disabled by steering and ACC remains engaged
     if not enabled and bool(CS.out.cruiseState.enabled):
       cruise_cancel = True
-      can_sends.append(self.tesla_can.create_action_request(CS.msg_stw_actn_req, cruise_cancel, CANBUS.chassis))
-      can_sends.append(self.tesla_can.create_action_request(CS.msg_stw_actn_req, cruise_cancel, CANBUS.autopilot))
+
+    if ((frame % 10) == 0 and cruise_cancel):
+      # Spam every possible counter value, otherwise it might not be accepted
+      for counter in range(16):
+        can_sends.append(self.tesla_can.create_action_request(CS.msg_stw_actn_req, cruise_cancel, CANBUS.chassis,counter))
+        can_sends.append(self.tesla_can.create_action_request(CS.msg_stw_actn_req, cruise_cancel, CANBUS.autopilot,counter))
       
 
     # TODO: HUD control: Autopilot Status, (Status2 also needed for long control),
