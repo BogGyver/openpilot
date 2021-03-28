@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from cereal import car
 from opendbc.can.parser import CANParser
-from selfdrive.car.tesla.values import DBC
+from selfdrive.car.tesla.values import DBC, CAN_RADAR
 from selfdrive.car.interfaces import RadarInterfaceBase
 
 
@@ -43,7 +43,7 @@ def _create_tesla_bosch_radard_can_parser(car_fingerprint):
   checks = list(zip(RADAR_A_MSGS + RADAR_B_MSGS, [6]*(msg_a_n + msg_b_n)))
 
 
-  return CANParser(DBC[car_fingerprint]['radar'], signals, checks, 1)
+  return CANParser(DBC[car_fingerprint]['radar'], signals, checks, CAN_RADAR[car_fingerprint])
 
 
 class RadarInterface(RadarInterfaceBase):
@@ -64,7 +64,7 @@ class RadarInterface(RadarInterfaceBase):
     if not self.radar_off_can:
       self.pts = {}
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
-      self.rcp = _create_tesla_bosch_radard_can_parser(CP.carFingerprint)
+      self.rcp = _create_tesla_bosch_radard_can_parser(CP.carFingerprint,)
       self.trackId = 1
       self.trigger_start_msg = RADAR_A_MSGS[0]
       self.trigger_end_msg = RADAR_B_MSGS[-1]

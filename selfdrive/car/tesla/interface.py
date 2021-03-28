@@ -14,8 +14,7 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=None):
     ret = CarInterfaceBase.get_std_params(candidate, fingerprint)
-    ret.carName = "tesla"
-    ret.safetyModel = car.CarParams.SafetyModel.tesla
+    ret.carName = "tesla"      
     ret.steerControlType = car.CarParams.SteerControlType.angle
     ret.enableCamera = True
     ret.openpilotLongitudinalControl = False
@@ -39,6 +38,7 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 13.5
       ret.safetyParam = 1 + 2 # has AP, ACC
       ret.openpilotLongitudinalControl = False
+      ret.safetyModel = car.CarParams.SafetyModel.tesla
     elif candidate == CAR.AP1_MODELS:
       ret.mass = 2100. + STD_CARGO_KG
       ret.wheelbase = 2.959
@@ -46,6 +46,15 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 13.5
       ret.safetyParam = 1 + 2 # has AP, ACC
       ret.openpilotLongitudinalControl = False
+      ret.safetyModel = car.CarParams.SafetyModel.tesla
+    elif candidate == CAR.PREAP_MODELS:
+      ret.mass = 2100. + STD_CARGO_KG
+      ret.wheelbase = 2.959
+      ret.centerToFront = ret.wheelbase * 0.5
+      ret.steerRatio = 13.5
+      ret.safetyParam = 0 # no AP, ACC
+      ret.openpilotLongitudinalControl = False
+      ret.safetyModel = car.CarParams.SafetyModel.teslaPreap
       ret.communityFeature = True
     else:
       raise ValueError(f"Unsupported car: {candidate}")

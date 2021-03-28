@@ -18,7 +18,7 @@ class TeslaCAN:
     ret += sum(dat)
     return ret & 0xFF
 
-  def create_lane_message(self,lWidth,rLine,lLine,laneRange,curvC0,curvC1,curvC2,curvC3,counter):
+  def create_lane_message(self, lWidth, rLine, lLine, laneRange, curvC0, curvC1, curvC2, curvC3, bus, counter):
     values = {
       "DAS_leftLaneExists" : lLine,
       "DAS_rightLaneExists" : rLine,
@@ -34,9 +34,9 @@ class TeslaCAN:
       "DAS_rightFork" : 0,
       "DAS_lanesCounter" : counter,
     }
-    return self.packer.make_can_msg("DAS_lanes", CANBUS.chassis, values)
+    return self.packer.make_can_msg("DAS_lanes", bus, values)
 
-  def create_telemetry_road_info(self, rLineType, rLineQual, rLineColor, lLineType,lLineQual, lLineColor, alcaState):
+  def create_telemetry_road_info(self, rLineType, rLineQual, rLineColor, lLineType, lLineQual, lLineColor, alcaState, bus):
     #alcaState -1 alca to left, 1 alca to right, 0 no alca now
     values = {
       "DAS_telemetryMultiplexer" : 0,
@@ -50,20 +50,20 @@ class TeslaCAN:
       "DAS_telRightLaneCrossing" : 0 if alcaState != 1 else 1,#0 NOT CROSSING, 1 CROSSING
     }
     
-    return self.packer.make_can_msg("DAS_telemetry", CANBUS.chassis, values)
+    return self.packer.make_can_msg("DAS_telemetry", bus, values)
 
-  def create_steering_control(self, angle, enabled, frame):
+  def create_steering_control(self, angle, enabled, bus, counter):
     values = {
       "DAS_steeringAngleRequest": -angle,
       "DAS_steeringHapticRequest": 0,
       "DAS_steeringControlType": 1 if enabled else 0,
-      "DAS_steeringControlCounter": 1,
+      "DAS_steeringControlCounter": counter,
       "DAS_steeringControlChecksum": 0,
     }
 
-    return self.packer.make_can_msg("DAS_steeringControl", CANBUS.chassis, values)
+    return self.packer.make_can_msg("DAS_steeringControl", bus, values)
 
-  def create_ap1_long_control(self, speed, accel_limits, jerk_limits, counter):
+  def create_ap1_long_control(self, speed, accel_limits, jerk_limits, bus, counter):
     accState = 0
     if speed == 0:
       accState = 3
@@ -77,12 +77,12 @@ class TeslaCAN:
       "DAS_jerkMax" :  clip(jerk_limits[1],0,7.67), #m/s^3 0,8.67
       "DAS_accelMin" : clip(accel_limits[0],-12,3.44), #m/s^2 -15,5.44
       "DAS_accelMax" : clip(accel_limits[1],-12,3.44), #m/s^2 -15,5.44
-      "DAS_controlCounter": 1,
+      "DAS_controlCounter": counter,
       "DAS_controlChecksum" : 0,
     }
-    return self.packer.make_can_msg("DAS_control", CANBUS.chassis, values)
+    return self.packer.make_can_msg("DAS_control", bus, values)
 
-  def create_ap2_long_control(self, speed, accel_limits, jerk_limits, counter):
+  def create_ap2_long_control(self, speed, accel_limits, jerk_limits, bus, counter):
     locRequest = 0
     if speed == 0:
       locRequest = 3
@@ -97,10 +97,10 @@ class TeslaCAN:
       "DAS_locSpeed" : clip(speed*3.6,0,200), #kph
       "DAS_locAccelMin" : clip(accel_limits[0],-12,3.44), #m/s^2 -15,5.44
       "DAS_locAccelMax" : clip(accel_limits[1],-12,3.44), #m/s^2 -15,5.44
-      "DAS_longControlCounter" : 1, #
+      "DAS_longControlCounter" : counter, #
       "DAS_longControlChecksum" : 0, #
     }
-    return self.packer.make_can_msg("DAS_longControl", CANBUS.chassis, values)
+    return self.packer.make_can_msg("DAS_longControl", bus, values)
 
 
   def create_action_request(self, msg_stw_actn_req, cancel, bus, counter):

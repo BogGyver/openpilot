@@ -1,6 +1,6 @@
 import copy
 from cereal import car
-from selfdrive.car.tesla.values import DBC, CANBUS, GEAR_MAP, DOORS, BUTTONS
+from selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS
 from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
@@ -179,7 +179,7 @@ class CarState(CarStateBase):
       ("BrakeMessage", 50),
     ]
 
-    return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, CANBUS.chassis)
+    return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 0)
 
   @staticmethod
   def get_cam_can_parser(CP):
@@ -220,4 +220,4 @@ class CarState(CarStateBase):
       # sig_address, frequency
       ("AutopilotStatus", 2),
     ]
-    return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, CANBUS.autopilot)
+    return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 2)

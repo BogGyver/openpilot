@@ -40,10 +40,35 @@ DBC = {
   CAR.PREAP_MODELS: dbc_dict(None, 'tesla_radar', chassis_dbc='tesla_can'),
 }
 
-class CANBUS:
-  chassis = 0
-  autopilot = 2
-  radar = 1
+CAN_CHASSIS = {
+  CAR.AP2_MODELS: 0,
+  CAR.AP1_MODELS: 0,
+  CAR.PREAP_MODELS: 0,  
+}
+
+CAN_RADAR = {
+  CAR.AP2_MODELS: 1,
+  CAR.AP1_MODELS: 1,
+  CAR.PREAP_MODELS: 1,  
+}
+
+CAN_AUTOPILOT = {
+  CAR.AP2_MODELS: 2,
+  CAR.AP1_MODELS: 2,
+  CAR.PREAP_MODELS: -1,  
+}
+
+CAN_EPAS = {
+  CAR.AP2_MODELS: 0,
+  CAR.AP1_MODELS: 0,
+  CAR.PREAP_MODELS: 2,  
+}
+
+CAN_POWERTRAIN = {
+  CAR.AP2_MODELS: 0,
+  CAR.AP1_MODELS: 0,
+  CAR.PREAP_MODELS: -1,  
+}
 
 GEAR_MAP = {
   "DI_GEAR_INVALID": car.CarState.GearShifter.unknown,
