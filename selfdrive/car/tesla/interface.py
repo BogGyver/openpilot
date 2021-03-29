@@ -3,6 +3,7 @@ from cereal import car
 from selfdrive.car.tesla.values import CAR
 from selfdrive.car import STD_CARGO_KG, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness
 from selfdrive.car.interfaces import CarInterfaceBase
+from selfdrive.car.tesla.readconfig import CarSettings
 
 
 class CarInterface(CarInterfaceBase):
@@ -30,6 +31,7 @@ class CarInterface(CarInterfaceBase):
     # 2   - OP Long Control?
     # 3   - HUD Integration?
     # 4   - Body Controls?
+    # 5   - Need Radar Emulation
 
     if candidate == CAR.AP2_MODELS:
       ret.mass = 2100. + STD_CARGO_KG
@@ -62,7 +64,13 @@ class CarInterface(CarInterfaceBase):
     # set safetyParam flag for OP Long Control
     if ret.openpilotLongitudinalControl:
       ret.safetyParam = ret.safetyParam + 4
-
+    # enable IC integration
+    ret.safetyParam = ret.safetyParam + 8
+    # enable body controls
+    ret.safetyParam = ret.safetyParam + 16
+    # enabled radar emulation from carconfig
+    if CarSettings.enableRadarEmulation:
+      ret.safetyParam = ret.safetyParam + 32
     ret.rotationalInertia = scale_rot_inertia(ret.mass, ret.wheelbase)
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront)
 
