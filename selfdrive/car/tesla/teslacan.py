@@ -1,7 +1,6 @@
 import copy
 import crcmod
 from opendbc.can.can_define import CANDefine
-from selfdrive.car.tesla.values import CANBUS
 from common.numpy_fast import clip
 
 

@@ -1,14 +1,16 @@
 import copy
-from cereal import car
-from selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS
+from cereal import car,log
+from selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS, CAR
 from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from selfdrive.config import Conversions as CV
+from selfdrive.car.tesla.CFG_module import read_config_file
 
 class CarState(CarStateBase):
   def __init__(self, CP):
     super().__init__(CP)
+    self.CP = CP
     self.button_states = {button.event_type: False for button in BUTTONS}
     self.can_define = CANDefine(DBC[CP.carFingerprint]['chassis'])
 
@@ -19,6 +21,33 @@ class CarState(CarStateBase):
     self.das_steeringControl_counter = -1
     self.das_status_counter = -1
     self.steer_warning = None
+    self.angle_steers = 0
+    # 0 = off, 1 = indicate left (stalk down), 2 = indicate right (stalk up)
+    self.turn_signal_stalk_state = 0 
+
+    #alca info
+    self.prev_alca_pre_engage = False
+    self.alca_pre_engage = False
+    self.alca_engaged = False
+    self.alca_direction = 0
+    self.alca_need_engagement = False
+
+    #start config section
+    self.forcePedalOverCC = False
+    self.enableHSO = True
+    self.autoStartAlcaDelay = 0
+    self.enableDasEmulation = False
+    self.enableRadarEmulation = False
+    self.hasTeslaIcIntegration = False
+    self.useTeslaRadar = False
+    self.radarVIN = '"                 "'
+    self.radarOffset = 0.0
+    self.radarEpasType = 0
+    self.radarPosition = 0
+    self.hsoNumbPeriod = 1.5
+    self.usesApillarHarness = False
+    read_config_file(self)
+    #end config section
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -37,19 +66,39 @@ class CarState(CarStateBase):
     ret.brakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
 
     # Steering wheel
-    self.hands_on_level = cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
-    self.steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
-    steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
+    if (self.CP.carFingerprint == CAR.PREAP_MODELS):
+      self.hands_on_level = cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
+      self.steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp_cam.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
+      steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp_cam.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
 
-    ret.steeringAngleDeg = -cp.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
+      ret.steeringAngleDeg = -cp_cam.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
+      self.angle_steers = ret.steeringAngleDeg
+      ret.steeringTorque = -cp_cam.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
+    else:
+      self.hands_on_level = cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
+      self.steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
+      steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
+
+      ret.steeringAngleDeg = -cp.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
+      self.angle_steers = ret.steeringAngleDeg
+      ret.steeringTorque = -cp.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
+
     ret.steeringRateDeg = -cp.vl["STW_ANGLHP_STAT"]["StW_AnglHP_Spd"] # This is from a different angle sensor, and at different rate
-    ret.steeringTorque = -cp.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
+
     ret.steeringPressed = (self.hands_on_level > 0)
     ret.steerError = steer_status in ["EAC_FAULT"] #inhibited is not an error, "EAC_INHIBITED"]
     ret.steerWarning = self.steer_warning in ["EAC_ERROR_MAX_SPEED", "EAC_ERROR_MIN_SPEED", "EAC_ERROR_TMP_FAULT", "SNA"]  # TODO: not sure if this list is complete
+    #Trick the alca if autoStartAlcaDelay is set
+    if (self.autoStartAlcaDelay > 0) and (self.alca_need_engagement):
+      ret.steeringPressed = True
+      if self.alca_direction == log.LateralPlan.LaneChangeDirection.left:
+        ret.steeringTorque = 0.1
+      if self.alca_direction == log.LateralPlan.LaneChangeDirection.right:
+        ret.steeringTorque = -0.1
 
     # Cruise state
-    autopilot_status = self.can_define.dv["AutopilotStatus"]["autopilotStatus"].get(int(cp_cam.vl["AutopilotStatus"]["autopilotStatus"]), None)
+    if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
+      autopilot_status = self.can_define.dv["AutopilotStatus"]["autopilotStatus"].get(int(cp_cam.vl["AutopilotStatus"]["autopilotStatus"]), None)
     cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
     speed_units = self.can_define.dv["DI_state"]["DI_speedUnits"].get(int(cp.vl["DI_state"]["DI_speedUnits"]), None)
 
@@ -82,21 +131,24 @@ class CarState(CarStateBase):
     # Doors
     ret.doorOpen = any([(self.can_define.dv["GTW_carState"][door].get(int(cp.vl["GTW_carState"][door]), "OPEN") == "OPEN") for door in DOORS])
 
-    # Blinkers
+    # Blinkers are used for Comma ALCA
     ret.leftBlinker = (cp.vl["GTW_carState"]["BC_indicatorLStatus"] == 1)
     ret.rightBlinker = (cp.vl["GTW_carState"]["BC_indicatorRStatus"] == 1)
+    self.turn_signal_stalk_state = (
+            0
+            if cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"] == 3
+            else int(cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"])
+        )
 
     # Seatbelt
     ret.seatbeltUnlatched = (cp.vl["SDM1"]["SDM_bcklDrivStatus"] != 1)
 
     # TODO: blindspot
 
-    #counters needed by carcontroller
-    self.das_steeringControl_counter = cp_cam.vl["DAS_steeringControl"]["DAS_steeringControlCounter"]
-    self.das_status_counter = cp_cam.vl["AutopilotStatus"]["DAS_statusCounter"]
     # Messages needed by carcontroller
     self.msg_stw_actn_req = copy.copy(cp.vl["STW_ACTN_RQ"])
-    self.msg_autopilot_status = copy.copy(cp_cam.vl["AutopilotStatus"])
+    if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
+      self.msg_autopilot_status = copy.copy(cp_cam.vl["AutopilotStatus"])
     #BB will need telemetry (ID) and bodyControl (full) also for IC integration
     #BB for long control we will need also to modify status2 to integrate with IC
 

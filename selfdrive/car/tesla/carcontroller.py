@@ -1,8 +1,14 @@
 from common.numpy_fast import clip, interp
 from selfdrive.car.tesla.teslacan import TeslaCAN
+from selfdrive.car.tesla.HSO_module import HSOController
+from selfdrive.car.tesla.BLNK_module import Blinker
 from opendbc.can.packer import CANPacker
 from selfdrive.car.tesla.values import CarControllerParams, CAR, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CAN_POWERTRAIN
 import cereal.messaging as messaging
+from cereal import log
+
+LaneChangeState = log.LateralPlan.LaneChangeState
+LaneChangeDirection = log.LateralPlan.LaneChangeDirection
 
 def _is_present(lead):
   return bool((not (lead is None)) and (lead.dRel > 0))
@@ -15,6 +21,10 @@ class CarController():
     self.tesla_can = TeslaCAN(dbc_name, self.packer)
     self.prev_das_steeringControl_counter = -1
     self.long_control_counter = 0
+    self.HSO = HSOController(self)
+    self.blinker = Blinker()
+    self.laP = messaging.sub_sock('lateralPlan')
+    self.alca_engaged_frame = 0
     if CP.openpilotLongitudinalControl:
       self.lP = messaging.sub_sock('longitudinalPlan')
       self.rS = messaging.sub_sock('radarState')
@@ -31,7 +41,30 @@ class CarController():
     hands_on_fault = (CS.steer_warning == "EAC_ERROR_HANDS_ON" and CS.hands_on_level >= 3)
     lkas_enabled = enabled and (not hands_on_fault)
 
-    if lkas_enabled:
+    # Update modules
+    human_control = self.HSO.update_stat(self, CS, enabled, actuators, frame)
+    self.blinker.update_state(CS, frame)
+
+    #get lat plan info
+    lat_plan = messaging.recv_one_or_none(self.laP)
+    CS.alca_pre_engage = lat_plan.laneChangeState in [LaneChangeState.preLaneChange]
+    CS.alca_engaged = lat_plan.laneChangeState in [LaneChangeState.laneChangeStarting,
+                                                 LaneChangeState.laneChangeFinishing]
+    CS.alca_direction = lat_plan.laneChangeDirection # 0-none, 1-left, 2-right 
+    if CS.alca_pre_engage:
+      if CS.alca_pre_engage != CS.prev_alca_pre_engage:
+        self.alca_engaged_frame = frame
+      if (CS.autoStartAlcaDelay > 0) and (self.alca_engaged_frame > 0) and (frame - self.alca_engaged_frame > CS.autoStartAlcaDelay * 100):
+        CS.alca_need_engagement = True
+      else:
+        CS.alca_need_engagement = False
+    else:
+      CS.alca_need_engagement = False
+      self.alca_engaged_frame = frame
+    self.prev_alca_pre_engage = CS.alca_pre_engage
+
+    #now process controls
+    if lkas_enabled and not human_control:
       apply_angle = actuators.steeringAngleDeg
 
       # Angular rate limit based on speed
