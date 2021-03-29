@@ -35,6 +35,52 @@ class TeslaCAN:
     }
     return self.packer.make_can_msg("DAS_lanes", bus, values)
 
+  def create_lead_car_object_message(self, vType1,relevant1,dx1,vxrel1,dy1,vType2,relevant2,dx2,vxrel2,dy2,bus):
+    values = {
+      "DAS_objectId" : 0, #0-Lead vehicles
+      "DAS_leadVehType" : vType1,
+      "DAS_leadVehRelevantForControl" : relevant1,
+      "DAS_leadVehDx" : dx1,
+      "DAS_leadVehVxRel" : vxrel1,
+      "DAS_leadVehDy" : dy1,
+      "DAS_leadVehId" : 1,
+      "DAS_leadVeh2Type" : vType2,
+      "DAS_leadVeh2RelevantForControl" : relevant2,
+      "DAS_leadVeh2Dx" : dx2,
+      "DAS_leadVeh2VxRel" : vxrel2,
+      "DAS_leadVeh2Dy" : dy2,
+      "DAS_leadVeh2Id" : 2,
+    }
+    return self.packer.make_can_msg("DAS_object", bus, values)
+  
+  def create_warning0_message(self,msg_das_warningMsg0):
+    values = copy.copy(msg_das_warningMsg0)
+
+  def create_body_controls_message(self,msg_das_body_controls,turn,hazard):
+    if msg_das_body_controls != None:
+      values = copy.copy(msg_das_body_controls)
+    else:
+      values = {
+      "DAS_headlightRequest" : 0, 
+      "DAS_hazardLightRequest" : 0,
+      "DAS_wiperSpeed" : 0, 
+      "DAS_turnIndicatorRequest" : 0, 
+      "DAS_highLowBeamDecision" : 3, 
+      "DAS_highLowBeamOffReason" : 5, 
+      "DAS_turnIndicatorRequestReason" : 0, 
+      "DAS_bodyControlsCounter" : 1 ,
+      "DAS_bodyControlsChecksum" : 0, 
+      }
+    values["DAS_hazardLightRequest"] = hazard
+    values["DAS_turnIndicatorRequest"] = turn #0-off, 1-left 2-right
+    if turn > 0:
+      values["DAS_turnIndicatorRequestReason"] = 1
+    else:
+      values["DAS_turnIndicatorRequestReason"] = 0
+
+    return self.packer.make_can_msg("DAS_bodyControls", bus, values)
+
+
   def create_telemetry_road_info(self, rLineType, rLineQual, rLineColor, lLineType, lLineQual, lLineColor, alcaState, bus):
     #alcaState -1 alca to left, 1 alca to right, 0 no alca now
     values = {

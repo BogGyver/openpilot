@@ -17,6 +17,11 @@ class CarState(CarStateBase):
     # Needed by carcontroller
     self.msg_stw_actn_req = None
     self.msg_autopilot_status = None
+    self.msg_das_warningMsg0 = None
+    self.msg_das_warningMsg1 = None
+    self.msg_das_warningMsg3 = None
+    self.msg_das_body_controls = None
+
     self.hands_on_level = 0
     self.das_steeringControl_counter = -1
     self.das_status_counter = -1
@@ -147,8 +152,9 @@ class CarState(CarStateBase):
 
     # Messages needed by carcontroller
     self.msg_stw_actn_req = copy.copy(cp.vl["STW_ACTN_RQ"])
-    if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
+    if (nself.CP.carFingerprint != CAR.PREAP_MODELS):
       self.msg_autopilot_status = copy.copy(cp_cam.vl["AutopilotStatus"])
+      self.msg_das_body_controls = copy.copy(cp_cam.vl["DAS_bodyControls"])
     #BB will need telemetry (ID) and bodyControl (full) also for IC integration
     #BB for long control we will need also to modify status2 to integrate with IC
 
@@ -266,7 +272,15 @@ class CarState(CarStateBase):
       ("DAS_summonAvailable", "AutopilotStatus", 0),
       ("DAS_statusCounter", "AutopilotStatus", 0),
       ("DAS_statusChecksum", "AutopilotStatus", 0),
-
+      ("DAS_headlightRequest", "DAS_bodyControls", 0),
+      ("DAS_hazardLightRequest", "DAS_bodyControls", 0),
+      ("DAS_wiperSpeed", "DAS_bodyControls", 0),
+      ("DAS_turnIndicatorRequest", "DAS_bodyControls", 0),
+      ("DAS_highLowBeamDecision", "DAS_bodyControls", 0),
+      ("DAS_highLowBeamOffReason", "DAS_bodyControls", 0),
+      ("DAS_turnIndicatorRequestReason", "DAS_bodyControls", 0),
+      ("DAS_bodyControlsCounter", "DAS_bodyControls", 0),
+      ("DAS_bodyControlsChecksum", "DAS_bodyControls", 0),
     ]
     checks = [
       # sig_address, frequency
