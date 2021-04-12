@@ -14,10 +14,13 @@ QFrame *horizontal_line(QWidget *parent) {
   return line;
 }
 
-AbstractControl::AbstractControl(const QString &title, const QString &desc, const QString &icon) : QFrame() {
+AbstractControl::AbstractControl(const QString &title, const QString &desc, const QString &icon, QWidget *parent) : QFrame(parent) {
+  QVBoxLayout *vlayout = new QVBoxLayout();
+  vlayout->setMargin(0);
+
   hlayout = new QHBoxLayout;
   hlayout->setMargin(0);
-  hlayout->setSpacing(50);
+  hlayout->setSpacing(20);
 
   // left icon
   if (!icon.isEmpty()) {
@@ -29,9 +32,29 @@ AbstractControl::AbstractControl(const QString &title, const QString &desc, cons
   }
 
   // title
-  title_label = new QLabel(title);
-  title_label->setStyleSheet("font-size: 50px; font-weight: 400;");
+  title_label = new QPushButton(title);
+  title_label->setStyleSheet("font-size: 50px; font-weight: 400; text-align: left;");
   hlayout->addWidget(title_label);
 
-  setLayout(hlayout);
+  vlayout->addLayout(hlayout);
+
+  // description
+  if (!desc.isEmpty()) {
+    description = new QLabel(desc);
+    description->setContentsMargins(40, 20, 40, 20);
+    description->setStyleSheet("font-size: 40px; color:grey");
+    description->setWordWrap(true);
+    description->setVisible(false);
+    vlayout->addWidget(description);
+
+    connect(title_label, &QPushButton::clicked, [=]() {
+      if (!description->isVisible()) {
+        emit showDescription();
+      }
+      description->setVisible(!description->isVisible());
+    });
+  }
+
+  setLayout(vlayout);
+  setStyleSheet("background-color: transparent;");
 }
