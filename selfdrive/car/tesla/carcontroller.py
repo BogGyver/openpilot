@@ -23,11 +23,11 @@ class CarController():
     self.long_control_counter = 0
     self.HSO = HSOController(self)
     self.blinker = Blinker()
-    self.laP = messaging.sub_sock('lateralPlan', conflate=True)
+    self.laP = messaging.sub_sock('lateralPlan')
     self.alca_engaged_frame = 0
     if CP.openpilotLongitudinalControl:
-      self.lP = messaging.sub_sock('longitudinalPlan', conflate=True)
-      self.rS = messaging.sub_sock('radarState', conflate=True)
+      self.lP = messaging.sub_sock('longitudinalPlan')
+      self.rS = messaging.sub_sock('radarState')
       self.v_target = None
       self.lead_1 = None
       self.long_control_counter = 1
