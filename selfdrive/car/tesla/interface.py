@@ -73,7 +73,10 @@ class CarInterface(CarInterfaceBase):
       ret.safetyParam = ret.safetyParam + 32
     ret.rotationalInertia = scale_rot_inertia(ret.mass, ret.wheelbase)
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront)
-
+    ret.radarOffCan = True
+    ret.radarTimeStep = 0.05
+    if CarSettings.useTeslaRadar:
+      ret.radarOffCan = False
     return ret
 
   def update(self, c, can_strings):
