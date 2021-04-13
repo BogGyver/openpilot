@@ -23,11 +23,11 @@ class CarController():
     self.long_control_counter = 0
     self.HSO = HSOController(self)
     self.blinker = Blinker()
-    self.laP = messaging.sub_sock('lateralPlan')
+    self.laP = messaging.sub_sock('lateralPlan', conflate=True)
     self.alca_engaged_frame = 0
     if CP.openpilotLongitudinalControl:
-      self.lP = messaging.sub_sock('longitudinalPlan')
-      self.rS = messaging.sub_sock('radarState')
+      self.lP = messaging.sub_sock('longitudinalPlan', conflate=True)
+      self.rS = messaging.sub_sock('radarState', conflate=True)
       self.v_target = None
       self.lead_1 = None
       self.long_control_counter = 1
@@ -47,10 +47,11 @@ class CarController():
 
     #get lat plan info
     lat_plan = messaging.recv_one_or_none(self.laP)
-    CS.alca_pre_engage = lat_plan.laneChangeState in [LaneChangeState.preLaneChange]
-    CS.alca_engaged = lat_plan.laneChangeState in [LaneChangeState.laneChangeStarting,
-                                                 LaneChangeState.laneChangeFinishing]
-    CS.alca_direction = lat_plan.laneChangeDirection # 0-none, 1-left, 2-right 
+    if lat_plan is not None:
+      CS.alca_pre_engage = lat_plan.lateralPlan.laneChangeState in [LaneChangeState.preLaneChange]
+      CS.alca_engaged = lat_plan.lateralPlan.laneChangeState in [LaneChangeState.laneChangeStarting,
+                                                  LaneChangeState.laneChangeFinishing]
+      CS.alca_direction = lat_plan.lateralPlan.laneChangeDirection # 0-none, 1-left, 2-right 
     if CS.alca_pre_engage:
       if CS.alca_pre_engage != CS.prev_alca_pre_engage:
         self.alca_engaged_frame = frame

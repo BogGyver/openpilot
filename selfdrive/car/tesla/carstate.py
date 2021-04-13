@@ -152,7 +152,7 @@ class CarState(CarStateBase):
 
     # Messages needed by carcontroller
     self.msg_stw_actn_req = copy.copy(cp.vl["STW_ACTN_RQ"])
-    if (nself.CP.carFingerprint != CAR.PREAP_MODELS):
+    if (self.CP.carFingerprint != CAR.PREAP_MODELS):
       self.msg_autopilot_status = copy.copy(cp_cam.vl["AutopilotStatus"])
       self.msg_das_body_controls = copy.copy(cp_cam.vl["DAS_bodyControls"])
     #BB will need telemetry (ID) and bodyControl (full) also for IC integration
