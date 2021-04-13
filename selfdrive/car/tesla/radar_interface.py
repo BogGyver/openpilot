@@ -64,7 +64,7 @@ class RadarInterface(RadarInterfaceBase):
     if not self.radar_off_can:
       self.pts = {}
       self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
-      self.rcp = _create_tesla_bosch_radard_can_parser(CP.carFingerprint,)
+      self.rcp = _create_tesla_bosch_radard_can_parser(CP.carFingerprint)
       self.trackId = 1
       self.trigger_start_msg = RADAR_A_MSGS[0]
       self.trigger_end_msg = RADAR_B_MSGS[-1]
