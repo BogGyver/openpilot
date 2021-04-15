@@ -110,7 +110,7 @@ class CarController():
       if self.CP.carFingerprint == CAR.AP1_MODELS:
         can_sends.append(self.tesla_can.create_ap1_long_control(self.v_target, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
 
-    if (not enabled) and self.CP.openpilotLongitudinalControl and (frame %2 == 0):
+    if (not enabled) and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
       #send this values so we can enable at 0 km/h
       tesla_accel_limits = [-1.4000000000000004,1.8000000000000007]
       tesla_jerk_limits = [-0.46000000000000085,0.47600000000000003]
