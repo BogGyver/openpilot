@@ -83,7 +83,7 @@ class CarController():
 
     #only send the DAS_steeringControl after we received a new counter for it
     if enabled:
-      can_sends.append(self.tesla_can.create_steering_control(apply_angle, lkas_enabled, CAN_EPAS[self.CP.carFingerprint], 1))
+      can_sends.append(self.tesla_can.create_steering_control(apply_angle, lkas_enabled  and not human_control, CAN_EPAS[self.CP.carFingerprint], 1))
 
     if enabled and self.CP.openpilotLongitudinalControl and (frame %2 == 0):
       #we use the same logic from planner here to get the speed

@@ -19,7 +19,7 @@ class HSOController:
                 elif (frame - self.frame_humanSteered < 50):  
                     # Need more human testing of handoff timing
                     # Find steering difference between visiond model and human (no need to do every frame if we run out of CPU):
-                    apply_steer = int(-actuators.steerAngle)
+                    apply_steer = int(actuators.steeringAngleDeg)
                     angle_diff = abs(apply_steer - CS.angle_steers)
                     if angle_diff > 15.0:
                         self.frame_humanSteered = frame
