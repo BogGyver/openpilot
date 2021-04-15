@@ -36,14 +36,14 @@ class CarController():
   def update(self, enabled, CS, frame, actuators, cruise_cancel):
     can_sends = []
 
-    # Temp disable steering on a hands_on_fault, and allow for user override
-    # TODO: better user blending
-    hands_on_fault = (CS.steer_warning == "EAC_ERROR_HANDS_ON" and CS.hands_on_level >= 3)
-    lkas_enabled = enabled and (not hands_on_fault)
-
     # Update modules
     human_control = self.HSO.update_stat(self, CS, enabled, actuators, frame)
     self.blinker.update_state(CS, frame)
+
+    # Temp disable steering on a hands_on_fault, and allow for user override
+    # TODO: better user blending
+    hands_on_fault = (CS.steer_warning == "EAC_ERROR_HANDS_ON" and CS.hands_on_level >= 3 and not human_control)
+    lkas_enabled = enabled and (not hands_on_fault)
 
     #get lat plan info
     lat_plan = messaging.recv_one_or_none(self.laP)
