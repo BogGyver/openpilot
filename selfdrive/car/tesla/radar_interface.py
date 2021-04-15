@@ -50,6 +50,7 @@ class RadarInterface(RadarInterfaceBase):
 
   def __init__(self,CP):
     # radar
+    super().__init__(CP)
     self.pts = {}
     self.delay = 0 
     self.TRACK_LEFT_LANE = True

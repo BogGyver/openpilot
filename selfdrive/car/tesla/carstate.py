@@ -79,8 +79,10 @@ class CarState(CarStateBase):
       ret.steeringAngleDeg = -cp_cam.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
       self.angle_steers = ret.steeringAngleDeg
       ret.steeringTorque = -cp_cam.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
+      self.steer_override = abs(cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
     else:
       self.hands_on_level = cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
+      self.steer_override = abs(cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
       self.steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
       steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
 
