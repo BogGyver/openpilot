@@ -195,9 +195,9 @@ class CarController():
     if (enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
       # send DAS_lanes at 10Hz
       if self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]:
-          self.IC_DAS_lane_counter = -1
-        else:
-          self.IC_DAS_lane_counter = (self.IC_DAS_lane_counter + 1 ) % 16
+        self.IC_DAS_lane_counter = -1
+      else:
+        self.IC_DAS_lane_counter = (self.IC_DAS_lane_counter + 1 ) % 16
       can_sends.append(self.tesla_can.create_lane_message(CS.laneWidth, CS.rLine, CS.lLine, 
           50, CS.curvC0, CS.curvC1, CS.curvC2, CS.curvC3, 
           CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_lane_counter))
