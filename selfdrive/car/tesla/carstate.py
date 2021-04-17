@@ -38,6 +38,19 @@ class CarState(CarStateBase):
     self.alca_direction = 0
     self.alca_need_engagement = False
 
+    #path info
+    self.laneWidth = 0
+    self.lProb = 0.
+    self.rProb = 0.
+    self.curvC0 = 0.
+    self.curvC1 = 0.
+    self.curvC2 = 0.
+    self.curvC3 = 0.
+    self.laneToLeft = 0
+    self.laneToRight = 0
+    self.lLine = 0
+    self.rLine = 0
+
     #IC integration
     self.DAS_gas_to_resume = 0
     self.DAS_025_steeringOverride = 0 #use for manual steer?

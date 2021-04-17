@@ -6,6 +6,7 @@ from opendbc.can.packer import CANPacker
 from selfdrive.car.tesla.values import CarControllerParams, CAR, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CAN_POWERTRAIN
 import cereal.messaging as messaging
 from cereal import log, car
+import numpy as np
 
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
@@ -30,6 +31,7 @@ class CarController():
     self.IC_integration_warning_counter = 0
     self.IC_DAS_status_counter = 0
     self.IC_DAS_status2_counter = 0
+    self.IC_DAS_lane_counter = 0
 
     if CP.openpilotLongitudinalControl:
       self.lP = messaging.sub_sock('longitudinalPlan')
@@ -62,6 +64,28 @@ class CarController():
       CS.alca_engaged = lat_plan.lateralPlan.laneChangeState in [LaneChangeState.laneChangeStarting,
                                                   LaneChangeState.laneChangeFinishing]
       CS.alca_direction = lat_plan.lateralPlan.laneChangeDirection # 0-none, 1-left, 2-right 
+
+      #let's get the path points and compute poly coef
+      x = np.arange(0, len(pts))
+      pts = np.array(lat_plan.lateralPlan.dPathPoints)
+      order = 3
+      coefs = np.polyfit(x, pts, order)
+      CS.curvC0 = -clip(coefs[3], -3.5, 3.5)
+      CS.curvC1 = -clip(coefs[2], -0.2, 0.2)  
+      CS.curvC2 = -clip(coefs[1], -0.0025, 0.0025)
+      CS.curvC3 = -clip(coefs[0], -0.00003, 0.00003)  
+      CS.laneWidth = lat_plan.lateralPlan.laneWidth
+      CS.lProb = lat_plan.lateralPlan.lProb
+      CS.rProb = lat_plan.lateralPlan.rProb
+      if CS.lProb > 0.45:
+        CS.lLine = 1
+      else:
+        CS.lLine = 0
+      if CS.rProb > 0.45:
+        CS.rLine = 1
+      else:
+        CS.rLine = 0
+    
     if CS.alca_pre_engage:
       if CS.alca_pre_engage != CS.prev_alca_pre_engage:
         self.alca_engaged_frame = frame
@@ -165,8 +189,19 @@ class CarController():
       CS.stopLightWarning = 0
       CS.DAS_canErrors = 0
       CS.DAS_notInDrive = 0
+    
 
-    if enabled and (self.IC_integration_counter % 10 == 0):
+
+    if (enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
+      # send DAS_lanes at 10Hz
+      if self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]:
+          self.IC_DAS_lane_counter = -1
+        else:
+          self.IC_DAS_lane_counter = (self.IC_DAS_lane_counter + 1 ) % 16
+      can_sends.append(self.tesla_can.create_lane_message(CS.laneWidth, CS.rLine, CS.lLine, 
+          50, CS.curvC0, CS.curvC1, CS.curvC2, CS.curvC3, 
+          CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_lane_counter))
+
       # send DAS_warningMatrix0 at 1Hz
       if IC_integration_counter == 10:
         can_sends.append(self.tesla_can.create_das_warningMatrix0(CS.DAS_canErrors, CS.DAS_025_steeringOverride, CS.DAS_notInDrive, CAN_CHASSIS[self.CP.carFingerprint]))
@@ -198,6 +233,7 @@ class CarController():
           DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
           CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
         can_sends.append(self.tesla_can.create_das_status2(self, CS.out.cruiseState.speed * CV.MS_TO_MPH, DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
+
     if not enabled:
       self.v_target = CS.out.vEgo
       self.a_target = 1
