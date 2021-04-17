@@ -51,6 +51,8 @@ class CarState(CarStateBase):
     self.lLine = 0
     self.rLine = 0
 
+    self.turn_signal_blinking = False
+
     #IC integration
     self.DAS_gas_to_resume = 0
     self.DAS_025_steeringOverride = 0 #use for manual steer?
@@ -201,6 +203,7 @@ class CarState(CarStateBase):
     # Blinkers are used for Comma ALCA
     ret.leftBlinker = (cp.vl["GTW_carState"]["BC_indicatorLStatus"] == 1)
     ret.rightBlinker = (cp.vl["GTW_carState"]["BC_indicatorRStatus"] == 1)
+    self.turn_signal_blinking = ret.leftBlinker or ret.rightBlinker
     self.turn_signal_stalk_state = (
             0
             if cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"] == 3
@@ -255,6 +258,8 @@ class CarState(CarStateBase):
       ("UI_mapSpeedLimitUnits","UI_gpsVehicleSpeed",0),
       ("UI_mppSpeedLimit","UI_gpsVehicleSpeed",0),
       ("UI_mapSpeedLimit","UI_driverAssistMapData",0),
+      ("UI_roadSign","UI_driverAssistRoadSign",0),
+      ("UI_baseMapSpeedLimitMPS","UI_driverAssistRoadSign",0),
       # We copy this whole message when spamming cancel
       ("SpdCtrlLvr_Stat", "STW_ACTN_RQ", 0),
       ("VSL_Enbl_Rq", "STW_ACTN_RQ", 0),

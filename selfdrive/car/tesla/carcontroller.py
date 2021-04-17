@@ -7,6 +7,8 @@ from selfdrive.car.tesla.values import CarControllerParams, CAR, CAN_CHASSIS, CA
 import cereal.messaging as messaging
 from cereal import log, car
 import numpy as np
+from selfdrive.config import Conversions as CV
+
 
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
@@ -63,11 +65,16 @@ class CarController():
       CS.alca_pre_engage = lat_plan.lateralPlan.laneChangeState in [LaneChangeState.preLaneChange]
       CS.alca_engaged = lat_plan.lateralPlan.laneChangeState in [LaneChangeState.laneChangeStarting,
                                                   LaneChangeState.laneChangeFinishing]
-      CS.alca_direction = lat_plan.lateralPlan.laneChangeDirection # 0-none, 1-left, 2-right 
-
+      # 0-none, 1-left, 2-right 
+      if lat_plan.lateralPlan.laneChangeDirection == log.LateralPlan.LaneChangeDirection.left:
+        CS.alca_direction = 1
+      elif lat_plan.lateralPlan.laneChangeDirection == log.LateralPlan.LaneChangeDirection.right:
+        CS.alca_direction = 2
+      else: 
+        CS.alca_direction = 0
       #let's get the path points and compute poly coef
-      x = np.arange(0, len(pts))
       pts = np.array(lat_plan.lateralPlan.dPathPoints)
+      x = np.arange(0, len(pts))
       order = 3
       coefs = np.polyfit(x, pts, order)
       CS.curvC0 = -clip(coefs[3], -3.5, 3.5)
@@ -189,8 +196,6 @@ class CarController():
       CS.stopLightWarning = 0
       CS.DAS_canErrors = 0
       CS.DAS_notInDrive = 0
-    
-
 
     if (enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
       # send DAS_lanes at 10Hz
@@ -203,21 +208,21 @@ class CarController():
           CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_lane_counter))
 
       # send DAS_warningMatrix0 at 1Hz
-      if IC_integration_counter == 10:
+      if self.IC_integration_counter == 10:
         can_sends.append(self.tesla_can.create_das_warningMatrix0(CS.DAS_canErrors, CS.DAS_025_steeringOverride, CS.DAS_notInDrive, CAN_CHASSIS[self.CP.carFingerprint]))
       
       # send DAS_warningMatrix1 at 1Hz
-      if IC_integration_counter == 20:
+      if self.IC_integration_counter == 20:
         can_sends.append(self.tesla_can.create_das_warningMatrix1(CAN_CHASSIS[self.CP.carFingerprint]))
 
       # send DAS_warningMatrix3 at 1Hz
-      if IC_integration_counter == 30:
+      if self.IC_integration_counter == 30:
         can_sends.append(self.tesla_can.create_das_warningMatrix3 (CS.DAS_gas_to_resume, CS.DAS_211_accNoSeatBelt, CS.DAS_202_noisyEnvironment, CS.DAS_207_lkasUnavailable,
           CS.DAS_219_lcTempUnavailableSpeed, CS.DAS_220_lcTempUnavailableRoad, CS.DAS_221_lcAborting, CS.DAS_222_accCameraBlind,
           CS.DAS_208_rackDetected, CS.stopSignWarning, CS.stopLightWarning, CAN_CHASSIS[self.CP.carFingerprint]))
       
       # send DAS_status and DAS_status2 at 2Hz
-      if IC_integration_counter == 40 or IC_integration_counter == 90:
+      if self.IC_integration_counter == 40 or self.IC_integration_counter == 90:
         if self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]:
           self.IC_DAS_status_counter = -1
         else:
@@ -226,13 +231,13 @@ class CarController():
         DAS_hands_on_state = 1 if hud_alert == VisualAlert.steerRequired else 0
         DAS_collision_warning =  1 if hud_alert == VisualAlert.fcw else 0
         #alcaState 1 if nothing, 8+direction if enabled
-        DAS_alca_state = 8 + CS.LaneChangeDirection if CS.LaneChangeDirection > 0 else 1
+        DAS_alca_state = 8 + CS.alca_direction if CS.alca_direction > 0 else 1
         #ap status 0-disabled, 1-enabled, 2-disabling, 3-unavailable, 5-warning
         DAS_op_status = 1 if enabled else 0
-        can_sends.append(self.tesla_can.create_das_status(self, DAS_op_status, DAS_collision_warning,
-          DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
-          CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
-        can_sends.append(self.tesla_can.create_das_status2(self, CS.out.cruiseState.speed * CV.MS_TO_MPH, DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
+        #can_sends.append(self.tesla_can.create_das_status(CS.msg_autopilot_status,DAS_op_status, DAS_collision_warning,
+        #  DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
+        #  CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
+        #can_sends.append(self.tesla_can.create_das_status2(CS.msg_autopilot_status2,CS.out.cruiseState.speed * CV.MS_TO_MPH, DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
 
     if not enabled:
       self.v_target = CS.out.vEgo

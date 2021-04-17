@@ -2,6 +2,8 @@ import copy
 import crcmod
 from opendbc.can.can_define import CANDefine
 from common.numpy_fast import clip
+from ctypes import create_string_buffer
+import struct
 
 
 class TeslaCAN:
@@ -173,7 +175,7 @@ class TeslaCAN:
     return [msg_id, 0, msg.raw, bus]
     
 
-  def create_das_status (self, DAS_op_status, DAS_collision_warning,
+  def create_das_status (self, msg_autopilot_status, DAS_op_status, DAS_collision_warning,
     DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
     DAS_speed_limit_kph, bus, counter):
     if counter < 0:
@@ -184,7 +186,7 @@ class TeslaCAN:
       values["DAS_laneDepartureWarning"] = DAS_ldwStatus
       values["DAS_autopilotHandsOnState"] = DAS_hands_on_state
       values["DAS_autoLaneChangeState"] = DAS_alca_state
-      valies["DAS_lssState"] = 3 #LSS_STATE_ELK
+      values["DAS_lssState"] = 3 #LSS_STATE_ELK
       values["DAS_statusCounter"] = -counter
       values["DAS_statusChecksum"] = 0
     else:
@@ -221,7 +223,7 @@ class TeslaCAN:
       values["DAS_statusChecksum"] = self.checksum(0x399,data[:7])
     return self.packer.make_can_msg("DAS_status", bus, values)
 
-  def create_das_status2(self, DAS_acc_speed_limit, fcw, bus, counter):
+  def create_das_status2(self, msg_autopilot_status2, DAS_acc_speed_limit, fcw, bus, counter):
     fcw_sig = 0x0F if fcw == 0 else 0x01
     if counter < 0:
       #AP - Modify
