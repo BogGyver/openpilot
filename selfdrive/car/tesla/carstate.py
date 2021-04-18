@@ -137,7 +137,7 @@ class CarState(CarStateBase):
 
     ret.steeringPressed = (self.hands_on_level > 0)
     ret.steerError = steer_status in ["EAC_FAULT"] #inhibited is not an error, "EAC_INHIBITED"]
-    ret.steerWarning = self.steer_warning in ["EAC_ERROR_MAX_SPEED", "EAC_ERROR_MIN_SPEED", "EAC_ERROR_TMP_FAULT", "SNA"]  # TODO: not sure if this list is complete
+    ret.steerWarning = steer_status == "EAC_FAULT" and self.steer_warning in ["EAC_ERROR_MAX_SPEED", "EAC_ERROR_MIN_SPEED", "EAC_ERROR_TMP_FAULT", "SNA"]  # TODO: not sure if this list is complete
     #Trick the alca if autoStartAlcaDelay is set
     if (self.autoStartAlcaDelay > 0) and (self.alca_need_engagement):
       ret.steeringPressed = True
@@ -153,7 +153,7 @@ class CarState(CarStateBase):
     speed_units = self.can_define.dv["DI_state"]["DI_speedUnits"].get(int(cp.vl["DI_state"]["DI_speedUnits"]), None)
 
     acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
-    autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2", "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
+    autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
 
     ret.cruiseState.enabled = acc_enabled and not autopilot_enabled
     if speed_units == "KPH":

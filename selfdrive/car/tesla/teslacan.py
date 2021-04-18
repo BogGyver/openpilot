@@ -54,10 +54,6 @@ class TeslaCAN:
       "DAS_leadVeh2Id" : 2,
     }
     return self.packer.make_can_msg("DAS_object", bus, values)
-  
-  def create_warning0_message(self,msg_das_warningMsg0):
-    values = copy.copy(msg_das_warningMsg0)
-    return self.packer.make_can_msg("DAS_warningMatrix0", bus, values)
 
   def create_body_controls_message(self,msg_das_body_controls,turn,hazard,bus):
     if msg_das_body_controls != None:
@@ -103,7 +99,7 @@ class TeslaCAN:
     values = {
       "DAS_steeringAngleRequest": -angle,
       "DAS_steeringHapticRequest": 0,
-      "DAS_steeringControlType": 2 if enabled else 0, #0-NONE, 1-ANGLE, 2-LKA, 3-Emergency LKA
+      "DAS_steeringControlType": 1 if enabled else 0, #0-NONE, 1-ANGLE, 2-LKA, 3-Emergency LKA
       "DAS_steeringControlCounter": counter,
       "DAS_steeringControlChecksum": 0,
     }
@@ -188,11 +184,14 @@ class TeslaCAN:
       values["DAS_autopilotState"] = DAS_op_status
       values["DAS_forwardCollisionWarning"] = DAS_collision_warning
       values["DAS_laneDepartureWarning"] = DAS_ldwStatus
-      values["DAS_autopilotHandsOnState"] = DAS_hands_on_state
+      values["DAS_autopilotHandsOnState"] = DAS_hands_on_state * 3
       values["DAS_autoLaneChangeState"] = DAS_alca_state
-      values["DAS_lssState"] = 3 #LSS_STATE_ELK
+      values["DAS_lssState"] = 0 #0-FAULT 2-LSS_STATE_ELK
       values["DAS_statusCounter"] = -counter
       values["DAS_statusChecksum"] = 0
+      values["DAS_autoparkReady"] = 0
+      values["DAS_autoParked"] = 1
+      values["DAS_autoparkWaitingForBrake"] = 0
     else:
       #preAP - Create
       values = {
@@ -214,10 +213,10 @@ class TeslaCAN:
         "DAS_sideCollisionAvoid" : 0,
         "DAS_sideCollisionWarning" : 0,
         "DAS_sideCollisionInhibit" : 0,
-        "DAS_lssState" : 3, #LSS_STATE_ELK
+        "DAS_lssState" : 0, #0-FAULT 
         "DAS_laneDepartureWarning" : DAS_ldwStatus,
         "DAS_fleetSpeedState" : 0,
-        "DAS_autopilotHandsOnState" : DAS_hands_on_state,
+        "DAS_autopilotHandsOnState" : DAS_hands_on_state * 3, # 3 quiet, 5 with alerts
         "DAS_autoLaneChangeState" : DAS_alca_state,
         "DAS_summonAvailable" : 0,
         "DAS_statusCounter" : counter,
@@ -227,7 +226,7 @@ class TeslaCAN:
       values["DAS_statusChecksum"] = self.checksum(0x399,data[:7])
     return self.packer.make_can_msg("DAS_status", bus, values)
 
-  def create_das_status2(self, msg_autopilot_status2, DAS_acc_speed_limit, fcw, bus, counter):
+  def create_das_status2(self, msg_autopilot_status2, DAS_acc_speed_limit, fcw, DAS_hands_on_state, bus, counter):
     fcw_sig = 0x0F if fcw == 0 else 0x01
     if counter < 0:
       #AP - Modify
@@ -241,7 +240,7 @@ class TeslaCAN:
       values["DAS_pmmRadarFaultReason"] = 0
       values["DAS_pmmSysFaultReason"] = 0
       values["DAS_pmmCameraFaultReason"] = 0
-      values["DAS_driverInteractionLevel"] = 0
+      values["DAS_driverInteractionLevel"] = DAS_hands_on_state * 2
       values["DAS_ppOffsetDesiredRamp"] = 0x80
       if fcw == 1:
         values["DAS_longCollisionWarning"] = fcw_sig
@@ -260,7 +259,7 @@ class TeslaCAN:
         "DAS_csaState" : 2, #CSA_EXTERNAL_STATE_AVAILABLE
         "DAS_radarTelemetry" : 1, #normal
         "DAS_robState" : 2, #active
-        "DAS_driverInteractionLevel" : 0,
+        "DAS_driverInteractionLevel" : DAS_hands_on_state * 2,
         "DAS_ppOffsetDesiredRamp" : 0x80,
         "DAS_longCollisionWarning" : fcw_sig,
         "DAS_status2Counter" : counter,
