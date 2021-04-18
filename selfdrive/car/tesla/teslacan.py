@@ -164,7 +164,7 @@ class TeslaCAN:
       0,0,0,0,0,0,0,0)
     return [msg_id, 0, msg.raw, bus]
 
-  def create_das_warningMatrix3 (self, DAS_gas_to_resume, DAS_211_accNoSeatBelt, , DAS_207_lkasUnavailable,
+  def create_das_warningMatrix3 (self, DAS_gas_to_resume, DAS_211_accNoSeatBelt, DAS_202_noisyEnvironment , DAS_207_lkasUnavailable,
     DAS_219_lcTempUnavailableSpeed, DAS_220_lcTempUnavailableRoad, DAS_221_lcAborting, DAS_222_accCameraBlind,
     DAS_208_rackDetected, stopSignWarning, stopLightWarning, bus):
     msg_id = 0x349
