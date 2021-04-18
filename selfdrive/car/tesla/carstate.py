@@ -76,9 +76,7 @@ class CarState(CarStateBase):
     self.forcePedalOverCC = False
     self.enableHSO = True
     self.autoStartAlcaDelay = 0
-    self.enableDasEmulation = False
     self.enableRadarEmulation = False
-    self.hasTeslaIcIntegration = False
     self.useTeslaRadar = False
     self.radarVIN = '"                 "'
     self.radarOffset = 0.0

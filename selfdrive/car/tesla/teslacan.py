@@ -103,7 +103,7 @@ class TeslaCAN:
     values = {
       "DAS_steeringAngleRequest": -angle,
       "DAS_steeringHapticRequest": 0,
-      "DAS_steeringControlType": 1 if enabled else 0,
+      "DAS_steeringControlType": 2 if enabled else 0, #0-NONE, 1-ANGLE, 2-LKA, 3-Emergency LKA
       "DAS_steeringControlCounter": counter,
       "DAS_steeringControlChecksum": 0,
     }
@@ -153,7 +153,7 @@ class TeslaCAN:
     msg_len = 8
     msg = create_string_buffer(msg_len)
     struct.pack_into('BBBBBBBB', msg, 0,
-      0,0,0,0,0,0,0,0)
+      0,0,0,DAS_025_steeringOverride + (DAS_canErrors * 128),0,(128*DAS_notInDrive),0,0)
     return [msg_id, 0, msg.raw, bus]
 
   def create_das_warningMatrix1 (self, bus):
@@ -164,14 +164,18 @@ class TeslaCAN:
       0,0,0,0,0,0,0,0)
     return [msg_id, 0, msg.raw, bus]
 
-  def create_das_warningMatrix3 (self, DAS_gas_to_resume, DAS_211_accNoSeatBelt, DAS_202_noisyEnvironment, DAS_207_lkasUnavailable,
+  def create_das_warningMatrix3 (self, DAS_gas_to_resume, DAS_211_accNoSeatBelt, , DAS_207_lkasUnavailable,
     DAS_219_lcTempUnavailableSpeed, DAS_220_lcTempUnavailableRoad, DAS_221_lcAborting, DAS_222_accCameraBlind,
     DAS_208_rackDetected, stopSignWarning, stopLightWarning, bus):
     msg_id = 0x349
     msg_len = 8
     msg = create_string_buffer(msg_len)
     struct.pack_into('BBBBBBBB', msg, 0,
-      0,0,0,0,0,0,0,0)
+      (DAS_gas_to_resume * 2) + (stopSignWarning * 8) + (stopLightWarning * 16),
+      (DAS_202_noisyEnvironment * 2) + (DAS_207_lkasUnavailable * 64) + (DAS_208_rackDetected * 128),
+      (DAS_211_accNoSeatBelt * 4),
+      (DAS_219_lcTempUnavailableSpeed * 4) + (DAS_220_lcTempUnavailableRoad * 8) + (DAS_221_lcAborting * 16) + (DAS_222_accCameraBlind * 32),
+      0,0,0,0)
     return [msg_id, 0, msg.raw, bus]
     
 

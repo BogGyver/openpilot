@@ -56,8 +56,28 @@ class CarController():
 
     # Temp disable steering on a hands_on_fault, and allow for user override
     # TODO: better user blending
-    hands_on_fault = (CS.steer_warning == "EAC_ERROR_HANDS_ON" and CS.hands_on_level >= 3 and not human_control)
+    hands_on_fault = (CS.hands_on_level >= 2 and not human_control) #and CS.steer_warning == "EAC_ERROR_HANDS_ON"
     lkas_enabled = enabled and (not hands_on_fault)
+
+    if not enabled:
+      self.v_target = CS.out.vEgo
+      self.a_target = 1
+
+    if (hands_on_fault):
+      enabled = False
+
+    # Cancel when openpilot is not enabled anymore and no autopilot
+    # BB: do we need to do this? AP/Tesla does not behave this way
+    #   LKAS can be disabled by steering and ACC remains engaged
+    if not enabled and bool(CS.out.cruiseState.enabled):
+      cruise_cancel = True
+
+    if ((frame % 10) == 0 and cruise_cancel):
+      # Spam every possible counter value, otherwise it might not be accepted
+      for counter in range(16):
+        can_sends.append(self.tesla_can.create_action_request(CS.msg_stw_actn_req, cruise_cancel, CAN_CHASSIS[self.CP.carFingerprint],counter))
+        if CAN_AUTOPILOT[self.CP.carFingerprint] != -1:
+          can_sends.append(self.tesla_can.create_action_request(CS.msg_stw_actn_req, cruise_cancel, CAN_AUTOPILOT[self.CP.carFingerprint],counter))
 
     #get lat plan info
     lat_plan = messaging.recv_one_or_none(self.laP)
@@ -232,34 +252,17 @@ class CarController():
         DAS_collision_warning =  1 if hud_alert == VisualAlert.fcw else 0
         #alcaState 1 if nothing, 8+direction if enabled
         DAS_alca_state = 8 + CS.alca_direction if CS.alca_direction > 0 else 1
-        #ap status 0-disabled, 1-enabled, 2-disabling, 3-unavailable, 5-warning
-        DAS_op_status = 1 if enabled else 0
-        #can_sends.append(self.tesla_can.create_das_status(CS.msg_autopilot_status,DAS_op_status, DAS_collision_warning,
-        #  DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
-        #  CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
-        #can_sends.append(self.tesla_can.create_das_status2(CS.msg_autopilot_status2,CS.out.cruiseState.speed * CV.MS_TO_MPH, DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
+        #ap status 0-Disabled 1-Unavailable 2-Available 3-Active_nominal, 
+        #          4-active_restricted 5-active_nav 8-aborting 9-aborted
+        #          14-fault  15-SNA
+        DAS_op_status = 5 if enabled else 2
+        can_sends.append(self.tesla_can.create_das_status(CS.msg_autopilot_status,DAS_op_status, DAS_collision_warning,
+          DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
+          CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
+        can_sends.append(self.tesla_can.create_das_status2(CS.msg_autopilot_status2,CS.out.cruiseState.speed * CV.MS_TO_MPH, 
+          DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
 
-    if not enabled:
-      self.v_target = CS.out.vEgo
-      self.a_target = 1
-
-    if (hands_on_fault):
-      enabled = False
-
-    # Cancel when openpilot is not enabled anymore and no autopilot
-    # BB: do we need to do this? AP/Tesla does not behave this way
-    #   LKAS can be disabled by steering and ACC remains engaged
-    if not enabled and bool(CS.out.cruiseState.enabled):
-      cruise_cancel = True
-
-    if ((frame % 10) == 0 and cruise_cancel):
-      # Spam every possible counter value, otherwise it might not be accepted
-      for counter in range(16):
-        can_sends.append(self.tesla_can.create_action_request(CS.msg_stw_actn_req, cruise_cancel, CAN_CHASSIS[self.CP.carFingerprint],counter))
-        if CAN_AUTOPILOT[self.CP.carFingerprint] != -1:
-          can_sends.append(self.tesla_can.create_action_request(CS.msg_stw_actn_req, cruise_cancel, CAN_AUTOPILOT[self.CP.carFingerprint],counter))
-      
-
+    
     # TODO: HUD control: Autopilot Status, (Status2 also needed for long control),
     #       Lanes and BodyControls (keep turn signal on during ALCA)
 

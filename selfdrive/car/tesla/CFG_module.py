@@ -82,21 +82,8 @@ class ConfigFile:
             section=main_section,
             entry="auto_start_alca_delay",
             entry_type=int,
-            default_value=0,
+            default_value=2,
             comment="Set this setting to a value greater than 1 if you want lane change to start automatically after x seconds.",
-        )
-        file_changed |= didUpdate
-
-        # enable_das_emulation -> enableDasEmulation
-        into.enableDasEmulation, didUpdate = self.read_config_entry(
-            config,
-            configr,
-            prev_file_contents,
-            section=main_section,
-            entry="enable_das_emulation",
-            entry_type=bool,
-            default_value=False,
-            comment="The secret sauce of IC/CID integration; this feature makes the Panda generate all the CAN messages needed for IC/CID integration that mimic the AP interface.",
         )
         file_changed |= didUpdate
 
@@ -110,19 +97,6 @@ class ConfigFile:
             entry_type=bool,
             default_value=False,
             comment="The secret sauce to make the Tesla Radar work; this feature makes the Panda generate all the CAN messages needed by the Tesla Bosch Radar to operate.",
-        )
-        file_changed |= didUpdate
-
-        # has_tesla_ic_integration -> hasTeslaIcIntegration
-        into.hasTeslaIcIntegration, didUpdate = self.read_config_entry(
-            config,
-            configr,
-            prev_file_contents,
-            section=main_section,
-            entry="has_tesla_ic_integration",
-            entry_type=bool,
-            default_value=False,
-            comment="This setting (in conjunction with enable_radar_emulation) helps create the IC integration",
         )
         file_changed |= didUpdate
 
@@ -264,10 +238,8 @@ class ConfigFile:
 class CarSettings:
     forcePedalOverCC = None
     enableHSO = None
-    enableDasEmulation = None
     enableRadarEmulation = None
     autoStartAlcaDelay = None
-    hasTeslaIcIntegration = None
     useTeslaRadar = None
     radarVIN = None
     radarOffset = None
