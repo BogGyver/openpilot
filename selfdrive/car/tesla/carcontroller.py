@@ -61,7 +61,7 @@ class CarController():
       CS.cruiseDelay = False
     self.prevCruiseEnabled = CS.cruiseEnabled
 
-    self.IC_integration_counter = ((self.IC_integration_counter + 1) % 100)
+    self.IC_integration_counter = ((self.IC_integration_counter + 2) % 100)
     if self.IC_integration_warning_counter > 0:
       self.IC_integration_warning_counter = self.IC_integration_warning_counter - 1
     
@@ -266,7 +266,7 @@ class CarController():
         DAS_hands_on_state = 1 if hud_alert == VisualAlert.steerRequired else 0
         DAS_collision_warning =  1 if hud_alert == VisualAlert.fcw else 0
         #alcaState 1 if nothing, 8+direction if enabled
-        DAS_alca_state = 8 + CS.alca_direction if CS.alca_direction > 0 else 1
+        DAS_alca_state = 8 + CS.alca_direction if (CS.alca_pre_engage or CS.:alca_engaged) and CS.alca_direction > 0 else 1
         #ap status 0-Disabled 1-Unavailable 2-Available 3-Active_nominal, 
         #          4-active_restricted 5-active_nav 8-aborting 9-aborted
         #          14-fault  15-SNA

@@ -145,9 +145,9 @@ class CarState(CarStateBase):
     if (self.autoStartAlcaDelay > 0) and (self.alca_need_engagement):
       ret.steeringPressed = True
       if self.alca_direction == log.LateralPlan.LaneChangeDirection.left:
-        ret.steeringTorque = 0.1
+        ret.steeringTorque = 1.1
       if self.alca_direction == log.LateralPlan.LaneChangeDirection.right:
-        ret.steeringTorque = -0.1
+        ret.steeringTorque = -1.1
 
     # Cruise state
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
