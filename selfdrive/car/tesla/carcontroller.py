@@ -238,7 +238,7 @@ class CarController():
         self.IC_DAS_lane_counter = -1
       else:
         self.IC_DAS_lane_counter = (self.IC_DAS_lane_counter + 1 ) % 16
-      can_sends.append(self.tesla_can.create_lane_message(CS.laneWidth, CS.rLine, CS.lLine, 
+      can_sends.append(self.tesla_can.create_lane_message(CS.laneWidth, 1 if CS.alca_engaged else CS.rLine, 1 if CS.alca_engaged else CS.lLine, 
           50, CS.curvC0, CS.curvC1, CS.curvC2, CS.curvC3, 
           CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_lane_counter))
 
@@ -266,7 +266,7 @@ class CarController():
         DAS_hands_on_state = 1 if hud_alert == VisualAlert.steerRequired else 0
         DAS_collision_warning =  1 if hud_alert == VisualAlert.fcw else 0
         #alcaState 1 if nothing, 8+direction if enabled
-        DAS_alca_state = 8 + CS.alca_direction if (CS.alca_pre_engage or CS.:alca_engaged) and CS.alca_direction > 0 else 1
+        DAS_alca_state = 8 + CS.alca_direction if (CS.alca_pre_engage or CS.alca_engaged) and CS.alca_direction > 0 else 1
         #ap status 0-Disabled 1-Unavailable 2-Available 3-Active_nominal, 
         #          4-active_restricted 5-active_nav 8-aborting 9-aborted
         #          14-fault  15-SNA
