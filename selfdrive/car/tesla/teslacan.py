@@ -149,7 +149,7 @@ class TeslaCAN:
     msg_len = 8
     msg = create_string_buffer(msg_len)
     struct.pack_into('BBBBBBBB', msg, 0,
-      0,0,0,DAS_025_steeringOverride + (DAS_canErrors * 128),0,(128*DAS_notInDrive),0,0)
+      0,0,0,DAS_025_steeringOverride + (DAS_canErrors << 7),0,(DAS_notInDrive << 7),0,0)
     return [msg_id, 0, msg.raw, bus]
 
   def create_das_warningMatrix1 (self, bus):

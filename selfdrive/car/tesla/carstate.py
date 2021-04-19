@@ -219,8 +219,6 @@ class CarState(CarStateBase):
       self.msg_autopilot_status = copy.copy(cp_cam.vl["DAS_status"])
       self.msg_das_body_controls = copy.copy(cp_cam.vl["DAS_bodyControls"])
       self.msg_autopilot_status2 = copy.copy(cp_cam.vl["DAS_status2"])
-    #BB will need telemetry (ID) and bodyControl (full) also for IC integration
-    #BB for long control we will need also to modify status2 to integrate with IC
 
     return ret
 

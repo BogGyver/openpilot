@@ -34,6 +34,7 @@ class CarController():
     self.IC_DAS_status_counter = 0
     self.IC_DAS_status2_counter = 0
     self.IC_DAS_lane_counter = 0
+    self.IC_previous_enabled = False
 
     if CP.openpilotLongitudinalControl:
       self.lP = messaging.sub_sock('longitudinalPlan')
@@ -217,7 +218,7 @@ class CarController():
       CS.DAS_canErrors = 0
       CS.DAS_notInDrive = 0
 
-    if (enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
+    if (enabled or self.IC_previous_enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
       # send DAS_lanes at 10Hz
       if self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]:
         self.IC_DAS_lane_counter = -1
@@ -261,6 +262,7 @@ class CarController():
           CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
         can_sends.append(self.tesla_can.create_das_status2(CS.msg_autopilot_status2,CS.out.cruiseState.speed * CV.MS_TO_MPH, 
           DAS_collision_warning, DAS_hands_on_state, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
+        self.IC_previous_enabled = enabled
 
     
     # TODO: HUD control: Autopilot Status, (Status2 also needed for long control),
