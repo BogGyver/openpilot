@@ -167,10 +167,10 @@ class TeslaCAN:
     msg_len = 8
     msg = create_string_buffer(msg_len)
     struct.pack_into('BBBBBBBB', msg, 0,
-      (DAS_gas_to_resume * 2) + (stopSignWarning * 8) + (stopLightWarning * 16),
-      (DAS_202_noisyEnvironment * 2) + (DAS_207_lkasUnavailable * 64) + (DAS_208_rackDetected * 128),
-      (DAS_211_accNoSeatBelt * 4),
-      (DAS_219_lcTempUnavailableSpeed * 4) + (DAS_220_lcTempUnavailableRoad * 8) + (DAS_221_lcAborting * 16) + (DAS_222_accCameraBlind * 32),
+      (DAS_gas_to_resume << 1) + (stopSignWarning << 3) + (stopLightWarning << 4),
+      (DAS_202_noisyEnvironment << 1) + (DAS_207_lkasUnavailable << 6) + (DAS_208_rackDetected << 7),
+      (DAS_211_accNoSeatBelt << 2),
+      (DAS_219_lcTempUnavailableSpeed << 2) + (DAS_220_lcTempUnavailableRoad << 3) + (DAS_221_lcAborting << 4) + (DAS_222_accCameraBlind << 5),
       0,0,0,0)
     return [msg_id, 0, msg.raw, bus]
     

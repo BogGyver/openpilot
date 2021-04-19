@@ -36,6 +36,9 @@ class CarController():
     self.IC_DAS_lane_counter = 0
     self.IC_previous_enabled = False
 
+    self.cruiseDelayFrame = 0
+    self.prevCruiseEnabled = False
+
     if CP.openpilotLongitudinalControl:
       self.lP = messaging.sub_sock('longitudinalPlan')
       self.rS = messaging.sub_sock('radarState')
@@ -47,6 +50,17 @@ class CarController():
   def update(self, enabled, CS, frame, actuators, cruise_cancel, hud_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart):
     can_sends = []
+    #add 1 second delay logic to wait for AP which has a status at 2Hz
+    if CS.cruiseEnabled:
+      if not self.prevCruiseEnabled:
+        self.cruiseDelayFrame = frame
+      if frame - self.cruiseDelayFrame > 30:
+        CS.cruiseDelay = True
+    else:
+      self.cruiseDelayFrame = 0
+      CS.cruiseDelay = False
+    self.prevCruiseEnabled = CS.cruiseEnabled
+
     self.IC_integration_counter = ((self.IC_integration_counter + 1) % 100)
     if self.IC_integration_warning_counter > 0:
       self.IC_integration_warning_counter = self.IC_integration_warning_counter - 1
@@ -243,7 +257,7 @@ class CarController():
           CS.DAS_208_rackDetected, CS.stopSignWarning, CS.stopLightWarning, CAN_CHASSIS[self.CP.carFingerprint]))
       
       # send DAS_status and DAS_status2 at 2Hz
-      if self.IC_integration_counter == 40 or self.IC_integration_counter == 90:
+      if self.IC_integration_counter == 40 or self.IC_integration_counter == 90 or (self.IC_previous_enabled and not enabled ):
         if self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]:
           self.IC_DAS_status_counter = -1
         else:
@@ -262,7 +276,8 @@ class CarController():
           CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
         can_sends.append(self.tesla_can.create_das_status2(CS.msg_autopilot_status2,CS.out.cruiseState.speed * CV.MS_TO_MPH, 
           DAS_collision_warning, DAS_hands_on_state, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
-        self.IC_previous_enabled = enabled
+      
+      self.IC_previous_enabled = enabled
 
     
     # TODO: HUD control: Autopilot Status, (Status2 also needed for long control),

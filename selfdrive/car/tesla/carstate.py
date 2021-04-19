@@ -72,6 +72,9 @@ class CarState(CarStateBase):
     self.DAS_fusedSpeedLimit = 0
     self.baseMapSpeedLimitMPS = 0
 
+    self.cruiseEnabled = False
+    self.cruiseDelay = False
+
     #start config section
     self.forcePedalOverCC = False
     self.enableHSO = True
@@ -154,8 +157,8 @@ class CarState(CarStateBase):
 
     acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
     autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
-
-    ret.cruiseState.enabled = acc_enabled and not autopilot_enabled
+    self.cruiseEnabled = acc_enabled and not autopilot_enabled
+    ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
     if speed_units == "KPH":
       ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
     elif speed_units == "MPH":
