@@ -80,6 +80,9 @@ class CarInterface(CarInterfaceBase):
     # enabled radar emulation from carconfig
     if CarSettings.enableRadarEmulation:
       ret.safetyParam = ret.safetyParam + 32
+    # enabled radar emulation from carconfig
+    if CarSettings.enableHAO:
+      ret.safetyParam = ret.safetyParam + 64
     ret.rotationalInertia = scale_rot_inertia(ret.mass, ret.wheelbase)
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront)
     ret.radarOffCan = True
