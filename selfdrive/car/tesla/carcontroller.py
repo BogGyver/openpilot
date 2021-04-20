@@ -31,9 +31,6 @@ class CarController():
     self.alca_engaged_frame = 0
     self.IC_integration_counter = 0
     self.IC_integration_warning_counter = 0
-    self.IC_DAS_status_counter = 0
-    self.IC_DAS_status2_counter = 0
-    self.IC_DAS_lane_counter = 0
     self.IC_previous_enabled = False
 
     self.cruiseDelayFrame = 0
@@ -101,12 +98,17 @@ class CarController():
       CS.alca_engaged = lat_plan.lateralPlan.laneChangeState in [LaneChangeState.laneChangeStarting,
                                                   LaneChangeState.laneChangeFinishing]
       # 0-none, 1-left, 2-right 
-      if lat_plan.lateralPlan.laneChangeDirection == log.LateralPlan.LaneChangeDirection.left:
-        CS.alca_direction = 1
-      elif lat_plan.lateralPlan.laneChangeDirection == log.LateralPlan.LaneChangeDirection.right:
-        CS.alca_direction = 2
+      if CS.alca_pre_engage or CS.alca_engage:
+        if lat_plan.lateralPlan.laneChangeDirection == log.LateralPlan.LaneChangeDirection.left:
+          CS.alca_direction = 1
+        elif lat_plan.lateralPlan.laneChangeDirection == log.LateralPlan.LaneChangeDirection.right:
+          CS.alca_direction = 2
+        else:
+          CS.alca_direction = 0
       else: 
         CS.alca_direction = 0
+      
+
       #let's get the path points and compute poly coef
       pts = np.array(lat_plan.lateralPlan.dPathPoints)
       x = np.arange(0, len(pts))
@@ -138,7 +140,7 @@ class CarController():
     else:
       CS.alca_need_engagement = False
       self.alca_engaged_frame = frame
-    self.prev_alca_pre_engage = CS.alca_pre_engage
+    CS.prev_alca_pre_engage = CS.alca_pre_engage
 
     #now process controls
     if lkas_enabled and not human_control:
@@ -233,14 +235,13 @@ class CarController():
       CS.DAS_notInDrive = 0
 
     if (enabled or self.IC_previous_enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
-      # send DAS_lanes at 10Hz
-      if self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]:
-        self.IC_DAS_lane_counter = -1
-      else:
-        self.IC_DAS_lane_counter = (self.IC_DAS_lane_counter + 1 ) % 16
       can_sends.append(self.tesla_can.create_lane_message(CS.laneWidth, 1 if CS.alca_engaged else CS.rLine, 1 if CS.alca_engaged else CS.lLine, 
           50, CS.curvC0, CS.curvC1, CS.curvC2, CS.curvC3, 
-          CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_lane_counter))
+          CAN_CHASSIS[self.CP.carFingerprint], 1))
+
+      # send DAS_bodyControls
+      can_sends.append(self.tesla_can.create_body_controls_message(CS.msg_das_body_controls,
+          CS.alca_direction, 1 if CS.needs_hazard else 0 , CAN_CHASSIS[self.CP.carFingerprint], 1))
 
       # send DAS_warningMatrix0 at 1Hz
       if self.IC_integration_counter == 10:
@@ -258,10 +259,6 @@ class CarController():
       
       # send DAS_status and DAS_status2 at 2Hz
       if self.IC_integration_counter == 40 or self.IC_integration_counter == 90 or (self.IC_previous_enabled and not enabled ):
-        if self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]:
-          self.IC_DAS_status_counter = -1
-        else:
-          self.IC_DAS_status_counter = (self.IC_DAS_status_counter + 1 ) % 16
         DAS_ldwStatus = 1 if left_lane_depart or right_lane_depart else 0
         DAS_hands_on_state = 1 if hud_alert == VisualAlert.steerRequired else 0
         DAS_collision_warning =  1 if hud_alert == VisualAlert.fcw else 0
@@ -273,9 +270,9 @@ class CarController():
         DAS_op_status = 5 if enabled else 2
         can_sends.append(self.tesla_can.create_das_status(CS.msg_autopilot_status,DAS_op_status, DAS_collision_warning,
           DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
-          CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
+          CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], 1))
         can_sends.append(self.tesla_can.create_das_status2(CS.msg_autopilot_status2,CS.out.cruiseState.speed * CV.MS_TO_MPH, 
-          DAS_collision_warning, DAS_hands_on_state, CAN_CHASSIS[self.CP.carFingerprint], self.IC_DAS_status_counter))
+          DAS_collision_warning, DAS_hands_on_state, CAN_CHASSIS[self.CP.carFingerprint], 1))
       
       self.IC_previous_enabled = enabled
 

@@ -38,6 +38,9 @@ class CarState(CarStateBase):
     self.alca_direction = 0
     self.alca_need_engagement = False
 
+    #to control hazard lighgts
+    self.needs_hazard = False
+
     #path info
     self.laneWidth = 0
     self.lProb = 0.

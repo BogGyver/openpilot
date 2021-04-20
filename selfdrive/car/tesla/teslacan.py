@@ -55,7 +55,7 @@ class TeslaCAN:
     }
     return self.packer.make_can_msg("DAS_object", bus, values)
 
-  def create_body_controls_message(self,msg_das_body_controls,turn,hazard,bus):
+  def create_body_controls_message(self,msg_das_body_controls,turn,hazard,bus,counter):
     if msg_das_body_controls != None:
       values = copy.copy(msg_das_body_controls)
     else:
@@ -178,7 +178,7 @@ class TeslaCAN:
   def create_das_status (self, msg_autopilot_status, DAS_op_status, DAS_collision_warning,
     DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
     DAS_speed_limit_kph, bus, counter):
-    if counter < 0:
+    if msg_autopilot_status is not None:
       #AP - Modify
       values = copy.copy(msg_autopilot_status)
       values["DAS_autopilotState"] = DAS_op_status
@@ -187,7 +187,7 @@ class TeslaCAN:
       values["DAS_autopilotHandsOnState"] = DAS_hands_on_state * 3
       values["DAS_autoLaneChangeState"] = DAS_alca_state
       values["DAS_lssState"] = 0 #0-FAULT 2-LSS_STATE_ELK
-      values["DAS_statusCounter"] = -counter
+      values["DAS_statusCounter"] = counter
       values["DAS_statusChecksum"] = 0
       values["DAS_autoparkReady"] = 0
       values["DAS_autoParked"] = 1
@@ -228,10 +228,10 @@ class TeslaCAN:
 
   def create_das_status2(self, msg_autopilot_status2, DAS_acc_speed_limit, fcw, DAS_hands_on_state, bus, counter):
     fcw_sig = 0x0F if fcw == 0 else 0x01
-    if counter < 0:
+    if msg_autopilot_status2 is not None:
       #AP - Modify
       values = copy.copy(msg_autopilot_status2)
-      values["DAS_status2Counter"] = -counter
+      values["DAS_status2Counter"] = counter
       values["DAS_status2Checksum"] = 0
       values["DAS_pmmObstacleSeverity"] = 0
       values["DAS_pmmLoggingRequest"] = 0
