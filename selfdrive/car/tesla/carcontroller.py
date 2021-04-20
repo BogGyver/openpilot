@@ -98,7 +98,7 @@ class CarController():
       CS.alca_engaged = lat_plan.lateralPlan.laneChangeState in [LaneChangeState.laneChangeStarting,
                                                   LaneChangeState.laneChangeFinishing]
       # 0-none, 1-left, 2-right 
-      if CS.alca_pre_engage or CS.alca_engage:
+      if CS.alca_pre_engage or CS.alca_engaged:
         if lat_plan.lateralPlan.laneChangeDirection == log.LateralPlan.LaneChangeDirection.left:
           CS.alca_direction = 1
         elif lat_plan.lateralPlan.laneChangeDirection == log.LateralPlan.LaneChangeDirection.right:
