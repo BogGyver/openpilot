@@ -168,6 +168,8 @@ class CarState(CarStateBase):
 
     acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
     autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
+    if autopilot_enabled:
+      events.add(EventName.invalidLkasSetting)
     self.cruiseEnabled = acc_enabled and not autopilot_enabled
     ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
     if speed_units == "KPH":
