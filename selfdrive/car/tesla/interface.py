@@ -78,16 +78,16 @@ class CarInterface(CarInterfaceBase):
     # enable body controls
     ret.safetyParam = ret.safetyParam + 16
     # enabled radar emulation from carconfig
-    if CarSettings.enableRadarEmulation:
+    if CarSettings().get_value("enableRadarEmulation"):
       ret.safetyParam = ret.safetyParam + 32
-    # enabled radar emulation from carconfig
-    if CarSettings.enableHAO:
+    # enabled HAO from carconfig
+    if CarSettings().get_value("enableHAO"):
       ret.safetyParam = ret.safetyParam + 64
     ret.rotationalInertia = scale_rot_inertia(ret.mass, ret.wheelbase)
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront)
     ret.radarOffCan = True
     ret.radarTimeStep = 0.05
-    if CarSettings.useTeslaRadar:
+    if CarSettings().get_value("useTeslaRadar"):
       ret.radarOffCan = False
     return ret
 
