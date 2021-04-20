@@ -9,7 +9,7 @@ from cereal import log, car
 import numpy as np
 from selfdrive.config import Conversions as CV
 
-IC_LANE_SCALE = 2.0
+IC_LANE_SCALE = 0.5
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -118,10 +118,11 @@ class CarController():
       coefs = np.polyfit(x, pts, order)
       # IC shows the path 2x scaled
       f = IC_LANE_SCALE
+      suppress_x_coord = True
       f2 = f * f
       f3 = f2 * f
       CS.curvC0 = -clip(coefs[3], -3.5, 3.5)
-      CS.curvC1 = -clip(coefs[2] * f, -0.2, 0.2)  
+      CS.curvC1 = -clip(coefs[2] * f * (0 if suppress_x_coord else 1), -0.2, 0.2)  
       CS.curvC2 = -clip(coefs[1] * f2, -0.0025, 0.0025)
       CS.curvC3 = -clip(coefs[0] * f3, -0.00003, 0.00003)  
       CS.laneWidth = lat_plan.lateralPlan.laneWidth

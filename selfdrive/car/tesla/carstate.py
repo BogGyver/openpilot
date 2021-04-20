@@ -214,14 +214,15 @@ class CarState(CarStateBase):
     ret.doorOpen = any([(self.can_define.dv["GTW_carState"][door].get(int(cp.vl["GTW_carState"][door]), "OPEN") == "OPEN") for door in DOORS])
 
     # Blinkers are used for Comma ALCA
-    ret.leftBlinker = (cp.vl["GTW_carState"]["BC_indicatorLStatus"] == 1)
-    ret.rightBlinker = (cp.vl["GTW_carState"]["BC_indicatorRStatus"] == 1)
-    self.turn_signal_blinking = ret.leftBlinker or ret.rightBlinker
+    # we use tap to trigger Comma ALCA so only engage when blinkig but not pressed
     self.turn_signal_stalk_state = (
             0
             if cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"] == 3
             else int(cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"])
         )
+    ret.leftBlinker = (cp.vl["GTW_carState"]["BC_indicatorLStatus"] == 1) and (self.turn_signal_stalk_state == 0)
+    ret.rightBlinker = (cp.vl["GTW_carState"]["BC_indicatorRStatus"] == 1) and (self.turn_signal_stalk_state == 0)
+    self.turn_signal_blinking = ret.leftBlinker or ret.rightBlinker
 
     # Seatbelt
     ret.seatbeltUnlatched = (cp.vl["SDM1"]["SDM_bcklDrivStatus"] != 1)

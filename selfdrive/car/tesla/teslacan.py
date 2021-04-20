@@ -147,7 +147,7 @@ class TeslaCAN:
     msg_id = 0x329
     msg_len = 8
     msg = create_string_buffer(msg_len)
-    struct.pack_into('BBBBBBBB', msg, 0,
+    struct.pack_into("BBBBBBBB", msg, 0,
       0,0,0,DAS_025_steeringOverride + (DAS_canErrors << 7),0,(DAS_notInDrive << 7),0,0)
     return [msg_id, 0, msg.raw, bus]
 
@@ -155,7 +155,7 @@ class TeslaCAN:
     msg_id = 0x369
     msg_len = 8
     msg = create_string_buffer(msg_len)
-    struct.pack_into('BBBBBBBB', msg, 0,
+    struct.pack_into("BBBBBBBB", msg, 0,
       0,0,0,0,0,0,0,0)
     return [msg_id, 0, msg.raw, bus]
 
@@ -165,7 +165,7 @@ class TeslaCAN:
     msg_id = 0x349
     msg_len = 8
     msg = create_string_buffer(msg_len)
-    struct.pack_into('BBBBBBBB', msg, 0,
+    struct.pack_into("BBBBBBBB", msg, 0,
       (DAS_gas_to_resume << 1) + (stopSignWarning << 3) + (stopLightWarning << 4),
       (DAS_202_noisyEnvironment << 1) + (DAS_206_apUnavailable << 5) + (DAS_207_lkasUnavailable << 6) + (DAS_208_rackDetected << 7),
       (DAS_211_accNoSeatBelt << 2) + (DAS_w216_driverOverriding << 7),
