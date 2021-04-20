@@ -207,7 +207,6 @@ class CarController():
         can_sends.append(self.tesla_can.create_ap1_long_control(350.0/3.6, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
 
     #send messages for IC intergration
-    CS.DAS_025_steeringOverride = 1 if human_control else 0
     CS.DAS_206_apUnavailable = 1 if human_control else 0
     warnings = CS.DAS_gas_to_resume + \
               CS.DAS_025_steeringOverride + \
@@ -226,8 +225,8 @@ class CarController():
               CS.DAS_canErrors + \
               CS.DAS_notInDrive
     if (warnings > 0) and (self.IC_integration_warning_counter == 0):
-      self.IC_integration_warning_counter == 200 # alert for 2 sconds
-    if self.IC_integration_warning_counter == 0 or not enabled:
+      self.IC_integration_warning_counter = 200 # alert for 2 sconds
+    if (self.IC_integration_warning_counter == 0) or (not enabled):
       # when zero reset all warnings
       CS.DAS_gas_to_resume = 0
       CS.DAS_025_steeringOverride = 0 #use for manual steer?
