@@ -99,6 +99,8 @@ class CarInterface(CarInterfaceBase):
     ret.canValid = self.cp.can_valid and self.cp_cam.can_valid
 
     events = self.create_common_events(ret)
+    if self.CS.autopilot_enabled:
+      events.add(car.CarEvent.EventName.invalidLkasSetting)
 
     ret.events = events.to_msg()
     self.CS.out = ret.as_reader()

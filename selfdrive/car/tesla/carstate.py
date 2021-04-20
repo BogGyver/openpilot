@@ -28,6 +28,7 @@ class CarState(CarStateBase):
     self.das_status_counter = -1
     self.steer_warning = None
     self.angle_steers = 0
+    self.autopilot_enabled = False
     # 0 = off, 1 = indicate left (stalk down), 2 = indicate right (stalk up)
     self.turn_signal_stalk_state = 0 
 
@@ -167,10 +168,8 @@ class CarState(CarStateBase):
     speed_units = self.can_define.dv["DI_state"]["DI_speedUnits"].get(int(cp.vl["DI_state"]["DI_speedUnits"]), None)
 
     acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
-    autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
-    if autopilot_enabled:
-      events.add(EventName.invalidLkasSetting)
-    self.cruiseEnabled = acc_enabled and not autopilot_enabled
+    self.autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
+    self.cruiseEnabled = acc_enabled and not self.autopilot_enabled
     ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
     if speed_units == "KPH":
       ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
