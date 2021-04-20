@@ -49,6 +49,15 @@ class CarInterface(CarInterfaceBase):
       ret.safetyParam = 1 + 2 # has AP, ACC
       ret.openpilotLongitudinalControl = False
       ret.safetyModel = car.CarParams.SafetyModel.tesla
+    elif candidate == CAR.AP1_MODELX:
+      #TODO: update values
+      ret.mass = 2100. + STD_CARGO_KG
+      ret.wheelbase = 2.959
+      ret.centerToFront = ret.wheelbase * 0.5
+      ret.steerRatio = 13.5
+      ret.safetyParam = 1 + 2 # has AP, ACC
+      ret.openpilotLongitudinalControl = False
+      ret.safetyModel = car.CarParams.SafetyModel.tesla
     elif candidate == CAR.PREAP_MODELS:
       ret.mass = 2100. + STD_CARGO_KG
       ret.wheelbase = 2.959

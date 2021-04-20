@@ -1,6 +1,6 @@
 import copy
 from cereal import car,log
-from selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS, CAR, CAN_EPAS
+from selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS, CAR
 from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
@@ -118,16 +118,14 @@ class CarState(CarStateBase):
 
     # Steering wheel
     if (self.CP.carFingerprint == CAR.PREAP_MODELS):
-      steer_status = None
-      if cp_cam.vl["EPAS_sysStatus"]:
-        self.hands_on_level = cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
-        self.steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp_cam.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
-        steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp_cam.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
+      self.hands_on_level = cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
+      self.steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp_cam.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
+      steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp_cam.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
 
-        ret.steeringAngleDeg = -cp_cam.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
-        self.angle_steers = ret.steeringAngleDeg
-        ret.steeringTorque = -cp_cam.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
-        self.steer_override = abs(cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
+      ret.steeringAngleDeg = -cp_cam.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
+      self.angle_steers = ret.steeringAngleDeg
+      ret.steeringTorque = -cp_cam.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
+      self.steer_override = abs(cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
     else:
       self.hands_on_level = cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
       self.steer_override = abs(cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
@@ -141,7 +139,7 @@ class CarState(CarStateBase):
     ret.steeringRateDeg = -cp.vl["STW_ANGLHP_STAT"]["StW_AnglHP_Spd"] # This is from a different angle sensor, and at different rate
 
     ret.steeringPressed = (self.hands_on_level > 0)
-    ret.steerError = steer_status == "EAC_FAULT"  # inhibited is not an error, "EAC_INHIBITED"]
+    ret.steerError = steer_status in ["EAC_FAULT"] #inhibited is not an error, "EAC_INHIBITED"]
     ret.steerWarning = steer_status == "EAC_FAULT" and self.steer_warning in ["EAC_ERROR_MAX_SPEED", "EAC_ERROR_MIN_SPEED", "EAC_ERROR_TMP_FAULT", "SNA"]  # TODO: not sure if this list is complete
     #Trick the alca if autoStartAlcaDelay is set
     if (self.autoStartAlcaDelay > 0) and (self.alca_need_engagement):
@@ -152,9 +150,8 @@ class CarState(CarStateBase):
         ret.steeringTorque = -1.1
 
     # Cruise state
-    if self.CP.carFingerprint == CAR.PREAP_MODELS:
-      autopilot_status = None
-    else:
+    autopilot_status = None
+    if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
       autopilot_status = self.can_define.dv["DAS_status"]["DAS_autopilotState"].get(int(cp_cam.vl["DAS_status"]["DAS_autopilotState"]), None)
     cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
     speed_units = self.can_define.dv["DI_state"]["DI_speedUnits"].get(int(cp.vl["DI_state"]["DI_speedUnits"]), None)
@@ -238,11 +235,6 @@ class CarState(CarStateBase):
       ("DI_brakePedal", "DI_torque2", 0),
       ("StW_AnglHP", "STW_ANGLHP_STAT", 0),
       ("StW_AnglHP_Spd", "STW_ANGLHP_STAT", 0),
-      ("EPAS_handsOnLevel", "EPAS_sysStatus", CAN_EPAS[CP.carFingerprint]),
-      ("EPAS_torsionBarTorque", "EPAS_sysStatus", CAN_EPAS[CP.carFingerprint]),
-      ("EPAS_internalSAS", "EPAS_sysStatus", CAN_EPAS[CP.carFingerprint]),
-      ("EPAS_eacStatus", "EPAS_sysStatus", 1),  # TODO: why is this different?
-      ("EPAS_eacErrorCode", "EPAS_sysStatus", CAN_EPAS[CP.carFingerprint]),
       ("DI_cruiseState", "DI_state", 0),
       ("DI_digitalSpeed", "DI_state", 0),
       ("DI_speedUnits", "DI_state", 0),
@@ -303,7 +295,6 @@ class CarState(CarStateBase):
       ("DI_torque1", 100),
       ("DI_torque2", 100),
       ("STW_ANGLHP_STAT", 100),
-      ("EPAS_sysStatus", 25),
       ("DI_state", 10),
       ("STW_ACTN_RQ", 10),
       ("GTW_carState", 10),
@@ -311,70 +302,102 @@ class CarState(CarStateBase):
       ("BrakeMessage", 50),
     ]
 
+    if CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP2_MODELS, CAR.AP1_MODELX]:
+      signals += [
+        ("EPAS_handsOnLevel", "EPAS_sysStatus", 0),
+        ("EPAS_torsionBarTorque", "EPAS_sysStatus", 0),
+        ("EPAS_internalSAS", "EPAS_sysStatus", 0),
+        ("EPAS_eacStatus", "EPAS_sysStatus", 1),
+        ("EPAS_eacErrorCode", "EPAS_sysStatus", 0),
+      ]
+
+      checks += [      
+        ("EPAS_sysStatus", 25),
+      ]
+
     return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 0)
 
   @staticmethod
   def get_cam_can_parser(CP):
-    signals = [
-      # sig_name, sig_address, default
-      #we need the steering control counter
-      ("DAS_steeringControlCounter", "DAS_steeringControl", CAN_EPAS[CP.carFingerprint]),
-      # We copy this whole message when we change the status for IC
-      ("DAS_autopilotState", "DAS_status", 0),
-      ("DAS_blindSpotRearLeft", "DAS_status", 0),
-      ("DAS_blindSpotRearRight", "DAS_status", 0),
-      ("DAS_fusedSpeedLimit", "DAS_status", 0),
-      ("DAS_suppressSpeedWarning", "DAS_status", 0),
-      ("DAS_summonObstacle", "DAS_status", 0),
-      ("DAS_summonClearedGate", "DAS_status", 0),
-      ("DAS_visionOnlySpeedLimit", "DAS_status", 0),
-      ("DAS_heaterState", "DAS_status", 0),
-      ("DAS_forwardCollisionWarning", "DAS_status", 0),
-      ("DAS_autoparkReady", "DAS_status", 0),
-      ("DAS_autoParked", "DAS_status", 0),
-      ("DAS_autoparkWaitingForBrake", "DAS_status", 0),
-      ("DAS_summonFwdLeashReached", "DAS_status", 0),
-      ("DAS_summonRvsLeashReached", "DAS_status", 0),
-      ("DAS_sideCollisionAvoid", "DAS_status", 0),
-      ("DAS_sideCollisionWarning", "DAS_status", 0),
-      ("DAS_sideCollisionInhibit", "DAS_status", 0),
-      ("DAS_csaState", "DAS_status2", 0),
-      ("DAS_laneDepartureWarning", "DAS_status", 0),
-      ("DAS_fleetSpeedState", "DAS_status", 0),
-      ("DAS_autopilotHandsOnState", "DAS_status", 0),
-      ("DAS_autoLaneChangeState", "DAS_status", 0),
-      ("DAS_summonAvailable", "DAS_status", 0),
-      ("DAS_statusCounter", "DAS_status", 0),
-      ("DAS_statusChecksum", "DAS_status", 0),
-      ("DAS_headlightRequest", "DAS_bodyControls", 0),
-      ("DAS_hazardLightRequest", "DAS_bodyControls", 0),
-      ("DAS_wiperSpeed", "DAS_bodyControls", 0),
-      ("DAS_turnIndicatorRequest", "DAS_bodyControls", 0),
-      ("DAS_highLowBeamDecision", "DAS_bodyControls", 0),
-      ("DAS_highLowBeamOffReason", "DAS_bodyControls", 0),
-      ("DAS_turnIndicatorRequestReason", "DAS_bodyControls", 0),
-      ("DAS_bodyControlsCounter", "DAS_bodyControls", 0),
-      ("DAS_bodyControlsChecksum", "DAS_bodyControls", 0),
-      ("DAS_accSpeedLimit", "DAS_status2", 0),
-      ("DAS_pmmObstacleSeverity", "DAS_status2", 0),
-      ("DAS_pmmLoggingRequest", "DAS_status2", 0),
-      ("DAS_activationFailureStatus", "DAS_status2", 0),
-      ("DAS_pmmUltrasonicsFaultReason", "DAS_status2", 0),
-      ("DAS_pmmRadarFaultReason", "DAS_status2", 0),
-      ("DAS_pmmSysFaultReason", "DAS_status2", 0),
-      ("DAS_pmmCameraFaultReason", "DAS_status2", 0),
-      ("DAS_ACC_report", "DAS_status2", 0),
-      ("DAS_lssState", "DAS_status", 0),
-      ("DAS_radarTelemetry", "DAS_status2", 0),
-      ("DAS_robState", "DAS_status2", 0),
-      ("DAS_driverInteractionLevel", "DAS_status2", 0),
-      ("DAS_ppOffsetDesiredRamp", "DAS_status2", 0),
-      ("DAS_longCollisionWarning", "DAS_status2", 0),
-      ("DAS_status2Counter", "DAS_status2", 0),
-      ("DAS_status2Checksum", "DAS_status2", 0),
-    ]
-    checks = [
-      # sig_address, frequency
-      ("DAS_status", 2),
-    ]
+    signals = None
+    checks = None
+
+    if CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP2_MODELS, CAR.AP1_MODELX]:
+      signals = [
+        # sig_name, sig_address, default
+        #we need the steering control counter
+        ("DAS_steeringControlCounter", "DAS_steeringControl", 0),
+        # We copy this whole message when we change the status for IC
+        ("DAS_autopilotState", "DAS_status", 0),
+        ("DAS_blindSpotRearLeft", "DAS_status", 0),
+        ("DAS_blindSpotRearRight", "DAS_status", 0),
+        ("DAS_fusedSpeedLimit", "DAS_status", 0),
+        ("DAS_suppressSpeedWarning", "DAS_status", 0),
+        ("DAS_summonObstacle", "DAS_status", 0),
+        ("DAS_summonClearedGate", "DAS_status", 0),
+        ("DAS_visionOnlySpeedLimit", "DAS_status", 0),
+        ("DAS_heaterState", "DAS_status", 0),
+        ("DAS_forwardCollisionWarning", "DAS_status", 0),
+        ("DAS_autoparkReady", "DAS_status", 0),
+        ("DAS_autoParked", "DAS_status", 0),
+        ("DAS_autoparkWaitingForBrake", "DAS_status", 0),
+        ("DAS_summonFwdLeashReached", "DAS_status", 0),
+        ("DAS_summonRvsLeashReached", "DAS_status", 0),
+        ("DAS_sideCollisionAvoid", "DAS_status", 0),
+        ("DAS_sideCollisionWarning", "DAS_status", 0),
+        ("DAS_sideCollisionInhibit", "DAS_status", 0),
+        ("DAS_csaState", "DAS_status2", 0),
+        ("DAS_laneDepartureWarning", "DAS_status", 0),
+        ("DAS_fleetSpeedState", "DAS_status", 0),
+        ("DAS_autopilotHandsOnState", "DAS_status", 0),
+        ("DAS_autoLaneChangeState", "DAS_status", 0),
+        ("DAS_summonAvailable", "DAS_status", 0),
+        ("DAS_statusCounter", "DAS_status", 0),
+        ("DAS_statusChecksum", "DAS_status", 0),
+        ("DAS_headlightRequest", "DAS_bodyControls", 0),
+        ("DAS_hazardLightRequest", "DAS_bodyControls", 0),
+        ("DAS_wiperSpeed", "DAS_bodyControls", 0),
+        ("DAS_turnIndicatorRequest", "DAS_bodyControls", 0),
+        ("DAS_highLowBeamDecision", "DAS_bodyControls", 0),
+        ("DAS_highLowBeamOffReason", "DAS_bodyControls", 0),
+        ("DAS_turnIndicatorRequestReason", "DAS_bodyControls", 0),
+        ("DAS_bodyControlsCounter", "DAS_bodyControls", 0),
+        ("DAS_bodyControlsChecksum", "DAS_bodyControls", 0),
+        ("DAS_accSpeedLimit", "DAS_status2", 0),
+        ("DAS_pmmObstacleSeverity", "DAS_status2", 0),
+        ("DAS_pmmLoggingRequest", "DAS_status2", 0),
+        ("DAS_activationFailureStatus", "DAS_status2", 0),
+        ("DAS_pmmUltrasonicsFaultReason", "DAS_status2", 0),
+        ("DAS_pmmRadarFaultReason", "DAS_status2", 0),
+        ("DAS_pmmSysFaultReason", "DAS_status2", 0),
+        ("DAS_pmmCameraFaultReason", "DAS_status2", 0),
+        ("DAS_ACC_report", "DAS_status2", 0),
+        ("DAS_lssState", "DAS_status", 0),
+        ("DAS_radarTelemetry", "DAS_status2", 0),
+        ("DAS_robState", "DAS_status2", 0),
+        ("DAS_driverInteractionLevel", "DAS_status2", 0),
+        ("DAS_ppOffsetDesiredRamp", "DAS_status2", 0),
+        ("DAS_longCollisionWarning", "DAS_status2", 0),
+        ("DAS_status2Counter", "DAS_status2", 0),
+        ("DAS_status2Checksum", "DAS_status2", 0),
+      ]
+
+      checks = [
+        # sig_address, frequency
+        ("DAS_status", 2),
+      ]
+
+    if CP.carFingerprint in [CAR.PREAP_MODELS]:
+      signals = [
+        ("EPAS_handsOnLevel", "EPAS_sysStatus", 0),
+        ("EPAS_torsionBarTorque", "EPAS_sysStatus", 0),
+        ("EPAS_internalSAS", "EPAS_sysStatus", 0),
+        ("EPAS_eacStatus", "EPAS_sysStatus", 1),
+        ("EPAS_eacErrorCode", "EPAS_sysStatus", 0),
+      ]
+
+      checks = [      
+        ("EPAS_sysStatus", 25),
+      ]
+
     return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 2)
