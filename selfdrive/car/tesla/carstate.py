@@ -37,6 +37,7 @@ class CarState(CarStateBase):
     self.alca_engaged = False
     self.alca_direction = 0
     self.alca_need_engagement = False
+    self.alca_done = False
 
     #to control hazard lighgts
     self.needs_hazard = False
