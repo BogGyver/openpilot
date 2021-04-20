@@ -1,6 +1,6 @@
 import copy
 from cereal import car,log
-from selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS, CAR
+from selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS, CAR, CAN_EPAS
 from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
@@ -118,14 +118,16 @@ class CarState(CarStateBase):
 
     # Steering wheel
     if (self.CP.carFingerprint == CAR.PREAP_MODELS):
-      self.hands_on_level = cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
-      self.steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp_cam.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
-      steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp_cam.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
+      steer_status = None
+      if cp_cam.vl["EPAS_sysStatus"]:
+        self.hands_on_level = cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
+        self.steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp_cam.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
+        steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp_cam.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
 
-      ret.steeringAngleDeg = -cp_cam.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
-      self.angle_steers = ret.steeringAngleDeg
-      ret.steeringTorque = -cp_cam.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
-      self.steer_override = abs(cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
+        ret.steeringAngleDeg = -cp_cam.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
+        self.angle_steers = ret.steeringAngleDeg
+        ret.steeringTorque = -cp_cam.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
+        self.steer_override = abs(cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
     else:
       self.hands_on_level = cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
       self.steer_override = abs(cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
@@ -139,7 +141,7 @@ class CarState(CarStateBase):
     ret.steeringRateDeg = -cp.vl["STW_ANGLHP_STAT"]["StW_AnglHP_Spd"] # This is from a different angle sensor, and at different rate
 
     ret.steeringPressed = (self.hands_on_level > 0)
-    ret.steerError = steer_status in ["EAC_FAULT"] #inhibited is not an error, "EAC_INHIBITED"]
+    ret.steerError = steer_status == "EAC_FAULT"  # inhibited is not an error, "EAC_INHIBITED"]
     ret.steerWarning = steer_status == "EAC_FAULT" and self.steer_warning in ["EAC_ERROR_MAX_SPEED", "EAC_ERROR_MIN_SPEED", "EAC_ERROR_TMP_FAULT", "SNA"]  # TODO: not sure if this list is complete
     #Trick the alca if autoStartAlcaDelay is set
     if (self.autoStartAlcaDelay > 0) and (self.alca_need_engagement):
@@ -150,7 +152,9 @@ class CarState(CarStateBase):
         ret.steeringTorque = -1.1
 
     # Cruise state
-    if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
+    if self.CP.carFingerprint == CAR.PREAP_MODELS:
+      autopilot_status = None
+    else:
       autopilot_status = self.can_define.dv["DAS_status"]["DAS_autopilotState"].get(int(cp_cam.vl["DAS_status"]["DAS_autopilotState"]), None)
     cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
     speed_units = self.can_define.dv["DI_state"]["DI_speedUnits"].get(int(cp.vl["DI_state"]["DI_speedUnits"]), None)
@@ -234,11 +238,11 @@ class CarState(CarStateBase):
       ("DI_brakePedal", "DI_torque2", 0),
       ("StW_AnglHP", "STW_ANGLHP_STAT", 0),
       ("StW_AnglHP_Spd", "STW_ANGLHP_STAT", 0),
-      ("EPAS_handsOnLevel", "EPAS_sysStatus", 0),
-      ("EPAS_torsionBarTorque", "EPAS_sysStatus", 0),
-      ("EPAS_internalSAS", "EPAS_sysStatus", 0),
-      ("EPAS_eacStatus", "EPAS_sysStatus", 1),
-      ("EPAS_eacErrorCode", "EPAS_sysStatus", 0),
+      ("EPAS_handsOnLevel", "EPAS_sysStatus", CAN_EPAS[CP.carFingerprint]),
+      ("EPAS_torsionBarTorque", "EPAS_sysStatus", CAN_EPAS[CP.carFingerprint]),
+      ("EPAS_internalSAS", "EPAS_sysStatus", CAN_EPAS[CP.carFingerprint]),
+      ("EPAS_eacStatus", "EPAS_sysStatus", 1),  # TODO: why is this different?
+      ("EPAS_eacErrorCode", "EPAS_sysStatus", CAN_EPAS[CP.carFingerprint]),
       ("DI_cruiseState", "DI_state", 0),
       ("DI_digitalSpeed", "DI_state", 0),
       ("DI_speedUnits", "DI_state", 0),
@@ -314,7 +318,7 @@ class CarState(CarStateBase):
     signals = [
       # sig_name, sig_address, default
       #we need the steering control counter
-      ("DAS_steeringControlCounter", "DAS_steeringControl", 0),
+      ("DAS_steeringControlCounter", "DAS_steeringControl", CAN_EPAS[CP.carFingerprint]),
       # We copy this whole message when we change the status for IC
       ("DAS_autopilotState", "DAS_status", 0),
       ("DAS_blindSpotRearLeft", "DAS_status", 0),
