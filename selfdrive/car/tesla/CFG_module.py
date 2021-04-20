@@ -74,6 +74,19 @@ class ConfigFile:
         )
         file_changed |= didUpdate
 
+        # enable_hao -> enableHAO
+        into.enableHAO, didUpdate = self.read_config_entry(
+            config,
+            configr,
+            prev_file_contents,
+            section=main_section,
+            entry="enable_hao",
+            entry_type=bool,
+            default_value=True,
+            comment="Enables Human Acceleration Override (HAO) feature which allows you to take control of the acceleration without disengaging OpenPilot lane keep assist (LKS, lateral control).",
+        )
+        file_changed |= didUpdate
+
         # auto_start_alca_delay -> autoStartAlcaDelay
         into.autoStartAlcaDelay, didUpdate = self.read_config_entry(
             config,
@@ -247,6 +260,7 @@ class CarSettings:
     radarPosition = None
     hsoNumbPeriod = None
     usesApillarHarness = None
+    enableHAO = None
 
     def __init__(self, optional_config_file_path=default_config_file_path):
         config_file = ConfigFile()

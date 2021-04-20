@@ -13,8 +13,8 @@ class HSOController:
             if CS.steer_override > 0:
                 self.frame_humanSteered = frame
             elif ( frame > CC.blinker.blinker_on_frame_start + CC.blinker.tap_duration_frames):
-                if CS.turn_signal_stalk_state > 0 or frame <= (CC.blinker.blinker_on_frame_start + int(100 * CS.hsoNumbPeriod)):  
-                   # stalk locked or blinker within numbPeriod
+                if CS.turn_signal_stalk_state > 0:  
+                   # stalk locked
                     self.frame_humanSteered = frame
                 elif (frame - self.frame_humanSteered < 50):  
                     # Need more human testing of handoff timing

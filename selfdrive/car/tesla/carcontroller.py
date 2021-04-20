@@ -9,10 +9,11 @@ from cereal import log, car
 import numpy as np
 from selfdrive.config import Conversions as CV
 
-
+IC_LANE_SCALE = 2.0
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
 VisualAlert = car.CarControl.HUDControl.VisualAlert
+AudibleAlert = car.CarControl.HUDControl.AudibleAlert
 
 def _is_present(lead):
   return bool((not (lead is None)) and (lead.dRel > 0))
@@ -44,7 +45,7 @@ class CarController():
       self.long_control_counter = 1
 
 
-  def update(self, enabled, CS, frame, actuators, cruise_cancel, hud_alert,
+  def update(self, enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart):
     can_sends = []
     #add 1 second delay logic to wait for AP which has a status at 2Hz
@@ -115,10 +116,14 @@ class CarController():
       x = np.arange(0, len(pts))
       order = 3
       coefs = np.polyfit(x, pts, order)
+      # IC shows the path 2x scaled
+      f = IC_LANE_SCALE
+      f2 = f * f
+      f3 = f2 * f
       CS.curvC0 = -clip(coefs[3], -3.5, 3.5)
-      CS.curvC1 = -clip(coefs[2], -0.2, 0.2)  
-      CS.curvC2 = -clip(coefs[1], -0.0025, 0.0025)
-      CS.curvC3 = -clip(coefs[0], -0.00003, 0.00003)  
+      CS.curvC1 = -clip(coefs[2] * f1, -0.2, 0.2)  
+      CS.curvC2 = -clip(coefs[1] * f2, -0.0025, 0.0025)
+      CS.curvC3 = -clip(coefs[0] * f3, -0.00003, 0.00003)  
       CS.laneWidth = lat_plan.lateralPlan.laneWidth
       CS.lProb = lat_plan.lateralPlan.lProb
       CS.rProb = lat_plan.lateralPlan.rProb
@@ -130,6 +135,8 @@ class CarController():
         CS.rLine = 1
       else:
         CS.rLine = 0
+    
+    # TODO: additional lanes to show on IC
     
     if CS.alca_pre_engage:
       if CS.alca_pre_engage != CS.prev_alca_pre_engage:
@@ -200,6 +207,7 @@ class CarController():
 
     #send messages for IC intergration
     CS.DAS_025_steeringOverride = 1 if human_control else 0
+    CS.DAS_206_apUnavailable = 1 if human_control else 0
     warnings = CS.DAS_gas_to_resume + \
               CS.DAS_025_steeringOverride + \
               CS.DAS_202_noisyEnvironment + \
@@ -207,6 +215,7 @@ class CarController():
               CS.DAS_207_lkasUnavailable + \
               CS.DAS_208_rackDetected + \
               CS.DAS_211_accNoSeatBelt + \
+              CS.DAS_216_driverOverriding + \
               CS.DAS_219_lcTempUnavailableSpeed + \
               CS.DAS_220_lcTempUnavailableRoad + \
               CS.DAS_221_lcAborting + \
@@ -226,6 +235,7 @@ class CarController():
       CS.DAS_207_lkasUnavailable = 0 #use for manual not in drive?
       CS.DAS_208_rackDetected = 0 #use for low battery?
       CS.DAS_211_accNoSeatBelt = 0
+      CS.DAS_216_driverOverriding = 0
       CS.DAS_219_lcTempUnavailableSpeed = 0
       CS.DAS_220_lcTempUnavailableRoad = 0
       CS.DAS_221_lcAborting = 0
@@ -254,14 +264,20 @@ class CarController():
 
       # send DAS_warningMatrix3 at 1Hz
       if self.IC_integration_counter == 30:
-        can_sends.append(self.tesla_can.create_das_warningMatrix3 (CS.DAS_gas_to_resume, CS.DAS_211_accNoSeatBelt, CS.DAS_202_noisyEnvironment, CS.DAS_207_lkasUnavailable,
+        can_sends.append(self.tesla_can.create_das_warningMatrix3 (CS.DAS_gas_to_resume, CS.DAS_211_accNoSeatBelt, CS.DAS_202_noisyEnvironment, CS.DAS_206_apUnavailable, CS.DAS_207_lkasUnavailable,
           CS.DAS_219_lcTempUnavailableSpeed, CS.DAS_220_lcTempUnavailableRoad, CS.DAS_221_lcAborting, CS.DAS_222_accCameraBlind,
-          CS.DAS_208_rackDetected, CS.stopSignWarning, CS.stopLightWarning, CAN_CHASSIS[self.CP.carFingerprint]))
+          CS.DAS_208_rackDetected, CS.DAS_216_driverOverriding, CS.stopSignWarning, CS.stopLightWarning, CAN_CHASSIS[self.CP.carFingerprint]))
       
       # send DAS_status and DAS_status2 at 2Hz
       if self.IC_integration_counter == 40 or self.IC_integration_counter == 90 or (self.IC_previous_enabled and not enabled ):
         DAS_ldwStatus = 1 if left_lane_depart or right_lane_depart else 0
-        DAS_hands_on_state = 1 if hud_alert == VisualAlert.steerRequired else 0
+        DAS_hands_on_state = 2
+        #steering required is also used by ALCA
+        if (hud_alert == VisualAlert.steerRequired) and not (CS.alca_engaged or CS.alca_pre_engage):
+          if audible_alert == AudibleAlert.none:
+            DAS_hands_on_state = 3
+          else:
+            DAS_hands_on_state = 5
         DAS_collision_warning =  1 if hud_alert == VisualAlert.fcw else 0
         #alcaState 1 if nothing, 8+direction if enabled
         DAS_alca_state = 8 + CS.alca_direction if (CS.alca_pre_engage or CS.alca_engaged) and CS.alca_direction > 0 else 1
@@ -273,12 +289,8 @@ class CarController():
           DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
           CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], 1))
         can_sends.append(self.tesla_can.create_das_status2(CS.msg_autopilot_status2,CS.out.cruiseState.speed * CV.MS_TO_MPH, 
-          DAS_collision_warning, DAS_hands_on_state, CAN_CHASSIS[self.CP.carFingerprint], 1))
+          DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1))
       
       self.IC_previous_enabled = enabled
-
-    
-    # TODO: HUD control: Autopilot Status, (Status2 also needed for long control),
-    #       Lanes and BodyControls (keep turn signal on during ALCA)
 
     return can_sends

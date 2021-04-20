@@ -5,7 +5,6 @@ from common.numpy_fast import clip
 from ctypes import create_string_buffer
 import struct
 
-
 class TeslaCAN:
   def __init__(self, dbc_name, packer):
     self.can_define = CANDefine(dbc_name)
@@ -160,16 +159,16 @@ class TeslaCAN:
       0,0,0,0,0,0,0,0)
     return [msg_id, 0, msg.raw, bus]
 
-  def create_das_warningMatrix3 (self, DAS_gas_to_resume, DAS_211_accNoSeatBelt, DAS_202_noisyEnvironment , DAS_207_lkasUnavailable,
+  def create_das_warningMatrix3 (self, DAS_gas_to_resume, DAS_211_accNoSeatBelt, DAS_202_noisyEnvironment , DAS_206_apUnavailable, DAS_207_lkasUnavailable,
     DAS_219_lcTempUnavailableSpeed, DAS_220_lcTempUnavailableRoad, DAS_221_lcAborting, DAS_222_accCameraBlind,
-    DAS_208_rackDetected, stopSignWarning, stopLightWarning, bus):
+    DAS_208_rackDetected, DAS_w216_driverOverriding, stopSignWarning, stopLightWarning, bus):
     msg_id = 0x349
     msg_len = 8
     msg = create_string_buffer(msg_len)
     struct.pack_into('BBBBBBBB', msg, 0,
       (DAS_gas_to_resume << 1) + (stopSignWarning << 3) + (stopLightWarning << 4),
-      (DAS_202_noisyEnvironment << 1) + (DAS_207_lkasUnavailable << 6) + (DAS_208_rackDetected << 7),
-      (DAS_211_accNoSeatBelt << 2),
+      (DAS_202_noisyEnvironment << 1) + (DAS_206_apUnavailable << 5) + (DAS_207_lkasUnavailable << 6) + (DAS_208_rackDetected << 7),
+      (DAS_211_accNoSeatBelt << 2) + (DAS_w216_driverOverriding << 7),
       (DAS_219_lcTempUnavailableSpeed << 2) + (DAS_220_lcTempUnavailableRoad << 3) + (DAS_221_lcAborting << 4) + (DAS_222_accCameraBlind << 5),
       0,0,0,0)
     return [msg_id, 0, msg.raw, bus]
@@ -184,7 +183,7 @@ class TeslaCAN:
       values["DAS_autopilotState"] = DAS_op_status
       values["DAS_forwardCollisionWarning"] = DAS_collision_warning
       values["DAS_laneDepartureWarning"] = DAS_ldwStatus
-      values["DAS_autopilotHandsOnState"] = DAS_hands_on_state * 3
+      values["DAS_autopilotHandsOnState"] = DAS_hands_on_state  # 3 quiet, 5 with alerts
       values["DAS_autoLaneChangeState"] = DAS_alca_state
       values["DAS_lssState"] = 0 #0-FAULT 2-LSS_STATE_ELK
       values["DAS_statusCounter"] = counter
@@ -216,7 +215,7 @@ class TeslaCAN:
         "DAS_lssState" : 0, #0-FAULT 
         "DAS_laneDepartureWarning" : DAS_ldwStatus,
         "DAS_fleetSpeedState" : 0,
-        "DAS_autopilotHandsOnState" : DAS_hands_on_state * 3, # 3 quiet, 5 with alerts
+        "DAS_autopilotHandsOnState" : DAS_hands_on_state, # 3 quiet, 5 with alerts
         "DAS_autoLaneChangeState" : DAS_alca_state,
         "DAS_summonAvailable" : 0,
         "DAS_statusCounter" : counter,
@@ -226,7 +225,7 @@ class TeslaCAN:
       values["DAS_statusChecksum"] = self.checksum(0x399,data[:7])
     return self.packer.make_can_msg("DAS_status", bus, values)
 
-  def create_das_status2(self, msg_autopilot_status2, DAS_acc_speed_limit, fcw, DAS_hands_on_state, bus, counter):
+  def create_das_status2(self, msg_autopilot_status2, DAS_acc_speed_limit, fcw, bus, counter):
     fcw_sig = 0x0F if fcw == 0 else 0x01
     if msg_autopilot_status2 is not None:
       #AP - Modify
@@ -240,7 +239,7 @@ class TeslaCAN:
       values["DAS_pmmRadarFaultReason"] = 0
       values["DAS_pmmSysFaultReason"] = 0
       values["DAS_pmmCameraFaultReason"] = 0
-      values["DAS_driverInteractionLevel"] = DAS_hands_on_state * 2
+      values["DAS_driverInteractionLevel"] = 0 
       values["DAS_ppOffsetDesiredRamp"] = 0x80
       if fcw == 1:
         values["DAS_longCollisionWarning"] = fcw_sig
@@ -259,7 +258,7 @@ class TeslaCAN:
         "DAS_csaState" : 2, #CSA_EXTERNAL_STATE_AVAILABLE
         "DAS_radarTelemetry" : 1, #normal
         "DAS_robState" : 2, #active
-        "DAS_driverInteractionLevel" : DAS_hands_on_state * 2,
+        "DAS_driverInteractionLevel" : 0, 
         "DAS_ppOffsetDesiredRamp" : 0x80,
         "DAS_longCollisionWarning" : fcw_sig,
         "DAS_status2Counter" : counter,

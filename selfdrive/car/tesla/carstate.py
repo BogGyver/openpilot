@@ -65,6 +65,7 @@ class CarState(CarStateBase):
     self.DAS_207_lkasUnavailable = 0 #use for manual not in drive?
     self.DAS_208_rackDetected = 0 #use for low battery?
     self.DAS_211_accNoSeatBelt = 0
+    self.DAS_216_driverOverriding = 0
     self.DAS_219_lcTempUnavailableSpeed = 0
     self.DAS_220_lcTempUnavailableRoad = 0
     self.DAS_221_lcAborting = 0
@@ -82,6 +83,7 @@ class CarState(CarStateBase):
     #start config section
     self.forcePedalOverCC = False
     self.enableHSO = True
+    self.enableHAO = True
     self.autoStartAlcaDelay = 0
     self.enableRadarEmulation = False
     self.useTeslaRadar = False
@@ -114,7 +116,11 @@ class CarState(CarStateBase):
 
     # Gas pedal
     ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
-    ret.gasPressed = (ret.gas > 0)
+    ret.gasPressed = (ret.gas > 0) 
+    if self.enableHAO:
+      self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
+      ret.gas = 0
+      ret.gasPressed = False
 
     # Brake pedal
     ret.brake = 0
