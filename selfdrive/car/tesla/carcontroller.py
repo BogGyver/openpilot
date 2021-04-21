@@ -346,6 +346,7 @@ class CarController():
       if self.IC_integration_counter == 40 or self.IC_integration_counter == 90 or (self.IC_previous_enabled and not enabled ):
         can_sends.append(self.tesla_can.create_das_status(CS.msg_autopilot_status,DAS_op_status, DAS_collision_warning,
           DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
+          CS.out.leftBlindspot, CS.out.rightBlindspot,
           CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], 1))
         can_sends.append(self.tesla_can.create_das_status2(CS.msg_autopilot_status2,CS.out.cruiseState.speed * CV.MS_TO_MPH, 
           DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1))

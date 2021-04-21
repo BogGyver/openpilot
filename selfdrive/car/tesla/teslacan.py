@@ -176,6 +176,7 @@ class TeslaCAN:
 
   def create_das_status (self, msg_autopilot_status, DAS_op_status, DAS_collision_warning,
     DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
+    blindSpotLeft, blindSpotRight,
     DAS_speed_limit_kph, bus, counter):
     if msg_autopilot_status is not None:
       #AP - Modify
@@ -191,12 +192,14 @@ class TeslaCAN:
       values["DAS_autoparkReady"] = 0
       values["DAS_autoParked"] = 1
       values["DAS_autoparkWaitingForBrake"] = 0
+      values["DAS_blindSpotRearLeft"] = 1 if blindSpotLeft else 0
+      values["DAS_blindSpotRearRight"] = 1 if blindSpotRight else 0
     else:
       #preAP - Create
       values = {
         "DAS_autopilotState" : DAS_op_status,
-        "DAS_blindSpotRearLeft" : 0,
-        "DAS_blindSpotRearRight" : 0,
+        "DAS_blindSpotRearLeft" : 1 if blindSpotLeft else 0,
+        "DAS_blindSpotRearRight" : 1 if blindSpotRight else 0,
         "DAS_fusedSpeedLimit" : DAS_speed_limit_kph,
         "DAS_suppressSpeedWarning" : 1,
         "DAS_summonObstacle" : 0,

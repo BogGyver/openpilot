@@ -223,7 +223,7 @@ class CarState(CarStateBase):
 
     # Blinkers are used for Comma ALCA
     # we use tap to trigger Comma ALCA so only engage when blinkig but not pressed
-    if (cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"] is not None) and (cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"] > 0):
+    if (cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"] is not None):
       self.turn_signal_stalk_state = (
             0
             if cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"] == 3
