@@ -45,6 +45,59 @@ class CarController():
       self.lead_1 = None
       self.long_control_counter = 1
 
+  # to show lead car on IC
+  def showLeadCarOnICCanMessage(self, radarStateMsg, curv0):
+      messages = []
+      leads = radarStateMsg.radarState
+      if leads is None:
+          return messages
+      lead_1 = leads.leadOne
+      lead_2 = leads.leadTwo
+      if (lead_1 is not None) and lead_1.status:
+          self.ahbLead1 = lead_1
+          self.leadDx = lead_1.dRel
+          self.leadDy = curv0 - lead_1.yRel
+          self.leadId = 1
+          self.leadClass = 2
+          self.leadVx = lead_1.vRel
+      else:
+          self.leadDx = 0.0
+          self.leadDy = 0.0
+          self.leadClass = 0
+          self.leadId = 0
+          self.leadVx = 0xF
+      if (lead_2 is not None) and lead_2.status:
+          self.lead2Dx = lead_2.dRel
+          self.lead2Dy = curv0 - lead_2.yRel
+          self.lead2Id = 2
+          self.lead2Class = 2
+          self.lead2Vx = lead_2.vRel
+          if (self.lead2Id <= 0) or (self.lead2Id == 63):
+              self.leadId = 62
+      else:
+          self.lead2Dx = 0.0
+          self.lead2Dy = 0.0
+          self.lead2Class = 0
+          self.lead2Id = 0
+          self.lead2Vx = 0xF
+      messages.append(
+          teslacan.create_lead_car_object_message(
+              0, #lead vehicle
+              self.leadClass,
+              self.leadId,
+              0, #relevant1
+              self.leadDx,
+              self.leadVx,
+              self.leadDy,
+              self.lead2Class,
+              self.lead2Id,
+              0, #relevant2
+              self.lead2Dx,
+              self.lead2Vx,
+              self.lead2Dy,
+          )
+      )
+      return messages
 
   def update(self, enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart):
@@ -185,6 +238,10 @@ class CarController():
       if self.v_target is None:
         self.v_target = CS.out.vEgo
         self.a_target = 1
+      if frame %10 == 0:
+        if radar_state is not None:
+          can_messages = self.showLeadCarOnICCanMessage(radarStateMsg=radar_state,curv0=CS.curvC0)
+        can_sends.extend(can_messages)
       following = False
       #TODO: see what works best for these
       tesla_accel_limits = [-2*self.a_target,self.a_target]

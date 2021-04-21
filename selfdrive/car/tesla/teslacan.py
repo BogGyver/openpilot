@@ -36,21 +36,21 @@ class TeslaCAN:
     }
     return self.packer.make_can_msg("DAS_lanes", bus, values)
 
-  def create_lead_car_object_message(self, vType1,relevant1,dx1,vxrel1,dy1,vType2,relevant2,dx2,vxrel2,dy2,bus):
+  def create_lead_car_object_message(self, objectId, vType1,vId1,relevant1,dx1,vxrel1,dy1,vType2,vId2,relevant2,dx2,vxrel2,dy2,bus):
     values = {
-      "DAS_objectId" : 0, #0-Lead vehicles
+      "DAS_objectId" : objectId, #0-Lead vehicles
       "DAS_leadVehType" : vType1,
       "DAS_leadVehRelevantForControl" : relevant1,
       "DAS_leadVehDx" : dx1,
       "DAS_leadVehVxRel" : vxrel1,
       "DAS_leadVehDy" : dy1,
-      "DAS_leadVehId" : 1,
+      "DAS_leadVehId" : vId1,
       "DAS_leadVeh2Type" : vType2,
       "DAS_leadVeh2RelevantForControl" : relevant2,
       "DAS_leadVeh2Dx" : dx2,
       "DAS_leadVeh2VxRel" : vxrel2,
       "DAS_leadVeh2Dy" : dy2,
-      "DAS_leadVeh2Id" : 2,
+      "DAS_leadVeh2Id" : vId2,
     }
     return self.packer.make_can_msg("DAS_object", bus, values)
 
