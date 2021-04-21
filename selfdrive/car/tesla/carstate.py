@@ -5,7 +5,7 @@ from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from selfdrive.config import Conversions as CV
-from selfdrive.car.tesla.CFG_module import read_config_file
+from selfdrive.car.tesla.CFG_module import CarSettings, read_config_file
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -97,6 +97,8 @@ class CarState(CarStateBase):
     read_config_file(self)
     #end config section
 
+    self.speed_units = "MPH"
+
   def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
     if speed_limit_uom > 0:
       if speed_limit_type == 0x1E: # Autobahn with no speed limit
@@ -111,7 +113,10 @@ class CarState(CarStateBase):
     ret = car.CarState.new_message()
 
     # Vehicle speed
-    ret.vEgoRaw = cp.vl["ESP_B"]["ESP_vehicleSpeed"] * CV.KPH_TO_MS
+    if (self.CP.carFingerprint == CAR.PREAP_MODELS) and self.usesApillarHarness:
+      ret.vEgoRaw = cp_cam.vl["ESP_B"]["ESP_vehicleSpeed"] * CV.KPH_TO_MS
+    else:
+      ret.vEgoRaw = cp.vl["ESP_B"]["ESP_vehicleSpeed"] * CV.KPH_TO_MS
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.standstill = (ret.vEgo < 0.1)
 
@@ -125,7 +130,10 @@ class CarState(CarStateBase):
 
     # Brake pedal
     ret.brake = 0
-    ret.brakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
+    if (self.CP.carFingerprint == CAR.PREAP_MODELS) and self.usesApillarHarness:
+      ret.brakePressed = bool(cp_cam.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
+    else:
+      ret.brakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
 
     # Steering wheel
     if (self.CP.carFingerprint == CAR.PREAP_MODELS):
@@ -165,15 +173,15 @@ class CarState(CarStateBase):
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
       autopilot_status = self.can_define.dv["DAS_status"]["DAS_autopilotState"].get(int(cp_cam.vl["DAS_status"]["DAS_autopilotState"]), None)
     cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
-    speed_units = self.can_define.dv["DI_state"]["DI_speedUnits"].get(int(cp.vl["DI_state"]["DI_speedUnits"]), None)
+    self.speed_units = self.can_define.dv["DI_state"]["DI_speedUnits"].get(int(cp.vl["DI_state"]["DI_speedUnits"]), None)
 
     acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
     self.autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
     self.cruiseEnabled = acc_enabled and not self.autopilot_enabled
     ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
-    if speed_units == "KPH":
+    if self.speed_units == "KPH":
       ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
-    elif speed_units == "MPH":
+    elif self.speed_units == "MPH":
       ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.MPH_TO_MS
     ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
     ret.cruiseState.standstill = (cruise_state == "STANDSTILL")
@@ -226,7 +234,10 @@ class CarState(CarStateBase):
     self.turn_signal_blinking = ret.leftBlinker or ret.rightBlinker
 
     # Seatbelt
-    ret.seatbeltUnlatched = (cp.vl["SDM1"]["SDM_bcklDrivStatus"] != 1)
+    if (self.CP.carFingerprint == CAR.PREAP_MODELS) and self.usesApillarHarness:
+      ret.seatbeltUnlatched = (cp_cam.vl["SDM1"]["SDM_bcklDrivStatus"] != 1)
+    else:
+      ret.seatbeltUnlatched = (cp.vl["SDM1"]["SDM_bcklDrivStatus"] != 1)
 
     #Blindspot
     ret.rightBlindspot = cp.vl["PARK_status2"]['PARK_sdiBlindSpotRight'] == 1
@@ -251,9 +262,10 @@ class CarState(CarStateBase):
 
   @staticmethod
   def get_can_parser(CP):
+    usesApillarHarness = CarSettings().get_value("usesApillarHarness")
     signals = [
       # sig_name, sig_address, default
-      ("ESP_vehicleSpeed", "ESP_B", 0),
+      
       ("DI_pedalPos", "DI_torque1", 0),
       ("DI_brakePedal", "DI_torque2", 0),
       ("StW_AnglHP", "STW_ANGLHP_STAT", 0),
@@ -270,8 +282,6 @@ class CarState(CarStateBase):
       ("BOOT_STATE", "GTW_carState", 1),
       ("BC_indicatorLStatus", "GTW_carState", 1),
       ("BC_indicatorRStatus", "GTW_carState", 1),
-      ("SDM_bcklDrivStatus", "SDM1", 0),
-      ("driverBrakeStatus", "BrakeMessage", 0),
       # info for speed limit
       ("UI_mapSpeedLimitUnits","UI_gpsVehicleSpeed",0),
       ("UI_mppSpeedLimit","UI_gpsVehicleSpeed",0),
@@ -316,16 +326,25 @@ class CarState(CarStateBase):
 
     checks = [
       # sig_address, frequency
-      ("ESP_B", 50),
       ("DI_torque1", 100),
       ("DI_torque2", 100),
       ("STW_ANGLHP_STAT", 100),
       ("DI_state", 10),
       ("STW_ACTN_RQ", 10),
       ("GTW_carState", 10),
-      ("SDM1", 10),
-      ("BrakeMessage", 50),
     ]
+
+    if not (CP.carFingerprint in [CAR.PREAP_MODELS] and usesApillarHarness):
+      signals += [
+        ("ESP_vehicleSpeed", "ESP_B", 0),
+        ("driverBrakeStatus", "BrakeMessage", 0),
+        ("SDM_bcklDrivStatus", "SDM1", 0),
+      ]
+      checks += [
+        ("ESP_B", 50),
+        ("BrakeMessage", 50),
+        ("SDM1", 10),
+      ]
 
     if CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP2_MODELS, CAR.AP1_MODELX]:
       signals += [
@@ -344,9 +363,10 @@ class CarState(CarStateBase):
 
   @staticmethod
   def get_cam_can_parser(CP):
+    usesApillarHarness = CarSettings().get_value("usesApillarHarness")
     signals = None
     checks = None
-
+    
     if CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP2_MODELS, CAR.AP1_MODELX]:
       signals = [
         # sig_name, sig_address, default
@@ -424,5 +444,17 @@ class CarState(CarStateBase):
       checks = [      
         ("EPAS_sysStatus", 25),
       ]
+
+      if usesApillarHarness:
+        signals += [
+          ("ESP_vehicleSpeed", "ESP_B", 0),
+          ("driverBrakeStatus", "BrakeMessage", 0),
+          ("SDM_bcklDrivStatus", "SDM1", 0),
+        ]
+        checks += [
+          ("ESP_B", 50),
+          ("BrakeMessage", 50),
+          ("SDM1", 10),
+        ]
 
     return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 2)

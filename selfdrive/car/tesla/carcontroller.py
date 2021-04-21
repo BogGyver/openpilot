@@ -327,28 +327,59 @@ class CarController():
           CS.DAS_208_rackDetected, CS.DAS_216_driverOverriding, CS.stopSignWarning, CS.stopLightWarning, CAN_CHASSIS[self.CP.carFingerprint]))
       
       # send DAS_status and DAS_status2 at 2Hz
+      DAS_ldwStatus = 1 if left_lane_depart or right_lane_depart else 0
+      DAS_hands_on_state = 2
+      #steering required is also used by ALCA
+      if (hud_alert == VisualAlert.steerRequired) and not (CS.alca_engaged or CS.alca_pre_engage):
+        if audible_alert == AudibleAlert.none:
+          DAS_hands_on_state = 3
+        else:
+          DAS_hands_on_state = 5
+      DAS_collision_warning =  1 if hud_alert == VisualAlert.fcw else 0
+      #alcaState 1 if nothing, 8+direction if enabled
+      DAS_alca_state = 8 + CS.alca_direction if (CS.alca_pre_engage or CS.alca_engaged) and CS.alca_direction > 0 else 1
+      #ap status 0-Disabled 1-Unavailable 2-Available 3-Active_nominal, 
+      #          4-active_restricted 5-active_nav 8-aborting 9-aborted
+      #          14-fault  15-SNA
+      DAS_op_status = 5 if enabled else 2
       if self.IC_integration_counter == 40 or self.IC_integration_counter == 90 or (self.IC_previous_enabled and not enabled ):
-        DAS_ldwStatus = 1 if left_lane_depart or right_lane_depart else 0
-        DAS_hands_on_state = 2
-        #steering required is also used by ALCA
-        if (hud_alert == VisualAlert.steerRequired) and not (CS.alca_engaged or CS.alca_pre_engage):
-          if audible_alert == AudibleAlert.none:
-            DAS_hands_on_state = 3
-          else:
-            DAS_hands_on_state = 5
-        DAS_collision_warning =  1 if hud_alert == VisualAlert.fcw else 0
-        #alcaState 1 if nothing, 8+direction if enabled
-        DAS_alca_state = 8 + CS.alca_direction if (CS.alca_pre_engage or CS.alca_engaged) and CS.alca_direction > 0 else 1
-        #ap status 0-Disabled 1-Unavailable 2-Available 3-Active_nominal, 
-        #          4-active_restricted 5-active_nav 8-aborting 9-aborted
-        #          14-fault  15-SNA
-        DAS_op_status = 5 if enabled else 2
         can_sends.append(self.tesla_can.create_das_status(CS.msg_autopilot_status,DAS_op_status, DAS_collision_warning,
           DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
           CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], 1))
         can_sends.append(self.tesla_can.create_das_status2(CS.msg_autopilot_status2,CS.out.cruiseState.speed * CV.MS_TO_MPH, 
           DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1))
       self.IC_previous_enabled = enabled
+
+      #send message for TB if preAP
+      if (self.CP.carFingerprint == CAR.PREAP_MODELS):
+        speed_uom_kph = 1.0
+        if CS.self.speed_units == "MPH":
+            speed_uom_kph = CV.KPH_TO_MPH
+        v_cruise_pcm = max(0.0, CS.out.vEgo * CV.MS_TO_KPH) * speed_uom_kph
+        if CS.cruiseEnabled:
+          v_cruise_pcm = max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH) * speed_uom_kph
+        can_sends.append(
+            teslacan.create_fake_DAS_msg(
+                1 if CS.cruiseEnabled else 0,
+                DAS_216_driverOverriding,
+                CS.DAS_206_apUnavailable,
+                DAS_collision_warning,
+                5 if enabled else 2,
+                max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH),#
+                self.blinker.override_direction,
+                DAS_collision_warning,
+                1 if CS.cruiseEnabled else 0,
+                DAS_hands_on_state,
+                2 if CS.cruiseEnabled else 3,
+                1 if CS.cruiseEnabled else 0, #self.PCC.pcc_available 
+                DAS_alca_state,
+                v_cruise_pcm,
+                1, #CS.DAS_fusedSpeedLimit,
+                apply_angle,
+                1 if enabled else 0,
+                0, #park_brake_request
+            )
+        )
 
     # if using radar, we need to send the VIN
     if CS.useTeslaRadar and (frame % 100 == 0):
@@ -367,5 +398,4 @@ class CarController():
       self.radarVin_idx += 1
       self.radarVin_idx = self.radarVin_idx % 3
       
-
     return can_sends
