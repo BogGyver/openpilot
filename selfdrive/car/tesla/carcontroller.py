@@ -357,7 +357,7 @@ class CarController():
       #send message for TB if preAP
       if (self.CP.carFingerprint == CAR.PREAP_MODELS):
         speed_uom_kph = 1.0
-        if CS.self.speed_units == "MPH":
+        if CS.speed_units == "MPH":
             speed_uom_kph = CV.KPH_TO_MPH
         v_cruise_pcm = max(0.0, CS.out.vEgo * CV.MS_TO_KPH) * speed_uom_kph
         if CS.cruiseEnabled:
