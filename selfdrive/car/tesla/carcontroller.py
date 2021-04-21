@@ -95,6 +95,7 @@ class CarController():
               self.lead2Dx,
               self.lead2Vx,
               self.lead2Dy,
+              CAN_CHASSIS[self.CP.carFingerprint],
           )
       )
       return messages
@@ -378,6 +379,7 @@ class CarController():
                 apply_angle,
                 1 if enabled else 0,
                 0, #park_brake_request
+                CAN_CHASSIS[self.CP.carFingerprint],
             )
         )
 
@@ -393,6 +395,7 @@ class CarController():
               useRadar,
               CS.radarPosition,
               CS.radarEpasType,
+              CAN_CHASSIS[self.CP.carFingerprint],
           )
       )
       self.radarVin_idx += 1

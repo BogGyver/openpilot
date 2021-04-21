@@ -280,7 +280,7 @@ class TeslaCAN:
     return self.packer.make_can_msg("STW_ACTN_RQ", bus, values)
 
   def create_radar_VIN_msg(self, radarId, radarVIN, radarCAN, radarTriggerMessage,
-      useRadar, radarPosition, radarEpasType ):
+      useRadar, radarPosition, radarEpasType,bus ):
     msg_id = 0x560
     msg_len = 8
     msg = create_string_buffer(msg_len)
@@ -326,7 +326,7 @@ class TeslaCAN:
           ord(radarVIN[15]),
           ord(radarVIN[16]),
       )
-    return [msg_id, 0, msg.raw, 0]
+    return [msg_id, 0, msg.raw, bus]
 
   def create_fake_DAS_msg(
     self,
@@ -348,6 +348,7 @@ class TeslaCAN:
     apply_angle,
     enable_steer_control,
     park_brake_request,
+    bus,
 ):
     msg_id = 0x659  # we will use DAS_udsRequest to send this info to IC
     msg_len = 8
@@ -385,4 +386,4 @@ class TeslaCAN:
         int(c_apply_steer & 0xFF),
         int((c_apply_steer >> 8) & 0xFF),
     )
-    return [msg_id, 0, msg.raw, 0]
+    return [msg_id, 0, msg.raw, bus]
