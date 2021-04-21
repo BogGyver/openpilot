@@ -98,6 +98,7 @@ class CarState(CarStateBase):
     #end config section
 
     self.speed_units = "MPH"
+    self.tap_direction = 0
 
   def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
     if speed_limit_uom > 0:
@@ -229,8 +230,8 @@ class CarState(CarStateBase):
             if cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"] == 3
             else int(cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"])
         )
-    ret.leftBlinker = (cp.vl["GTW_carState"]["BC_indicatorLStatus"] == 1) and (self.turn_signal_stalk_state == 0)
-    ret.rightBlinker = (cp.vl["GTW_carState"]["BC_indicatorRStatus"] == 1) and (self.turn_signal_stalk_state == 0)
+    ret.leftBlinker = (cp.vl["GTW_carState"]["BC_indicatorLStatus"] == 1) and (self.turn_signal_stalk_state == 0) and (self.tap_direction == 1)
+    ret.rightBlinker = (cp.vl["GTW_carState"]["BC_indicatorRStatus"] == 1) and (self.turn_signal_stalk_state == 0) and (self.tap_direction == 2)
     self.turn_signal_blinking = ret.leftBlinker or ret.rightBlinker
 
     # Seatbelt

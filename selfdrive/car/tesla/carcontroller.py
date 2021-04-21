@@ -121,6 +121,7 @@ class CarController():
     # Update modules
     human_control = self.HSO.update_stat(self, CS, enabled, actuators, frame)
     self.blinker.update_state(CS, frame)
+    CS.tap_direction = self.blinker.tap_direction
 
     # Temp disable steering on a hands_on_fault, and allow for user override
     # TODO: better user blending
