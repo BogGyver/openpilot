@@ -179,16 +179,11 @@ Community Maintained Cars and Features
 | Subaru    | Crosstrek 2018-19             | EyeSight          | Stock            | 0mph               | 0mph         |
 | Subaru    | Forester 2019-20              | EyeSight          | Stock            | 0mph               | 0mph         |
 | Subaru    | Impreza 2017-19               | EyeSight          | Stock            | 0mph               | 0mph         |
-| Tesla     | Model S 2012-2014             | Pre AutoPilot     |
- Stock           | 18mph              | 0mph         |
-| Tesla     | Model S 2014-2016             | AutoPilot HW1     |
- Stock           | 0mph               | 0mph         |
-| Tesla     | Model S 2016-2019             | AutoPilot HW2     | 
-Stock            | 0mph               | 0mph         |
-| Tesla     | Model X 2016                  | AutoPilot HW1     |
- Stock           | 0mph               | 0mph         |
-| Tesla     | Model X 2017-2019             | AutoPilot HW2     | 
-Stock            | 0mph               | 0mph         |
+| Tesla     | Model S 2012-2014             | Pre AutoPilot     | Stock            | 18mph              | 0mph         |
+| Tesla     | Model S 2014-2016             | AutoPilot HW1     | Stock            | 0mph               | 0mph         |
+| Tesla     | Model S 2016-2019             | AutoPilot HW2     | Stock            | 0mph               | 0mph         |
+| Tesla     | Model X 2016                  | AutoPilot HW1     | Stock            | 0mph               | 0mph         |
+| Tesla     | Model X 2017-2019             | AutoPilot HW2     | Stock            | 0mph               | 0mph         |
 | Volkswagen| e-Golf 2014, 2019-20          | Driver Assistance | Stock            | 0mph               | 0mph         |
 | Volkswagen| Golf 2015-19                  | Driver Assistance | Stock            | 0mph               | 0mph         |
 | Volkswagen| Golf GTE 2016                 | Driver Assistance | Stock            | 0mph               | 0mph         |
