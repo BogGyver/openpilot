@@ -33,6 +33,7 @@ class CarController():
     self.IC_integration_counter = 0
     self.IC_integration_warning_counter = 0
     self.IC_previous_enabled = False
+    self.radarVin_idx = 0
 
     self.cruiseDelayFrame = 0
     self.prevCruiseEnabled = False
@@ -290,7 +291,24 @@ class CarController():
           CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], 1))
         can_sends.append(self.tesla_can.create_das_status2(CS.msg_autopilot_status2,CS.out.cruiseState.speed * CV.MS_TO_MPH, 
           DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1))
-      
       self.IC_previous_enabled = enabled
+
+    # if using radar, we need to send the VIN
+    if CS.useTeslaRadar and (frame % 100 == 0):
+      useRadar = 1
+      can_sends.append(
+          teslacan.create_radar_VIN_msg(
+              self.radarVin_idx,
+              CS.radarVIN,
+              1,
+              0x108,
+              useRadar,
+              CS.radarPosition,
+              CS.radarEpasType,
+          )
+      )
+      self.radarVin_idx += 1
+      self.radarVin_idx = self.radarVin_idx % 3
+      
 
     return can_sends

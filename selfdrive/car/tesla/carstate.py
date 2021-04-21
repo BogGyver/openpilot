@@ -215,7 +215,8 @@ class CarState(CarStateBase):
 
     # Blinkers are used for Comma ALCA
     # we use tap to trigger Comma ALCA so only engage when blinkig but not pressed
-    self.turn_signal_stalk_state = (
+    if (cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"] is not None) and (cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"] > 0):
+      self.turn_signal_stalk_state = (
             0
             if cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"] == 3
             else int(cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"])
@@ -227,14 +228,24 @@ class CarState(CarStateBase):
     # Seatbelt
     ret.seatbeltUnlatched = (cp.vl["SDM1"]["SDM_bcklDrivStatus"] != 1)
 
-    # TODO: blindspot
+    #Blindspot
+    ret.rightBlindspot = cp.vl["PARK_status2"]['PARK_sdiBlindSpotRight'] == 1
+    ret.leftBlindspot = cp.vl["PARK_status2"]['PARK_sdiBlindSpotLeft'] == 1
 
     # Messages needed by carcontroller
-    self.msg_stw_actn_req = copy.copy(cp.vl["STW_ACTN_RQ"])
+    sw_a = copy.copy(cp.vl["STW_ACTN_RQ"])
+    if sw_a is not None:
+      self.msg_stw_actn_req = sw_a
     if (self.CP.carFingerprint != CAR.PREAP_MODELS):
-      self.msg_autopilot_status = copy.copy(cp_cam.vl["DAS_status"])
-      self.msg_das_body_controls = copy.copy(cp_cam.vl["DAS_bodyControls"])
-      self.msg_autopilot_status2 = copy.copy(cp_cam.vl["DAS_status2"])
+      ap_s = copy.copy(cp_cam.vl["DAS_status"])
+      if ap_s is not None:
+        self.msg_autopilot_status = ap_s
+      bc = copy.copy(cp_cam.vl["DAS_bodyControls"])
+      if bc is not None:
+        self.msg_das_body_controls = bc
+      ap_s2 = copy.copy(cp_cam.vl["DAS_status2"])
+      if ap_s2 is not None:
+        self.msg_autopilot_status2 = ap_s2
 
     return ret
 
@@ -299,6 +310,8 @@ class CarState(CarStateBase):
       ("WprSw6Posn", "STW_ACTN_RQ", 0),
       ("MC_STW_ACTN_RQ", "STW_ACTN_RQ", 0),
       ("CRC_STW_ACTN_RQ", "STW_ACTN_RQ", 0),
+      ("PARK_sdiBlindSpotRight","PARK_status2"),
+      ("PARK_sdiBlindSpotLeft","PARK_status2"),
     ]
 
     checks = [
