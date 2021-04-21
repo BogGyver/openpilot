@@ -370,7 +370,7 @@ class CarController():
                 DAS_collision_warning,
                 5 if enabled else 2,
                 max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH),#
-                self.blinker.override_direction,
+                self.blinker.tap_direction,
                 DAS_collision_warning,
                 1 if CS.cruiseEnabled else 0,
                 DAS_hands_on_state,
