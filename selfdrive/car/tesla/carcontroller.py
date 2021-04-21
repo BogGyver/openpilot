@@ -311,7 +311,8 @@ class CarController():
           CAN_CHASSIS[self.CP.carFingerprint], 1))
 
       # send DAS_bodyControls
-      can_sends.append(self.tesla_can.create_body_controls_message(CS.msg_das_body_controls,
+      if self.IC_integration_counter in [20,70]:
+        can_sends.append(self.tesla_can.create_body_controls_message(CS.msg_das_body_controls,
           CS.alca_direction, 1 if CS.needs_hazard else 0 , CAN_CHASSIS[self.CP.carFingerprint], 1))
 
       # send DAS_warningMatrix0 at 1Hz

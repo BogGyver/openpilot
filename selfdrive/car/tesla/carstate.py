@@ -248,13 +248,16 @@ class CarState(CarStateBase):
     sw_a = copy.copy(cp.vl["STW_ACTN_RQ"])
     if sw_a is not None:
       self.msg_stw_actn_req = sw_a
+
     if (self.CP.carFingerprint != CAR.PREAP_MODELS):
       ap_s = copy.copy(cp_cam.vl["DAS_status"])
       if ap_s is not None:
         self.msg_autopilot_status = ap_s
+
       bc = copy.copy(cp_cam.vl["DAS_bodyControls"])
       if bc is not None:
         self.msg_das_body_controls = bc
+
       ap_s2 = copy.copy(cp_cam.vl["DAS_status2"])
       if ap_s2 is not None:
         self.msg_autopilot_status2 = ap_s2

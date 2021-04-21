@@ -57,6 +57,8 @@ class TeslaCAN:
   def create_body_controls_message(self,msg_das_body_controls,turn,hazard,bus,counter):
     if msg_das_body_controls is not None:
       values = copy.copy(msg_das_body_controls)
+      values["DAS_bodyControlsCounter"] = counter
+      values["DAS_bodyControlsChecksum"] = 0
     else:
       values = {
       "DAS_headlightRequest" : 0, 
