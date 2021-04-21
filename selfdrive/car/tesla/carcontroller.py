@@ -81,7 +81,7 @@ class CarController():
           self.lead2Id = 0
           self.lead2Vx = 0xF
       messages.append(
-          tesla_can.create_lead_car_object_message(
+          self.tesla_can.create_lead_car_object_message(
               0, #lead vehicle
               self.leadClass,
               self.leadId,
@@ -359,7 +359,7 @@ class CarController():
         if CS.cruiseEnabled:
           v_cruise_pcm = max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH) * speed_uom_kph
         can_sends.append(
-            tesla_can.create_fake_DAS_msg(
+            self.tesla_can.create_fake_DAS_msg(
                 1 if CS.cruiseEnabled else 0,
                 CS.DAS_216_driverOverriding,
                 CS.DAS_206_apUnavailable,
@@ -385,7 +385,7 @@ class CarController():
     if CS.useTeslaRadar and (frame % 100 == 0):
       useRadar = 1
       can_sends.append(
-          tesla_can.create_radar_VIN_msg(
+          self.tesla_can.create_radar_VIN_msg(
               self.radarVin_idx,
               CS.radarVIN,
               1,

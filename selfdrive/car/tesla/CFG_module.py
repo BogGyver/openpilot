@@ -1,5 +1,4 @@
 import configparser
-import subprocess
 from common.basedir import BASEDIR
 
 default_config_file_path = "%s/../openpilot.cfg" % BASEDIR
@@ -164,7 +163,9 @@ class ConfigFile:
             entry="radar_epas_type",
             entry_type=int,
             default_value=0,
-            comment="Depending on the source of your Tesla Bosch Radar (older or newer Model S or Model X), this setting has to match what the radar was programmed to recognize as EPAS; values are between 0 and 4; finding the right one is trial and error.",
+            comment="Depending on the source of your Tesla Bosch Radar (older or newer Model S or Model X), \
+               this setting has to match what the radar was programmed to recognize as EPAS; values are between 0 and 4; \
+               finding the right one is trial and error.",
         )
         file_changed |= didUpdate
 
@@ -177,7 +178,9 @@ class ConfigFile:
             entry="radar_position",
             entry_type=int,
             default_value=0,
-            comment="Depending on the source of your Tesla Bosch Radar (older or newer Model S or Model X), this setting has to match what the radar was programmed to have a position (Model S, Model S facelift, Model X); values are between 0 and 3; finding the right one is trial and error.",
+            comment="Depending on the source of your Tesla Bosch Radar (older or newer Model S or Model X), \
+                this setting has to match what the radar was programmed to have a position (Model S, Model S facelift, \
+                Model X); values are between 0 and 3; finding the right one is trial and error.",
         )
         file_changed |= didUpdate
 

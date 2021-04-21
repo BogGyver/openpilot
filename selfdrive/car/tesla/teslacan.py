@@ -55,7 +55,7 @@ class TeslaCAN:
     return self.packer.make_can_msg("DAS_object", bus, values)
 
   def create_body_controls_message(self,msg_das_body_controls,turn,hazard,bus,counter):
-    if msg_das_body_controls != None:
+    if msg_das_body_controls is not None:
       values = copy.copy(msg_das_body_controls)
     else:
       values = {
@@ -279,7 +279,7 @@ class TeslaCAN:
     values["CRC_STW_ACTN_RQ"] = self.crc(data[:7])
     return self.packer.make_can_msg("STW_ACTN_RQ", bus, values)
 
-  def create_radar_VIN_msg( radarId, radarVIN, radarCAN, radarTriggerMessage,
+  def create_radar_VIN_msg(self, radarId, radarVIN, radarCAN, radarTriggerMessage,
       useRadar, radarPosition, radarEpasType ):
     msg_id = 0x560
     msg_len = 8
@@ -329,6 +329,7 @@ class TeslaCAN:
     return [msg_id, 0, msg.raw, 0]
 
   def create_fake_DAS_msg(
+    self,
     speed_control_enabled,
     speed_override,
     apUnavailable,
