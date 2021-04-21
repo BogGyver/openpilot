@@ -81,7 +81,7 @@ class CarController():
           self.lead2Id = 0
           self.lead2Vx = 0xF
       messages.append(
-          teslacan.create_lead_car_object_message(
+          tesla_can.create_lead_car_object_message(
               0, #lead vehicle
               self.leadClass,
               self.leadId,
@@ -242,7 +242,7 @@ class CarController():
         if radar_state is not None:
           can_messages = self.showLeadCarOnICCanMessage(radarStateMsg=radar_state,curv0=CS.curvC0)
         can_sends.extend(can_messages)
-      following = False
+      #following = False
       #TODO: see what works best for these
       tesla_accel_limits = [-2*self.a_target,self.a_target]
       tesla_jerk_limits = [-4*self.a_target,2*self.a_target]
@@ -359,9 +359,9 @@ class CarController():
         if CS.cruiseEnabled:
           v_cruise_pcm = max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH) * speed_uom_kph
         can_sends.append(
-            teslacan.create_fake_DAS_msg(
+            tesla_can.create_fake_DAS_msg(
                 1 if CS.cruiseEnabled else 0,
-                DAS_216_driverOverriding,
+                CS.DAS_216_driverOverriding,
                 CS.DAS_206_apUnavailable,
                 DAS_collision_warning,
                 5 if enabled else 2,
@@ -385,7 +385,7 @@ class CarController():
     if CS.useTeslaRadar and (frame % 100 == 0):
       useRadar = 1
       can_sends.append(
-          teslacan.create_radar_VIN_msg(
+          tesla_can.create_radar_VIN_msg(
               self.radarVin_idx,
               CS.radarVIN,
               1,

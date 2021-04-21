@@ -1,5 +1,4 @@
 import configparser
-from common.params import Params
 import subprocess
 from common.basedir import BASEDIR
 
@@ -14,7 +13,6 @@ class ConfigFile:
     def read(self, into, config_path):
         configr = configparser.RawConfigParser()
         file_changed = False
-        params = Params()
 
         try:
             configr.read(config_path)
@@ -27,8 +25,8 @@ class ConfigFile:
 
         main_section = "OP_CONFIG"
         pref_section = "OP_PREFERENCES"
-        jetson_section = "JETSON_PREFERENCES"
-        logging_section = "LOGGING"
+        #jetson_section = "JETSON_PREFERENCES"
+        #logging_section = "LOGGING"
         config = configparser.RawConfigParser(allow_no_value=True)
         config.add_section(main_section)
         config.add_section(pref_section)
