@@ -179,7 +179,7 @@ Community Maintained Cars and Features
 | Subaru    | Crosstrek 2018-19             | EyeSight          | Stock            | 0mph               | 0mph         |
 | Subaru    | Forester 2019-20              | EyeSight          | Stock            | 0mph               | 0mph         |
 | Subaru    | Impreza 2017-19               | EyeSight          | Stock            | 0mph               | 0mph         |
-| Tesla     | Model S 2012-2014             | Pre AutoPilot     | Stock            | 18mph              | 0mph         |
+| Tesla     | Model S 2012-2014             | Pre AutoPilot     | openpilot        | 18mph              | 0mph         |
 | Tesla     | Model S 2014-2016             | AutoPilot HW1     | Stock            | 0mph               | 0mph         |
 | Tesla     | Model S 2016-2019             | AutoPilot HW2     | Stock            | 0mph               | 0mph         |
 | Tesla     | Model X 2016                  | AutoPilot HW1     | Stock            | 0mph               | 0mph         |
