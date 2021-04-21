@@ -265,7 +265,6 @@ class CarState(CarStateBase):
     usesApillarHarness = CarSettings().get_value("usesApillarHarness")
     signals = [
       # sig_name, sig_address, default
-      
       ("DI_pedalPos", "DI_torque1", 0),
       ("DI_brakePedal", "DI_torque2", 0),
       ("StW_AnglHP", "STW_ANGLHP_STAT", 0),
@@ -320,8 +319,8 @@ class CarState(CarStateBase):
       ("WprSw6Posn", "STW_ACTN_RQ", 0),
       ("MC_STW_ACTN_RQ", "STW_ACTN_RQ", 0),
       ("CRC_STW_ACTN_RQ", "STW_ACTN_RQ", 0),
-      ("PARK_sdiBlindSpotRight","PARK_status2"),
-      ("PARK_sdiBlindSpotLeft","PARK_status2"),
+      ("PARK_sdiBlindSpotRight","PARK_status2",0),
+      ("PARK_sdiBlindSpotLeft","PARK_status2",0),
     ]
 
     checks = [
