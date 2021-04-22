@@ -26,4 +26,7 @@ class HSOController:
                 human_control = True
 
         self.human_control = human_control
-        return human_control and enabled
+        human_control = human_control and enabled
+        hands_on_fault = (CS.hands_on_level >= 2 and not human_control)
+        lkas_enabled = enabled and (not hands_on_fault)
+        return human_control, hands_on_fault, lkas_enabled
