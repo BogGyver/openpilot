@@ -40,7 +40,7 @@ def set_core_affinity(core):
   if not PC:
     try:
       os.sched_setaffinity(0, [core,])
-    except:
+    except ValueError:
       print("SetAffinity exception")
 
 
