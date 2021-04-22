@@ -100,6 +100,16 @@ class CarState(CarStateBase):
     self.speed_units = "MPH"
     self.tap_direction = 0
 
+    #preAP long
+    self.v_cruise_pcm = 0
+    self.acc_speed_kph = 0
+    self.speed_control_enabled = 0
+    self.cc_state = 1
+    self.adaptive_cruise = 0
+
+    #IC integration
+    CS.userSpeedLimitOffsetMS = 0
+
   def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
     if speed_limit_uom > 0:
       if speed_limit_type == 0x1E: # Autobahn with no speed limit

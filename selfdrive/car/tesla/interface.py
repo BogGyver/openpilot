@@ -10,7 +10,7 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def compute_gb(accel, speed):
     # TODO: is this correct?
-    return accel
+    return float(accel) / 3.0
 
   @staticmethod
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=None):
@@ -109,7 +109,7 @@ class CarInterface(CarInterfaceBase):
 
   def apply(self, c):
     can_sends = self.CC.update(c.enabled, self.CS, self.frame, 
-                          c.actuators, c.cruiseControl.cancel,
+                          c.actuators, c.cruiseControl.cancel, c.cruiseControl.speedOverride,
                           c.hudControl.visualAlert, c.hudControl.audibleAlert, c.hudControl.leftLaneVisible,
                           c.hudControl.rightLaneVisible, c.hudControl.leadVisible,
                           c.hudControl.leftLaneDepart, c.hudControl.rightLaneDepart)

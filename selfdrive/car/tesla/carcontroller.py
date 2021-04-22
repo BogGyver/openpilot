@@ -33,7 +33,7 @@ class CarController():
     self.rS = messaging.sub_sock('radarState')
     self.laP = messaging.sub_sock('lateralPlan')
 
-  def update(self, enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
+  def update(self, enabled, CS, frame, actuators, cruise_cancel, pcm_speed, hud_alert, audible_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart):
     can_sends = []
     #add 1 second delay logic to wait for AP which has a status at 2Hz
