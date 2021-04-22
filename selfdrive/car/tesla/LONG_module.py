@@ -1,4 +1,4 @@
-from selfdrive.car.tesla.values import CAN_POWERTRAIN
+from selfdrive.car.tesla.values import CAR, CAN_POWERTRAIN
 #from selfdrive.config import Conversions as CV
 
 def _is_present(lead):

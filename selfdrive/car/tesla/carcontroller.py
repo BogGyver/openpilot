@@ -7,6 +7,7 @@ from selfdrive.car.tesla.LONG_module import LONGController
 from opendbc.can.packer import CANPacker
 from selfdrive.car.tesla.values import CarControllerParams, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS
 import cereal.messaging as messaging
+from common.numpy_fast import clip, interp
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
@@ -56,8 +57,8 @@ class CarController():
     human_control,hands_on_fault,lkas_enabled = self.HSO.update_stat(self, CS, enabled, actuators, frame)
     
     #update blinker tap module
-    self.blinker.update_state(CS, frame)
-    CS.tap_direction = self.blinker.tap_direction
+    self.blinker_controller.update_state(CS, frame)
+    CS.tap_direction = self.blinker_controller.tap_direction
 
     #update ALCA module
     self.alca_controller.update(enabled, CS, frame, lat_plan)
