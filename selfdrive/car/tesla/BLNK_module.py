@@ -1,4 +1,4 @@
-class Blinker:
+class BLNKController:
     def __init__(self):
         # stalk signal for less than 550ms means it was tapped
         self.tap_duration_frames = 55  

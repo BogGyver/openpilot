@@ -1,7 +1,7 @@
 from common.numpy_fast import clip, interp
 from selfdrive.car.tesla.teslacan import TeslaCAN
 from selfdrive.car.tesla.HSO_module import HSOController
-from selfdrive.car.tesla.BLNK_module import Blinker
+from selfdrive.car.tesla.BLNK_module import BLNKController
 from selfdrive.car.tesla.ALC_module import ALCController
 from selfdrive.car.tesla.HUD_module import HUDController
 from selfdrive.car.tesla.LONG_module import LONGController
@@ -29,7 +29,7 @@ class CarController():
 
     #initialize modules
     self.HSO = HSOController(self)
-    self.blinker = Blinker()
+    self.blinker_controller = BLNKController()
     self.alca_controller = ALCController()
     self.hud_controller = HUDController(CP,self.packer,self.tesla_can)
     self.long_controller = LONGController(CP,self.packer,self.tesla_can)
