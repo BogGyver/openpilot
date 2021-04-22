@@ -6,7 +6,7 @@ def _is_present(lead):
 
 class LONGController:
     
-    def __init___(self,CP,packer, tesla_can):
+    def __init__(self,CP,packer, tesla_can):
         self.CP = CP
         self.v_target = None
         self.lead_1 = None
