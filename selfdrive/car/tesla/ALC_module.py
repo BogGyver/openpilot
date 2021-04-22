@@ -1,9 +1,5 @@
-from common.numpy_fast import clip, interp
-from selfdrive.car.tesla.values import CarControllerParams, CAR, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CAN_POWERTRAIN
 from cereal import log
-import numpy as np
 
-IC_LANE_SCALE = 0.5
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
 

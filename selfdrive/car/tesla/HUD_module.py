@@ -1,7 +1,10 @@
-from common.numpy_fast import clip, interp
-from selfdrive.car.tesla.values import CarControllerParams, CAR, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CAN_POWERTRAIN
+from common.numpy_fast import clip
+from selfdrive.car.tesla.values import CAR, CAN_CHASSIS
 from cereal import car
 from selfdrive.config import Conversions as CV
+import numpy as np
+
+IC_LANE_SCALE = 0.5
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
@@ -77,7 +80,7 @@ class HUDController:
         return messages
 
     def update(self, enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
-             left_line, right_line, lead, left_lane_depart, right_lane_depart,human_control,radar_state,lat_plan):
+             left_line, right_line, lead, left_lane_depart, right_lane_depart,human_control,radar_state,lat_plan,apply_angle):
         # TODO: additional lanes to show on IC
         self.IC_integration_counter = ((self.IC_integration_counter + 2) % 100)
 

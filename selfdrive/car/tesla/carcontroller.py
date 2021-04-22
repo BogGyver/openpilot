@@ -1,4 +1,3 @@
-from common.numpy_fast import clip, interp
 from selfdrive.car.tesla.teslacan import TeslaCAN
 from selfdrive.car.tesla.HSO_module import HSOController
 from selfdrive.car.tesla.BLNK_module import BLNKController
@@ -6,17 +5,8 @@ from selfdrive.car.tesla.ALC_module import ALCController
 from selfdrive.car.tesla.HUD_module import HUDController
 from selfdrive.car.tesla.LONG_module import LONGController
 from opendbc.can.packer import CANPacker
-from selfdrive.car.tesla.values import CarControllerParams, CAR, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CAN_POWERTRAIN
+from selfdrive.car.tesla.values import CarControllerParams, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS
 import cereal.messaging as messaging
-from cereal import log, car
-import numpy as np
-from selfdrive.config import Conversions as CV
-
-
-
-
-def _is_present(lead):
-  return bool((not (lead is None)) and (lead.dRel > 0))
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
@@ -119,7 +109,7 @@ class CarController():
 
     #update HUD Integration module
     can_messages = self.hud_controller.update(enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
-             left_line, right_line, lead, left_lane_depart, right_lane_depart,human_control,radar_state,lat_plan)
+             left_line, right_line, lead, left_lane_depart, right_lane_depart,human_control,radar_state,lat_plan,apply_angle)
     can_sends.extend(can_messages)
     
     return can_sends

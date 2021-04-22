@@ -1,5 +1,8 @@
-from selfdrive.car.tesla.values import CarControllerParams, CAR, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CAN_POWERTRAIN
-from selfdrive.config import Conversions as CV
+from selfdrive.car.tesla.values import CAN_POWERTRAIN
+#from selfdrive.config import Conversions as CV
+
+def _is_present(lead):
+  return bool((not (lead is None)) and (lead.dRel > 0))
 
 class LONGController:
     
