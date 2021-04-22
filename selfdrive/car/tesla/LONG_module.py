@@ -34,7 +34,7 @@ class LONGController:
             
 
         #preAP ModelS
-        if CP.carFingerprint == CAR.PREAP_MODELS: 
+        if self.CP.carFingerprint == CAR.PREAP_MODELS: 
             # update PCC module info
             pedal_can_sends = self.PCC.update_stat(CS, frame)
             if self.PCC.pcc_available:

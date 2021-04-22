@@ -8,6 +8,7 @@ from opendbc.can.packer import CANPacker
 from selfdrive.car.tesla.values import CarControllerParams, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS
 import cereal.messaging as messaging
 from common.numpy_fast import clip, interp
+from common.params import Params
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
@@ -35,6 +36,8 @@ class CarController():
 
   def update(self, enabled, CS, frame, actuators, cruise_cancel, pcm_speed, hud_alert, audible_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart):
+    #read params once a second
+
     can_sends = []
     #add 1 second delay logic to wait for AP which has a status at 2Hz
     if CS.cruiseEnabled:
@@ -105,7 +108,7 @@ class CarController():
 
 
     #update LONG Control module
-    can_messages = self.long_controller.update(enabled, CS, frame, actuators, cruise_cancel,long_plan,radar_state)
+    can_messages = self.long_controller.update(enabled, CS, frame, actuators, cruise_cancel,pcm_speed,long_plan,radar_state)
     can_sends.extend(can_messages)
 
     #update HUD Integration module

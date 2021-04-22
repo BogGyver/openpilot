@@ -18,6 +18,41 @@
 #include "selfdrive/hardware/hw.h"
 #include "home.hpp"
 
+TinklaTogglesPanel::TinklaTogglesPanel(QWidget *parent) : QWidget(parent) {
+  QVBoxLayout *tinkla_toggles_list = new QVBoxLayout();
+
+  QList<ParamControl*> tinkla_toggles;
+
+  tinkla_toggles.append(new ParamControl("TinklaEnablePedal",
+                                  "Enable pedal",
+                                  "Enables the use of the Pedal Interceptor to control the speed of your pre AutoPilot Tesla. Requires Pedal Interceptor hardware conencted to CAN2.",
+                                  "../assets/offroad/icon_settings.png",
+                                  this));
+  tinkla_toggles.append(new ParamControl("TinklaHso",
+                                  "Enable HSO",
+                                  "Enables Human Steering Override (HSO) module without disengaging OpenPilot.",
+                                  "../assets/offroad/icon_warning.png",
+                                  this));
+  tinkla_toggles.append(new ParamControl("TinklaHao",
+                                  "Enable HAO",
+                                  "Enables Human Steering Override (HSO) module without disengaging OpenPilot.",
+                                  "../assets/offroad/icon_warning.png",
+                                  this));
+  tinkla_toggles.append(new ParamControl("TinklaAlc",
+                                  "Enable ALC",
+                                  "Enables automatic lane change with just the tap of the turn signal stalk.  Your attention is required at all times to use this feature.",
+                                  "../assets/offroad/icon_warning.png",
+                                  this));
+
+  for(ParamControl *toggle : tinkla_toggles){
+    if(tinkla_toggles_list->count() != 0){
+      tinkla_toggles_list->addWidget(horizontal_line());
+    }
+    tinkla_toggles_list->addWidget(toggle);
+  }
+
+  setLayout(tinkla_toggles_list);
+}
 
 TogglesPanel::TogglesPanel(QWidget *parent) : QWidget(parent) {
   QVBoxLayout *toggles_list = new QVBoxLayout();
@@ -285,6 +320,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   QPair<QString, QWidget *> panels[] = {
     {"Device", device},
     {"Network", network_panel(this)},
+    {"Tinkla", new TinklaTogglesPanel(this)},
     {"Toggles", new TogglesPanel(this)},
     {"Developer", new DeveloperPanel()},
   };

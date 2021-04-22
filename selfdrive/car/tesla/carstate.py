@@ -5,7 +5,7 @@ from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from selfdrive.config import Conversions as CV
-from selfdrive.car.tesla.CFG_module import CarSettings, read_config_file
+from selfdrive.car.tesla.CFG_module import CarSettings, read_config_file, save_bool_param, load_bool_param
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -95,6 +95,7 @@ class CarState(CarStateBase):
     self.hsoNumbPeriod = 1.5
     self.usesApillarHarness = False
     read_config_file(self)
+    #self.someWeirdStuff = load_bool_param("TinklaTest",False)
     #end config section
 
     self.speed_units = "MPH"
@@ -108,7 +109,7 @@ class CarState(CarStateBase):
     self.adaptive_cruise = 0
 
     #IC integration
-    CS.userSpeedLimitOffsetMS = 0
+    self.userSpeedLimitOffsetMS = 0
 
   def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
     if speed_limit_uom > 0:

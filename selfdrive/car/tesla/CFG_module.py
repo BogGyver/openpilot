@@ -272,6 +272,25 @@ class CarSettings:
     def get_value(self, name_of_variable):
         return self.__dict__[name_of_variable]
 
+#operate with params
+OP_PARAMS_PATH = "/data/params/d/"
+
+def save_bool_param(param_name,param_value):
+    try:
+        real_param_value = 1 if param_value else 0
+        with open(OP_PARAMS_PATH+"/"+param_name, "w") as outfile:
+             outfile.write(f'{real_param_value}')
+    except:
+        print("Failed to save "+param_name+" with value ",param_value)
+
+def load_bool_param(param_name,param_def_value):
+    try:
+        value_saved = open(OP_PARAMS_PATH+"/"+param_name)
+        return True if value_saved == 1 else False
+    except:
+        print("Initializing "+param_name+" with value ",param_def_value)
+        save_bool_param(param_name,param_def_value)
+        
 
 # Legacy support
 def read_config_file(into, config_path=default_config_file_path):
