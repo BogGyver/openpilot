@@ -35,7 +35,7 @@ class CarController():
     self.rS = messaging.sub_sock('radarState')
     self.laP = messaging.sub_sock('lateralPlan')
 
-  def update(self, enabled, CS, frame, actuators, cruise_cancel, pcm_speed, hud_alert, audible_alert,
+  def update(self, enabled, CS, frame, actuators, cruise_cancel, pcm_speed, pcm_override, hud_alert, audible_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart):
     #read params once a second
     if frame % 100 == 0:
@@ -114,7 +114,7 @@ class CarController():
 
 
     #update LONG Control module
-    can_messages = self.long_controller.update(enabled, CS, frame, actuators, cruise_cancel,pcm_speed,long_plan,radar_state)
+    can_messages = self.long_controller.update(enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state)
     can_sends.extend(can_messages)
 
     #update HUD Integration module

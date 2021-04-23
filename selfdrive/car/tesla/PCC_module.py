@@ -11,7 +11,6 @@ import time
 import math
 from collections import OrderedDict
 from common.params import Params
-import json
 
 
 _DT = 0.05  # 10Hz in our case, since we don't want to process more than once the same radarState message

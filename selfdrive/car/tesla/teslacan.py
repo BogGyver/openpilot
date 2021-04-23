@@ -392,3 +392,31 @@ class TeslaCAN:
         int((c_apply_steer >> 8) & 0xFF),
     )
     return [msg_id, 0, msg.raw, bus]
+
+    def create_pedal_command_msg(self,accelCommand, enable, idx, pedalcan):
+      """Create GAS_COMMAND (0x551) message to comma pedal"""
+      msg_id = 0x551
+      msg_len = 6
+      msg = create_string_buffer(msg_len)
+      m1 = 0.050796813
+      m2 = 0.101593626
+      d = -22.85856576
+      if enable == 1:
+          int_accelCommand = int((accelCommand - d) / m1)
+          int_accelCommand2 = int((accelCommand - d) / m2)
+      else:
+          int_accelCommand = 0
+          int_accelCommand2 = 0
+      msg = create_string_buffer(msg_len)
+      struct.pack_into(
+          "BBBBB",
+          msg,
+          0,
+          int((int_accelCommand >> 8) & 0xFF),
+          int_accelCommand & 0xFF,
+          int((int_accelCommand2 >> 8) & 0xFF),
+          int_accelCommand2 & 0xFF,
+          ((enable << 7) + idx) & 0xFF,
+      )
+      struct.pack_into("B", msg, msg_len - 1, self.checksum(msg_id,msg.raw)
+      return [msg_id, 0, msg.raw, pedalcan]

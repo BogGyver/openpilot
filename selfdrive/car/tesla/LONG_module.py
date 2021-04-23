@@ -24,7 +24,7 @@ class LONGController:
             self.adaptive_cruise = 0
 
 
-    def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,long_plan,radar_state):
+    def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state):
         messages = []
 
         if frame % 100 == 0:
@@ -103,7 +103,7 @@ class LONGController:
                     self.speed_limit_ms,
                     self.set_speed_limit_active,
                     self.speed_limit_offset_ms,
-                    self.alca_enabled,
+                    CS.alca_engaged,
                     radar_state
                 )
                 messages.append(
