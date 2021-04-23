@@ -354,7 +354,7 @@ class TeslaCAN:
     enable_steer_control,
     park_brake_request,
     bus,
-):
+  ):
     msg_id = 0x659  # we will use DAS_udsRequest to send this info to IC
     msg_len = 8
     msg = create_string_buffer(msg_len)
@@ -393,7 +393,7 @@ class TeslaCAN:
     )
     return [msg_id, 0, msg.raw, bus]
 
-    def create_pedal_command_msg(self,accelCommand, enable, idx, pedalcan):
+  def create_pedal_command_msg(self,accelCommand, enable, idx, pedalcan):
       """Create GAS_COMMAND (0x551) message to comma pedal"""
       msg_id = 0x551
       msg_len = 6
