@@ -78,7 +78,7 @@ class CarInterface(CarInterfaceBase):
     # enable body controls
     ret.safetyParam = ret.safetyParam + 16
     # enabled radar emulation from carconfig
-    if if candidate == CAR.PREAP_MODELS and load_bool_param("TinklaUseTeslaRadar",False):
+    if candidate == CAR.PREAP_MODELS and load_bool_param("TinklaUseTeslaRadar",False):
       ret.safetyParam = ret.safetyParam + 32
     # enabled HAO from carconfig
     if load_bool_param("TinklaHao",False):
