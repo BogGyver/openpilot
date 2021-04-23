@@ -114,9 +114,11 @@ class CarState(CarStateBase):
     #IC integration
     self.userSpeedLimitOffsetMS = 0
 
-    #pedal
-    self.pedal_idx = 0
-    self.prev_pedal_idx = 0
+    #pedal interceptor variables
+    self.pedal_idx = self.prev_pedal_idx = 0
+    self.prev_pedal_interceptor_state = self.pedal_interceptor_state = 0
+    self.pedal_interceptor_value = 0.0
+    self.pedal_interceptor_value2 = 0.0
 
   def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
     if speed_limit_uom > 0:
