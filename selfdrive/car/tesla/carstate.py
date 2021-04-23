@@ -193,6 +193,17 @@ class CarState(CarStateBase):
     autopilot_status = None
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
       autopilot_status = self.can_define.dv["DAS_status"]["DAS_autopilotState"].get(int(cp_cam.vl["DAS_status"]["DAS_autopilotState"]), None)
+    autopark_status = None
+    eac_status = None
+    if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
+      eac_status = self.can_define.dv["DAS_pscControl"]["DAS_eacState"].get(int(cp_cam.vl["DAS_pscControl"]["DAS_eacState"]), None)
+      autopark_status = self.can_define.dv["DAS_pscControl"]["DAS_pscParkState"].get(int(cp_cam.vl["DAS_pscControl"]["DAS_pscParkState"]), None)
+    summon_or_autopark_enabled = (
+        eac_status in ["EAC_ACTIVE"] 
+        or autopark_status in ["SUMMON", "COMPLETE", "ABORT", "PARALLEL_PULL_OUT_TO_RIGHT", 
+        "PARALLEL_PULL_OUT_TO_LEFT", "PARK_RIGHT_CROSS", "PARK_RIGHT_PARALLEL", 
+        "PARK_LEFT_CROSS", "PARK_LEFT_PARALLEL"]
+    )
     self.cruise_state = cp.vl["DI_state"]["DI_cruiseState"]
     cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
     self.speed_units = self.can_define.dv["DI_state"]["DI_speedUnits"].get(int(cp.vl["DI_state"]["DI_speedUnits"]), None)
@@ -204,7 +215,7 @@ class CarState(CarStateBase):
 
     acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
     self.autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
-    self.cruiseEnabled = acc_enabled and not self.autopilot_enabled
+    self.cruiseEnabled = acc_enabled and not self.autopilot_enabled and not summon_or_autopark_enabled
     ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
     if self.speed_units == "KPH":
       ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
@@ -473,6 +484,8 @@ class CarState(CarStateBase):
         ("DAS_longCollisionWarning", "DAS_status2", 0),
         ("DAS_status2Counter", "DAS_status2", 0),
         ("DAS_status2Checksum", "DAS_status2", 0),
+        ("DAS_eacState", "DAS_pscControl", 0),
+        ("DAS_pscParkState", "DAS_pscControl", 0),
       ]
 
       checks = [
