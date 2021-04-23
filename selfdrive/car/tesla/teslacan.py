@@ -418,5 +418,5 @@ class TeslaCAN:
           int_accelCommand2 & 0xFF,
           ((enable << 7) + idx) & 0xFF,
       )
-      struct.pack_into("B", msg, msg_len - 1, self.checksum(msg_id,msg.raw)
+      struct.pack_into("B", msg, msg_len - 1, self.checksum(msg_id,msg.raw))
       return [msg_id, 0, msg.raw, pedalcan]
