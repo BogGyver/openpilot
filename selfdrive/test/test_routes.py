@@ -34,6 +34,9 @@ non_tested_cars = [
   TOYOTA.HIGHLANDER,
   TOYOTA.HIGHLANDERH,
   TOYOTA.HIGHLANDERH_TSS2,
+  TESLA.AP1_MODELS,
+  TESLA.AP2_MODELS,
+  TESLA.AP1_MODELX,
 ]
 
 routes = {
@@ -511,6 +514,10 @@ routes = {
   },
   "b72d3ec617c0a90f|2020-12-11--15-38-17": {
     'carFingerprint': NISSAN.ALTIMA,
+    'enableCamera': True,
+  },
+  "d3126df386f83c4d|2020-04-22--13-17-39": {
+    'carFingerprint': TESLA.PREAP_MODELS,
     'enableCamera': True,
   },
 }
