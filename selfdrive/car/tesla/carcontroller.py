@@ -37,7 +37,11 @@ class CarController():
   def update(self, enabled, CS, frame, actuators, cruise_cancel, pcm_speed, hud_alert, audible_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart):
     #read params once a second
-
+    if frame % 100 == 0:
+      CS.useFollowModeAcc = load_bool_param("TinklaUseFollowACC",False)
+      CS.enableHSO = load_bool_param("TinklaHso",True)
+      CS.enableHAO = load_bool_param("TinklaHao",False)
+      CS.enableALC = load_bool_param("TinklaAlc",False)
     can_sends = []
     #add 1 second delay logic to wait for AP which has a status at 2Hz
     if CS.cruiseEnabled:

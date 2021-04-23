@@ -24,65 +24,9 @@ class ConfigFile:
 
         main_section = "OP_CONFIG"
         pref_section = "OP_PREFERENCES"
-        #jetson_section = "JETSON_PREFERENCES"
-        #logging_section = "LOGGING"
         config = configparser.RawConfigParser(allow_no_value=True)
         config.add_section(main_section)
         config.add_section(pref_section)
-        #config.add_section(jetson_section)
-        #config.add_section(logging_section)
-
-        # uses_a_pillar_harness -> usesApillarHarness
-        into.usesApillarHarness, didUpdate = self.read_config_entry(
-            config,
-            configr,
-            prev_file_contents,
-            section=main_section,
-            entry="uses_a_pillar_harness",
-            entry_type=bool,
-            default_value=False,
-            comment="Enable when using the new A pillar harness.",
-        )
-        file_changed |= didUpdate
-
-        # force_pedal_over_cc -> forcePedalOverCC
-        into.forcePedalOverCC, didUpdate = self.read_config_entry(
-            config,
-            configr,
-            prev_file_contents,
-            section=main_section,
-            entry="force_pedal_over_cc",
-            entry_type=bool,
-            default_value=False,
-            comment="Forces the use of Tesla Pedal over ACC completely disabling the Tesla CC.",
-        )
-        file_changed |= didUpdate
-
-        # enable_hso -> enableHSO
-        into.enableHSO, didUpdate = self.read_config_entry(
-            config,
-            configr,
-            prev_file_contents,
-            section=main_section,
-            entry="enable_hso",
-            entry_type=bool,
-            default_value=True,
-            comment="Enables Human Steering Override (HSO) feature which allows you to take control of the steering wheel and correct the course of the car without disengaging OpenPilot lane keep assist (LKS, lateral control).",
-        )
-        file_changed |= didUpdate
-
-        # enable_hao -> enableHAO
-        into.enableHAO, didUpdate = self.read_config_entry(
-            config,
-            configr,
-            prev_file_contents,
-            section=main_section,
-            entry="enable_hao",
-            entry_type=bool,
-            default_value=True,
-            comment="Enables Human Acceleration Override (HAO) feature which allows you to take control of the acceleration without disengaging OpenPilot lane keep assist (LKS, lateral control).",
-        )
-        file_changed |= didUpdate
 
         # auto_start_alca_delay -> autoStartAlcaDelay
         into.autoStartAlcaDelay, didUpdate = self.read_config_entry(
@@ -94,32 +38,6 @@ class ConfigFile:
             entry_type=int,
             default_value=2,
             comment="Set this setting to a value greater than 1 if you want lane change to start automatically after x seconds.",
-        )
-        file_changed |= didUpdate
-
-        # enable_radar_emulation -> enableRadarEmulation
-        into.enableRadarEmulation, didUpdate = self.read_config_entry(
-            config,
-            configr,
-            prev_file_contents,
-            section=main_section,
-            entry="enable_radar_emulation",
-            entry_type=bool,
-            default_value=False,
-            comment="The secret sauce to make the Tesla Radar work; this feature makes the Panda generate all the CAN messages needed by the Tesla Bosch Radar to operate.",
-        )
-        file_changed |= didUpdate
-
-        # use_tesla_radar -> useTeslaRadar
-        into.useTeslaRadar, didUpdate = self.read_config_entry(
-            config,
-            configr,
-            prev_file_contents,
-            section=main_section,
-            entry="use_tesla_radar",
-            entry_type=bool,
-            default_value=False,
-            comment="Set this setting to True if you have a Tesla Bosch Radar installed (works in conjunction with enable_radar_emulation).",
         )
         file_changed |= didUpdate
 
@@ -250,18 +168,12 @@ class ConfigFile:
 
 
 class CarSettings:
-    forcePedalOverCC = None
-    enableHSO = None
-    enableRadarEmulation = None
     autoStartAlcaDelay = None
-    useTeslaRadar = None
     radarVIN = None
     radarOffset = None
     radarEpasType = None
     radarPosition = None
     hsoNumbPeriod = None
-    usesApillarHarness = None
-    enableHAO = None
 
     def __init__(self, optional_config_file_path=default_config_file_path):
         config_file = ConfigFile()

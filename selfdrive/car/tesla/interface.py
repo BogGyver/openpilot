@@ -3,7 +3,7 @@ from cereal import car
 from selfdrive.car.tesla.values import CAR
 from selfdrive.car import STD_CARGO_KG, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness
 from selfdrive.car.interfaces import CarInterfaceBase
-from selfdrive.car.tesla.CFG_module import CarSettings
+from selfdrive.car.tesla.CFG_module import load_bool_param
 
 
 class CarInterface(CarInterfaceBase):
@@ -78,16 +78,16 @@ class CarInterface(CarInterfaceBase):
     # enable body controls
     ret.safetyParam = ret.safetyParam + 16
     # enabled radar emulation from carconfig
-    if CarSettings().get_value("enableRadarEmulation"):
+    if if candidate == CAR.PREAP_MODELS and load_bool_param("TinklaUseTeslaRadar",False):
       ret.safetyParam = ret.safetyParam + 32
     # enabled HAO from carconfig
-    if CarSettings().get_value("enableHAO"):
+    if load_bool_param("TinklaHao",False):
       ret.safetyParam = ret.safetyParam + 64
     ret.rotationalInertia = scale_rot_inertia(ret.mass, ret.wheelbase)
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront)
     ret.radarOffCan = True
     ret.radarTimeStep = 0.05
-    if CarSettings().get_value("useTeslaRadar"):
+    if load_bool_param("TinklaUseTeslaRadar",False):
       ret.radarOffCan = False
     return ret
 

@@ -5,7 +5,7 @@ from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from selfdrive.config import Conversions as CV
-from selfdrive.car.tesla.CFG_module import CarSettings, read_config_file, save_bool_param, load_bool_param
+from selfdrive.car.tesla.CFG_module import read_config_file, load_bool_param
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -82,20 +82,21 @@ class CarState(CarStateBase):
     self.cruiseDelay = False
 
     #start config section
-    self.forcePedalOverCC = False
-    self.enableHSO = True
-    self.enableHAO = True
-    self.autoStartAlcaDelay = 0
-    self.enableRadarEmulation = False
-    self.useTeslaRadar = False
+    self.forcePedalOverCC = load_bool_param("TinklaEnablePedal",False)
+    self.useFollowModeAcc = load_bool_param("TinklaUseFollowACC",False)
+    self.enableHSO = load_bool_param("TinklaHso",True)
+    self.enableHAO = load_bool_param("TinklaHao",False)
+    self.enableALC = load_bool_param("TinklaAlc",False)
+    self.useTeslaRadar = load_bool_param("TinklaUseTeslaRadar",False)
+    self.usesApillarHarness = load_bool_param("TinklaUseAPillarHarness",False)
+    self.autoStartAlcaDelay = 2
     self.radarVIN = '"                 "'
     self.radarOffset = 0.0
     self.radarEpasType = 0
     self.radarPosition = 0
     self.hsoNumbPeriod = 1.5
-    self.usesApillarHarness = False
+    
     read_config_file(self)
-    #self.someWeirdStuff = load_bool_param("TinklaTest",False)
     #end config section
 
     self.speed_units = "MPH"
@@ -277,7 +278,7 @@ class CarState(CarStateBase):
 
   @staticmethod
   def get_can_parser(CP):
-    usesApillarHarness = CarSettings().get_value("usesApillarHarness")
+    usesApillarHarness = load_bool_param("TinklaUseAPillarHarness",False)
     signals = [
       # sig_name, sig_address, default
       ("DI_pedalPos", "DI_torque1", 0),
@@ -377,7 +378,7 @@ class CarState(CarStateBase):
 
   @staticmethod
   def get_cam_can_parser(CP):
-    usesApillarHarness = CarSettings().get_value("usesApillarHarness")
+    usesApillarHarness = load_bool_param("TinklaUseAPillarHarness",False)
     signals = None
     checks = None
     
