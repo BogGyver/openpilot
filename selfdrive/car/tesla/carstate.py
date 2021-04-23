@@ -369,7 +369,7 @@ class CarState(CarStateBase):
         ("BrakeMessage", 50),
       ]
     
-    if not (self.CP.carFingerprint in [CAR.AP1_MODELX]) and not (CP.carFingerprint in [CAR.PREAP_MODELS] and usesApillarHarness):
+    if not (CP.carFingerprint in [CAR.AP1_MODELX]) and not (CP.carFingerprint in [CAR.PREAP_MODELS] and usesApillarHarness):
       signals += [
         ("SDM_bcklDrivStatus", "SDM1", 0),
       ]
