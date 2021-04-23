@@ -1,15 +1,12 @@
 from selfdrive.car.tesla import teslacan
 from selfdrive.car.tesla.speed_utils.fleet_speed import FleetSpeed
-from selfdrive.controls.lib.longcontrol import LongControl, LongCtrlState
 from common.numpy_fast import clip, interp
 from selfdrive.car.tesla.values import CruiseState, CruiseButtons
 from selfdrive.config import Conversions as CV
-from selfdrive.controls.lib.speed_smoother import speed_smoother
 from selfdrive.controls.lib.longitudinal_planner import (
     calc_cruise_accel_limits,
     limit_accel_in_turns,
 )
-import cereal.messaging as messaging
 import time
 import math
 from collections import OrderedDict
@@ -51,8 +48,6 @@ MIN_CAN_SPEED = 0.3  # TODO: parametrize this in car interface
 
 # Pull the cruise stalk twice in this many ms for a 'double pull'
 STALK_DOUBLE_PULL_MS = 750
-
-V_PID_FILE = "/data/params/pidParams"
 
 def tesla_compute_gb(accel, speed):
     return float(accel) / 3.0
@@ -141,18 +136,6 @@ class PCCController:
         self.params = Params()
         average_speed_over_x_suggestions = 6  # 0.3 seconds (20x a second)
         self.fleet_speed = FleetSpeed(average_speed_over_x_suggestions)
-
-
-        data = {}
-        data["p"] = pid.p
-        data["i"] = pid.i
-        data["d"] = pid.d
-        data["f"] = pid.f
-        try:
-            with open(V_PID_FILE, "w") as outfile:
-                json.dump(data, outfile)
-        except IOError:
-            print("PDD pid parameters could not be saved to file")
 
     def update_stat(self, CS, frame):
 
@@ -331,17 +314,14 @@ class PCCController:
                 and self.lead_1.aLeadK > 0.0
             )
         accel_limits = [
-            float(x) for x in calc_cruise_accel_limits(v_ego, following, is_tesla=True)
+            float(x) for x in calc_cruise_accel_limits(v_ego, following)
         ]
 
         accel_limits[1] *= _accel_limit_multiplier(CS, self.lead_1)
         accel_limits[0] = _decel_limit(
             accel_limits[0], CS.out.vEgo, self.lead_1, CS, self.pedal_speed_kph
         )
-        jerk_limits = [
-            min(-0.1, accel_limits[0] / 2.0),
-            max(0.1, accel_limits[1] / 2.0),
-        ]  # TODO: make a separate lookup for jerk tuning
+
         accel_limits = limit_accel_in_turns(v_ego, CS.angle_steers, accel_limits, CS.CP)
 
         output_gb = 0

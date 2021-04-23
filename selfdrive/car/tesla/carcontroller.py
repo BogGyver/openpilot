@@ -4,11 +4,12 @@ from selfdrive.car.tesla.BLNK_module import BLNKController
 from selfdrive.car.tesla.ALC_module import ALCController
 from selfdrive.car.tesla.HUD_module import HUDController
 from selfdrive.car.tesla.LONG_module import LONGController
+from selfdrive.car.tesla.CFG_module import load_bool_param
 from opendbc.can.packer import CANPacker
 from selfdrive.car.tesla.values import CarControllerParams, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS
 import cereal.messaging as messaging
 from common.numpy_fast import clip, interp
-from common.params import Params
+
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):

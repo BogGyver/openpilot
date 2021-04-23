@@ -192,14 +192,14 @@ def save_bool_param(param_name,param_value):
         real_param_value = 1 if param_value else 0
         with open(OP_PARAMS_PATH+"/"+param_name, "w") as outfile:
              outfile.write(f'{real_param_value}')
-    except:
+    except IOError:
         print("Failed to save "+param_name+" with value ",param_value)
 
 def load_bool_param(param_name,param_def_value):
     try:
         value_saved = open(OP_PARAMS_PATH+"/"+param_name)
         return True if value_saved == 1 else False
-    except:
+    except IOError:
         print("Initializing "+param_name+" with value ",param_def_value)
         save_bool_param(param_name,param_def_value)
         

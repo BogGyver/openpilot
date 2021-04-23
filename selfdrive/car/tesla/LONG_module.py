@@ -1,7 +1,7 @@
 from selfdrive.car.tesla.values import CAR, CAN_POWERTRAIN
 from selfdrive.car.tesla.ACC_module import ACCController
 from selfdrive.car.tesla.PCC_module import PCCController
-#from selfdrive.config import Conversions as CV
+from selfdrive.config import Conversions as CV
 
 def _is_present(lead):
   return bool((not (lead is None)) and (lead.dRel > 0))
@@ -21,6 +21,7 @@ class LONGController:
             self.speed_limit_ms = 0
             self.set_speed_limit_active = False
             self.speed_limit_offset_ms = 0
+            self.adaptive_cruise = 0
 
 
     def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,long_plan,radar_state):
@@ -37,6 +38,7 @@ class LONGController:
         if self.CP.carFingerprint == CAR.PREAP_MODELS: 
             # update PCC module info
             pedal_can_sends = self.PCC.update_stat(CS, frame)
+            messages.extend(pedal_can_sends)
             if self.PCC.pcc_available:
                 self.ACC.enable_adaptive_cruise = False
             else:
@@ -63,7 +65,7 @@ class LONGController:
                 CS.cc_state = 2
                 if not self.ACC.adaptive:
                     CS.cc_state = 3
-            adaptive_cruise = (
+            self.adaptive_cruise = (
                 1
                 if (not self.PCC.pcc_available and self.ACC.adaptive)
                 or self.PCC.pcc_available
@@ -78,10 +80,10 @@ class LONGController:
                     pcm_speed,
                     self.speed_limit_ms * CV.MS_TO_KPH,
                     self.set_speed_limit_active,
-                    self.speed_limit_offset,
+                    self.speed_limit_offset_ms * CV.MS_TO_KPH,
                 )
                 if cruise_btn:
-                    cruise_msg = teslacan.create_steering_wheel_stalk_msg(
+                    cruise_msg = self.tesla_can.create_steering_wheel_stalk_msg(
                         real_steering_wheel_stalk=CS.steering_wheel_stalk,
                         spdCtrlLvr_stat=cruise_btn,
                         turnIndLvr_stat=0,
@@ -100,12 +102,12 @@ class LONGController:
                     pcm_override,
                     self.speed_limit_ms,
                     self.set_speed_limit_active,
-                    self.speed_limit_offset * CV.KPH_TO_MS,
+                    self.speed_limit_offset_ms,
                     self.alca_enabled,
                     radar_state
                 )
                 messages.append(
-                    teslacan.create_pedal_command_msg(
+                    self.tesla_can.create_pedal_command_msg(
                         apply_accel, int(accel_needed), accel_idx, pedalcan
                     )
                 )
@@ -114,7 +116,7 @@ class LONGController:
                 
 
         #AP ModelS with OP Long and enabled
-        elif enabled and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2.MODELS]):
+        elif enabled and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
             #we use the same logic from planner here to get the speed
 
             if radar_state is not None:
@@ -140,7 +142,7 @@ class LONGController:
                 messages.append(self.tesla_can.create_ap1_long_control(self.v_target, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
 
         #AP ModelS with OP Long and not enabled
-        elif (not enabled) and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2.MODELS]):
+        elif (not enabled) and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
             #send this values so we can enable at 0 km/h
             tesla_accel_limits = [-1.4000000000000004,1.8000000000000007]
             tesla_jerk_limits = [-0.46000000000000085,0.47600000000000003]
