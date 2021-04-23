@@ -54,7 +54,7 @@ class LONGController:
             elif self.PCC.enable_pedal_cruise:
                 CS.acc_speed_kph = self.PCC.pedal_speed_kph
             else:
-                CS.acc_speed_kph = max(0.0, CS.v_ego * CV.MS_TO_KPH)
+                CS.acc_speed_kph = max(0.0, CS.out.vEgo * CV.MS_TO_KPH)
             CS.v_cruise_pcm = CS.acc_speed_kph * speed_uom_kph
             #determine cc_state
             CS.cc_state = 1
