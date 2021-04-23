@@ -193,7 +193,8 @@ class CarState(CarStateBase):
     autopilot_status = None
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
       autopilot_status = self.can_define.dv["DAS_status"]["DAS_autopilotState"].get(int(cp_cam.vl["DAS_status"]["DAS_autopilotState"]), None)
-    self.cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
+    self.cruise_state = cp.vl["DI_state"]["DI_cruiseState"]
+    cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
     self.speed_units = self.can_define.dv["DI_state"]["DI_speedUnits"].get(int(cp.vl["DI_state"]["DI_speedUnits"]), None)
     self.v_cruise_actual = cp.vl["DI_state"]["DI_cruiseSet"]
     if self.speed_units == "MPH":
@@ -201,7 +202,7 @@ class CarState(CarStateBase):
     self.prev_cruise_buttons = self.cruise_buttons
     self.cruise_buttons = cp.vl["STW_ACTN_RQ"]["SpdCtrlLvr_Stat"]
 
-    acc_enabled = (self.cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
+    acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
     self.autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
     self.cruiseEnabled = acc_enabled and not self.autopilot_enabled
     ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
@@ -209,8 +210,8 @@ class CarState(CarStateBase):
       ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
     elif self.speed_units == "MPH":
       ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.MPH_TO_MS
-    ret.cruiseState.available = ((self.cruise_state == "STANDBY") or ret.cruiseState.enabled)
-    ret.cruiseState.standstill = (self.cruise_state == "STANDSTILL")
+    ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
+    ret.cruiseState.standstill = (cruise_state == "STANDSTILL")
 
     #speed limit
     msu = cp.vl['UI_gpsVehicleSpeed']["UI_mapSpeedLimitUnits"]
