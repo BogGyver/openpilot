@@ -114,6 +114,10 @@ class CarState(CarStateBase):
     #IC integration
     self.userSpeedLimitOffsetMS = 0
 
+    #pedal
+    self.pedal_idx = 0
+    self.prev_pedal_idx = 0
+
   def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
     if speed_limit_uom > 0:
       if speed_limit_type == 0x1E: # Autobahn with no speed limit
@@ -282,6 +286,14 @@ class CarState(CarStateBase):
       ap_s2 = copy.copy(cp_cam.vl["DAS_status2"])
       if ap_s2 is not None:
         self.msg_autopilot_status2 = ap_s2
+      
+    #Pedal Interceptor
+    self.prev_pedal_interceptor_state = self.pedal_interceptor_state
+    self.pedal_interceptor_state = cp_cam.vl["GAS_SENSOR"]["STATE"]
+    self.pedal_interceptor_value = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"]
+    self.pedal_interceptor_value2 = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
+    self.prev_pedal_idx = self.pedal_idx
+    self.pedal_idx = cp_cam.vl["GAS_SENSOR"]["IDX"]
 
     return ret
 
@@ -471,6 +483,10 @@ class CarState(CarStateBase):
         ("EPAS_internalSAS", "EPAS_sysStatus", 0),
         ("EPAS_eacStatus", "EPAS_sysStatus", 1),
         ("EPAS_eacErrorCode", "EPAS_sysStatus", 0),
+        ("INTERCEPTOR_GAS", "GAS_SENSOR", 0),
+        ("INTERCEPTOR_GAS2", "GAS_SENSOR", 0),
+        ("STATE", "GAS_SENSOR", 0),
+        ("IDX", "GAS_SENSOR", 0),
       ]
 
       checks = [      
