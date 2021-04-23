@@ -17,7 +17,7 @@ class LONGController:
         self.packer = packer
         if (CP.carFingerprint == CAR.PREAP_MODELS):
             self.ACC = ACCController(self)
-            self.PCC = PCCController(self)
+            self.PCC = PCCController(self,tesla_can)
             self.speed_limit_ms = 0
             self.set_speed_limit_active = False
             self.speed_limit_offset_ms = 0

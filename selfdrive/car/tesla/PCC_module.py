@@ -1,4 +1,3 @@
-from selfdrive.car.tesla import teslacan
 from selfdrive.car.tesla.speed_utils.fleet_speed import FleetSpeed
 from common.numpy_fast import clip, interp
 from selfdrive.car.tesla.values import CruiseState, CruiseButtons
@@ -86,8 +85,9 @@ def _current_time_millis():
 
 # this is for the pedal cruise control
 class PCCController:
-    def __init__(self, carcontroller):
+    def __init__(self, carcontroller,tesla_can):
         self.CC = carcontroller
+        self.tesla_can = tesla_can
         self.human_cruise_action_time = 0
         self.pcc_available = self.prev_pcc_available = False
         self.pedal_timeout_frame = 0
@@ -150,7 +150,7 @@ class PCCController:
                     self.pedal_idx = (self.pedal_idx + 1) % 16
                     pedalcan = 2
                     can_sends.append(
-                        teslacan.create_pedal_command_msg(0, 0, idx, pedalcan)
+                        self.tesla_can.create_pedal_command_msg(0, 0, idx, pedalcan)
                     )
             return can_sends
 
