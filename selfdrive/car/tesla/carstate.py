@@ -84,6 +84,7 @@ class CarState(CarStateBase):
     #start config section
     self.forcePedalOverCC = load_bool_param("TinklaEnablePedal",False)
     self.useFollowModeAcc = load_bool_param("TinklaUseFollowACC",False)
+    self.autoresumeAcc = load_bool_param("TinklaAutoResumeACC",False)
     self.enableHSO = load_bool_param("TinklaHso",True)
     self.enableHAO = load_bool_param("TinklaHao",False)
     self.enableALC = load_bool_param("TinklaAlc",False)
@@ -103,11 +104,12 @@ class CarState(CarStateBase):
     self.tap_direction = 0
 
     #preAP long
-    self.v_cruise_pcm = 0
-    self.acc_speed_kph = 0
     self.speed_control_enabled = 0
     self.cc_state = 1
     self.adaptive_cruise = 0
+    self.apFollowTimeInS = 2.5  # time in seconds to follow
+    self.torqueLevel = 0.0
+    self.cruise_state = None
 
     #IC integration
     self.userSpeedLimitOffsetMS = 0
@@ -185,10 +187,15 @@ class CarState(CarStateBase):
     autopilot_status = None
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
       autopilot_status = self.can_define.dv["DAS_status"]["DAS_autopilotState"].get(int(cp_cam.vl["DAS_status"]["DAS_autopilotState"]), None)
-    cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
+    self.cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
     self.speed_units = self.can_define.dv["DI_state"]["DI_speedUnits"].get(int(cp.vl["DI_state"]["DI_speedUnits"]), None)
+    self.v_cruise_actual = cp.vl["DI_state"]["DI_cruiseSet"]
+    if self.speed_units == "MPH":
+        self.v_cruise_actual = self.v_cruise_actual * CV.MPH_TO_KPH
+    self.prev_cruise_buttons = self.cruise_buttons
+    self.cruise_buttons = cp.vl["STW_ACTN_RQ"]["SpdCtrlLvr_Stat"]
 
-    acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
+    acc_enabled = (self.cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
     self.autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
     self.cruiseEnabled = acc_enabled and not self.autopilot_enabled
     ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
@@ -196,8 +203,8 @@ class CarState(CarStateBase):
       ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
     elif self.speed_units == "MPH":
       ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.MPH_TO_MS
-    ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
-    ret.cruiseState.standstill = (cruise_state == "STANDSTILL")
+    ret.cruiseState.available = ((self.cruise_state == "STANDBY") or ret.cruiseState.enabled)
+    ret.cruiseState.standstill = (self.cruise_state == "STANDSTILL")
 
     #speed limit
     msu = cp.vl['UI_gpsVehicleSpeed']["UI_mapSpeedLimitUnits"]
@@ -288,6 +295,7 @@ class CarState(CarStateBase):
       ("DI_cruiseState", "DI_state", 0),
       ("DI_digitalSpeed", "DI_state", 0),
       ("DI_speedUnits", "DI_state", 0),
+      ("DI_cruiseSet", "DI_state", 0),
       ("DI_gear", "DI_torque2", 0),
       ("DOOR_STATE_FL", "GTW_carState", 1),
       ("DOOR_STATE_FR", "GTW_carState", 1),

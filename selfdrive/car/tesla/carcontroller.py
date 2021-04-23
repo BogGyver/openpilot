@@ -42,6 +42,7 @@ class CarController():
       CS.enableHSO = load_bool_param("TinklaHso",True)
       CS.enableHAO = load_bool_param("TinklaHao",False)
       CS.enableALC = load_bool_param("TinklaAlc",False)
+      CS.autoresumeAcc = load_bool_param("TinklaAutoResumeACC",False)
     can_sends = []
     #add 1 second delay logic to wait for AP which has a status at 2Hz
     if CS.cruiseEnabled:

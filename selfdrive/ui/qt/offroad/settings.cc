@@ -49,6 +49,11 @@ TinklaTogglesPanel::TinklaTogglesPanel(QWidget *parent) : QWidget(parent) {
                                   "Enables the use of the Follow mode ACC instead of the OP longitudinal control. Works with both CC and Pedal.",
                                   "../assets/offroad/icon_speed_limit.png",
                                   this));
+  tinkla_toggles.append(new ParamControl("TinklaAutoResumeACC",
+                                  "preAP: AutoResume ACC",
+                                  "Enables the use of the AutoResume mode ACC instead full disengagement. Works with both CC.",
+                                  "../assets/offroad/icon_speed_limit.png",
+                                  this));
   tinkla_toggles.append(new ParamControl("TinklaUseTeslaRadar",
                                   "preAP: Use Tesla Radar",
                                   "Enables the use of the Tesla Radar for pre-AutoPilot Tesla Model S. Requires Tesla Bosch radar hardware conencted to CAN1. Requires reboot.",

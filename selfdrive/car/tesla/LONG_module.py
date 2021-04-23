@@ -102,6 +102,7 @@ class LONGController:
                     self.set_speed_limit_active,
                     self.speed_limit_offset * CV.KPH_TO_MS,
                     self.alca_enabled,
+                    radar_state
                 )
                 messages.append(
                     teslacan.create_pedal_command_msg(
