@@ -185,7 +185,7 @@ class CarSettings:
         return self.__dict__[name_of_variable]
 
 #operate with params
-OP_PARAMS_PATH = "/data/params/d/"
+OP_PARAMS_PATH = "/data/params/"
 
 def save_bool_param(param_name,param_value):
     try:
@@ -197,11 +197,14 @@ def save_bool_param(param_name,param_value):
 
 def load_bool_param(param_name,param_def_value):
     try:
-        value_saved = open(OP_PARAMS_PATH+"/"+param_name)
+        with open(OP_PARAMS_PATH+"/"+param_name, 'r') as f:
+            for line in f:
+                value_saved = int(line)
+        #print("Reading Params ",param_name , "value", value_saved)
         return True if value_saved == 1 else False
     except IOError:
         print("Initializing "+param_name+" with value ",param_def_value)
-        save_bool_param(param_name,param_def_value)
+        #save_bool_param(param_name,param_def_value)
         
 
 # Legacy support
