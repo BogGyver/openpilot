@@ -11,7 +11,7 @@ if __name__ == "__main__":
                              " nvvidconv ! video/x-raw(memory:NVMM),format=I420 !"
                              " nvvidconv ! video/x-raw,format=BGRx !"
                              " videoconvert ! video/x-raw,format=BGR !"
-                             " videoscale ! video/x-raw,width=%d,height=%d !"
+                             " videoscale ! video/x-raw,width=%d,height=%d ! %s"
                              " appsink ")
   cs = CarSettings()
   if len(sys.argv) != 2:
@@ -20,12 +20,17 @@ if __name__ == "__main__":
     cam = sys.argv[1]
   if cam == "road" or cam == "driver":
     print ("Processing camera [%s]\n" % cam)
+    flicmd = ""
     if cam == "road":
-      strm = strm_template % (cs.roadCameraID, 800, 600, 20, 1164,874)
+      if (cs.roadCameraFlip == 1):
+        flicmd = "videoflip method=rotate-180 !"
+      strm = strm_template % (cs.roadCameraID, 800, 600, 20, 1164,874, flicmd)
       dx = round(1164/4)
       dy = round(874/4)
     else:
-      strm = strm_template % (cs.driverCameraID, 640, 480, 10, 1152,864)
+      if (cs.driverCameraFlip == 1):
+        flicmd = "videoflip method=rotate-180 !"
+      strm = strm_template % (cs.driverCameraID, 640, 480, 10, 1152,864,flipcmd)
       dx = round(1152/4)
       dy = round(864/4)
     print("Capturing with stream [%s}\n" % strm)
