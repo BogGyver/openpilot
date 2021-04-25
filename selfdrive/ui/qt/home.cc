@@ -200,7 +200,7 @@ static void handle_display_state(UIState* s, bool user_input) {
   constexpr float accel_samples = 5*UI_FREQ;
   static float accel_prev = 0., gyro_prev = 0.;
 
-  bool should_wake = s->scene.started || s->scene.ignition || user_input;
+  bool should_wake = s->scene.started || (s->scene.ignition && !s->should_turn_screen_off) || user_input;
   if (!should_wake) {
     // tap detection while display is off
     bool accel_trigger = abs(s->scene.accel_sensor - accel_prev) > 0.2;
@@ -212,6 +212,9 @@ static void handle_display_state(UIState* s, bool user_input) {
 
   if (should_wake) {
     awake_timeout = 30 * UI_FREQ;
+    if (s->scene.ignition && !s->should_turn_screen_off) {
+      awake_timeout = 5 * UI_FREQ;
+    }
   } else if (awake_timeout > 0) {
     should_wake = true;
   }
@@ -291,6 +294,8 @@ void GLWindow::timerUpdate() {
     // Change timeout to 0 when onroad, this will call timerUpdate continously.
     // This puts visionIPC in charge of update frequency, reducing video latency
     timer->start(onroad ? 0 : 1000 / UI_FREQ);
+    if (ui_state.should_turn_screen_off):
+      timer->start()
   }
 
   handle_display_state(&ui_state, false);

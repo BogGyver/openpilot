@@ -19,9 +19,14 @@ TinklaTogglesPanel::TinklaTogglesPanel(QWidget *parent) : QWidget(parent) {
                                   "Enables automatic lane change with just the tap of the turn signal stalk.  Your attention is required at all times to use this feature.",
                                   "../assets/offroad/icon_warning.png",
                                   this));
+    tinkla_toggles.append(new TinklaParamControl("TinklaTurnScreenOff",
+                                  "Turn screen off while engaged",
+                                  "Keeps device screen off even when engaged. It wakes the screen any time a message is shown.",
+                                  "../assets/offroad/icon_icon_settings.png",
+                                  this));
   tinkla_toggles.append(new TinklaParamControl("TinklaEnablePedal",
                                   "preAP: Enable pedal interceptor",
-                                  "Enables the use of the Pedal Interceptor to control the speed of your pre-AutoPilot Tesla. Requires Pedal Interceptor hardware conencted to CAN2. Requires reboot.",
+                                  "Enables the use of the Pedal Interceptor to control the speed of your pre-AutoPilot Tesla. Requires Pedal Interceptor hardware connected to CAN2. Requires reboot.",
                                   "../assets/offroad/icon_speed_limit.png",
                                   this));
   tinkla_toggles.append(new TinklaParamControl("TinklaUseFollowACC",

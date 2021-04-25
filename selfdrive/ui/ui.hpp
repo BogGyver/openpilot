@@ -163,6 +163,7 @@ typedef struct UIState {
 
   // device state
   bool awake;
+  bool should_turn_screen_off = false;
 
   bool sidebar_collapsed;
   Rect video_rect, viz_rect;

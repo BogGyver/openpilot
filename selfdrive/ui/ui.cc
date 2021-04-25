@@ -10,6 +10,7 @@
 #include "ui.hpp"
 #include "paint.hpp"
 
+
 // Projects a point in car to space to the corresponding point in full frame
 // image space.
 static bool calib_frame_to_full_frame(const UIState *s, float in_x, float in_y, float in_z, vertex_data *out) {
@@ -291,6 +292,7 @@ static void update_params(UIState *s) {
     if (auto last_ping = params.get<float>("LastAthenaPingTime"); last_ping) {
       scene.athenaStatus = nanos_since_boot() - *last_ping < 70e9 ? NET_CONNECTED : NET_ERROR;
     }
+    s.should_turn_screen_off = params.tinkla_get_bool_param("TinklaTurnScreenOff");
   }
 }
 
