@@ -202,7 +202,7 @@ static void handle_display_state(UIState* s, bool user_input) {
 
   //wake on alert
   bool alert_wake = false;
-  if (compare(s->scene.alert_text1 , "") != 0) {
+  if (s->scene.alert_text1.length() > 0) {
     alert_wake = true;
   }
 
@@ -300,8 +300,9 @@ void GLWindow::timerUpdate() {
     // Change timeout to 0 when onroad, this will call timerUpdate continously.
     // This puts visionIPC in charge of update frequency, reducing video latency
     timer->start(onroad ? 0 : 1000 / UI_FREQ);
-    if (ui_state.should_turn_screen_off):
-      timer->start()
+    if (ui_state.should_turn_screen_off){
+      timer->start();
+    }
   }
 
   handle_display_state(&ui_state, false);
