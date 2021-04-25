@@ -4,8 +4,17 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <iostream>
+using std::cerr;
+using std::cout;
+using std::endl;
+#include <fstream>
+using std::ifstream;
+using std::ofstream;
+#include <cstdlib>
 
 #define ERR_NO_VALUE -33
+const std::string tinkla_params_path = "/data/params";
 
 class Params {
 private:
@@ -46,6 +55,39 @@ public:
   inline bool getBool(const char *key) {
     return get(key) == "1";
   }
+
+  inline bool tinkla_get_bool_param(const std::string &tinkla_param) {
+    ifstream ifile;
+    ifile.open(tinkla_params_path + "/" + tinkla_param);
+    if (!ifile) {
+      //no file assume false and create
+      ofstream ofile;
+      ofile.open(tinkla_params_path + "/" + tinkla_param);
+      if (ofile) {
+        ofile << 0;
+        ofile.close();
+      }
+      return false;
+    } else {
+      int value;
+      ifile >> value;
+      ifile.close();
+      if (value == 0) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+}
+
+inline void tinkla_set_bool_param(const std::string &tinkla_param,int tinkla_param_value) {
+      ofstream ofile;
+      ofile.open(tinkla_params_path + "/" + tinkla_param);
+      if (ofile) {
+        ofile << tinkla_param_value;
+        ofile.close();
+      }
+}
 
   // write a value
   int put(const char* key, const char* val, size_t value_size);
