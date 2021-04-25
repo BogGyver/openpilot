@@ -13,6 +13,14 @@
 #include <mutex>
 #include <csignal>
 #include <string.h>
+#include <iostream>
+using std::cerr;
+using std::cout;
+using std::endl;
+#include <fstream>
+using std::ifstream;
+using std::ofstream;
+#include <cstdlib> 
 
 #include "common/util.h"
 #include "common/swaglog.h"
@@ -42,6 +50,40 @@ const std::string persistent_params_path = "/persist/comma/params";
 const std::string persistent_params_path = default_params_path;
 #endif
 
+const std::string tinkla_params_path = "/data/params/";
+
+bool tinkla_get_bool_param(const std::string &tinkla_param) {
+    ifstream ifile;
+    ifile.open(tinkla_params_path + tinkla_param);
+    if (!ifile) {
+      //no file assume false and create
+      ofstream ofile;
+      ofile.open(tinkla_params_path + tinkla_param);
+      if (ofile) {
+        ofile << 0;
+        ofile.close();
+      }
+      return false;
+    } else {
+      int value;
+      ifile >> value;
+      ifile.close();
+      if (value == 0) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+}
+
+void tinkla_set_bool_param(const std::string &tinkla_param,int tinkla_param_value) {
+      ofstream ofile;
+      ofile.open(tinkla_params_path + tinkla_param);
+      if (ofile) {
+        ofile << tinkla_param_value;
+        ofile.close();
+      }
+}
 
 volatile sig_atomic_t params_do_exit = 0;
 void params_sig_handler(int signal) {

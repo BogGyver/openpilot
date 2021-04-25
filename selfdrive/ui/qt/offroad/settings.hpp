@@ -27,6 +27,13 @@ public:
   explicit TogglesPanel(QWidget *parent = nullptr);
 };
 
+class TinklaTogglesPanel : public QWidget {
+  Q_OBJECT
+public:
+  explicit TinklaTogglesPanel(QWidget *parent = nullptr);
+};
+
+
 class DeveloperPanel : public QFrame {
   Q_OBJECT
 public:
