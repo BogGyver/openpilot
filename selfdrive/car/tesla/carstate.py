@@ -16,12 +16,6 @@ class CarState(CarStateBase):
 
     # Needed by carcontroller
     self.msg_stw_actn_req = None
-    self.msg_autopilot_status = None
-    self.msg_autopilot_status2 = None
-    self.msg_das_warningMsg0 = None
-    self.msg_das_warningMsg1 = None
-    self.msg_das_warningMsg3 = None
-    self.msg_das_body_controls = None
 
     self.hands_on_level = 0
     self.das_steeringControl_counter = -1
@@ -280,26 +274,17 @@ class CarState(CarStateBase):
       ret.seatbeltUnlatched = (cp.vl["SDM1"]["SDM_bcklDrivStatus"] != 1)
 
     #Blindspot
-    ret.rightBlindspot = cp.vl["PARK_status2"]['PARK_sdiBlindSpotRight'] == 1
-    ret.leftBlindspot = cp.vl["PARK_status2"]['PARK_sdiBlindSpotLeft'] == 1
+    park_right_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotRight"].get(int(cp.vl["PARK_status2"]['PARK_sdiBlindSpotRight'])) == "WARNING"
+    park_left_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotLeft"].get(int(cp.vl["PARK_status2"]['PARK_sdiBlindSpotLeft'])) == "WARNING"
+    das_right_blindspot = self.can_define.dv["DAS_status"]["DAS_blindSpotRearRight"].get(int(cp_cam.vl["DAS_status"]['DAS_blindSpotRearRight'])) in ["WARNING_LEVEL_2","WARNING_LEVEL_1"]
+    das_left_blindspot = self.can_define.dv["DAS_status"]["DAS_blindSpotRearLeft"].get(int(cp_cam.vl["DAS_status"]['DAS_blindSpotRearLeft'])) in ["WARNING_LEVEL_2","WARNING_LEVEL_1"]
+    ret.rightBlindspot = (park_right_blindspot or das_right_blindspot)
+    ret.leftBlindspot = (park_left_blindspot or das_left_blindspot)
 
     # Messages needed by carcontroller
     sw_a = copy.copy(cp.vl["STW_ACTN_RQ"])
     if sw_a is not None:
       self.msg_stw_actn_req = sw_a
-
-    if (self.CP.carFingerprint != CAR.PREAP_MODELS):
-      ap_s = copy.copy(cp_cam.vl["DAS_status"])
-      if ap_s is not None:
-        self.msg_autopilot_status = ap_s
-
-      bc = copy.copy(cp_cam.vl["DAS_bodyControls"])
-      if bc is not None:
-        self.msg_das_body_controls = bc
-
-      ap_s2 = copy.copy(cp_cam.vl["DAS_status2"])
-      if ap_s2 is not None:
-        self.msg_autopilot_status2 = ap_s2
       
     #Pedal Interceptor
     self.prev_pedal_interceptor_state = self.pedal_interceptor_state

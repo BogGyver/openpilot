@@ -54,13 +54,8 @@ class TeslaCAN:
     }
     return self.packer.make_can_msg("DAS_object", bus, values)
 
-  def create_body_controls_message(self,msg_das_body_controls,turn,hazard,bus,counter):
-    if msg_das_body_controls is not None:
-      values = copy.copy(msg_das_body_controls)
-      values["DAS_bodyControlsCounter"] = counter
-      values["DAS_bodyControlsChecksum"] = 0
-    else:
-      values = {
+  def create_body_controls_message(self,turn,hazard,bus,counter):
+    values = {
       "DAS_headlightRequest" : 0, 
       "DAS_hazardLightRequest" : 0,
       "DAS_wiperSpeed" : 0, 
@@ -70,7 +65,7 @@ class TeslaCAN:
       "DAS_turnIndicatorRequestReason" : 0, 
       "DAS_bodyControlsCounter" : 1 ,
       "DAS_bodyControlsChecksum" : 0, 
-      }
+    }
     values["DAS_hazardLightRequest"] = hazard
     values["DAS_turnIndicatorRequest"] = turn #0-off, 1-left 2-right
     if turn > 0:
@@ -176,101 +171,61 @@ class TeslaCAN:
     return [msg_id, 0, msg.raw, bus]
     
 
-  def create_das_status (self, msg_autopilot_status, DAS_op_status, DAS_collision_warning,
+  def create_das_status (self, DAS_op_status, DAS_collision_warning,
     DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
     blindSpotLeft, blindSpotRight,
     DAS_speed_limit_kph, bus, counter):
-    if msg_autopilot_status is not None:
-      #AP - Modify
-      values = copy.copy(msg_autopilot_status)
-      values["DAS_autopilotState"] = DAS_op_status
-      values["DAS_forwardCollisionWarning"] = DAS_collision_warning
-      values["DAS_laneDepartureWarning"] = DAS_ldwStatus
-      values["DAS_autopilotHandsOnState"] = DAS_hands_on_state  # 3 quiet, 5 with alerts
-      values["DAS_autoLaneChangeState"] = DAS_alca_state
-      values["DAS_lssState"] = 0 #0-FAULT 2-LSS_STATE_ELK
-      values["DAS_statusCounter"] = counter
-      values["DAS_statusChecksum"] = 0
-      values["DAS_autoparkReady"] = 0
-      values["DAS_autoParked"] = 1
-      values["DAS_autoparkWaitingForBrake"] = 0
-      values["DAS_blindSpotRearLeft"] = 1 if blindSpotLeft else 0
-      values["DAS_blindSpotRearRight"] = 1 if blindSpotRight else 0
-    else:
-      #preAP - Create
-      values = {
-        "DAS_autopilotState" : DAS_op_status,
-        "DAS_blindSpotRearLeft" : 1 if blindSpotLeft else 0,
-        "DAS_blindSpotRearRight" : 1 if blindSpotRight else 0,
-        "DAS_fusedSpeedLimit" : DAS_speed_limit_kph,
-        "DAS_suppressSpeedWarning" : 1,
-        "DAS_summonObstacle" : 0,
-        "DAS_summonClearedGate" : 0,
-        "DAS_visionOnlySpeedLimit" : DAS_speed_limit_kph,
-        "DAS_heaterState" : 0,
-        "DAS_forwardCollisionWarning" : DAS_collision_warning,
-        "DAS_autoparkReady" : 0,
-        "DAS_autoParked" : 0,
-        "DAS_autoparkWaitingForBrake" : 0,
-        "DAS_summonFwdLeashReached" : 0,
-        "DAS_summonRvsLeashReached" : 0,
-        "DAS_sideCollisionAvoid" : 0,
-        "DAS_sideCollisionWarning" : 0,
-        "DAS_sideCollisionInhibit" : 0,
-        "DAS_lssState" : 0, #0-FAULT 
-        "DAS_laneDepartureWarning" : DAS_ldwStatus,
-        "DAS_fleetSpeedState" : 0,
-        "DAS_autopilotHandsOnState" : DAS_hands_on_state, # 3 quiet, 5 with alerts
-        "DAS_autoLaneChangeState" : DAS_alca_state,
-        "DAS_summonAvailable" : 0,
-        "DAS_statusCounter" : counter,
-        "DAS_statusChecksum" : 0,
-      }
-      data = self.packer.make_can_msg("DAS_status", bus, values)[2]
-      values["DAS_statusChecksum"] = self.checksum(0x399,data[:7])
+    values = {
+      "DAS_autopilotState" : DAS_op_status,
+      "DAS_blindSpotRearLeft" : 1 if blindSpotLeft else 0,
+      "DAS_blindSpotRearRight" : 1 if blindSpotRight else 0,
+      "DAS_fusedSpeedLimit" : DAS_speed_limit_kph,
+      "DAS_suppressSpeedWarning" : 1,
+      "DAS_summonObstacle" : 0,
+      "DAS_summonClearedGate" : 0,
+      "DAS_visionOnlySpeedLimit" : DAS_speed_limit_kph,
+      "DAS_heaterState" : 0,
+      "DAS_forwardCollisionWarning" : DAS_collision_warning,
+      "DAS_autoparkReady" : 0,
+      "DAS_autoParked" : 0,
+      "DAS_autoparkWaitingForBrake" : 0,
+      "DAS_summonFwdLeashReached" : 0,
+      "DAS_summonRvsLeashReached" : 0,
+      "DAS_sideCollisionAvoid" : 0,
+      "DAS_sideCollisionWarning" : 0,
+      "DAS_sideCollisionInhibit" : 0,
+      "DAS_lssState" : 0, #0-FAULT 
+      "DAS_laneDepartureWarning" : DAS_ldwStatus,
+      "DAS_fleetSpeedState" : 0,
+      "DAS_autopilotHandsOnState" : DAS_hands_on_state, # 3 quiet, 5 with alerts
+      "DAS_autoLaneChangeState" : DAS_alca_state,
+      "DAS_summonAvailable" : 0,
+      "DAS_statusCounter" : counter,
+      "DAS_statusChecksum" : 0,
+    }
     return self.packer.make_can_msg("DAS_status", bus, values)
 
-  def create_das_status2(self, msg_autopilot_status2, DAS_acc_speed_limit, fcw, bus, counter):
+  def create_das_status2(self, DAS_acc_speed_limit, fcw, bus, counter):
     fcw_sig = 0x0F if fcw == 0 else 0x01
-    if msg_autopilot_status2 is not None:
-      #AP - Modify
-      values = copy.copy(msg_autopilot_status2)
-      values["DAS_status2Counter"] = counter
-      values["DAS_status2Checksum"] = 0
-      values["DAS_pmmObstacleSeverity"] = 0
-      values["DAS_pmmLoggingRequest"] = 0
-      values["DAS_activationFailureStatus"] = 0
-      values["DAS_pmmUltrasonicsFaultReason"] = 0
-      values["DAS_pmmRadarFaultReason"] = 0
-      values["DAS_pmmSysFaultReason"] = 0
-      values["DAS_pmmCameraFaultReason"] = 0
-      values["DAS_driverInteractionLevel"] = 0 
-      values["DAS_ppOffsetDesiredRamp"] = 0x80
-      if fcw == 1:
-        values["DAS_longCollisionWarning"] = fcw_sig
-    else:
-      #PreAP - Create
-      values = {
-        "DAS_accSpeedLimit" : DAS_acc_speed_limit,
-        "DAS_pmmObstacleSeverity" : 0,
-        "DAS_pmmLoggingRequest" : 0,
-        "DAS_activationFailureStatus" : 0,
-        "DAS_pmmUltrasonicsFaultReason" : 0,
-        "DAS_pmmRadarFaultReason" : 0,
-        "DAS_pmmSysFaultReason" : 0,
-        "DAS_pmmCameraFaultReason" : 0,
-        "DAS_ACC_report" : 1, #ACC_report_target_CIPV
-        "DAS_csaState" : 2, #CSA_EXTERNAL_STATE_AVAILABLE
-        "DAS_radarTelemetry" : 1, #normal
-        "DAS_robState" : 2, #active
-        "DAS_driverInteractionLevel" : 0, 
-        "DAS_ppOffsetDesiredRamp" : 0x80,
-        "DAS_longCollisionWarning" : fcw_sig,
-        "DAS_status2Counter" : counter,
-        "DAS_status2Checksum" : 0,
-      }
-      data = self.packer.make_can_msg("DAS_status2", bus, values)[2]
-      values["DAS_status2Checksum"] = self.checksum(0x389,data[:7])
+    values = {
+      "DAS_accSpeedLimit" : DAS_acc_speed_limit,
+      "DAS_pmmObstacleSeverity" : 0,
+      "DAS_pmmLoggingRequest" : 0,
+      "DAS_activationFailureStatus" : 0,
+      "DAS_pmmUltrasonicsFaultReason" : 0,
+      "DAS_pmmRadarFaultReason" : 0,
+      "DAS_pmmSysFaultReason" : 0,
+      "DAS_pmmCameraFaultReason" : 0,
+      "DAS_ACC_report" : 1, #ACC_report_target_CIPV
+      "DAS_csaState" : 2, #CSA_EXTERNAL_STATE_AVAILABLE
+      "DAS_radarTelemetry" : 1, #normal
+      "DAS_robState" : 2, #active
+      "DAS_driverInteractionLevel" : 0, 
+      "DAS_ppOffsetDesiredRamp" : 0x80,
+      "DAS_longCollisionWarning" : fcw_sig,
+      "DAS_status2Counter" : counter,
+      "DAS_status2Checksum" : 0,
+    }
     return self.packer.make_can_msg("DAS_status2", bus, values)
 
   def create_action_request(self, msg_stw_actn_req, cancel, bus, counter):

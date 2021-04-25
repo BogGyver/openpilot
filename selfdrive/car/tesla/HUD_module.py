@@ -165,7 +165,7 @@ class HUDController:
 
             # send DAS_bodyControls
             if self.IC_integration_counter in [20,70]:
-                messages.append(self.tesla_can.create_body_controls_message(CS.msg_das_body_controls,
+                messages.append(self.tesla_can.create_body_controls_message(
                 CS.alca_direction, 1 if CS.needs_hazard else 0 , CAN_CHASSIS[self.CP.carFingerprint], 1))
 
             # send DAS_warningMatrix0 at 1Hz
@@ -199,11 +199,11 @@ class HUDController:
             #          14-fault  15-SNA
             DAS_op_status = 5 if enabled else 2
             if self.IC_integration_counter == 40 or self.IC_integration_counter == 90 or (self.IC_previous_enabled and not enabled ):
-                messages.append(self.tesla_can.create_das_status(CS.msg_autopilot_status,DAS_op_status, DAS_collision_warning,
+                messages.append(self.tesla_can.create_das_status(DAS_op_status, DAS_collision_warning,
                     DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
                     CS.out.leftBlindspot, CS.out.rightBlindspot,
                     CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], 1))
-                messages.append(self.tesla_can.create_das_status2(CS.msg_autopilot_status2,CS.out.cruiseState.speed * CV.MS_TO_MPH, 
+                messages.append(self.tesla_can.create_das_status2(CS.out.cruiseState.speed * CV.MS_TO_MPH, 
                     DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1))
             self.IC_previous_enabled = enabled
 

@@ -8,14 +8,7 @@
 
 #include "common/params.h"
 #include "toggle.hpp"
-#include <iostream>
-using std::cerr;
-using std::cout;
-using std::endl;
-#include <fstream>
-using std::ifstream;
-using std::ofstream;
-#include <cstdlib> 
+
 
 QFrame *horizontal_line(QWidget *parent = nullptr);
 
@@ -135,39 +128,4 @@ public:
   }
 };
 
-class TinklaParamControl : public ToggleControl {
-  Q_OBJECT
-
-public:
-  TinklaParamControl(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr) : ToggleControl(title, desc, icon, parent) {
-    ifstream ifile;
-    std::string path = "/data/params/";
-    ifile.open(path + param.toStdString().c_str());
-    if (!ifile) {
-      //no file assume false and create
-      ofstream ofile;
-      ofile.open(path + param.toStdString().c_str());
-      if (ofile) {
-        ofile << 0;
-        ofile.close();
-      }
-      toggle.togglePosition();
-    } else {
-      int value;
-      ifile >> value;
-      if (value == 0) {
-        toggle.togglePosition();
-      }
-      ifile.close();
-    }
-    QObject::connect(this, &ToggleControl::toggleFlipped, [=](int state) {
-      std::string path = "/data/params/";
-      ofstream ofile;
-      ofile.open(path + param.toStdString().c_str());
-      if (ofile) {
-        ofile << state;
-        ofile.close();
-      }
-    });
-  }
-};
+#include "selfdrive/car/tesla/qt/controls.hpp"
