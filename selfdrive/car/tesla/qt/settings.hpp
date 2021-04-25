@@ -19,10 +19,10 @@ TinklaTogglesPanel::TinklaTogglesPanel(QWidget *parent) : QWidget(parent) {
                                   "Enables automatic lane change with just the tap of the turn signal stalk.  Your attention is required at all times to use this feature.",
                                   "../assets/offroad/icon_warning.png",
                                   this));
-    tinkla_toggles.append(new TinklaParamControl("TinklaTurnScreenOff",
+  tinkla_toggles.append(new TinklaParamControl("TinklaTurnScreenOff",
                                   "Turn screen off while engaged",
                                   "Keeps device screen off even when engaged. It wakes the screen any time a message is shown.",
-                                  "../assets/offroad/icon_icon_settings.png",
+                                  "../assets/offroad/icon_settings.png",
                                   this));
   tinkla_toggles.append(new TinklaParamControl("TinklaEnablePedal",
                                   "preAP: Enable pedal interceptor",
