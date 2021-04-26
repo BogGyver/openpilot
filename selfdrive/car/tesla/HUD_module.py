@@ -116,7 +116,7 @@ class HUDController:
                 CS.rLine = 0
 
         #send messages for IC intergration
-        CS.DAS_206_apUnavailable = 1 if human_control else 0
+        CS.DAS_206_apUnavailable = 1 if enabled and human_control else 0
         warnings = CS.DAS_gas_to_resume + \
                 CS.DAS_025_steeringOverride + \
                 CS.DAS_202_noisyEnvironment + \
@@ -164,20 +164,20 @@ class HUDController:
                     messages.append(self.showLeadCarOnICCanMessage(radarStateMsg=radar_state,curv0=CS.curvC0))
 
             # send DAS_bodyControls
-            if self.IC_integration_counter in [20,70]:
+            if (self.IC_integration_counter in [20,70]) or (self.IC_previous_enabled and not enabled):
                 messages.append(self.tesla_can.create_body_controls_message(
                 CS.alca_direction, 1 if CS.needs_hazard else 0 , CAN_CHASSIS[self.CP.carFingerprint], 1))
 
             # send DAS_warningMatrix0 at 1Hz
-            if self.IC_integration_counter == 10:
+            if (self.IC_integration_counter == 10) or (self.IC_previous_enabled and not enabled):
                 messages.append(self.tesla_can.create_das_warningMatrix0(CS.DAS_canErrors, CS.DAS_025_steeringOverride, CS.DAS_notInDrive, CAN_CHASSIS[self.CP.carFingerprint]))
             
             # send DAS_warningMatrix1 at 1Hz
-            if self.IC_integration_counter == 20:
+            if (self.IC_integration_counter == 20) or (self.IC_previous_enabled and not enabled):
                 messages.append(self.tesla_can.create_das_warningMatrix1(CAN_CHASSIS[self.CP.carFingerprint]))
 
             # send DAS_warningMatrix3 at 1Hz
-            if self.IC_integration_counter == 30:
+            if (self.IC_integration_counter == 30) or (self.IC_previous_enabled and not enabled):
                 messages.append(self.tesla_can.create_das_warningMatrix3 (CS.DAS_gas_to_resume, CS.DAS_211_accNoSeatBelt, CS.DAS_202_noisyEnvironment, CS.DAS_206_apUnavailable, CS.DAS_207_lkasUnavailable,
                     CS.DAS_219_lcTempUnavailableSpeed, CS.DAS_220_lcTempUnavailableRoad, CS.DAS_221_lcAborting, CS.DAS_222_accCameraBlind,
                     CS.DAS_208_rackDetected, CS.DAS_216_driverOverriding, CS.stopSignWarning, CS.stopLightWarning, CAN_CHASSIS[self.CP.carFingerprint]))
