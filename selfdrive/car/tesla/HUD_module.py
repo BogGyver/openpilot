@@ -198,7 +198,7 @@ class HUDController:
             #          4-active_restricted 5-active_nav 8-aborting 9-aborted
             #          14-fault  15-SNA
             DAS_op_status = 5 if enabled else 2
-            if self.IC_integration_counter == 40 or self.IC_integration_counter == 90 or (self.IC_previous_enabled and not enabled ):
+            if (self.IC_integration_counter %20 == 0) or (self.IC_previous_enabled and not enabled ):
                 messages.append(self.tesla_can.create_das_status(DAS_op_status, DAS_collision_warning,
                     DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
                     CS.out.leftBlindspot, CS.out.rightBlindspot,
