@@ -34,9 +34,9 @@ non_tested_cars = [
   TOYOTA.HIGHLANDER,
   TOYOTA.HIGHLANDERH,
   TOYOTA.HIGHLANDERH_TSS2,
-  TESLA.AP1_MODELS,
   TESLA.AP2_MODELS,
   TESLA.AP1_MODELX,
+  TESLA.PREAP_MODELS,
 ]
 
 routes = {
@@ -516,10 +516,18 @@ routes = {
     'carFingerprint': NISSAN.ALTIMA,
     'enableCamera': True,
   },
-  "d3126df386f83c4d|2020-04-22--13-17-39": {
-    'carFingerprint': TESLA.PREAP_MODELS,
+  "c7e9ec2908b06d23|2021-04-22--18-48-26": {
+    'carFingerprint': TESLA.AP1_MODELS,
     'enableCamera': True,
   },
+  #"ddccb1609b8abcb5|2021-04-22--22-41-04": {
+  #  'carFingerprint': TESLA.AP1_MODELX,
+  #  'enableCamera': True,
+  #},
+  #"07cb8a788c31f645|2021-04-23--15-18-22": {
+  #  'carFingerprint': TESLA.PREAP_MODELS,
+  #  'enableCamera': True,
+  #},
 }
 
 forced_dashcam_routes = [

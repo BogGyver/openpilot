@@ -12,7 +12,7 @@ from tools.lib.logreader import LogReader
 INJECT_MODEL = 0
 
 segments = [
-  ("TESLA", "d3126df386f83c4d|2020-04-22--13-17-39--3"),       # TESLA.MODELS
+  ("TESLA", "c7e9ec2908b06d23|2021-04-22--18-48-26--1"),       # TESLA.MODELS
   ("HYUNDAI", "02c45f73a2e5c6e9|2021-01-01--19-08-22--1"),     # HYUNDAI.SONATA
   ("TOYOTA", "0982d79ebb0de295|2021-01-04--17-13-21--13"),     # TOYOTA.PRIUS (INDI)
   ("TOYOTA2", "0982d79ebb0de295|2021-01-03--20-03-36--6"),     # TOYOTA.RAV4  (LQR)
