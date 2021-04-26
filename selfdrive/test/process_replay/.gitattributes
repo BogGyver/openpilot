@@ -87,3 +87,5 @@ e4d79cf6b8b19a0d|2021-01-17--14-48-08--7_ubloxd_0e2ad0e0346d3caaa186c10340f4b3e9
 4d70bc5e608678be|2021-01-15--17-02-04--5_plannerd_0e2ad0e0346d3caaa186c10340f4b3e9002cb2ff.bz2 filter=lfs diff=lfs merge=lfs -text
 0982d79ebb0de295|2021-01-04--17-13-21--13_radard_0e2ad0e0346d3caaa186c10340f4b3e9002cb2ff.bz2 filter=lfs diff=lfs merge=lfs -text
 0982d79ebb0de295|2021-01-08--10-13-10--6_calibrationd_0e2ad0e0346d3caaa186c10340f4b3e9002cb2ff.bz2 filter=lfs diff=lfs merge=lfs -text
+*.bz2 filter=lfs diff=lfs merge=lfs -text
+Tracking filter=lfs diff=lfs merge=lfs -text
