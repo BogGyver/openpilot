@@ -74,11 +74,9 @@ for brand in fingerprints:
       car_names.append(car)
       brand_names.append(brand)
 
-# first check if CAN ignition specific messages are unexpectedly included in other fingerprints
-#check_can_ignition_conflicts(fingerprints_flat, brand_names)
-if len(sys.argv) == 1:
-  print("start with 'python test_fingerprint.py -i' and then paste the fingerprint dictionary when asked.")
-  exit(1)
+if len(sys.argv) != 2 or sys.argv[1] != "-i":
+  print("start with 'python",sys.argv[0],"-i' and then paste the fingerprint dictionary when asked.")
+  exit(0)
 count = 0
 idx2 = "YOUR_CAR"
 f2string = input("Please proved your fingerprint:")
