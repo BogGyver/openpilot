@@ -116,7 +116,8 @@ class HUDController:
                 CS.rLine = 0
 
         #send messages for IC intergration
-        CS.DAS_206_apUnavailable = 1 if enabled and human_control else 0
+        #CS.DAS_206_apUnavailable = 1 if enabled and human_control else 0
+        CS.DAS_220_lcTempUnavailableRoad = 1 if enabled and human_control else 0
         warnings = CS.DAS_gas_to_resume + \
                 CS.DAS_025_steeringOverride + \
                 CS.DAS_202_noisyEnvironment + \
