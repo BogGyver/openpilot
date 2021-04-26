@@ -206,9 +206,9 @@ static void handle_display_state(UIState* s, bool user_input) {
     alert_wake = true;
   }
 
-  bool should_wake = s->scene.started || (s->scene.ignition && !s->should_turn_screen_off) || user_input || alert_wake  ;
+  bool should_wake = ((s->scene.started || s->scene.ignition) && !s->should_turn_screen_off) || user_input || alert_wake  ;
   if (!should_wake) {
-    // tap detection while display is off
+    // tap detection while display scene.startedis off
     bool accel_trigger = abs(s->scene.accel_sensor - accel_prev) > 0.2;
     bool gyro_trigger = abs(s->scene.gyro_sensor - gyro_prev) > 0.15;
     should_wake = accel_trigger && gyro_trigger;
@@ -218,7 +218,7 @@ static void handle_display_state(UIState* s, bool user_input) {
 
   if (should_wake) {
     awake_timeout = 30 * UI_FREQ;
-    if (s->scene.ignition && !s->should_turn_screen_off) {
+    if ((s->scene.started || s->scene.ignition) && s->should_turn_screen_off) {
       awake_timeout = 3 * UI_FREQ;
     }
   } else if (awake_timeout > 0) {
