@@ -274,13 +274,16 @@ class CarState(CarStateBase):
       ret.seatbeltUnlatched = (cp.vl["SDM1"]["SDM_bcklDrivStatus"] != 1)
 
     #Blindspot
-    park_right_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotRight"].get(int(cp.vl["PARK_status2"]['PARK_sdiBlindSpotRight'])) == "WARNING"
-    park_left_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotLeft"].get(int(cp.vl["PARK_status2"]['PARK_sdiBlindSpotLeft'])) == "WARNING"
-    das_right_blindspot = self.can_define.dv["DAS_status"]["DAS_blindSpotRearRight"].get(int(cp_cam.vl["DAS_status"]['DAS_blindSpotRearRight'])) in ["WARNING_LEVEL_2","WARNING_LEVEL_1"]
-    das_left_blindspot = self.can_define.dv["DAS_status"]["DAS_blindSpotRearLeft"].get(int(cp_cam.vl["DAS_status"]['DAS_blindSpotRearLeft'])) in ["WARNING_LEVEL_2","WARNING_LEVEL_1"]
+    park_right_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotRight"].get(int(cp.vl["PARK_status2"]["PARK_sdiBlindSpotRight"])) == "WARNING"
+    park_left_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotLeft"].get(int(cp.vl["PARK_status2"]["PARK_sdiBlindSpotLeft"])) == "WARNING"
+    if (self.CP.carFingerprint != CAR.PREAP_MODELS):
+      das_right_blindspot = self.can_define.dv["DAS_status"]["DAS_blindSpotRearRight"].get(int(cp_cam.vl["DAS_status"]["DAS_blindSpotRearRight"])) in ["WARNING_LEVEL_2","WARNING_LEVEL_1"]
+      das_left_blindspot = self.can_define.dv["DAS_status"]["DAS_blindSpotRearLeft"].get(int(cp_cam.vl["DAS_status"]["DAS_blindSpotRearLeft"])) in ["WARNING_LEVEL_2","WARNING_LEVEL_1"]
+    else:
+      das_right_blindspot = False
+      das_left_blindspot = False
     ret.rightBlindspot = (park_right_blindspot or das_right_blindspot)
     ret.leftBlindspot = (park_left_blindspot or das_left_blindspot)
-
     # Messages needed by carcontroller
     sw_a = copy.copy(cp.vl["STW_ACTN_RQ"])
     if sw_a is not None:
