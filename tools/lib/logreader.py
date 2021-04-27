@@ -5,7 +5,10 @@ import bz2
 import urllib.parse
 import capnp
 
-from tools.lib.filereader import FileReader
+try:
+  from xx.chffr.lib.filereader import FileReader
+except ImportError:
+  from tools.lib.filereader import FileReader
 from cereal import log as capnp_log
 
 # this is an iterator itself, and uses private variables from LogReader
