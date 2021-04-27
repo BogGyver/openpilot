@@ -10,7 +10,7 @@ export GIT_SSH_COMMAND="ssh -i /data/bbgitkey"
 # set CLEAN to build outside of CI
 if [ ! -z "$CLEAN" ]; then
   # Create folders
-  rm -rf /data/openpilot
+  rm -rf /data/openpilot_release
   mkdir -p /data/openpilot
   cd /data/openpilot
 
@@ -19,7 +19,9 @@ if [ ! -z "$CLEAN" ]; then
   git remote add origin git@github.com:boggyver/openpilot.git
   git fetch origin tesla_unity_devel
 else
-  cd /data/openpilot
+  rm -rf /data/openpilot_release
+  mkdir -p /data/openpilot_release
+  cd /data/openpilot_release
   git clean -xdf
   git branch -D tesla_unity_release || true
 fi
@@ -27,18 +29,15 @@ fi
 git fetch origin tesla_unity_release
 
 # Create tesla_unity_release with no history
-if [ ! -z "$CLEAN" ]; then
-  git checkout --orphan tesla_unity_release origin/tesla_unity_devel
-else
-  git checkout --orphan tesla_unity_release
-fi
+git checkout --orphan tesla_unity_release origin/tesla_unity_devel
+
 
 VERSION=$(cat selfdrive/common/version.h | awk -F[\"-]  '{print $2}')
 TINKLAVERSION=$(cat selfdrive/common/tinkla_version.h | awk -F[\"-]  '{print $2}')
 echo "#define COMMA_VERSION \"$VERSION-release\"" > selfdrive/common/version.h
 echo "#define TINKLA_VERSION \"$TINKLAVERSION-release\"" > selfdrive/common/tinkla_version.h
 
-git commit -m "Tesla OpenPilot v$TINKLAVERSION (openpilot v$VERSION)"
+git commit -m "Tesla OpenPilot $TINKLAVERSION (openpilot v$VERSION)"
 
 # Build signed panda firmware
 pushd panda/
@@ -82,10 +81,9 @@ git commit --amend -m "Tesla OpenPilot v$TINKLAVERSION (openpilot v$VERSION)"
 # Print committed files that are normally gitignored
 #git status --ignored
 
-if [ ! -z "$PUSH" ]; then
-  git remote set-url origin git@github.com:boggyver/openpilot.git
 
-  # Push to tesla_unity_release
-  git push -f origin tesla_unity_release
+git remote set-url origin git@github.com:boggyver/openpilot.git
 
-fi
+# Push to tesla_unity_release
+git push -f origin tesla_unity_release
+

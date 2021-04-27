@@ -25,10 +25,11 @@ git prune || true
 git remote prune origin || true
 
 echo "[-] bringing devel in sync T=$SECONDS"
-git fetch origin tesla_unity_devel
-
+git checkout -f --track origin/tesla_unity_devel
 git reset --hard origin/tesla_unity_devel
+git checkout tesla_unity_devel
 git clean -xdf
+
 
 # remove everything except .git
 echo "[-] erasing old openpilot T=$SECONDS"
@@ -62,9 +63,10 @@ rm -f panda/board/obj/panda.bin.signed
 echo "[-] committing version $VERSION T=$SECONDS"
 git add -f .
 git status
-git commit -a -m "Tesla OpenPilot v$TINKLAVERSION-beta (openpilot v$VERSION)"
+git commit -a -m "Tesla OpenPilot $TINKLAVERSION-beta (openpilot v$VERSION)"
+git push
 
 # Run build
-SCONS_CACHE=1 scons -j3
+#SCONS_CACHE=1 scons -j3
 
 echo "[-] done T=$SECONDS"
