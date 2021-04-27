@@ -581,6 +581,9 @@ opendbc/subaru_outback_2015_generated.dbc
 opendbc/subaru_outback_2019_generated.dbc
 opendbc/subaru_forester_2017_generated.dbc
 
+opendbc/tesla_can.dbc
+opendbc/tesla_radar.dbc
+
 opendbc/toyota_rav4_hybrid_2017_pt_generated.dbc
 opendbc/toyota_rav4_2017_pt_generated.dbc
 opendbc/toyota_prius_2017_pt_generated.dbc
