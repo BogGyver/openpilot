@@ -35,7 +35,7 @@ git commit -m "Tesla OpenPilot $TINKLAVERSION (openpilot v$VERSION)"
 
 # Build signed panda firmware
 pushd panda/
-CERT=/tmp/pandaextra/certs/release RELEASE=1 scons -u .
+CERT=/data/pandaextra/certs/debug RELEASE=1 scons -u .
 mv board/obj/panda.bin.signed /tmp/panda.bin.signed
 popd
 
@@ -45,6 +45,7 @@ export PYTHONPATH="/data/openpilot:/data/openpilot/pyextra"
 SCONS_CACHE=1 scons -j3
 
 # Run tests
+tmux kill-session -t comma || true
 python selfdrive/manager/test/test_manager.py
 selfdrive/car/tests/test_car_interfaces.py
 
