@@ -25,9 +25,9 @@ git prune || true
 git remote prune origin || true
 
 echo "[-] bringing devel in sync T=$SECONDS"
-git checkout -f --track origin/tesla_unity_beta
+#git checkout -f --track origin/tesla_unity_beta
 git reset --hard origin/tesla_unity_beta
-git checkout tesla_unity_beta
+git checkout  tesla_unity_beta
 git clean -xdf
 
 
@@ -68,9 +68,10 @@ git commit -a -m "Tesla OpenPilot $TINKLAVERSION-beta (openpilot v$VERSION)"
 git push --set-upstream origin tesla_unity_beta
 
 cd $SOURCE_DIR
-
+git checkout selfdrive/common/version.h
+git checkout selfdrive/common/tinkla_version.h
 
 # Run build
-#SCONS_CACHE=1 scons -j3
+SCONS_CACHE=1 scons -j3
 
 echo "[-] done T=$SECONDS"
