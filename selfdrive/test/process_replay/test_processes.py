@@ -33,8 +33,8 @@ segments = [
 # dashcamOnly makes don't need to be tested until a full port is done
 excluded_interfaces = ["mock", "ford", "mazda"]
 
-#BASE_URL = "https://github.com/BogGyver/openpilot/raw/tesla_unified_alpha/selfdrive/test/process_replay/" 
-BASE_URL = "https://commadataci.blob.core.windows.net/openpilotci/"
+BASE_URL = os.path.dirname(os.path.abspath(__file__))
+#BASE_URL = "https://commadataci.blob.core.windows.net/openpilotci/"
 
 # run the full test (including checks) when no args given
 FULL_TEST = len(sys.argv) <= 1
