@@ -5,31 +5,25 @@ export GIT_COMMITTER_NAME="BogGyver"
 export GIT_COMMITTER_EMAIL="bogdan.butoi@gmail.com"
 export GIT_AUTHOR_NAME="BogGyver"
 export GIT_AUTHOR_EMAIL="bogdan.butoi@gmail.com"
-export GIT_SSH_COMMAND="ssh -i /data/bbgitkey"
+export GIT_SSH_COMMAND="ssh -i /data/gitkey"
 
 # set CLEAN to build outside of CI
-if [ ! -z "$CLEAN" ]; then
-  # Create folders
-  rm -rf /data/openpilot_release
-  mkdir -p /data/openpilot
-  cd /data/openpilot
 
-  # Create git repo
-  git init
-  git remote add origin git@github.com:boggyver/openpilot.git
-  git fetch origin tesla_unity_devel
-else
-  rm -rf /data/openpilot_release
-  mkdir -p /data/openpilot_release
-  cd /data/openpilot_release
-  git clean -xdf
-  git branch -D tesla_unity_release || true
-fi
+# Create folders
+rm -rf /data/openpilot_release
+mkdir -p /data/openpilot_release
+cd /data/openpilot_release
+
+# Create git repo
+git init
+git remote add origin git@github.com:boggyver/openpilot.git
+git fetch origin tesla_unity_beta
+
 
 git fetch origin tesla_unity_release
 
 # Create tesla_unity_release with no history
-git checkout --orphan tesla_unity_release origin/tesla_unity_devel
+git checkout --orphan tesla_unity_release origin/tesla_unity_beta
 
 
 VERSION=$(cat selfdrive/common/version.h | awk -F[\"-]  '{print $2}')
@@ -76,7 +70,7 @@ touch prebuilt
 
 # Add built files to git
 git add -f .
-git commit --amend -m "Tesla OpenPilot v$TINKLAVERSION (openpilot v$VERSION)"
+git commit --amend -m "Tesla OpenPilot $TINKLAVERSION (openpilot v$VERSION)"
 
 # Print committed files that are normally gitignored
 #git status --ignored

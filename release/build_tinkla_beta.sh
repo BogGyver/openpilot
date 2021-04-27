@@ -1,7 +1,7 @@
 #!/usr/bin/bash -e
 
 SOURCE_DIR=/data/openpilot
-TARGET_DIR=/data/openpilot_devel
+TARGET_DIR=/data/openpilot_beta
 
 ln -sf $TARGET_DIR /data/pythonpath
 
@@ -9,7 +9,7 @@ export GIT_COMMITTER_NAME="BogGyver"
 export GIT_COMMITTER_EMAIL="bogdan.butoi@gmail.com"
 export GIT_AUTHOR_NAME="BogGyver"
 export GIT_AUTHOR_EMAIL="bogdan.butoi@gmail.com"
-export GIT_SSH_COMMAND="ssh -i /data/bbgitkey"
+export GIT_SSH_COMMAND="ssh -i /data/gitkey"
 
 echo "[-] Setting up repo T=$SECONDS"
 if [ ! -d "$TARGET_DIR" ]; then
@@ -25,9 +25,9 @@ git prune || true
 git remote prune origin || true
 
 echo "[-] bringing devel in sync T=$SECONDS"
-git checkout -f --track origin/tesla_unity_devel
-git reset --hard origin/tesla_unity_devel
-git checkout tesla_unity_devel
+git checkout -f --track origin/tesla_unity_beta
+git reset --hard origin/tesla_unity_beta
+git checkout tesla_unity_beta
 git clean -xdf
 
 
@@ -65,7 +65,10 @@ echo "[-] committing version $VERSION T=$SECONDS"
 git add -f .
 git status
 git commit -a -m "Tesla OpenPilot $TINKLAVERSION-beta (openpilot v$VERSION)"
-git push
+git push --set-upstream origin tesla_unity_beta
+
+cd $SOURCE_DIR
+
 
 # Run build
 #SCONS_CACHE=1 scons -j3
