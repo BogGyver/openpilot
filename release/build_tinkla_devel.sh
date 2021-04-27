@@ -39,6 +39,7 @@ find . -maxdepth 1 -not -path './.git' -not -name '.' -not -name '..' -exec rm -
 cd $SOURCE_DIR
 git clean -xdf
 git checkout -- selfdrive/common/version.h
+git checkout -- selfdrive/common/tinkla_version.h
 
 VERSION=$(cat selfdrive/common/version.h | awk -F\" '{print $2}')
 TINKLAVERSION=$(cat selfdrive/common/tinkla_version.h | awk -F[\"-]  '{print $2}')
