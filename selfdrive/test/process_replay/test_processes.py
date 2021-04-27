@@ -33,18 +33,19 @@ segments = [
 # dashcamOnly makes don't need to be tested until a full port is done
 excluded_interfaces = ["mock", "ford", "mazda"]
 
-BASE_URL = os.path.dirname(os.path.abspath(__file__))
-#BASE_URL = "https://commadataci.blob.core.windows.net/openpilotci/"
+BASE_URL = "https://commadataci.blob.core.windows.net/openpilotci/"
 
 # run the full test (including checks) when no args given
 FULL_TEST = len(sys.argv) <= 1
 
 
-def get_segment(segment_name, original=True):
+def get_segment(segment_name, original=True, local=False):
   route_name, segment_num = segment_name.rsplit("--", 1)
   if original:
-    rlog_url = BASE_URL + "%s/%s/rlog.bz2" % (route_name.replace("|", "/"), segment_num)
-    rlog_url = BASE_URL + "%s/%s/rlog.bz2" % (route_name.replace("|", "/"), segment_num)
+    if local:
+      rlog_url = os.path.dirname(os.path.abspath(__file__)) + "/%s/%s/rlog.bz2" % (route_name, segment_num)
+    else:
+      rlog_url = BASE_URL + "%s/%s/rlog.bz2" % (route_name.replace("|", "/"), segment_num)
   else:
     process_replay_dir = os.path.dirname(os.path.abspath(__file__))
     model_ref_commit = open(os.path.join(process_replay_dir, "model_ref_commit")).read().strip()
@@ -156,7 +157,7 @@ if __name__ == "__main__":
 
     results[segment] = {}
 
-    rlog_fn = get_segment(segment)
+    rlog_fn = get_segment(segment, local=True)
     lr = LogReader(rlog_fn)
 
     for cfg in CONFIGS:
