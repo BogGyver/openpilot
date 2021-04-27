@@ -171,6 +171,11 @@ selfdrive/car/mazda/carcontroller.py
 selfdrive/car/mazda/mazdacan.py
 selfdrive/car/mock/*.py
 
+selfdrive/car/tesla/*.py
+selfdrive/car/tesla/qt/*.hpp
+selfdrive/car/tesla/qt/*.h
+selfdrive/car/tesla/speed_utils/*.py
+
 selfdrive/clocksd/.gitignore
 selfdrive/clocksd/SConscript
 selfdrive/clocksd/clocksd.cc
