@@ -184,6 +184,7 @@ selfdrive/debug/*.py
 
 selfdrive/common/SConscript
 selfdrive/common/version.h
+selfdrive/common/tinkla_version.h
 
 selfdrive/common/framebuffer.h
 selfdrive/common/framebuffer.cc

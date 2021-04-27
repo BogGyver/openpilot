@@ -7,9 +7,9 @@ on:
 
 env:
   BASE_IMAGE: openpilot-base
-  DOCKER_REGISTRY: ghcr.io/commaai
+  DOCKER_REGISTRY: ghcr.io/boggyver
 
-  DOCKER_LOGIN: docker login ghcr.io -u adeebshihadeh -p ${{ secrets.CONTAINER_TOKEN }}
+  DOCKER_LOGIN: docker login ghcr.io -u ${{ secrets.CONTAINER_USR }} -p ${{ secrets.CONTAINER_TOKEN }}
   BUILD: |
       docker pull $(grep -iohP '(?<=^from)\s+\S+' Dockerfile.openpilot_base) || true
       docker pull $DOCKER_REGISTRY/$BASE_IMAGE:latest || true
@@ -124,7 +124,7 @@ jobs:
     - name: Build openpilot
       run: docker run --shm-size 1G --rm -v $PWD:/tmp/openpilot -e PYTHONPATH=/tmp/openpilot $DOCKER_REGISTRY/$IMAGE_NAME /bin/sh -c "cd /tmp/openpilot && USE_WEBCAM=1 scons -j$(nproc)"
     - name: Push to container registry
-      if: github.ref == 'refs/heads/master' && github.repository == 'commaai/openpilot'
+      if: github.ref == 'refs/heads/tesla_unified_alpha' && github.repository == 'boggyver/openpilot'
       run: |
         $DOCKER_LOGIN
         docker push $DOCKER_REGISTRY/$IMAGE_NAME:latest
@@ -133,7 +133,7 @@ jobs:
     name: docker push
     runs-on: ubuntu-20.04
     timeout-minutes: 50
-    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request' && github.repository == 'commaai/openpilot'
+    if: github.ref == 'refs/heads/tesla_unified_alpha' && github.event_name != 'pull_request' && github.repository == 'boggyver/openpilot'
     needs: static_analysis # hack to ensure slow tests run first since this and static_analysis are fast
     steps:
     - uses: actions/checkout@v2
