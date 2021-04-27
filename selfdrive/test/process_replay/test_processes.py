@@ -39,10 +39,10 @@ BASE_URL = "https://commadataci.blob.core.windows.net/openpilotci/"
 FULL_TEST = len(sys.argv) <= 1
 
 
-def get_segment(segment_name, original=True, local=False):
+def get_segment(segment_name, original=True):
   route_name, segment_num = segment_name.rsplit("--", 1)
   if original:
-    if local:
+    if os.path.exists(os.path.dirname(os.path.abspath(__file__)) + "/%s/%s/rlog.bz2" % (route_name, segment_num)):
       rlog_url = os.path.dirname(os.path.abspath(__file__)) + "/%s/%s/rlog.bz2" % (route_name, segment_num)
     else:
       rlog_url = BASE_URL + "%s/%s/rlog.bz2" % (route_name.replace("|", "/"), segment_num)
@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
     results[segment] = {}
 
-    rlog_fn = get_segment(segment, local=True)
+    rlog_fn = get_segment(segment)
     lr = LogReader(rlog_fn)
 
     for cfg in CONFIGS:
