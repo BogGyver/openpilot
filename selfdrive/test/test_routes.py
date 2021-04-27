@@ -35,8 +35,6 @@ non_tested_cars = [
   TOYOTA.HIGHLANDERH,
   TOYOTA.HIGHLANDERH_TSS2,
   TESLA.AP2_MODELS,
-  TESLA.AP1_MODELX,
-  TESLA.PREAP_MODELS,
 ]
 
 routes = {
@@ -520,14 +518,14 @@ routes = {
     'carFingerprint': TESLA.AP1_MODELS,
     'enableCamera': True,
   },
-  #"ddccb1609b8abcb5|2021-04-22--22-41-04": {
-  #  'carFingerprint': TESLA.AP1_MODELX,
-  #  'enableCamera': True,
-  #},
-  #"07cb8a788c31f645|2021-04-23--15-18-22": {
-  #  'carFingerprint': TESLA.PREAP_MODELS,
-  #  'enableCamera': True,
-  #},
+  "ddccb1609b8abcb5|2021-04-22--22-41-04": {
+    'carFingerprint': TESLA.AP1_MODELX,
+    'enableCamera': True,
+  },
+  "07cb8a788c31f645|2021-04-23--15-18-22": {
+    'carFingerprint': TESLA.PREAP_MODELS,
+    'enableCamera': True,
+  },
 }
 
 forced_dashcam_routes = [

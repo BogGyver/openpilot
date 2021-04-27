@@ -12,7 +12,9 @@ from tools.lib.logreader import LogReader
 INJECT_MODEL = 0
 
 segments = [
-  ("TESLA", "c7e9ec2908b06d23|2021-04-22--18-48-26--1"),       # TESLA.MODELS
+  ("TESLA", "c7e9ec2908b06d23|2021-04-22--18-48-26--1"),       # TESLA.AP1_MODELS
+  ("TESLA2", "ddccb1609b8abcb5|2021-04-22--22-41-04--2"),       # TESLA.AP1_MODELX
+  ("TESLA3", "07cb8a788c31f645|2021-04-23--15-18-22--1"),       # TESLA.PREAP_MODELS
   ("HYUNDAI", "02c45f73a2e5c6e9|2021-01-01--19-08-22--1"),     # HYUNDAI.SONATA
   ("TOYOTA", "0982d79ebb0de295|2021-01-04--17-13-21--13"),     # TOYOTA.PRIUS (INDI)
   ("TOYOTA2", "0982d79ebb0de295|2021-01-03--20-03-36--6"),     # TOYOTA.RAV4  (LQR)
@@ -31,6 +33,7 @@ segments = [
 # dashcamOnly makes don't need to be tested until a full port is done
 excluded_interfaces = ["mock", "ford", "mazda"]
 
+#BASE_URL = "https://github.com/BogGyver/openpilot/raw/tesla_unified_alpha/selfdrive/test/process_replay/" 
 BASE_URL = "https://commadataci.blob.core.windows.net/openpilotci/"
 
 # run the full test (including checks) when no args given
@@ -40,6 +43,7 @@ FULL_TEST = len(sys.argv) <= 1
 def get_segment(segment_name, original=True):
   route_name, segment_num = segment_name.rsplit("--", 1)
   if original:
+    rlog_url = BASE_URL + "%s/%s/rlog.bz2" % (route_name.replace("|", "/"), segment_num)
     rlog_url = BASE_URL + "%s/%s/rlog.bz2" % (route_name.replace("|", "/"), segment_num)
   else:
     process_replay_dir = os.path.dirname(os.path.abspath(__file__))

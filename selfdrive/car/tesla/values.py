@@ -10,7 +10,7 @@ AngleRateLimit = namedtuple('AngleRateLimit', ['speed_points', 'max_angle_diff_p
 class CAR:
   AP2_MODELS = 'TESLA AP2 MODEL S'
   AP1_MODELS = 'TESLA AP1 MODEL S'
-  PREAP_MODELS = 'TESLA PREAP MODEL S'
+  PREAP_MODELS = 'TESLA MODEL S'
   AP1_MODELX = 'TESLA AP1 MODEL X'
 
 FINGERPRINTS = {
