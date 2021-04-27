@@ -82,7 +82,8 @@ class CarController():
     # Cancel when openpilot is not enabled anymore and no autopilot
     # BB: do we need to do this? AP/Tesla does not behave this way
     #   LKAS can be disabled by steering and ACC remains engaged
-    if not enabled and bool(CS.out.cruiseState.enabled):
+    #TODO: we need more logic arround this for AP0
+    if not enabled and bool(CS.out.cruiseState.enabled) and not CS.enableHumanLongControl:
       cruise_cancel = True
 
     if ((frame % 10) == 0 and cruise_cancel):

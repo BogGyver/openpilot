@@ -24,6 +24,11 @@ TinklaTogglesPanel::TinklaTogglesPanel(QWidget *parent) : QWidget(parent) {
                                   "Keeps device screen off even when engaged. It wakes the screen any time a message is shown.",
                                   "../assets/offroad/icon_settings.png",
                                   this));
+  tinkla_toggles.append(new TinklaParamControl("TinklaAllowHumanLong",
+                                  "preAP: Allow OP to just control LKAS",
+                                  "Allows the user to perform longitudinal control via accel/brake without disengaging OP. Requires reboot.",
+                                  "../assets/offroad/icon_speed_limit.png",
+                                  this));
   tinkla_toggles.append(new TinklaParamControl("TinklaEnablePedal",
                                   "preAP: Enable pedal interceptor",
                                   "Enables the use of the Pedal Interceptor to control the speed of your pre-AutoPilot Tesla. Requires Pedal Interceptor hardware connected to CAN2. Requires reboot.",

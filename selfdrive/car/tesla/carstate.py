@@ -104,6 +104,7 @@ class CarState(CarStateBase):
     self.apFollowTimeInS = 2.5  # time in seconds to follow
     self.torqueLevel = 0.0
     self.cruise_state = None
+    self.enableHumanLongControl = load_bool_param("TinklaAllowHumanLong",False)
 
     #IC integration
     self.userSpeedLimitOffsetMS = 0
@@ -297,6 +298,15 @@ class CarState(CarStateBase):
       self.pedal_interceptor_value = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"]
       self.pedal_interceptor_value2 = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
       self.pedal_idx = cp_cam.vl["GAS_SENSOR"]["IDX"]
+
+    #PREAP overrides at the last moment
+    if self.CP.carFingerprint in [CAR.PREAP_MODELS]:
+      if self.enableHumanLongControl:
+        ret.cruiseState.enabled = True
+        ret.cruiseState.available = True
+        ret.cruiseState.standstill = False
+        ret.brakePressed = False
+        ret.gasPressed = False
 
     return ret
 
