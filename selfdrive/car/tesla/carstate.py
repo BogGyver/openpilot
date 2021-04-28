@@ -425,6 +425,7 @@ class CarState(CarStateBase):
   @staticmethod
   def get_cam_can_parser(CP):
     usesApillarHarness = load_bool_param("TinklaUseAPillarHarness",False)
+    enablePedal = load_bool_param("TinklaEnablePedal",False)
     signals = None
     checks = None
     
@@ -504,15 +505,23 @@ class CarState(CarStateBase):
         ("EPAS_internalSAS", "EPAS_sysStatus", 0),
         ("EPAS_eacStatus", "EPAS_sysStatus", 1),
         ("EPAS_eacErrorCode", "EPAS_sysStatus", 0),
-        ("INTERCEPTOR_GAS", "GAS_SENSOR", 0),
-        ("INTERCEPTOR_GAS2", "GAS_SENSOR", 0),
-        ("STATE", "GAS_SENSOR", 0),
-        ("IDX", "GAS_SENSOR", 0),
       ]
 
       checks = [      
         ("EPAS_sysStatus", 25),
       ]
+
+      if enablePedal:
+        signals += [
+          ("INTERCEPTOR_GAS", "GAS_SENSOR", 0),
+          ("INTERCEPTOR_GAS2", "GAS_SENSOR", 0),
+          ("STATE", "GAS_SENSOR", 0),
+          ("IDX", "GAS_SENSOR", 0),
+        ]
+
+        checks += [
+          ("GAS_SENSOR", 10)
+        ]
 
       if usesApillarHarness:
         signals += [
@@ -520,6 +529,7 @@ class CarState(CarStateBase):
           ("driverBrakeStatus", "BrakeMessage", 0),
           ("SDM_bcklDrivStatus", "SDM1", 0),
         ]
+        
         checks += [
           ("ESP_B", 50),
           ("BrakeMessage", 50),
