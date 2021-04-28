@@ -495,7 +495,10 @@ class CarState(CarStateBase):
         # sig_address, frequency
         ("DAS_status", 2),
         ("DAS_status2",2),
-        ("DAS_pscControl",25)
+        ("DAS_pscControl",25),
+        ("DAS_bodyControls",2),
+        ("DAS_steeringControl",50),
+
       ]
 
     if CP.carFingerprint in [CAR.PREAP_MODELS]:

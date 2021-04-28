@@ -78,16 +78,16 @@ public:
         return true;
       }
     }
-}
+  }
 
-inline void tinkla_set_bool_param(const std::string &tinkla_param,int tinkla_param_value) {
+  inline void tinkla_set_bool_param(const std::string &tinkla_param,int tinkla_param_value) {
       ofstream ofile;
       ofile.open(tinkla_params_path + "/" + tinkla_param);
       if (ofile) {
         ofile << tinkla_param_value;
         ofile.close();
       }
-}
+  }
 
   // write a value
   int put(const char* key, const char* val, size_t value_size);
