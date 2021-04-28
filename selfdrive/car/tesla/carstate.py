@@ -382,6 +382,10 @@ class CarState(CarStateBase):
       ("DI_state", 10),
       ("STW_ACTN_RQ", 10),
       ("GTW_carState", 10),
+      ("UI_gpsVehicleSpeed",1),
+      ("UI_driverAssistMapData",2),
+      ("UI_driverAssistRoadSign",10),
+      ("PARK_status2",4),
     ]
 
     if not (CP.carFingerprint in [CAR.PREAP_MODELS] and usesApillarHarness):
@@ -489,6 +493,8 @@ class CarState(CarStateBase):
       checks = [
         # sig_address, frequency
         ("DAS_status", 2),
+        ("DAS_status2",2),
+        ("DAS_pscControl",25)
       ]
 
     if CP.carFingerprint in [CAR.PREAP_MODELS]:
