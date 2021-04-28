@@ -11,7 +11,7 @@ TinklaTogglesPanel::TinklaTogglesPanel(QWidget *parent) : QWidget(parent) {
                                   this));
   tinkla_toggles.append(new TinklaParamControl("TinklaHao",
                                   "Enable HAO",
-                                  "Enables Human Steering Override (HSO) module without disengaging OpenPilot.",
+                                  "Enables Human Accelerator Override (HSO) module without disengaging OpenPilot.",
                                   "../assets/offroad/icon_warning.png",
                                   this));
   tinkla_toggles.append(new TinklaParamControl("TinklaAlc",
