@@ -293,7 +293,7 @@ class CarState(CarStateBase):
     #Pedal Interceptor
     self.prev_pedal_interceptor_state = self.pedal_interceptor_state
     self.prev_pedal_idx = self.pedal_idx
-    if self.CP.carFingerprint in [CAR.PREAP_MODELS]:
+    if self.CP.carFingerprint in [CAR.PREAP_MODELS] and self.forcePedalOverCC:
       self.pedal_interceptor_state = cp_cam.vl["GAS_SENSOR"]["STATE"]
       self.pedal_interceptor_value = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"]
       self.pedal_interceptor_value2 = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
