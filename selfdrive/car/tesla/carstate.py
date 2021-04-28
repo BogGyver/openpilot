@@ -420,7 +420,7 @@ class CarState(CarStateBase):
         ("EPAS_sysStatus", 25),
       ]
 
-    return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 0)
+    return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 0, enforce_checks=False)
 
   @staticmethod
   def get_cam_can_parser(CP):
@@ -539,4 +539,4 @@ class CarState(CarStateBase):
           ("SDM1", 10),
         ]
 
-    return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 2)
+    return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 2,enforce_checks=False)
