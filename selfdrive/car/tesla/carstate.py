@@ -150,7 +150,6 @@ class CarState(CarStateBase):
       ret.brakePressed = bool(cp_cam.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
     else:
       ret.brakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
-    ret.brakePressed = False #Brake disengages ACC, this just creates issues
     # Steering wheel
     if (self.CP.carFingerprint == CAR.PREAP_MODELS):
       self.hands_on_level = cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
