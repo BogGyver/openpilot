@@ -18,6 +18,8 @@
 #include "common/params.h"
 #include "common/util.h"
 
+#include "selfdrive/car/tesla/qt/settings.hpp"
+
 QFrame* horizontal_line(QWidget* parent = 0){
   QFrame* line = new QFrame(parent);
   line->setFrameShape(QFrame::StyledPanel);
@@ -260,6 +262,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
     {"Device", device_panel()},
     {"Network", network_panel(this)},
     {"Toggles", toggles_panel()},
+    {"Tinkla", new TinklaTogglesPanel(this)},
   };
 
   sidebar_layout->addSpacing(45);

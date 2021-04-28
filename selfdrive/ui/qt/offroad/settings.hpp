@@ -25,6 +25,12 @@ public slots:
   void checkboxClicked(int state);
 };
 
+class TinklaTogglesPanel : public QWidget {
+  Q_OBJECT
+public:
+  explicit TinklaTogglesPanel(QWidget *parent = nullptr);
+};
+
 
 // *** settings window ***
 

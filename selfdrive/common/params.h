@@ -43,4 +43,37 @@ public:
   bool read_db_bool(const char* param_name);
 
   std::string get(std::string key, bool block=false);
+
+  inline bool tinkla_get_bool_param(const std::string &tinkla_param) {
+    ifstream ifile;
+    ifile.open(tinkla_params_path + "/" + tinkla_param);
+    if (!ifile) {
+      //no file assume false and create
+      ofstream ofile;
+      ofile.open(tinkla_params_path + "/" + tinkla_param);
+      if (ofile) {
+        ofile << 0;
+        ofile.close();
+      }
+      return false;
+    } else {
+      int value;
+      ifile >> value;
+      ifile.close();
+      if (value == 0) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+  }
+
+  inline void tinkla_set_bool_param(const std::string &tinkla_param,int tinkla_param_value) {
+      ofstream ofile;
+      ofile.open(tinkla_params_path + "/" + tinkla_param);
+      if (ofile) {
+        ofile << tinkla_param_value;
+        ofile.close();
+      }
+  }
 };

@@ -3,6 +3,7 @@
 .*.swo
 *.o
 *.so
+*.os
 *.d
 *.dump
 a.out
@@ -16,3 +17,4 @@ examples/output.csv
 .vscode*
 nosetests.xml
 .mypy_cache/
+.sconsign.dblite

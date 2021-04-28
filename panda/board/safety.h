@@ -39,8 +39,10 @@
 #define SAFETY_SUBARU_LEGACY 22U
 #define SAFETY_HYUNDAI_LEGACY 23U
 #define SAFETY_HYUNDAI_COMMUNITY 24U
+#define SAFETY_TESLA_PREAP 25U
 
 uint16_t current_safety_mode = SAFETY_SILENT;
+int16_t current_safety_param = 0;
 const safety_hooks *current_hooks = &nooutput_hooks;
 
 int safety_rx_hook(CAN_FIFOMailBox_TypeDef *to_push){
@@ -249,11 +251,12 @@ const safety_hook_config safety_hook_registry[] = {
   {SAFETY_NISSAN, &nissan_hooks},
   {SAFETY_NOOUTPUT, &nooutput_hooks},
   {SAFETY_HYUNDAI_LEGACY, &hyundai_legacy_hooks},
+  {SAFETY_TESLA, &tesla_hooks},
+  {SAFETY_TESLA_PREAP, &tesla_preap_hooks},
 #ifdef ALLOW_DEBUG
   {SAFETY_MAZDA, &mazda_hooks},
   {SAFETY_SUBARU_LEGACY, &subaru_legacy_hooks},
   {SAFETY_VOLKSWAGEN_PQ, &volkswagen_pq_hooks},
-  {SAFETY_TESLA, &tesla_hooks},
   {SAFETY_ALLOUTPUT, &alloutput_hooks},
   {SAFETY_GM_ASCM, &gm_ascm_hooks},
   {SAFETY_FORD, &ford_hooks},
@@ -291,7 +294,8 @@ int set_safety_hooks(uint16_t mode, int16_t param) {
   for (int i = 0; i < hook_config_count; i++) {
     if (safety_hook_registry[i].id == mode) {
       current_hooks = safety_hook_registry[i].hooks;
-      current_safety_mode = safety_hook_registry[i].id;
+      current_safety_mode = mode;
+      current_safety_param = param;
       set_status = 0;  // set
     }
 
