@@ -282,6 +282,8 @@ class CarState(CarStateBase):
     else:
       das_right_blindspot = False
       das_left_blindspot = False
+      park_right_blindspot = False
+      park_left_blindspot = False
     ret.rightBlindspot = (park_right_blindspot or das_right_blindspot)
     ret.leftBlindspot = (park_left_blindspot or das_left_blindspot)
     # Messages needed by carcontroller
