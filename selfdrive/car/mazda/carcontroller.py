@@ -19,9 +19,13 @@ class CarController():
     if enabled:
       # calculate steer and also set limits due to driver torque
       new_steer = int(round(actuators.steer * CarControllerParams.STEER_MAX))
-      apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last,
-                                                  CS.out.steeringTorque, CarControllerParams)
-      self.steer_rate_limited = new_steer != apply_steer
+      if CS.human_control:
+        apply_steer = 0
+        self.steer_rate_limited = False
+      else:
+        apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last,
+                                                    CS.out.steeringTorque, CarControllerParams)
+        self.steer_rate_limited = new_steer != apply_steer
 
       if CS.out.standstill and frame % 5 == 0:
         # Mazda Stop and Go requires a RES button (or gas) press if the car stops more than 3 seconds

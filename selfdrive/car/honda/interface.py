@@ -547,11 +547,13 @@ class CarInterface(CarInterfaceBase):
     ret.events = events.to_msg()
 
     self.CS.out = ret.as_reader()
+    self.post_update(c)
     return self.CS.out
 
   # pass in a car.CarControl
   # to be called @ 100hz
   def apply(self, c):
+    self.pre_apply(c)
     if c.hudControl.speedVisible:
       hud_v_cruise = c.hudControl.setSpeed * CV.MS_TO_KPH
     else:

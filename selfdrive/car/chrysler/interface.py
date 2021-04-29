@@ -77,13 +77,13 @@ class CarInterface(CarInterfaceBase):
 
     # copy back carState packet to CS
     self.CS.out = ret.as_reader()
-
+    self.post_update(c)
     return self.CS.out
 
   # pass in a car.CarControl
   # to be called @ 100hz
   def apply(self, c):
-
+    self.pre_apply(c)
     if (self.CS.frame == -1):
       return []  # if we haven't seen a frame 220, then do not update.
 

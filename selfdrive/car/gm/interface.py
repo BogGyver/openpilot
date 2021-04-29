@@ -173,14 +173,14 @@ class CarInterface(CarInterfaceBase):
 
     # copy back carState packet to CS
     self.CS.out = ret.as_reader()
-
+    self.post_update(c)
     return self.CS.out
 
   def apply(self, c):
+    self.pre_apply(c)
     hud_v_cruise = c.hudControl.setSpeed
     if hud_v_cruise > 70:
       hud_v_cruise = 0
-
     # For Openpilot, "enabled" includes pre-enable.
     # In GM, PCM faults out if ACC command overlaps user gas.
     enabled = c.enabled and not self.CS.out.gasPressed
