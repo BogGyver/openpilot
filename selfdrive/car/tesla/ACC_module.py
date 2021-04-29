@@ -446,7 +446,7 @@ class ACCController:
             # loses lead car in a turn.
             elif (
                 lead_dist_m == 0
-                and CS.angle_steers < 2.0
+                and CS.out.steeringAngleDeg < 2.0
                 and half_press_kph < available_speed_kph
                 and self._no_action_for(milliseconds=500)
                 and self._no_human_action_for(milliseconds=1000)
@@ -466,7 +466,7 @@ class ACCController:
                     lead_dist_m,
                     available_speed_kph,
                     lead_car.vRel * CV.MS_TO_KPH,
-                    CS.angle_steers,
+                    CS.out.steeringAngleDeg,
                 )
             )
             self.last_update_time = current_time_ms

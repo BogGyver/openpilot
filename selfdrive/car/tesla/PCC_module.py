@@ -321,7 +321,7 @@ class PCCController:
             accel_limits[0], CS.out.vEgo, self.lead_1, CS, self.pedal_speed_kph
         )
 
-        accel_limits = limit_accel_in_turns(v_ego, CS.angle_steers, accel_limits, CS.CP)
+        accel_limits = limit_accel_in_turns(v_ego, CS.out.steeringAngleDeg, accel_limits, CS.CP)
 
         output_gb = 0
 
