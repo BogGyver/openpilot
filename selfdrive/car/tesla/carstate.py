@@ -274,9 +274,9 @@ class CarState(CarStateBase):
       ret.seatbeltUnlatched = (cp.vl["SDM1"]["SDM_bcklDrivStatus"] != 1)
 
     #Blindspot
-    park_right_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotRight"].get(int(cp.vl["PARK_status2"]["PARK_sdiBlindSpotRight"])) == "WARNING"
-    park_left_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotLeft"].get(int(cp.vl["PARK_status2"]["PARK_sdiBlindSpotLeft"])) == "WARNING"
     if (self.CP.carFingerprint != CAR.PREAP_MODELS):
+      park_right_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotRight"].get(int(cp.vl["PARK_status2"]["PARK_sdiBlindSpotRight"])) == "WARNING"
+      park_left_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotLeft"].get(int(cp.vl["PARK_status2"]["PARK_sdiBlindSpotLeft"])) == "WARNING"
       das_right_blindspot = self.can_define.dv["DAS_status"]["DAS_blindSpotRearRight"].get(int(cp_cam.vl["DAS_status"]["DAS_blindSpotRearRight"])) in ["WARNING_LEVEL_2","WARNING_LEVEL_1"]
       das_left_blindspot = self.can_define.dv["DAS_status"]["DAS_blindSpotRearLeft"].get(int(cp_cam.vl["DAS_status"]["DAS_blindSpotRearLeft"])) in ["WARNING_LEVEL_2","WARNING_LEVEL_1"]
     else:
@@ -369,8 +369,6 @@ class CarState(CarStateBase):
       ("WprSw6Posn", "STW_ACTN_RQ", 0),
       ("MC_STW_ACTN_RQ", "STW_ACTN_RQ", 0),
       ("CRC_STW_ACTN_RQ", "STW_ACTN_RQ", 0),
-      ("PARK_sdiBlindSpotRight","PARK_status2",0),
-      ("PARK_sdiBlindSpotLeft","PARK_status2",0),
     ]
 
     checks = [
@@ -381,10 +379,10 @@ class CarState(CarStateBase):
       ("DI_state", 10),
       ("STW_ACTN_RQ", 10),
       ("GTW_carState", 10),
-      ("UI_gpsVehicleSpeed",1),
-      ("UI_driverAssistMapData",2),
-      ("UI_driverAssistRoadSign",10),
-      ("PARK_status2",4),
+      #("UI_gpsVehicleSpeed",1),
+      #("UI_driverAssistMapData",2),
+      #("UI_driverAssistRoadSign",10),
+      
     ]
 
     if not (CP.carFingerprint in [CAR.PREAP_MODELS] and usesApillarHarness):
@@ -403,7 +401,7 @@ class CarState(CarStateBase):
       ]
 
       checks += [
-        ("SDM1", 10),
+        #("SDM1", 10),
       ]
 
     if CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP2_MODELS, CAR.AP1_MODELX]:
@@ -413,10 +411,13 @@ class CarState(CarStateBase):
         ("EPAS_internalSAS", "EPAS_sysStatus", 0),
         ("EPAS_eacStatus", "EPAS_sysStatus", 1),
         ("EPAS_eacErrorCode", "EPAS_sysStatus", 0),
+        ("PARK_sdiBlindSpotRight","PARK_status2",0),
+        ("PARK_sdiBlindSpotLeft","PARK_status2",0),
       ]
 
       checks += [      
         ("EPAS_sysStatus", 25),
+        #("PARK_status2",4),
       ]
 
     return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 0, enforce_checks=False)
@@ -535,7 +536,7 @@ class CarState(CarStateBase):
         checks += [
           ("ESP_B", 50),
           ("BrakeMessage", 50),
-          ("SDM1", 10),
+          #("SDM1", 10),
         ]
 
     return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 2,enforce_checks=False)
