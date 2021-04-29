@@ -47,23 +47,28 @@ class LONGController:
                 self.PCC.enable_pedal_cruise = False
             # update CS.v_cruise_pcm based on module selected.
             speed_uom_kph = 1.0
-            if CS.speed_units == "MPH":
-                speed_uom_kph = CV.KPH_TO_MPH
-            if self.ACC.enable_adaptive_cruise:
-                CS.acc_speed_kph = self.ACC.acc_speed_kph
-            elif self.PCC.enable_pedal_cruise:
-                CS.acc_speed_kph = self.PCC.pedal_speed_kph
-            else:
-                CS.acc_speed_kph = max(0.0, CS.out.vEgo * CV.MS_TO_KPH)
-            CS.v_cruise_pcm = CS.acc_speed_kph * speed_uom_kph
             #determine cc_state
             CS.cc_state = 1
-            if (self.PCC.pcc_available and self.PCC.enable_pedal_cruise) or (
-                self.ACC.enable_adaptive_cruise
-            ):
-                CS.speed_control_enabled = 1
-                CS.cc_state = 2
-                if not self.ACC.adaptive:
+            CS.speed_control_enabled = 0
+            if enabled:
+                if CS.speed_units == "MPH":
+                    speed_uom_kph = CV.KPH_TO_MPH
+                if self.ACC.enable_adaptive_cruise:
+                    CS.acc_speed_kph = self.ACC.acc_speed_kph
+                elif self.PCC.enable_pedal_cruise:
+                    CS.acc_speed_kph = self.PCC.pedal_speed_kph
+                else:
+                    CS.acc_speed_kph = max(0.0, CS.out.vEgo * CV.MS_TO_KPH)
+                CS.v_cruise_pcm = CS.acc_speed_kph * speed_uom_kph
+                if (self.PCC.pcc_available and self.PCC.enable_pedal_cruise) or (
+                    self.ACC.enable_adaptive_cruise
+                ):
+                    CS.speed_control_enabled = 1
+                    CS.cc_state = 2
+                    if not self.ACC.adaptive:
+                        CS.cc_state = 3
+            else:
+                if CS.pcm_acc_status == 4:
                     CS.cc_state = 3
             self.adaptive_cruise = (
                 1
@@ -84,11 +89,12 @@ class LONGController:
                 )
                 if cruise_btn:
                     # insert the message first since it is racing against messages from the real stalk
+                    stlk_counter = ((CS.msg_stw_actn_req['MC_STW_ACTN_RQ'] + 1) % 16)
                     messages.insert(0, self.tesla_can.create_action_request(
                         msg_stw_actn_req=CS.msg_stw_actn_req,
-                        cancel=False,
+                        button_to_press=cruise_btn,
                         bus=CAN_CHASSIS[self.CP.carFingerprint],
-                        counter=CS.msg_stw_actn_req['MC_STW_ACTN_RQ'] + 1))
+                        counter=stlk_counter))
             apply_accel = 0.0
             if self.PCC.pcc_available and frame % 5 == 0:  # pedal processed at 20Hz
                 pedalcan = 2
@@ -112,7 +118,6 @@ class LONGController:
                 )
 
             #TODO: update message sent in HUD
-
 
         #AP ModelS with OP Long and enabled
         elif enabled and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):

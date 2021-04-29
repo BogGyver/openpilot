@@ -6,7 +6,7 @@ from selfdrive.car.tesla.HUD_module import HUDController
 from selfdrive.car.tesla.LONG_module import LONGController
 from selfdrive.car.tesla.CFG_module import load_bool_param
 from opendbc.can.packer import CANPacker
-from selfdrive.car.tesla.values import CarControllerParams, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS
+from selfdrive.car.tesla.values import CAR, CarControllerParams, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CruiseButtons
 import cereal.messaging as messaging
 from common.numpy_fast import clip, interp
 
@@ -87,11 +87,10 @@ class CarController():
       cruise_cancel = True
 
     if ((frame % 10) == 0 and cruise_cancel):
-      # Spam every possible counter value, otherwise it might not be accepted
-      for counter in range(16):
-        can_sends.append(self.tesla_can.create_action_request(CS.msg_stw_actn_req, cruise_cancel, CAN_CHASSIS[self.CP.carFingerprint],counter))
-        if CAN_AUTOPILOT[self.CP.carFingerprint] != -1:
-          can_sends.append(self.tesla_can.create_action_request(CS.msg_stw_actn_req, cruise_cancel, CAN_AUTOPILOT[self.CP.carFingerprint],counter))
+      stlk_counter = ((CS.msg_stw_actn_req['MC_STW_ACTN_RQ'] + 1) % 16)
+      can_sends.insert(0,self.tesla_can.create_action_request(CS.msg_stw_actn_req, CruiseButtons.CANCEL, CAN_CHASSIS[self.CP.carFingerprint],stlk_counter))
+      if (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
+        can_sends.insert(1,self.tesla_can.create_action_request(CS.msg_stw_actn_req, CruiseButtons.CANCEL, CAN_AUTOPILOT[self.CP.carFingerprint],stlk_counter))
 
     #now process controls
     if lkas_enabled and not human_control:
