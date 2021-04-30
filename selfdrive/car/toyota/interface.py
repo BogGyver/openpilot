@@ -356,7 +356,7 @@ class CarInterface(CarInterfaceBase):
     self.cp_cam.update_strings(can_strings)
 
     ret = self.CS.update(self.cp, self.cp_cam)
-
+    self.post_update(c,ret)
     ret.canValid = self.cp.can_valid and self.cp_cam.can_valid
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
 
@@ -375,7 +375,7 @@ class CarInterface(CarInterfaceBase):
         events.add(EventName.manualRestart)
 
     ret.events = events.to_msg()
-    self.post_update(c,ret)
+    
     self.CS.out = ret.as_reader()
     return self.CS.out
 

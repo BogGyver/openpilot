@@ -98,12 +98,14 @@ class CarInterface(CarInterfaceBase):
     ret = self.CS.update(self.cp, self.cp_cam)
     ret.canValid = self.cp.can_valid and self.cp_cam.can_valid
 
+    self.post_update(c,ret)
+    
     events = self.create_common_events(ret)
     if self.CS.autopilot_enabled:
       events.add(car.CarEvent.EventName.invalidLkasSetting)
     
     ret.events = events.to_msg()
-    self.post_update(c,ret)
+    
     self.CS.out = ret.as_reader()
     self.CS.DAS_canErrors = 0 if ret.canValid else 1
     
