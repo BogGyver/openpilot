@@ -176,6 +176,7 @@ selfdrive/car/tesla/*.py
 selfdrive/car/tesla/qt/*.hpp
 selfdrive/car/tesla/qt/*.h
 selfdrive/car/tesla/speed_utils/*.py
+selfdrive/car/modules/*.py
 
 selfdrive/clocksd/.gitignore
 selfdrive/clocksd/SConscript

@@ -194,6 +194,7 @@ def save_bool_param(param_name,param_value):
              outfile.write(f'{real_param_value}')
     except IOError:
         print("Failed to save "+param_name+" with value ",param_value)
+    
 
 def load_bool_param(param_name,param_def_value):
     try:
@@ -204,7 +205,8 @@ def load_bool_param(param_name,param_def_value):
         return True if value_saved == 1 else False
     except IOError:
         print("Initializing "+param_name+" with value ",param_def_value)
-        #save_bool_param(param_name,param_def_value)
+        save_bool_param(param_name,param_def_value)
+        return param_def_value
         
 
 # Legacy support

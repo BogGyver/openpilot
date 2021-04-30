@@ -131,11 +131,11 @@ class CarInterfaceBase():
     self.CS.human_control = self.CS.HSO.update_stat(self.CS, c.enabled, c.actuators, self.frame)
     
     #update blinker tap module
-    self.CS.blinker_controller.update_state(self.CS, c.frame)
+    self.CS.blinker_controller.update_state(self.CS, self.frame)
     self.CS.tap_direction = self.CS.blinker_controller.tap_direction
 
     #update ALC module
-    self.CS.alca_controller.update(c.enabled, self.CS, c.frame, self.CS.lat_plan)
+    self.CS.alca_controller.update(c.enabled, self.CS, self.frame, self.CS.lat_plan)
 
   # return sendcan, pass in a car.CarControl
 
