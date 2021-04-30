@@ -236,6 +236,7 @@ class CarStateBase:
     read_config_file(self)
     #end config section
 
+    self.turn_signal_stalk_state = 0
 
     # Q = np.matrix([[10.0, 0.0], [0.0, 100.0]])
     # R = 1e3
