@@ -68,7 +68,7 @@ class LONGController:
                     if not self.ACC.adaptive:
                         CS.cc_state = 3
             else:
-                if CS.pcm_acc_status == 4:
+                if CS.cruise_state == 4:
                     CS.cc_state = 3
             self.adaptive_cruise = (
                 1
