@@ -23,6 +23,8 @@ class CarController():
     if (frame % CarControllerParams.STEER_STEP) == 0:
 
       apply_steer = int(round(actuators.steer * CarControllerParams.STEER_MAX))
+      if CS.human_control:
+        apply_steer = 0
 
       # limits due to driver torque
 
@@ -31,10 +33,6 @@ class CarController():
       self.steer_rate_limited = new_steer != apply_steer
 
       if not enabled:
-        apply_steer = 0
-
-      if CS.human_control:
-        self.steer_rate_limited = False
         apply_steer = 0
 
       if CS.CP.carFingerprint in PREGLOBAL_CARS:
