@@ -107,17 +107,17 @@ class CarInterfaceBase():
   def update(self, c, can_strings):
     raise NotImplementedError
 
-  def post_update(self,c):
+  def post_update(self,c,ret):
     if self.CS.enableHAO:
-      self.CS.out.gas = 0
-      self.CS.out.gasPressed = False
+      ret.gas = 0
+      ret.gasPressed = False
     #Trick the alca if autoStartAlcaDelay is set
     if (self.CS.enableALC) and (self.CS.alca_need_engagement):
-      self.CS.out.steeringPressed = True
+      ret.steeringPressed = True
       if self.CS.alca_direction == log.LateralPlan.LaneChangeDirection.left:
-        self.CS.out.steeringTorque = self.CS.out.steeringTorque + 0.1
+        ret.steeringTorque = ret.steeringTorque + 0.1
       if self.CS.alca_direction == log.LateralPlan.LaneChangeDirection.right:
-        self.CS.out.steeringTorque = self.CS.out.steeringTorque - 0.1
+        ret.steeringTorque = ret.steeringTorque - 0.1
 
   def pre_apply(self,c):
     #read params once a second

@@ -89,9 +89,8 @@ class CarInterface(CarInterfaceBase):
       events.add(EventName.belowSteerSpeed)
 
     ret.events = events.to_msg()
-
+    self.post_update(c,ret)
     self.CS.out = ret.as_reader()
-    self.post_update(c)
     return self.CS.out
 
   def apply(self, c):

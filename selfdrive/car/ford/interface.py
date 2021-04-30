@@ -64,9 +64,8 @@ class CarInterface(CarInterfaceBase):
       events.add(car.CarEvent.EventName.steerTempUnavailable)
 
     ret.events = events.to_msg()
-
+    self.post_update(c,ret)
     self.CS.out = ret.as_reader()
-    self.post_update(c)
     return self.CS.out
 
   # pass in a car.CarControl

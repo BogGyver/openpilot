@@ -161,9 +161,8 @@ class CarInterface(CarInterfaceBase):
     # update previous car states
     self.displayMetricUnitsPrev = self.CS.displayMetricUnits
     self.buttonStatesPrev = self.CS.buttonStates.copy()
-
+    self.post_update(c,ret)
     self.CS.out = ret.as_reader()
-    self.post_update(c)
     return self.CS.out
 
   def apply(self, c):
