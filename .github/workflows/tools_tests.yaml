@@ -40,7 +40,7 @@ jobs:
     timeout-minutes: 50
     env:
       IMAGE_NAME: openpilot-sim
-    if: github.repository == 'commaai/openpilot'
+    if: github.repository == 'boggyver/openpilot'
     steps:
     - uses: actions/checkout@v2
       with:
@@ -52,7 +52,7 @@ jobs:
         docker pull $DOCKER_REGISTRY/$IMAGE_NAME:latest || true
         docker build --cache-from $DOCKER_REGISTRY/$IMAGE_NAME:latest -t $DOCKER_REGISTRY/$IMAGE_NAME:latest -f tools/sim/Dockerfile.sim .
     - name: Push to container registry
-      if: github.ref == 'refs/heads/master' && github.repository == 'commaai/openpilot'
+      if: github.ref == 'refs/heads/tesla_unity_dev' && github.repository == 'boggyver/openpilot'
       run: |
         $DOCKER_LOGIN
         docker push $DOCKER_REGISTRY/$IMAGE_NAME:latest
