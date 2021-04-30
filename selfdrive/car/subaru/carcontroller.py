@@ -32,6 +32,7 @@ class CarController():
 
       if not enabled or CS.human_control:
         apply_steer = 0
+        self.steer_rate_limited = False
 
       if CS.CP.carFingerprint in PREGLOBAL_CARS:
         can_sends.append(subarucan.create_preglobal_steering_control(self.packer, apply_steer, frame, CarControllerParams.STEER_STEP))
