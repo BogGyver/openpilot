@@ -405,7 +405,7 @@ def radard_thread(sm=None, pm=None, can_sock=None):
   rk = Ratekeeper(1.0 / CP.radarTimeStep, print_delay_threshold=None)
   RD = RadarD(CP.radarTimeStep, RI, use_tesla_radar,RI.delay)
 
-  has_radar = not CP.radarOffCan 
+  has_radar = CP.openpilotLongitudinalControl or not CP.radarOffCan
   v_ego = 0.
   print("Working with ",CP.carName," with radarOffCan=",CP.radarOffCan)
   while 1:
