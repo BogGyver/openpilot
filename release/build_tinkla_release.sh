@@ -35,7 +35,7 @@ git commit -m "Tesla OpenPilot $TINKLAVERSION (openpilot v$VERSION)"
 
 # Build signed panda firmware
 pushd panda/
-CERT=/data/pandaextra/certs/debug RELEASE=1 scons -u .
+CERT=/data/pandaextra/certs/debug RELEASE=0 scons -u .
 mv board/obj/panda.bin.signed /tmp/panda.bin.signed
 popd
 
