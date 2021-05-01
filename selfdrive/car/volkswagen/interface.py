@@ -104,7 +104,8 @@ class CarInterface(CarInterfaceBase):
 
     ret.centerToFront = ret.wheelbase * 0.45
 
-    ret.enableCamera = True  # Stock camera detection doesn't apply to VW
+    ret.enableCamera = True
+    ret.enableBsm = 0x30F in fingerprint[0]
 
     # TODO: get actual value, for now starting with reasonable value for
     # civic and scaling by mass and wheelbase
@@ -128,6 +129,7 @@ class CarInterface(CarInterfaceBase):
     self.cp_cam.update_strings(can_strings)
 
     ret = self.CS.update(self.cp, self.cp_cam, self.CP.transmissionType)
+    self.post_update(c,ret)
     ret.canValid = self.cp.can_valid and self.cp_cam.can_valid
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
 
@@ -160,14 +162,17 @@ class CarInterface(CarInterfaceBase):
     # update previous car states
     self.displayMetricUnitsPrev = self.CS.displayMetricUnits
     self.buttonStatesPrev = self.CS.buttonStates.copy()
-
+    
     self.CS.out = ret.as_reader()
     return self.CS.out
 
   def apply(self, c):
+    self.pre_apply(c)
     can_sends = self.CC.update(c.enabled, self.CS, self.frame, c.actuators,
                    c.hudControl.visualAlert,
                    c.hudControl.leftLaneVisible,
-                   c.hudControl.rightLaneVisible)
+                   c.hudControl.rightLaneVisible,
+                   c.hudControl.leftLaneDepart,
+                   c.hudControl.rightLaneDepart)
     self.frame += 1
     return can_sends

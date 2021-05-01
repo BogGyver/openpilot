@@ -11,7 +11,7 @@ TinklaTogglesPanel::TinklaTogglesPanel(QWidget *parent) : QWidget(parent) {
                                   this));
   tinkla_toggles.append(new TinklaParamControl("TinklaHao",
                                   "Enable HAO",
-                                  "Enables Human Steering Override (HSO) module without disengaging OpenPilot.",
+                                  "Enables Human Accelerator Override (HSO) module without disengaging OpenPilot.",
                                   "../assets/offroad/icon_warning.png",
                                   this));
   tinkla_toggles.append(new TinklaParamControl("TinklaAlc",
@@ -23,6 +23,11 @@ TinklaTogglesPanel::TinklaTogglesPanel(QWidget *parent) : QWidget(parent) {
                                   "Turn screen off while engaged",
                                   "Keeps device screen off even when engaged. It wakes the screen any time a message is shown.",
                                   "../assets/offroad/icon_settings.png",
+                                  this));
+  tinkla_toggles.append(new TinklaParamControl("TinklaAllowHumanLong",
+                                  "preAP: Allow OP to just control LKAS",
+                                  "Allows the user to perform longitudinal control via accel/brake without disengaging OP. Requires reboot.",
+                                  "../assets/offroad/icon_speed_limit.png",
                                   this));
   tinkla_toggles.append(new TinklaParamControl("TinklaEnablePedal",
                                   "preAP: Enable pedal interceptor",

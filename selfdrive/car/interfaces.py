@@ -2,7 +2,7 @@ import os
 import time
 from typing import Dict
 
-from cereal import car
+from cereal import car,log
 from common.kalman.simple_kalman import KF1D
 from common.realtime import DT_CTRL
 from selfdrive.car import gen_empty_fingerprint
@@ -10,6 +10,11 @@ from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX
 from selfdrive.controls.lib.events import Events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
+from selfdrive.car.modules.CFG_module import read_config_file,load_bool_param
+from selfdrive.car.modules.HSO_module import HSOController
+from selfdrive.car.modules.BLNK_module import BLNKController
+from selfdrive.car.modules.ALC_module import ALCController
+import cereal.messaging as messaging
 
 GearShifter = car.CarState.GearShifter
 EventName = car.CarEvent.EventName
@@ -31,6 +36,22 @@ class CarInterfaceBase():
       self.cp = self.CS.get_can_parser(CP)
       self.cp_cam = self.CS.get_cam_can_parser(CP)
       self.cp_body = self.CS.get_body_can_parser(CP)
+    
+      #initialize modules
+      self.CS.HSO = HSOController()
+      self.CS.blinker_controller = BLNKController()
+      self.CS.alca_controller = ALCController()
+
+      #initialize listeners
+      self.CS.laP = messaging.sub_sock('lateralPlan')
+
+      #alca info
+      self.CS.prev_alca_pre_engage = False
+      self.CS.alca_pre_engage = False
+      self.CS.alca_engaged = False
+      self.CS.alca_direction = 0
+      self.CS.alca_need_engagement = False
+      self.CS.alca_done = False
 
     self.CC = None
     if CarController is not None:
@@ -86,7 +107,38 @@ class CarInterfaceBase():
   def update(self, c, can_strings):
     raise NotImplementedError
 
+  def post_update(self,c,ret):
+    if self.CS.enableHAO:
+      ret.gas = 0
+      ret.gasPressed = False
+    #Trick the alca if autoStartAlcaDelay is set
+    if (self.CS.enableALC) and (self.CS.alca_need_engagement):
+      ret.steeringPressed = True
+      if self.CS.alca_direction == log.LateralPlan.LaneChangeDirection.left:
+        ret.steeringTorque = ret.steeringTorque + 0.1
+      if self.CS.alca_direction == log.LateralPlan.LaneChangeDirection.right:
+        ret.steeringTorque = ret.steeringTorque - 0.1
+
+  def pre_apply(self,c):
+    #read params once a second
+    if self.frame % 100 == 0:
+      self.CS.enableHSO = load_bool_param("TinklaHso",True)
+      self.CS.enableHAO = load_bool_param("TinklaHao",False)
+      self.CS.enableALC = load_bool_param("TinklaAlc",False)
+
+    self.CS.lat_plan = messaging.recv_one_or_none(self.CS.laP) 
+    # Update HSO module
+    self.CS.human_control = self.CS.HSO.update_stat(self.CS, c.enabled, c.actuators, self.frame)
+    
+    #update blinker tap module
+    self.CS.blinker_controller.update_state(self.CS, self.frame)
+    self.CS.tap_direction = self.CS.blinker_controller.tap_direction
+
+    #update ALC module
+    self.CS.alca_controller.update(c.enabled, self.CS, self.frame, self.CS.lat_plan)
+
   # return sendcan, pass in a car.CarControl
+
   def apply(self, c):
     raise NotImplementedError
 
@@ -119,7 +171,10 @@ class CarInterfaceBase():
     if cs_out.steerError:
       events.add(EventName.steerUnavailable)
     elif cs_out.steerWarning:
-      events.add(EventName.steerTempUnavailable)
+      if cs_out.steeringPressed:
+        events.add(EventName.steerTempUnavailableUserOverride)
+      else:
+        events.add(EventName.steerTempUnavailable)
 
     # Disable on rising edge of gas or brake. Also disable on brake when speed > 0.
     # Optionally allow to press gas at zero speed to resume.
@@ -161,6 +216,27 @@ class CarStateBase:
     self.cruise_buttons = 0
     self.left_blinker_cnt = 0
     self.right_blinker_cnt = 0
+
+    #start config section
+    self.forcePedalOverCC = load_bool_param("TinklaEnablePedal",False)
+    self.useFollowModeAcc = load_bool_param("TinklaUseFollowACC",False)
+    self.autoresumeAcc = load_bool_param("TinklaAutoResumeACC",False)
+    self.enableHSO = load_bool_param("TinklaHso",True)
+    self.enableHAO = load_bool_param("TinklaHao",False)
+    self.enableALC = load_bool_param("TinklaAlc",False)
+    self.useTeslaRadar = load_bool_param("TinklaUseTeslaRadar",False)
+    self.usesApillarHarness = load_bool_param("TinklaUseAPillarHarness",False)
+    self.autoStartAlcaDelay = 2
+    self.radarVIN = '"                 "'
+    self.radarOffset = 0.0
+    self.radarEpasType = 0
+    self.radarPosition = 0
+    self.hsoNumbPeriod = 1.5
+
+    read_config_file(self)
+    #end config section
+
+    self.turn_signal_stalk_state = 0
 
     # Q = np.matrix([[10.0, 0.0], [0.0, 100.0]])
     # R = 1e3

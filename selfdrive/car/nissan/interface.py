@@ -67,7 +67,7 @@ class CarInterface(CarInterfaceBase):
     self.cp_adas.update_strings(can_strings)
 
     ret = self.CS.update(self.cp, self.cp_adas, self.cp_cam)
-
+    self.post_update(c,ret)
     ret.canValid = self.cp.can_valid and self.cp_adas.can_valid and self.cp_cam.can_valid
 
     buttonEvents = []
@@ -81,11 +81,12 @@ class CarInterface(CarInterfaceBase):
       events.add(car.CarEvent.EventName.invalidLkasSetting)
 
     ret.events = events.to_msg()
-
+    
     self.CS.out = ret.as_reader()
     return self.CS.out
 
   def apply(self, c):
+    self.pre_apply(c)
     can_sends = self.CC.update(c.enabled, self.CS, self.frame, c.actuators,
                                c.cruiseControl.cancel, c.hudControl.visualAlert,
                                c.hudControl.leftLaneVisible, c.hudControl.rightLaneVisible,

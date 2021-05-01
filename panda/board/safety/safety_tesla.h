@@ -50,8 +50,10 @@ int DAS_status2_idx = 0;
 int DAS_lanes_idx = 0;
 uint32_t DAS_lastStalkL = 0;
 uint32_t DAS_lastStalkH = 0;
+int EPB_epasControl_idx = 0;
 int time_at_last_stalk_pull = -1;
 int current_car_time = -1;
+
 
 //use for Bosch radar
 int tesla_radar_status = 0; //0-not present, 1-initializing, 2-active
@@ -160,6 +162,7 @@ bool autopilot_enabled = false;
 bool eac_enabled = false;
 bool autopark_enabled = false;
 bool epas_inhibited = false;
+bool has_0x214_message = false;
 
 static uint8_t tesla_compute_checksum(CAN_FIFOMailBox_TypeDef *to_push) {
   int addr = GET_ADDR(to_push);
@@ -547,6 +550,8 @@ static void teslaPreAp_fwd_to_radar_modded(uint8_t bus_num, CAN_FIFOMailBox_Type
   
 }
 
+
+
 static void teslaPreAp_generate_message(int id,uint32_t RIR, uint32_t RDTR) {
   int index = get_addr_index(id, 0, TESLA_PREAP_FWD_MODDED, sizeof(TESLA_PREAP_FWD_MODDED)/sizeof(TESLA_PREAP_FWD_MODDED[0]),true);
   if (index == -1) {
@@ -588,6 +593,46 @@ static void teslaPreAp_generate_message(int id,uint32_t RIR, uint32_t RDTR) {
   can_send(&to_send, TESLA_PREAP_FWD_MODDED[index].fwd_to_bus, false);
 }
 
+static void send_fake_message(uint32_t RIR, uint32_t RDTR,int msg_len, int msg_addr, uint8_t bus_num, uint32_t data_lo, uint32_t data_hi) {
+  CAN_FIFOMailBox_TypeDef to_send;
+  uint32_t addr_mask = 0x001FFFFF;
+  to_send.RIR = (msg_addr << 21) + (addr_mask & (RIR | 1));
+  to_send.RDTR = (RDTR & 0xFFFFFFF0) | msg_len;
+  to_send.RDLR = data_lo;
+  to_send.RDHR = data_hi;
+  can_send(&to_send, bus_num, false);
+}
+
+static void do_EPB_epasControl(uint32_t RIR, uint32_t RDTR) {
+  if (has_0x214_message) {
+    return;
+  }
+  uint32_t MLB;
+  uint32_t MHB; 
+  MLB = 0x01 + (EPB_epasControl_idx << 8) + ((0x17 + EPB_epasControl_idx) << 16); 
+  MHB = 0x00;
+  send_fake_message(RIR,RDTR,3,0x214,2,MLB,MHB);
+  EPB_epasControl_idx++;
+  EPB_epasControl_idx = EPB_epasControl_idx % 16;
+}
+
+static void do_fake_stalk_cancel(uint32_t RIR, uint32_t RDTR) {
+  uint32_t MLB;
+  uint32_t MHB; 
+  if ((DAS_lastStalkL == 0x00) && (DAS_lastStalkH == 0x00)) {
+    return;
+  }
+  MLB = (DAS_lastStalkL & 0xFFFFFFC0) + 0x01;
+  MHB = (DAS_lastStalkH & 0x000FFFFF);
+  int idx = (DAS_lastStalkH & 0xF00000 ) >> 20;
+  idx = ( idx + 1 ) % 16;
+  MHB = MHB + (idx << 20);
+  int crc = tesla_compute_crc(MLB, MHB,7);
+  MHB = MHB + (crc << 24);
+  DAS_lastStalkH = MHB;
+  send_fake_message(RIR,RDTR,8,0x45,0,MLB,MHB);
+}
+
 static void teslaPreAp_send_IC_messages(uint32_t RIR, uint32_t RDTR) {
   //generate everything at higher rate than 10Hz
   //DAS_telemetry
@@ -598,6 +643,8 @@ static void teslaPreAp_send_IC_messages(uint32_t RIR, uint32_t RDTR) {
   teslaPreAp_generate_message(0x309,RIR,RDTR);
   //DAS_lane
   teslaPreAp_generate_message(0x239,RIR,RDTR);
+  //EPB_epasControl 
+  do_EPB_epasControl(RIR,RDTR);
   //generate everything at 2Hz
   if ((IC_send_counter == 1) || (IC_send_counter == 6)){
     //DAS_bodyControls
@@ -617,33 +664,6 @@ static void teslaPreAp_send_IC_messages(uint32_t RIR, uint32_t RDTR) {
     teslaPreAp_generate_message(0x349,RIR,RDTR);
   }
   IC_send_counter = (IC_send_counter + 1) % 10;
-}
-
-static void send_fake_message(uint32_t RIR, uint32_t RDTR,int msg_len, int msg_addr, uint8_t bus_num, uint32_t data_lo, uint32_t data_hi) {
-  CAN_FIFOMailBox_TypeDef to_send;
-  uint32_t addr_mask = 0x001FFFFF;
-  to_send.RIR = (msg_addr << 21) + (addr_mask & (RIR | 1));
-  to_send.RDTR = (RDTR & 0xFFFFFFF0) | msg_len;
-  to_send.RDLR = data_lo;
-  to_send.RDHR = data_hi;
-  can_send(&to_send, bus_num, false);
-}
-
-static void do_fake_stalk_cancel(uint32_t RIR, uint32_t RDTR) {
-  uint32_t MLB;
-  uint32_t MHB; 
-  if ((DAS_lastStalkL == 0x00) && (DAS_lastStalkH == 0x00)) {
-    return;
-  }
-  MLB = (DAS_lastStalkL & 0xFFFFFFC0) + 0x01;
-  MHB = (DAS_lastStalkH & 0x000FFFFF);
-  int idx = (DAS_lastStalkH & 0xF00000 ) >> 20;
-  idx = ( idx + 1 ) % 16;
-  MHB = MHB + (idx << 20);
-  int crc = tesla_compute_crc(MLB, MHB,7);
-  MHB = MHB + (crc << 24);
-  DAS_lastStalkH = MHB;
-  send_fake_message(RIR,RDTR,8,0x45,0,MLB,MHB);
 }
 
 static int tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
@@ -770,6 +790,8 @@ static int tesla_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
  
       if (addr == 0x214) {
         epas_inhibited = (to_push->RDLR & 0x07) == 0;
+        //has ibooser or otherwise we don't get EPB_epasControl
+        has_0x214_message = true;
       }
     }
 

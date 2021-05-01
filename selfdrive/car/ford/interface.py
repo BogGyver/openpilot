@@ -54,7 +54,7 @@ class CarInterface(CarInterfaceBase):
     self.cp.update_strings(can_strings)
 
     ret = self.CS.update(self.cp)
-
+    self.post_update(c,ret)
     ret.canValid = self.cp.can_valid
 
     # events
@@ -64,14 +64,14 @@ class CarInterface(CarInterfaceBase):
       events.add(car.CarEvent.EventName.steerTempUnavailable)
 
     ret.events = events.to_msg()
-
+    
     self.CS.out = ret.as_reader()
     return self.CS.out
 
   # pass in a car.CarControl
   # to be called @ 100hz
   def apply(self, c):
-
+    self.pre_apply(c)
     can_sends = self.CC.update(c.enabled, self.CS, self.frame, c.actuators,
                                c.hudControl.visualAlert, c.cruiseControl.cancel)
 

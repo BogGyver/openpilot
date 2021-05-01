@@ -1,11 +1,11 @@
 import copy
-from cereal import car,log
+from cereal import car
 from selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS, CAR
 from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from selfdrive.config import Conversions as CV
-from selfdrive.car.tesla.CFG_module import read_config_file, load_bool_param
+from selfdrive.car.modules.CFG_module import load_bool_param
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -17,22 +17,13 @@ class CarState(CarStateBase):
     # Needed by carcontroller
     self.msg_stw_actn_req = None
 
-    self.hands_on_level = 0
     self.das_steeringControl_counter = -1
     self.das_status_counter = -1
-    self.steer_warning = None
-    self.angle_steers = 0
     self.autopilot_enabled = False
     # 0 = off, 1 = indicate left (stalk down), 2 = indicate right (stalk up)
     self.turn_signal_stalk_state = 0 
 
-    #alca info
-    self.prev_alca_pre_engage = False
-    self.alca_pre_engage = False
-    self.alca_engaged = False
-    self.alca_direction = 0
-    self.alca_need_engagement = False
-    self.alca_done = False
+    
 
     #to control hazard lighgts
     self.needs_hazard = False
@@ -49,8 +40,6 @@ class CarState(CarStateBase):
     self.laneToRight = 0
     self.lLine = 0
     self.rLine = 0
-
-    self.turn_signal_blinking = False
 
     #IC integration
     self.DAS_gas_to_resume = 0
@@ -75,25 +64,6 @@ class CarState(CarStateBase):
     self.cruiseEnabled = False
     self.cruiseDelay = False
 
-    #start config section
-    self.forcePedalOverCC = load_bool_param("TinklaEnablePedal",False)
-    self.useFollowModeAcc = load_bool_param("TinklaUseFollowACC",False)
-    self.autoresumeAcc = load_bool_param("TinklaAutoResumeACC",False)
-    self.enableHSO = load_bool_param("TinklaHso",True)
-    self.enableHAO = load_bool_param("TinklaHao",False)
-    self.enableALC = load_bool_param("TinklaAlc",False)
-    self.useTeslaRadar = load_bool_param("TinklaUseTeslaRadar",False)
-    self.usesApillarHarness = load_bool_param("TinklaUseAPillarHarness",False)
-    self.autoStartAlcaDelay = 2
-    self.radarVIN = '"                 "'
-    self.radarOffset = 0.0
-    self.radarEpasType = 0
-    self.radarPosition = 0
-    self.hsoNumbPeriod = 1.5
-    
-    read_config_file(self)
-    #end config section
-
     self.speed_units = "MPH"
     self.tap_direction = 0
 
@@ -104,6 +74,7 @@ class CarState(CarStateBase):
     self.apFollowTimeInS = 2.5  # time in seconds to follow
     self.torqueLevel = 0.0
     self.cruise_state = None
+    self.enableHumanLongControl = load_bool_param("TinklaAllowHumanLong",False)
 
     #IC integration
     self.userSpeedLimitOffsetMS = 0
@@ -149,39 +120,28 @@ class CarState(CarStateBase):
       ret.brakePressed = bool(cp_cam.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
     else:
       ret.brakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
-    ret.brakePressed = False #Brake disengages ACC, this just creates issues
     # Steering wheel
+    steer_warning = None
     if (self.CP.carFingerprint == CAR.PREAP_MODELS):
-      self.hands_on_level = cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
-      self.steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp_cam.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
+      steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp_cam.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
       steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp_cam.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
 
       ret.steeringAngleDeg = -cp_cam.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
-      self.angle_steers = ret.steeringAngleDeg
       ret.steeringTorque = -cp_cam.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
-      self.steer_override = abs(cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
+      self.steeringPressed = abs(cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
     else:
-      self.hands_on_level = cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
-      self.steer_override = abs(cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
-      self.steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
+      self.steeringPressed = abs(cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
+      steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
       steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
 
       ret.steeringAngleDeg = -cp.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
-      self.angle_steers = ret.steeringAngleDeg
       ret.steeringTorque = -cp.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
 
     ret.steeringRateDeg = -cp.vl["STW_ANGLHP_STAT"]["StW_AnglHP_Spd"] # This is from a different angle sensor, and at different rate
 
-    ret.steeringPressed = (self.hands_on_level > 0)
     ret.steerError = steer_status in ["EAC_FAULT"] #inhibited is not an error, "EAC_INHIBITED"]
-    ret.steerWarning = steer_status == "EAC_FAULT" and self.steer_warning in ["EAC_ERROR_MAX_SPEED", "EAC_ERROR_MIN_SPEED", "EAC_ERROR_TMP_FAULT", "SNA"]  # TODO: not sure if this list is complete
-    #Trick the alca if autoStartAlcaDelay is set
-    if (self.autoStartAlcaDelay > 0) and (self.alca_need_engagement):
-      ret.steeringPressed = True
-      if self.alca_direction == log.LateralPlan.LaneChangeDirection.left:
-        ret.steeringTorque = 1.1
-      if self.alca_direction == log.LateralPlan.LaneChangeDirection.right:
-        ret.steeringTorque = -1.1
+    ret.steerWarning = steer_status == "EAC_FAULT" and steer_warning in ["EAC_ERROR_MAX_SPEED", "EAC_ERROR_MIN_SPEED", "EAC_ERROR_TMP_FAULT", "SNA"]  # TODO: not sure if this list is complete
+    
 
     # Cruise state
     autopilot_status = None
@@ -263,7 +223,6 @@ class CarState(CarStateBase):
         )
     ret.leftBlinker = (cp.vl["GTW_carState"]["BC_indicatorLStatus"] == 1) and (self.turn_signal_stalk_state == 0) and (self.tap_direction == 1)
     ret.rightBlinker = (cp.vl["GTW_carState"]["BC_indicatorRStatus"] == 1) and (self.turn_signal_stalk_state == 0) and (self.tap_direction == 2)
-    self.turn_signal_blinking = ret.leftBlinker or ret.rightBlinker
 
     # Seatbelt
     if (self.CP.carFingerprint == CAR.PREAP_MODELS) and self.usesApillarHarness:
@@ -274,14 +233,16 @@ class CarState(CarStateBase):
       ret.seatbeltUnlatched = (cp.vl["SDM1"]["SDM_bcklDrivStatus"] != 1)
 
     #Blindspot
-    park_right_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotRight"].get(int(cp.vl["PARK_status2"]["PARK_sdiBlindSpotRight"])) == "WARNING"
-    park_left_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotLeft"].get(int(cp.vl["PARK_status2"]["PARK_sdiBlindSpotLeft"])) == "WARNING"
     if (self.CP.carFingerprint != CAR.PREAP_MODELS):
+      park_right_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotRight"].get(int(cp.vl["PARK_status2"]["PARK_sdiBlindSpotRight"])) == "WARNING"
+      park_left_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotLeft"].get(int(cp.vl["PARK_status2"]["PARK_sdiBlindSpotLeft"])) == "WARNING"
       das_right_blindspot = self.can_define.dv["DAS_status"]["DAS_blindSpotRearRight"].get(int(cp_cam.vl["DAS_status"]["DAS_blindSpotRearRight"])) in ["WARNING_LEVEL_2","WARNING_LEVEL_1"]
       das_left_blindspot = self.can_define.dv["DAS_status"]["DAS_blindSpotRearLeft"].get(int(cp_cam.vl["DAS_status"]["DAS_blindSpotRearLeft"])) in ["WARNING_LEVEL_2","WARNING_LEVEL_1"]
     else:
       das_right_blindspot = False
       das_left_blindspot = False
+      park_right_blindspot = False
+      park_left_blindspot = False
     ret.rightBlindspot = (park_right_blindspot or das_right_blindspot)
     ret.leftBlindspot = (park_left_blindspot or das_left_blindspot)
     # Messages needed by carcontroller
@@ -292,11 +253,20 @@ class CarState(CarStateBase):
     #Pedal Interceptor
     self.prev_pedal_interceptor_state = self.pedal_interceptor_state
     self.prev_pedal_idx = self.pedal_idx
-    if self.CP.carFingerprint in [CAR.PREAP_MODELS]:
+    if self.CP.carFingerprint in [CAR.PREAP_MODELS] and self.forcePedalOverCC:
       self.pedal_interceptor_state = cp_cam.vl["GAS_SENSOR"]["STATE"]
       self.pedal_interceptor_value = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"]
       self.pedal_interceptor_value2 = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
       self.pedal_idx = cp_cam.vl["GAS_SENSOR"]["IDX"]
+
+    #PREAP overrides at the last moment
+    if self.CP.carFingerprint in [CAR.PREAP_MODELS]:
+      if self.enableHumanLongControl:
+        ret.cruiseState.enabled = True
+        ret.cruiseState.available = True
+        ret.cruiseState.standstill = False
+        ret.brakePressed = False
+        ret.gasPressed = False
 
     return ret
 
@@ -360,8 +330,6 @@ class CarState(CarStateBase):
       ("WprSw6Posn", "STW_ACTN_RQ", 0),
       ("MC_STW_ACTN_RQ", "STW_ACTN_RQ", 0),
       ("CRC_STW_ACTN_RQ", "STW_ACTN_RQ", 0),
-      ("PARK_sdiBlindSpotRight","PARK_status2",0),
-      ("PARK_sdiBlindSpotLeft","PARK_status2",0),
     ]
 
     checks = [
@@ -372,6 +340,10 @@ class CarState(CarStateBase):
       ("DI_state", 10),
       ("STW_ACTN_RQ", 10),
       ("GTW_carState", 10),
+      #("UI_gpsVehicleSpeed",1),
+      #("UI_driverAssistMapData",2),
+      #("UI_driverAssistRoadSign",10),
+      
     ]
 
     if not (CP.carFingerprint in [CAR.PREAP_MODELS] and usesApillarHarness):
@@ -390,7 +362,7 @@ class CarState(CarStateBase):
       ]
 
       checks += [
-        ("SDM1", 10),
+        #("SDM1", 10),
       ]
 
     if CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP2_MODELS, CAR.AP1_MODELX]:
@@ -400,17 +372,21 @@ class CarState(CarStateBase):
         ("EPAS_internalSAS", "EPAS_sysStatus", 0),
         ("EPAS_eacStatus", "EPAS_sysStatus", 1),
         ("EPAS_eacErrorCode", "EPAS_sysStatus", 0),
+        ("PARK_sdiBlindSpotRight","PARK_status2",0),
+        ("PARK_sdiBlindSpotLeft","PARK_status2",0),
       ]
 
       checks += [      
         ("EPAS_sysStatus", 25),
+        #("PARK_status2",4),
       ]
 
-    return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 0)
+    return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 0, enforce_checks=False)
 
   @staticmethod
   def get_cam_can_parser(CP):
     usesApillarHarness = load_bool_param("TinklaUseAPillarHarness",False)
+    enablePedal = load_bool_param("TinklaEnablePedal",False)
     signals = None
     checks = None
     
@@ -479,6 +455,11 @@ class CarState(CarStateBase):
       checks = [
         # sig_address, frequency
         ("DAS_status", 2),
+        ("DAS_status2",2),
+        ("DAS_pscControl",25),
+        ("DAS_bodyControls",2),
+        ("DAS_steeringControl",50),
+
       ]
 
     if CP.carFingerprint in [CAR.PREAP_MODELS]:
@@ -488,15 +469,23 @@ class CarState(CarStateBase):
         ("EPAS_internalSAS", "EPAS_sysStatus", 0),
         ("EPAS_eacStatus", "EPAS_sysStatus", 1),
         ("EPAS_eacErrorCode", "EPAS_sysStatus", 0),
-        ("INTERCEPTOR_GAS", "GAS_SENSOR", 0),
-        ("INTERCEPTOR_GAS2", "GAS_SENSOR", 0),
-        ("STATE", "GAS_SENSOR", 0),
-        ("IDX", "GAS_SENSOR", 0),
       ]
 
       checks = [      
         ("EPAS_sysStatus", 25),
       ]
+
+      if enablePedal:
+        signals += [
+          ("INTERCEPTOR_GAS", "GAS_SENSOR", 0),
+          ("INTERCEPTOR_GAS2", "GAS_SENSOR", 0),
+          ("STATE", "GAS_SENSOR", 0),
+          ("IDX", "GAS_SENSOR", 0),
+        ]
+
+        checks += [
+          ("GAS_SENSOR", 10)
+        ]
 
       if usesApillarHarness:
         signals += [
@@ -504,10 +493,11 @@ class CarState(CarStateBase):
           ("driverBrakeStatus", "BrakeMessage", 0),
           ("SDM_bcklDrivStatus", "SDM1", 0),
         ]
+        
         checks += [
           ("ESP_B", 50),
           ("BrakeMessage", 50),
-          ("SDM1", 10),
+          #("SDM1", 10),
         ]
 
-    return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 2)
+    return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 2,enforce_checks=False)

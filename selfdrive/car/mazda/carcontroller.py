@@ -19,13 +19,17 @@ class CarController():
     if enabled:
       # calculate steer and also set limits due to driver torque
       new_steer = int(round(actuators.steer * CarControllerParams.STEER_MAX))
-      apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last,
-                                                  CS.out.steeringTorque, CarControllerParams)
-      self.steer_rate_limited = new_steer != apply_steer
+      if CS.human_control:
+        apply_steer = 0
+        self.steer_rate_limited = False
+      else:
+        apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last,
+                                                    CS.out.steeringTorque, CarControllerParams)
+        self.steer_rate_limited = new_steer != apply_steer
 
-      if CS.out.standstill and frame % 20 == 0:
+      if CS.out.standstill and frame % 5 == 0:
         # Mazda Stop and Go requires a RES button (or gas) press if the car stops more than 3 seconds
-        # Send Resume button at 5hz if we're engaged at standstill to support full stop and go!
+        # Send Resume button at 20hz if we're engaged at standstill to support full stop and go!
         # TODO: improve the resume trigger logic by looking at actual radar data
         can_sends.append(mazdacan.create_button_cmd(self.packer, CS.CP.carFingerprint, Buttons.RESUME))
     else:

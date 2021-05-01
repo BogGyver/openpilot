@@ -53,6 +53,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     lowSpeedLockout @31;
     plannerError @32;
     debugAlert @34;
+    steerTempUnavailableUserOverride @35;
     resumeRequired @36;
     preDriverDistracted @37;
     promptDriverDistracted @38;
@@ -88,6 +89,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     startupNoCar @76;
     startupNoControl @77;
     startupMaster @78;
+    startupFuzzyFingerprint @97;
     fcw @79;
     steerSaturated @80;
     belowEngageSpeed @84;
@@ -120,7 +122,6 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     neosUpdateRequiredDEPRECATED @88;
     modelLagWarningDEPRECATED @93;
     startupOneplusDEPRECATED @82;
-    steerTempUnavailableMuteDEPRECATED @35;
   }
 }
 
@@ -351,12 +352,14 @@ struct CarControl {
 struct CarParams {
   carName @0 :Text;
   carFingerprint @1 :Text;
+  fuzzyFingerprint @55 :Bool;
 
   enableGasInterceptor @2 :Bool;
   enableCruise @3 :Bool;
   enableCamera @4 :Bool;
   enableDsu @5 :Bool; # driving support unit
   enableApgs @6 :Bool; # advanced parking guidance system
+  enableBsm @56 :Bool; # blind spot monitoring
 
   minEnableSpeed @7 :Float32;
   minSteerSpeed @8 :Float32;
@@ -412,6 +415,7 @@ struct CarParams {
   dashcamOnly @41: Bool;
   transmissionType @43 :TransmissionType;
   carFw @44 :List(CarFw);
+
   radarTimeStep @45: Float32 = 0.05;  # time delta between radar updates, 20Hz is very standard
   communityFeature @46: Bool;  # true if a community maintained feature is detected
   fingerprintSource @49: FingerprintSource;

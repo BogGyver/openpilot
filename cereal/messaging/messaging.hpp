@@ -48,6 +48,7 @@ public:
   virtual int connect(Context *context, std::string endpoint, bool check_endpoint=true) = 0;
   virtual int sendMessage(Message *message) = 0;
   virtual int send(char *data, size_t size) = 0;
+  virtual bool all_readers_updated() = 0;
   static PubSocket * create();
   static PubSocket * create(Context * context, std::string endpoint, bool check_endpoint=true);
   static PubSocket * create(Context * context, std::string endpoint, int port, bool check_endpoint=true);
@@ -67,7 +68,8 @@ class SubMaster {
 public:
   SubMaster(const std::initializer_list<const char *> &service_list,
             const char *address = nullptr, const std::initializer_list<const char *> &ignore_alive = {});
-  int update(int timeout = 1000);
+  void update(int timeout = 1000);
+  void update_msgs(uint64_t current_time, std::vector<std::pair<std::string, cereal::Event::Reader>> messages);
   inline bool allAlive(const std::initializer_list<const char *> &service_list = {}) { return all_(service_list, false, true); }
   inline bool allValid(const std::initializer_list<const char *> &service_list = {}) { return all_(service_list, true, false); }
   inline bool allAliveAndValid(const std::initializer_list<const char *> &service_list = {}) { return all_(service_list, true, true); }
@@ -76,7 +78,10 @@ public:
 
   uint64_t frame = 0;
   bool updated(const char *name) const;
+  bool alive(const char *name) const;
+  bool valid(const char *name) const;
   uint64_t rcv_frame(const char *name) const;
+  uint64_t rcv_time(const char *name) const;
   cereal::Event::Reader &operator[](const char *name);
 
 private:

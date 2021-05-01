@@ -74,25 +74,79 @@ for brand in fingerprints:
       car_names.append(car)
       brand_names.append(brand)
 
-if len(sys.argv) != 2 or sys.argv[1] != "-i":
-  print("start with 'python",sys.argv[0],"-i' and then paste the fingerprint dictionary when asked.")
+if len(sys.argv) != 2 or not sys.argv[1] in ["-i","-c"]:
+  print("   ****   Fingerprint Tester   ****")
+  print(" ")
+  print("use 'python",sys.argv[0],"-i' to see which car matches your fingerprint.")
+  print(" ")
+  print("use 'python",sys.argv[0],"-c' to see what message IDs makes it fail against a certain car.")
   exit(0)
+
 count = 0
 idx2 = "YOUR_CAR"
-f2string = input("Please proved your fingerprint:")
+f2string = input("Please provide your fingerprint:")
 f2l = f2string.split(",")
 f2 = {}
 for a in f2l:
     b,c = a.split(":")
     f2[int(b)]=int(c)
-print("You entered: [",f2,"]")
-for idx1, f1 in enumerate(fingerprints_flat):
-    if not check_fingerprint_consistency(f1, f2):
-      print("{0} matches the fingerprint for {1}".format(idx2, car_names[idx1]))
-      print("")
-      count = count + 1
+#print("You entered: [",f2,"]")
+if sys.argv[1] == "-i":
+  for idx1, f1 in enumerate(fingerprints_flat):
+      if not check_fingerprint_consistency(f1, f2):
+        print("{0} matches the fingerprint for {1}".format(idx2, car_names[idx1]))
+        print("")
+        count = count + 1
 
-if count == 0:
-    print("Your fingerprint does not match any car! ")
-elif count > 1:
-    print("Your fingerprint matches too many cars! ")
+
+if sys.argv[1] == "-c":
+  fingerprints_flat = []
+  car_names = []
+  brands = {}
+  brand_names = []
+  bid = 0
+
+  print("Please select the brand to check against")
+  for brand in fingerprints:
+    if brand not in brand_names:
+      brand_names.append(brand)
+      bid = bid + 1
+      brands[bid] = brand
+      print("{} : {}".format(bid,brand))
+  brandmod = input("Brand # to check against:")
+  brandt = brands[int(brandmod)]
+
+  cars = {}
+  cid = 0
+  for car in fingerprints[brandt]:
+    fingerprints_flat += fingerprints[brandt][car]
+    cid = cid + 1
+    cars[cid]=car
+    for i in range(len(fingerprints[brandt][car])):
+      car_names.append(car)
+    print("{} : {}".format(cid,car))
+
+  carmod = input("Car # to check against:")
+  car = cars[int(carmod)]
+  included_in = False
+  for idx1, f1 in enumerate(fingerprints_flat):
+    if car == car_names[idx1]:
+      print (car,"(",idx1,")")
+      all_in = True
+      for k in f2:
+        if (k not in f1):
+          print("{}: {} not in fingerprint for {} {}".format(k,f2[k],brandt,car))
+          all_in = False
+        if (k in f1) and (f2[k] != f1[k]):
+          print("{}: {} does not match the size ({}) in fingerprint for {} {}".format(k,f2[k],f1[k],brandt,car))
+          all_in = False
+      
+      if not all_in:
+        print("Not fully included!")
+      else:
+        print("Fully included!")
+        included_in = True
+  if included_in:
+    print("PASS: At least one of the fingerprints for",car,"contains your fingerprint!")
+  else:
+    print("FAIL: None of the fingerprints for",car,"contains your fingerprint!")

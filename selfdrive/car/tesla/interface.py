@@ -3,7 +3,7 @@ from cereal import car
 from selfdrive.car.tesla.values import CAR
 from selfdrive.car import STD_CARGO_KG, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness
 from selfdrive.car.interfaces import CarInterfaceBase
-from selfdrive.car.tesla.CFG_module import load_bool_param
+from selfdrive.car.modules.CFG_module import load_bool_param
 
 
 class CarInterface(CarInterfaceBase):
@@ -98,16 +98,21 @@ class CarInterface(CarInterfaceBase):
     ret = self.CS.update(self.cp, self.cp_cam)
     ret.canValid = self.cp.can_valid and self.cp_cam.can_valid
 
+    self.post_update(c,ret)
+    
     events = self.create_common_events(ret)
     if self.CS.autopilot_enabled:
       events.add(car.CarEvent.EventName.invalidLkasSetting)
-
+    
     ret.events = events.to_msg()
+    
     self.CS.out = ret.as_reader()
     self.CS.DAS_canErrors = 0 if ret.canValid else 1
+    
     return self.CS.out
 
   def apply(self, c):
+    self.pre_apply(c)
     can_sends = self.CC.update(c.enabled, self.CS, self.frame, 
                           c.actuators, c.cruiseControl.cancel, c.cruiseControl.speedOverride,c.cruiseControl.override,
                           c.hudControl.visualAlert, c.hudControl.audibleAlert, c.hudControl.leftLaneVisible,

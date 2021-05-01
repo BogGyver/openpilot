@@ -135,6 +135,9 @@ class CarInterface(CarInterfaceBase):
       ret.enableGasInterceptor = 0x201 in fingerprint[0]
       ret.openpilotLongitudinalControl = ret.enableCamera
 
+    if candidate == CAR.CRV_5G:
+      ret.enableBsm = 0x12f8bfa7 in fingerprint[0]
+
     cloudlog.warning("ECU Camera Simulated: %r", ret.enableCamera)
     cloudlog.warning("ECU Gas Interceptor: %r", ret.enableGasInterceptor)
 
@@ -445,7 +448,7 @@ class CarInterface(CarInterfaceBase):
       self.cp_body.update_strings(can_strings)
 
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_body)
-
+    self.post_update(c,ret)
     ret.canValid = self.cp.can_valid and self.cp_cam.can_valid and (self.cp_body is None or self.cp_body.can_valid)
     ret.yawRate = self.VM.yaw_rate(ret.steeringAngleDeg * CV.DEG_TO_RAD, ret.vEgo)
     # FIXME: read sendcan for brakelights
@@ -542,13 +545,14 @@ class CarInterface(CarInterfaceBase):
       events.add(EventName.buttonEnable)
 
     ret.events = events.to_msg()
-
+    
     self.CS.out = ret.as_reader()
     return self.CS.out
 
   # pass in a car.CarControl
   # to be called @ 100hz
   def apply(self, c):
+    self.pre_apply(c)
     if c.hudControl.speedVisible:
       hud_v_cruise = c.hudControl.setSpeed * CV.MS_TO_KPH
     else:

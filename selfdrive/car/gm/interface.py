@@ -119,7 +119,7 @@ class CarInterface(CarInterfaceBase):
     self.cp.update_strings(can_strings)
 
     ret = self.CS.update(self.cp)
-
+    self.post_update(c,ret)
     ret.canValid = self.cp.can_valid
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
 
@@ -170,17 +170,16 @@ class CarInterface(CarInterfaceBase):
         events.add(EventName.buttonCancel)
 
     ret.events = events.to_msg()
-
+    
     # copy back carState packet to CS
     self.CS.out = ret.as_reader()
-
     return self.CS.out
 
   def apply(self, c):
+    self.pre_apply(c)
     hud_v_cruise = c.hudControl.setSpeed
     if hud_v_cruise > 70:
       hud_v_cruise = 0
-
     # For Openpilot, "enabled" includes pre-enable.
     # In GM, PCM faults out if ACC command overlaps user gas.
     enabled = c.enabled and not self.CS.out.gasPressed

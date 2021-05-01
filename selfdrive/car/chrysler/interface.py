@@ -60,7 +60,7 @@ class CarInterface(CarInterfaceBase):
     self.cp_cam.update_strings(can_strings)
 
     ret = self.CS.update(self.cp, self.cp_cam)
-
+    self.post_update(c,ret)
     ret.canValid = self.cp.can_valid and self.cp_cam.can_valid
 
     # speeds
@@ -74,16 +74,15 @@ class CarInterface(CarInterfaceBase):
       events.add(car.CarEvent.EventName.belowSteerSpeed)
 
     ret.events = events.to_msg()
-
+    
     # copy back carState packet to CS
     self.CS.out = ret.as_reader()
-
     return self.CS.out
 
   # pass in a car.CarControl
   # to be called @ 100hz
   def apply(self, c):
-
+    self.pre_apply(c)
     if (self.CS.frame == -1):
       return []  # if we haven't seen a frame 220, then do not update.
 

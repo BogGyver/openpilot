@@ -1,4 +1,4 @@
-from selfdrive.car.tesla.values import CAR, CAN_POWERTRAIN
+from selfdrive.car.tesla.values import CAR, CAN_CHASSIS, CAN_POWERTRAIN
 from selfdrive.car.tesla.ACC_module import ACCController
 from selfdrive.car.tesla.PCC_module import PCCController
 from selfdrive.config import Conversions as CV
@@ -7,7 +7,7 @@ def _is_present(lead):
   return bool((not (lead is None)) and (lead.dRel > 0))
 
 class LONGController:
-    
+
     def __init__(self,CP,packer, tesla_can):
         self.CP = CP
         self.v_target = None
@@ -32,10 +32,10 @@ class LONGController:
         if frame % 10 == 0:
             self.speed_limit_ms = CS.speed_limit_ms
             self.set_speed_limit_active = True if self.speed_limit_ms > 0 else False
-            
+
 
         #preAP ModelS
-        if self.CP.carFingerprint == CAR.PREAP_MODELS: 
+        if self.CP.carFingerprint == CAR.PREAP_MODELS:
             # update PCC module info
             pedal_can_sends = self.PCC.update_stat(CS, frame)
             messages.extend(pedal_can_sends)
@@ -47,23 +47,28 @@ class LONGController:
                 self.PCC.enable_pedal_cruise = False
             # update CS.v_cruise_pcm based on module selected.
             speed_uom_kph = 1.0
-            if CS.speed_units == "MPH":
-                speed_uom_kph = CV.KPH_TO_MPH
-            if self.ACC.enable_adaptive_cruise:
-                CS.acc_speed_kph = self.ACC.acc_speed_kph
-            elif self.PCC.enable_pedal_cruise:
-                CS.acc_speed_kph = self.PCC.pedal_speed_kph
-            else:
-                CS.acc_speed_kph = max(0.0, CS.out.vEgo * CV.MS_TO_KPH)
-            CS.v_cruise_pcm = CS.acc_speed_kph * speed_uom_kph
             #determine cc_state
             CS.cc_state = 1
-            if (self.PCC.pcc_available and self.PCC.enable_pedal_cruise) or (
-                self.ACC.enable_adaptive_cruise
-            ):
-                CS.speed_control_enabled = 1
-                CS.cc_state = 2
-                if not self.ACC.adaptive:
+            CS.speed_control_enabled = 0
+            if enabled:
+                if CS.speed_units == "MPH":
+                    speed_uom_kph = CV.KPH_TO_MPH
+                if self.ACC.enable_adaptive_cruise:
+                    CS.acc_speed_kph = self.ACC.acc_speed_kph
+                elif self.PCC.enable_pedal_cruise:
+                    CS.acc_speed_kph = self.PCC.pedal_speed_kph
+                else:
+                    CS.acc_speed_kph = max(0.0, CS.out.vEgo * CV.MS_TO_KPH)
+                CS.v_cruise_pcm = CS.acc_speed_kph * speed_uom_kph
+                if (self.PCC.pcc_available and self.PCC.enable_pedal_cruise) or (
+                    self.ACC.enable_adaptive_cruise
+                ):
+                    CS.speed_control_enabled = 1
+                    CS.cc_state = 2
+                    if not self.ACC.adaptive:
+                        CS.cc_state = 3
+            else:
+                if CS.cruise_state == 4:
                     CS.cc_state = 3
             self.adaptive_cruise = (
                 1
@@ -71,7 +76,7 @@ class LONGController:
                 or self.PCC.pcc_available
                 else 0
             )
-            if (not self.PCC.pcc_available) and frame % 5 == 0:  # acc processed at 20Hz
+            if enabled and not self.PCC.pcc_available and frame % 20 == 0:  # acc processed at 5Hz
                 cruise_btn = self.ACC.update_acc(
                     enabled,
                     CS,
@@ -83,13 +88,13 @@ class LONGController:
                     self.speed_limit_offset_ms * CV.MS_TO_KPH,
                 )
                 if cruise_btn:
-                    cruise_msg = self.tesla_can.create_steering_wheel_stalk_msg(
-                        real_steering_wheel_stalk=CS.steering_wheel_stalk,
-                        spdCtrlLvr_stat=cruise_btn,
-                        turnIndLvr_stat=0,
-                    )
-                    # Send this CAN msg first because it is racing against the real stalk.
-                    messages.insert(0, cruise_msg)
+                    # insert the message first since it is racing against messages from the real stalk
+                    stlk_counter = ((CS.msg_stw_actn_req['MC_STW_ACTN_RQ'] + 1) % 16)
+                    messages.insert(0, self.tesla_can.create_action_request(
+                        msg_stw_actn_req=CS.msg_stw_actn_req,
+                        button_to_press=cruise_btn,
+                        bus=CAN_CHASSIS[self.CP.carFingerprint],
+                        counter=stlk_counter))
             apply_accel = 0.0
             if self.PCC.pcc_available and frame % 5 == 0:  # pedal processed at 20Hz
                 pedalcan = 2
@@ -113,7 +118,6 @@ class LONGController:
                 )
 
             #TODO: update message sent in HUD
-                
 
         #AP ModelS with OP Long and enabled
         elif enabled and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
@@ -127,14 +131,14 @@ class LONGController:
             if self.v_target is None:
                 self.v_target = CS.out.vEgo
                 self.a_target = 1
-        
+
             #following = False
             #TODO: see what works best for these
             tesla_accel_limits = [-2*self.a_target,self.a_target]
             tesla_jerk_limits = [-4*self.a_target,2*self.a_target]
             #if _is_present(self.lead_1):
             #  following = self.lead_1.status and self.lead_1.dRel < 45.0 and self.lead_1.vLeadK > CS.out.vEgo and self.lead_1.aLeadK > 0.0
-            
+
             #we now create the DAS_control for AP1 or DAS_longControl for AP2
             if self.CP.carFingerprint == CAR.AP2_MODELS:
                 messages.append(self.tesla_can.create_ap2_long_control(self.v_target, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
@@ -152,3 +156,4 @@ class LONGController:
                 messages.append(self.tesla_can.create_ap1_long_control(350.0/3.6, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
 
         return messages
+

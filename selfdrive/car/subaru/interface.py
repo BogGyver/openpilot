@@ -27,6 +27,7 @@ class CarInterface(CarInterfaceBase):
     ret.dashcamOnly = candidate in PREGLOBAL_CARS
 
     ret.enableCamera = True
+    ret.enableBsm = 0x228 in fingerprint[0]
 
     ret.steerRateCost = 0.7
     ret.steerLimitTimer = 0.4
@@ -108,16 +109,17 @@ class CarInterface(CarInterfaceBase):
     self.cp_cam.update_strings(can_strings)
 
     ret = self.CS.update(self.cp, self.cp_cam)
-
+    self.post_update(c,ret)
     ret.canValid = self.cp.can_valid and self.cp_cam.can_valid
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
 
     ret.events = self.create_common_events(ret).to_msg()
-
+    
     self.CS.out = ret.as_reader()
     return self.CS.out
 
   def apply(self, c):
+    self.pre_apply(c)
     can_sends = self.CC.update(c.enabled, self.CS, self.frame, c.actuators,
                                c.cruiseControl.cancel, c.hudControl.visualAlert,
                                c.hudControl.leftLaneVisible, c.hudControl.rightLaneVisible)
