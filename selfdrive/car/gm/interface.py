@@ -119,7 +119,7 @@ class CarInterface(CarInterfaceBase):
     self.cp.update_strings(can_strings)
 
     ret = self.CS.update(self.cp)
-
+    self.post_update(c,ret)
     ret.canValid = self.cp.can_valid
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
 
@@ -170,7 +170,7 @@ class CarInterface(CarInterfaceBase):
         events.add(EventName.buttonCancel)
 
     ret.events = events.to_msg()
-    self.post_update(c,ret)
+    
     # copy back carState packet to CS
     self.CS.out = ret.as_reader()
     return self.CS.out

@@ -448,7 +448,7 @@ class CarInterface(CarInterfaceBase):
       self.cp_body.update_strings(can_strings)
 
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_body)
-
+    self.post_update(c,ret)
     ret.canValid = self.cp.can_valid and self.cp_cam.can_valid and (self.cp_body is None or self.cp_body.can_valid)
     ret.yawRate = self.VM.yaw_rate(ret.steeringAngleDeg * CV.DEG_TO_RAD, ret.vEgo)
     # FIXME: read sendcan for brakelights
@@ -545,7 +545,7 @@ class CarInterface(CarInterfaceBase):
       events.add(EventName.buttonEnable)
 
     ret.events = events.to_msg()
-    self.post_update(c,ret)
+    
     self.CS.out = ret.as_reader()
     return self.CS.out
 
