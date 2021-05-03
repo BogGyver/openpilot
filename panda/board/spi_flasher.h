@@ -267,8 +267,129 @@ void CAN1_SCE_IRQ_Handler(void) {
 
 #endif
 
+#ifdef GATEWAY
+
+#include "drivers/llcan.h"
+#define CAN CAN1
+
+#define CAN_BL_INPUT 0x1
+#define CAN_BL_OUTPUT 0x2
+
+void CAN1_TX_IRQ_Handler(void) {
+  // clear interrupt
+  CAN->TSR |= CAN_TSR_RQCP0;
+}
+
+#define ISOTP_BUF_SIZE 0x110
+
+uint8_t isotp_buf[ISOTP_BUF_SIZE];
+uint8_t *isotp_buf_ptr = NULL;
+int isotp_buf_remain = 0;
+
+uint8_t isotp_buf_out[ISOTP_BUF_SIZE];
+uint8_t *isotp_buf_out_ptr = NULL;
+int isotp_buf_out_remain = 0;
+int isotp_buf_out_idx = 0;
+
+void bl_can_send(uint8_t *odat) {
+  // wait for send
+  while (!(CAN->TSR & CAN_TSR_TME0));
+
+  // send continue
+  CAN->sTxMailBox[0].TDLR = ((uint32_t*)odat)[0];
+  CAN->sTxMailBox[0].TDHR = ((uint32_t*)odat)[1];
+  CAN->sTxMailBox[0].TDTR = 8;
+  CAN->sTxMailBox[0].TIR = (CAN_BL_OUTPUT << 21) | 1;
+}
+
+void CAN1_RX0_IRQ_Handler(void) {
+  while (CAN->RF0R & CAN_RF0R_FMP0) {
+    if ((CAN->sFIFOMailBox[0].RIR>>21) == CAN_BL_INPUT) {
+      uint8_t dat[8];
+      for (int i = 0; i < 8; i++) {
+        dat[i] = GET_BYTE(&CAN->sFIFOMailBox[0], i);
+      }
+      uint8_t odat[8];
+      uint8_t type = dat[0] & 0xF0;
+      if (type == 0x30) {
+        // continue
+        while (isotp_buf_out_remain > 0) {
+          // wait for send
+          while (!(CAN->TSR & CAN_TSR_TME0));
+
+          odat[0] = 0x20 | isotp_buf_out_idx;
+          memcpy(odat+1, isotp_buf_out_ptr, 7);
+          isotp_buf_out_remain -= 7;
+          isotp_buf_out_ptr += 7;
+          isotp_buf_out_idx++;
+
+          bl_can_send(odat);
+        }
+      } else if (type == 0x20) {
+        if (isotp_buf_remain > 0) {
+          memcpy(isotp_buf_ptr, dat+1, 7);
+          isotp_buf_ptr += 7;
+          isotp_buf_remain -= 7;
+        }
+        if (isotp_buf_remain <= 0) {
+          int len = isotp_buf_ptr - isotp_buf + isotp_buf_remain;
+
+          // call the function
+          memset(isotp_buf_out, 0, ISOTP_BUF_SIZE);
+          isotp_buf_out_remain = spi_cb_rx(isotp_buf, len, isotp_buf_out);
+          isotp_buf_out_ptr = isotp_buf_out;
+          isotp_buf_out_idx = 0;
+
+          // send initial
+          if (isotp_buf_out_remain <= 7) {
+            odat[0] = isotp_buf_out_remain;
+            memcpy(odat+1, isotp_buf_out_ptr, isotp_buf_out_remain);
+          } else {
+            odat[0] = 0x10 | (isotp_buf_out_remain>>8);
+            odat[1] = isotp_buf_out_remain & 0xFF;
+            memcpy(odat+2, isotp_buf_out_ptr, 6);
+            isotp_buf_out_remain -= 6;
+            isotp_buf_out_ptr += 6;
+            isotp_buf_out_idx++;
+          }
+
+          bl_can_send(odat);
+        }
+      } else if (type == 0x10) {
+        int len = ((dat[0]&0xF)<<8) | dat[1];
+
+        // setup buffer
+        isotp_buf_ptr = isotp_buf;
+        memcpy(isotp_buf_ptr, dat+2, 6);
+
+        if (len < (ISOTP_BUF_SIZE-0x10)) {
+          isotp_buf_ptr += 6;
+          isotp_buf_remain = len-6;
+        }
+
+        memset(odat, 0, 8);
+        odat[0] = 0x30;
+        bl_can_send(odat);
+      }
+    }
+    // next
+    CAN->RF0R |= CAN_RF0R_RFOM0;
+  }
+}
+
+void CAN1_SCE_IRQ_Handler(void) {
+  llcan_clear_send(CAN);
+}
+
+#endif
+
 void soft_flasher_start(void) {
   #ifdef PEDAL
+    REGISTER_INTERRUPT(CAN1_TX_IRQn, CAN1_TX_IRQ_Handler, CAN_INTERRUPT_RATE, FAULT_INTERRUPT_RATE_CAN_1)
+    REGISTER_INTERRUPT(CAN1_RX0_IRQn, CAN1_RX0_IRQ_Handler, CAN_INTERRUPT_RATE, FAULT_INTERRUPT_RATE_CAN_1)
+    REGISTER_INTERRUPT(CAN1_SCE_IRQn, CAN1_SCE_IRQ_Handler, CAN_INTERRUPT_RATE, FAULT_INTERRUPT_RATE_CAN_1)
+  #endif
+  #ifdef GATEWAY
     REGISTER_INTERRUPT(CAN1_TX_IRQn, CAN1_TX_IRQ_Handler, CAN_INTERRUPT_RATE, FAULT_INTERRUPT_RATE_CAN_1)
     REGISTER_INTERRUPT(CAN1_RX0_IRQn, CAN1_RX0_IRQ_Handler, CAN_INTERRUPT_RATE, FAULT_INTERRUPT_RATE_CAN_1)
     REGISTER_INTERRUPT(CAN1_SCE_IRQn, CAN1_SCE_IRQ_Handler, CAN_INTERRUPT_RATE, FAULT_INTERRUPT_RATE_CAN_1)
@@ -292,6 +413,17 @@ void soft_flasher_start(void) {
   set_gpio_alternate(GPIOB, 9, GPIO_AF9_CAN1);
   current_board->enable_can_transceiver(1, true);
 
+  // init can
+  llcan_set_speed(CAN1, 5000, false, false);
+  llcan_init(CAN1);
+#endif
+
+#ifdef GATEWAY
+//init can for bootloading
+  RCC->APB1ENR |= RCC_APB1ENR_CAN1EN;
+  set_gpio_alternate(GPIOB, 8, GPIO_AF8_CAN1);
+  set_gpio_alternate(GPIOB, 9, GPIO_AF8_CAN1);
+  current_board->enable_can_transceiver(1, true);
   // init can
   llcan_set_speed(CAN1, 5000, false, false);
   llcan_init(CAN1);

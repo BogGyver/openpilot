@@ -1257,6 +1257,31 @@ BO_ 1601 UDS_radarRequest: 8 FrontCamera
 BO_ 1617 Radar_udsResponse: 8 Radar
  SG_ Radar_udsResponseData : 7|64@0+ (1,0) [0|0] "" FrontCamera
 
+BO_ 529 RCM_status: 8 RCM
+ SG_ RCM_driverOrientationInitStatus : 2|3@0+ (1,0) [0|7] "" GTW,OCS
+ SG_ RCM_armStatus : 5|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_warningIndicatorState : 7|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_tellTalePassengerState : 9|2@0+ (1,0) [0|3] "" GTW,OCS,DAS
+ SG_ RCM_bucklePassengerStatus : 11|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_tellTaleDriverState : 13|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_buckleDriverStatus : 15|2@0+ (1,0) [0|3] "" GTW,OCS,DAS
+ SG_ RCM_seatTrackPositionDrvr : 19|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_passAirbagRequest : 21|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_chimeState1stRow : 23|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_vinLearnFlag : 25|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_hwConfigPin58 : 27|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_hwConfigPin57 : 29|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_hwConfigPin56 : 31|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_passOccupantStatus : 33|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_airbagCutoffSwStatus : 35|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_privateCANStatus : 37|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_publicCANStatus : 39|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_edr2State : 45|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_edr1State : 47|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_buckle2ndRowStatus : 50|3@0+ (1,0) [0|3] "" GTW,OCS,DAS
+ SG_ RCM_statusCounter : 55|4@0+ (1,0) [0|15] "" GTW,OCS,DAS
+ SG_ RCM_statusChecksum : 63|8@0+ (1,0) [0|255] "" GTW,OCS,DAS
+
 CM_ BO_ 697 "Start with MuxID 0x12, then 0x11 and finally 0x10 (VIN is then transmitted in the reverse order)";
 CM_ BO_ 681 "Message sent every 1000 ms. All fixed bytes, no checksum, the byte for RWD or AWD needs to match VIN config";
 CM_ BO_ 409 "Message sent every 10ms. Checksum : use all first 7 bytes with the SAE J1850 CRC algo";

@@ -1,3 +1,35 @@
+// #include "safety_forwards.h"
+
+// flag for switching between TSS and Merlin Autonomy on the fly
+bool merlin_enable = false;
+
+// flag for emergency maneuvers
+bool emergency_takeover = false;
+
+// flags for TSS2 or stock messages
+bool is_tss2 = false;
+bool stock_aeb = false;
+bool stock_lka = false;
+
+// TSS2 long control happens at the FCAM
+// Pedal can be used with AEB for long control outside of ACC
+CanMsgFwd  TSS2_FWD_MSG[] = {
+    //used for control
+    {.msg = {0x2e4,2,5},.fwd_to_bus=0,.expected_timestep = 10000U,.counter_mask_H=0x00000000,.counter_mask_L=0x00000FC0}, // LKA_STEERING - Lat Control - 100Hz
+    {.msg = {0x343,2,8},.fwd_to_bus=0,.expected_timestep = 10000U,.counter_mask_H=0x00000000,.counter_mask_L=0x00000FC0}, // ACC_CONTROL - Long Control - 100Hz
+    {.msg = {0x344,2,8},.fwd_to_bus=0,.expected_timestep = 20000U,.counter_mask_H=0x00000000,.counter_mask_L=0x00000000}, // ACC1F01 - AEB Braking - 50Hz
+    {.msg = {0x191,2,8},.fwd_to_bus=0,.expected_timestep = 10000U,.counter_mask_H=0x00000000,.counter_mask_L=0x00000FC0}, // LTA_STEERING - Lat Control - 100Hz
+    {.msg = {0x412,0,8},.fwd_to_bus=0,.expected_timestep = 1000000U,.counter_mask_H=0x00000000,.counter_mask_L=0x00000000}, // LKAS_HUD - no counter
+  };
+
+// TSS1 long control happens at Pedal / DSU
+// Emergency takeover braking will happen at the gateway using different CAN IDs
+CanMsgFwd  TSS1_FWD_MSG[] = {
+    //used for control
+    {.msg = {0x2e4,2,5},.fwd_to_bus=0,.expected_timestep = 10000U,.counter_mask_H=0x00000000,.counter_mask_L=0x00000FC0}, // LKA_STEERING - Lat Control - 100Hz
+    {.msg = {0x412,0,8},.fwd_to_bus=0,.expected_timestep = 1000000U,.counter_mask_H=0x00000000,.counter_mask_L=0x00000000}, // LKAS_HUD - no counter
+  };
+
 // global torque limit
 const int TOYOTA_MAX_TORQUE = 1500;       // max torque cmd allowed ever
 
@@ -29,10 +61,15 @@ const int TOYOTA_STANDSTILL_THRSLD = 100;  // 1kph
 const int TOYOTA_GAS_INTERCEPTOR_THRSLD = 845;
 #define TOYOTA_GET_INTERCEPTOR(msg) (((GET_BYTE((msg), 0) << 8) + GET_BYTE((msg), 1) + (GET_BYTE((msg), 2) << 8) + GET_BYTE((msg), 3)) / 2) // avg between 2 tracks
 
-const CanMsg TOYOTA_TX_MSGS[] = {{0x283, 0, 7}, {0x2E6, 0, 8}, {0x2E7, 0, 8}, {0x33E, 0, 7}, {0x344, 0, 8}, {0x365, 0, 7}, {0x366, 0, 7}, {0x4CB, 0, 8},  // DSU bus 0
-                                 {0x128, 1, 6}, {0x141, 1, 4}, {0x160, 1, 8}, {0x161, 1, 7}, {0x470, 1, 4},  // DSU bus 1
-                                 {0x2E4, 0, 5}, {0x191, 0, 8}, {0x411, 0, 8}, {0x412, 0, 8}, {0x343, 0, 8}, {0x1D2, 0, 8},  // LKAS + ACC
-                                 {0x200, 0, 6}};  // interceptor
+const CanMsg TOYOTA_TX_MSGS[] = {{0x344, 0, 8},   // AEB force
+                                 {0x2E4, 0, 5},   // LKA
+                                 {0x411, 0, 8},   // UI 1
+                                 {0x412, 0, 8},   // UI 2
+                                 {0x343, 0, 8},   // ACC_CTRL
+                                 {0x1D2, 0, 8},   // PCM Cruise State
+                                 {0x200, 0, 6},   // interceptor_gas
+                                 {0xF10, 0, 6},   // DSU Gateway Control ACC
+                                 {0xF11, 0, 6}};  // DSU Gateway Control AEB
 
 AddrCheckStruct toyota_rx_checks[] = {
   {.msg = {{ 0xaa, 0, 8, .check_checksum = false, .expected_timestep = 12000U}}},
@@ -59,6 +96,52 @@ static uint8_t toyota_compute_checksum(CAN_FIFOMailBox_TypeDef *to_push) {
 static uint8_t toyota_get_checksum(CAN_FIFOMailBox_TypeDef *to_push) {
   int checksum_byte = GET_LEN(to_push) - 1;
   return (uint8_t)(GET_BYTE(to_push, checksum_byte));
+}
+
+// check whether we should recompute checksum
+static bool toyota_compute_fwd_checksum(CAN_FIFOMailBox_TypeDef *to_fwd) {
+  uint8_t checksum = toyota_compute_checksum(to_fwd); 
+  bool valid = false;
+  int addr = GET_ADDR(to_fwd);
+  
+  if (addr == 0x2E4){
+    // 0x2E4 is only 5 bytes. send 
+    to_fwd->RDHR = (to_fwd->RDHR | (checksum << 0));
+    valid = true;
+  }
+  // the other ctrl msgs are 8 bytes
+  if (addr == 0x191){ 
+    to_fwd->RDHR = (to_fwd->RDHR | (checksum << 24));
+    valid = true;
+  }
+  if (addr == 0x343){ 
+    to_fwd->RDHR = (to_fwd->RDHR | (checksum << 24));
+    valid = true;
+  }
+  if (addr == 0x344){ 
+    to_fwd->RDHR = (to_fwd->RDHR | (checksum << 24));
+    valid = true;
+  }
+
+  return valid;
+}
+// is the msg to be modded?
+static bool toyota_compute_fwd_should_mod(CAN_FIFOMailBox_TypeDef *to_fwd) {
+  bool valid = false;
+  int addr = GET_ADDR(to_fwd);
+  if ((addr == 0x2E4) || (addr == 0x191)) {
+    // only mod stock LKA/LTA while using CoPilot or during emergency takeover
+    valid = (controls_allowed & merlin_enable) | emergency_takeover;
+  }
+  if (addr == 0x343) {
+    // we only want this if using CoPilot
+    valid = (controls_allowed & merlin_enable);
+  }
+  if (addr == 0x344) {
+    // always passthru stock AEB if requested. only send this when doing emergency takeover! otherwise, use 343 for long control.
+    valid = !stock_aeb & emergency_takeover;
+  }
+  return valid;
 }
 
 static int toyota_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
@@ -133,14 +216,34 @@ static int toyota_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
 
     generic_rx_checks((addr == 0x2E4));
   }
+
+  // checks on bus 2
+  if (GET_BUS(to_push) == 2){
+    int addr = GET_ADDR(to_push);
+
+    // TODO: find the bits to change these flags!
+    if (addr == 0x2E4){
+      // check that LKA bit for merlin_enable
+      stock_lka = true;
+      merlin_enable = true;
+    }
+    if (addr == 0x344){
+      // check for stock AEB
+      stock_aeb = true;
+    }
+  }
+
   return valid;
 }
+
+uint32_t aeb_tim = 0;
 
 static int toyota_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
 
   int tx = 1;
   int addr = GET_ADDR(to_send);
   int bus = GET_BUS(to_send);
+  bool fwd_violation = 0;
 
   if (!msg_allowed(to_send, TOYOTA_TX_MSGS, sizeof(TOYOTA_TX_MSGS)/sizeof(TOYOTA_TX_MSGS[0]))) {
     tx = 0;
@@ -152,6 +255,19 @@ static int toyota_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
 
   // Check if msg is sent on BUS 0
   if (bus == 0) {
+
+    // AEB takeover. Disables gas pedal when sent, so cannot be disabled until maneuver finished
+    if (addr == 0x344) {
+      emergency_takeover = 1;
+      aeb_tim = TIM2->CNT;
+    }
+    // disable emergency takeover if AEB has not been sent in 250ms
+    if (emergency_takeover){ 
+      uint32_t timestamp = TIM2->CNT;
+      if ((timestamp - aeb_tim) > TOYOTA_RT_INTERVAL){
+        emergency_takeover = 0;
+      }
+    }
 
     // GAS PEDAL: safety check
     if (addr == 0x200) {
@@ -177,6 +293,7 @@ static int toyota_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
 
       if (violation) {
         tx = 0;
+        fwd_violation = 1;
       }
     }
 
@@ -240,7 +357,20 @@ static int toyota_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
 
       if (violation) {
         tx = 0;
+        fwd_violation = 1;
       }
+    }
+  }
+
+  if (is_tss2) {
+    if (fwd_data_message(to_send,TSS2_FWD_MSG,sizeof(TSS2_FWD_MSG)/sizeof(TSS2_FWD_MSG[0]),fwd_violation)) {
+      //do not send if the message is in the forwards
+      tx = 0;
+    }
+  } else {
+    if (fwd_data_message(to_send,TSS1_FWD_MSG,sizeof(TSS2_FWD_MSG)/sizeof(TSS2_FWD_MSG[0]),fwd_violation)) {
+      //do not send if the message is in the forwards
+      tx = 0;
     }
   }
 
@@ -255,25 +385,44 @@ static void toyota_init(int16_t param) {
 }
 
 static int toyota_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
-
   int bus_fwd = -1;
+  int addr = GET_ADDR(to_fwd);
+  int fwd_modded = -2;
+
+  // do not forward the Pedal
+  if ((addr == 0x200) || (addr == 0x201)){
+    return -1;
+  }
+
   if (!relay_malfunction) {
     if (bus_num == 0) {
       bus_fwd = 2;
     }
     if (bus_num == 2) {
-      int addr = GET_ADDR(to_fwd);
-      // block stock lkas messages and stock acc messages (if OP is doing ACC)
-      // in TSS2, 0x191 is LTA which we need to block to avoid controls collision
-      int is_lkas_msg = ((addr == 0x2E4) || (addr == 0x412) || (addr == 0x191));
-      // in TSS2 the camera does ACC as well, so filter 0x343
-      int is_acc_msg = (addr == 0x343);
-      int block_msg = is_lkas_msg || is_acc_msg;
-      if (!block_msg) {
-        bus_fwd = 0;
+      // set the is_tss2 flag if we see ACC on bus 2
+      if (addr == 0x343){
+        if (!is_tss2){
+          is_tss2 = 1;
+        }
       }
+      bus_fwd = 0;
     }
   }
+
+  // Merlin forward logic. has to run after we detect if the car is TSS2
+  if (is_tss2) {
+  // we check to see first if these are modded forwards
+    fwd_modded = fwd_modded_message(to_fwd,TSS2_FWD_MSG,sizeof(TSS2_FWD_MSG)/sizeof(TSS2_FWD_MSG[0]),
+            toyota_compute_fwd_should_mod,toyota_compute_fwd_checksum);
+  } else {
+    fwd_modded = fwd_modded_message(to_fwd,TSS1_FWD_MSG,sizeof(TSS1_FWD_MSG)/sizeof(TSS1_FWD_MSG[0]),
+            toyota_compute_fwd_should_mod,toyota_compute_fwd_checksum);
+  }
+  if (fwd_modded != -2) {
+    //it's a forward modded message, so just forward now
+    return fwd_modded;
+  }
+
   return bus_fwd;
 }
 

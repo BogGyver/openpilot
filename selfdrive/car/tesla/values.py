@@ -3,6 +3,7 @@
 from collections import namedtuple
 from selfdrive.car import dbc_dict
 from cereal import car
+from selfdrive.car.modules.CFG_module import load_bool_param
 
 Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])
 AngleRateLimit = namedtuple('AngleRateLimit', ['speed_points', 'max_angle_diff_points'])
@@ -48,12 +49,15 @@ FINGERPRINTS = {
   ],
 
 }
+dbc_file_name = 'tesla_can'
+if not load_bool_param("TinklaPost1916Fix",True):
+  dbc_file_name = 'tesla_can_pre1916'
 
 DBC = {
-  CAR.AP2_MODELS: dbc_dict(None, 'tesla_radar', chassis_dbc='tesla_can'),
-  CAR.AP1_MODELS: dbc_dict(None, 'tesla_radar', chassis_dbc='tesla_can'),
-  CAR.PREAP_MODELS: dbc_dict(None, 'tesla_radar', chassis_dbc='tesla_can'),
-  CAR.AP1_MODELX: dbc_dict(None, 'tesla_radar', chassis_dbc='tesla_can'),
+  CAR.AP2_MODELS: dbc_dict(None, 'tesla_radar', chassis_dbc=dbc_file_name),
+  CAR.AP1_MODELS: dbc_dict(None, 'tesla_radar', chassis_dbc=dbc_file_name),
+  CAR.PREAP_MODELS: dbc_dict(None, 'tesla_radar', chassis_dbc=dbc_file_name),
+  CAR.AP1_MODELX: dbc_dict(None, 'tesla_radar', chassis_dbc=dbc_file_name),
 }
 
 CAN_CHASSIS = {

@@ -5,14 +5,14 @@ class BLNKController:
         self.tap_direction = 0 
         self.blinker_on_frame_start = 0
         self.blinker_on_frame_end = 0
-        self.prev_turn_signal_stalk_state = 0
+        self.prev_turnSignalStalkState = 0
 
     def update_state(self, CS, frame):
         #opposite direction so start canceling
         if (
             self.tap_direction > 0  
-            and CS.turn_signal_stalk_state > 0 
-            and self.tap_direction != CS.turn_signal_stalk_state
+            and CS.turnSignalStalkState > 0 
+            and self.tap_direction != CS.turnSignalStalkState
         ):
             self.tap_direction = 0
             self.blinker_on_frame_start = 0
@@ -20,18 +20,18 @@ class BLNKController:
 
         # turn signal stalk just turned on, capture frame
         if (
-            CS.turn_signal_stalk_state > 0 
-            and self.prev_turn_signal_stalk_state == 0
+            CS.turnSignalStalkState > 0 
+            and self.prev_turnSignalStalkState == 0
         ):
             self.blinker_on_frame_start = frame
         # turn signal stalk just turned off
         elif (
-            CS.turn_signal_stalk_state == 0
-            and self.prev_turn_signal_stalk_state > 0
+            CS.turnSignalStalkState == 0
+            and self.prev_turnSignalStalkState > 0
         ):  
             if frame - self.blinker_on_frame_start <= self.tap_duration_frames:
                 #recognize tap
-                self.tap_direction = self.prev_turn_signal_stalk_state
+                self.tap_direction = self.prev_turnSignalStalkState
                 self.blinker_on_frame_end = frame 
             else:
                 #too long, no tap
@@ -50,4 +50,4 @@ class BLNKController:
             self.blinker_on_frame_start = 0
             self.blinker_on_frame_end = 0
 
-        self.prev_turn_signal_stalk_state = CS.turn_signal_stalk_state
+        self.prev_turnSignalStalkState = CS.turnSignalStalkState

@@ -163,7 +163,11 @@ typedef struct UIState {
 
   // device state
   bool awake;
+
+  //auto off brightness
   bool should_turn_screen_off = false;
+  bool brightness_on = false;
+  bool brightness_touched = false;
 
   bool sidebar_collapsed;
   Rect video_rect, viz_rect;

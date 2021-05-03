@@ -16,7 +16,11 @@
   #include "boards/uno.h"
   #include "boards/dos.h"
 #else
-  #include "boards/pedal.h"
+  #ifdef GATEWAY
+    #include "boards/gateway.h"
+  #else
+    #include "boards/pedal.h"
+  #endif
 #endif
 
 void detect_board_type(void) {

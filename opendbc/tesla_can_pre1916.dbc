@@ -227,23 +227,22 @@ BO_ 792 GTW_carState: 8 XXX
  SG_ BC_indicatorLStatus : 59|2@0+ (1,0) [0|3] "" XXX
  SG_ BC_indicatorRStatus : 61|2@0+ (1,0) [0|3] "" XXX
 
-BO_ 872 DI_state: 8 DI
- SG_ DI_systemState : 0|3@1+ (1,0) [0|0] ""  NEO
- SG_ DI_vehicleHoldState : 3|3@1+ (1,0) [0|0] ""  NEO
- SG_ DI_proximity : 6|1@1+ (1,0) [0|0] ""  NEO
- SG_ DI_driveReady : 7|1@1+ (1,0) [0|0] ""  NEO
- SG_ DI_regenLight : 8|1@1+ (1,0) [0|0] ""  NEO
- SG_ DI_state : 9|3@1+ (1,0) [0|0] ""  NEO
- SG_ DI_cruiseState : 12|4@1+ (1,0) [0|0] ""  NEO
- SG_ DI_analogSpeed : 16|12@1+ (0.1,0) [0|150] "speed"  NEO
- SG_ DI_immobilizerState : 28|3@1+ (1,0) [0|0] ""  NEO
- SG_ DI_speedUnits : 31|1@1+ (1,0) [0|1] ""  NEO
- SG_ DI_digitalSpeed : 32|8@1+ (1,0) [0|255.5] "speed"  NEO
- SG_ DI_aebState : 41|3@1+ (1,0) [0|0] ""  NEO
- SG_ DI_stateCounter : 44|4@1+ (1,0) [0|0] ""  NEO
- SG_ DI_cruiseSet : 48|8@1+ (1,0) [0|250] ""  NEO
- SG_ DI_stateChecksum : 56|8@1+ (1,0) [0|0] ""  NEO
-
+BO_ 872 DI_state: 8 XXX
+ SG_ DI_systemState : 0|3@1+ (1,0) [0|0] ""  XXX
+ SG_ DI_vehicleHoldState : 3|3@1+ (1,0) [0|0] ""  XXX
+ SG_ DI_proximity : 6|1@1+ (1,0) [0|0] ""  XXX
+ SG_ DI_driveReady : 7|1@1+ (1,0) [0|0] ""  XXX
+ SG_ DI_regenLight : 8|1@1+ (1,0) [0|0] ""  XXX
+ SG_ DI_state : 9|3@1+ (1,0) [0|0] ""  XXX
+ SG_ DI_cruiseState : 12|4@1+ (1,0) [0|0] ""  XXX
+ SG_ DI_analogSpeed : 16|12@1+ (0.1,0) [0|150] "speed"  XXX
+ SG_ DI_immobilizerState : 28|3@1+ (1,0) [0|0] ""  XXX
+ SG_ DI_speedUnits : 31|1@1+ (1,0) [0|1] ""  XXX
+ SG_ DI_cruiseSet : 32|9@1+ (0.5,0) [0|255.5] "speed"  XXX
+ SG_ DI_aebState : 41|3@1+ (1,0) [0|0] ""  XXX
+ SG_ DI_stateCounter : 44|4@1+ (1,0) [0|0] ""  XXX
+ SG_ DI_digitalSpeed : 48|8@1+ (1,0) [0|250] ""  XXX
+ SG_ DI_stateChecksum : 56|8@1+ (1,0) [0|0] ""  XXX
 
  BO_ 697 DAS_control: 8 XXX
  SG_ DAS_setSpeed : 0|12@1+ (0.1,0) [0|409.4] "kph" XXX
@@ -878,31 +877,6 @@ BO_ 1362 GAS_SENSOR: 6 INTERCEPTOR
  SG_ STATE : 35|4@0+ (1,0) [0|15] "" EON
  SG_ IDX : 39|4@0+ (1,0) [0|15] "" EON
  SG_ CHECKSUM : 47|8@0+ (1,0) [0|3] "" EON
-
-BO_ 529 RCM_status: 8 RCM
- SG_ RCM_driverOrientationInitStatus : 2|3@0+ (1,0) [0|7] "" GTW,OCS
- SG_ RCM_armStatus : 5|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_warningIndicatorState : 7|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_tellTalePassengerState : 9|2@0+ (1,0) [0|3] "" GTW,OCS,DAS
- SG_ RCM_bucklePassengerStatus : 11|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_tellTaleDriverState : 13|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_buckleDriverStatus : 15|2@0+ (1,0) [0|3] "" GTW,OCS,DAS
- SG_ RCM_seatTrackPositionDrvr : 19|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_passAirbagRequest : 21|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_chimeState1stRow : 23|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_vinLearnFlag : 25|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_hwConfigPin58 : 27|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_hwConfigPin57 : 29|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_hwConfigPin56 : 31|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_passOccupantStatus : 33|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_airbagCutoffSwStatus : 35|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_privateCANStatus : 37|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_publicCANStatus : 39|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_edr2State : 45|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_edr1State : 47|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_buckle2ndRowStatus : 50|3@0+ (1,0) [0|3] "" GTW,OCS,DAS
- SG_ RCM_statusCounter : 55|4@0+ (1,0) [0|15] "" GTW,OCS,DAS
- SG_ RCM_statusChecksum : 63|8@0+ (1,0) [0|255] "" GTW,OCS,DAS
  
 
 VAL_ 3 StW_Angl 16383 "SNA" ;

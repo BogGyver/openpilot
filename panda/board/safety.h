@@ -1,5 +1,7 @@
 // include first, needed by safety policies
 #include "safety_declarations.h"
+// include the safety forwards
+#include "safety_forwards.h"
 // Include the actual safety policies.
 #include "safety/safety_defaults.h"
 #include "safety/safety_honda.h"
