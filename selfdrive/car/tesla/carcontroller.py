@@ -87,7 +87,7 @@ class CarController():
     self.last_angle = apply_angle
 
     if enabled:
-      can_sends.append(self.tesla_can.create_steering_control(apply_angle, enabled  and not CS.human_control and not CS.out.cruiseState.standstill, CAN_EPAS[self.CP.carFingerprint], 1))
+      can_sends.append(self.tesla_can.create_steering_control(apply_angle, enabled and not CS.human_control and not CS.out.cruiseState.standstill, CAN_EPAS[self.CP.carFingerprint], 1))
 
 
     #update LONG Control module

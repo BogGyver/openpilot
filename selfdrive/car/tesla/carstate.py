@@ -20,8 +20,6 @@ class CarState(CarStateBase):
     self.das_steeringControl_counter = -1
     self.das_status_counter = -1
     self.autopilot_enabled = False
-    # 0 = off, 1 = indicate left (stalk down), 2 = indicate right (stalk up)
-    self.turn_signal_stalk_state = 0 
 
     
 
@@ -128,9 +126,9 @@ class CarState(CarStateBase):
 
       ret.steeringAngleDeg = -cp_cam.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
       ret.steeringTorque = -cp_cam.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
-      self.steeringPressed = abs(cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
+      ret.steeringPressed = abs(cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
     else:
-      self.steeringPressed = abs(cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
+      ret.steeringPressed = abs(cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
       steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
       steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
 
@@ -216,13 +214,13 @@ class CarState(CarStateBase):
     # Blinkers are used for Comma ALCA
     # we use tap to trigger Comma ALCA so only engage when blinkig but not pressed
     if (cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"] is not None):
-      self.turn_signal_stalk_state = (
+      self.turnSignalStalkState = (
             0
             if cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"] == 3
             else int(cp.vl["STW_ACTN_RQ"]["TurnIndLvr_Stat"])
         )
-    ret.leftBlinker = (cp.vl["GTW_carState"]["BC_indicatorLStatus"] == 1) and (self.turn_signal_stalk_state == 0) and (self.tap_direction == 1)
-    ret.rightBlinker = (cp.vl["GTW_carState"]["BC_indicatorRStatus"] == 1) and (self.turn_signal_stalk_state == 0) and (self.tap_direction == 2)
+    ret.leftBlinker = (cp.vl["GTW_carState"]["BC_indicatorLStatus"] == 1) and (self.turnSignalStalkState == 0) and (self.tap_direction == 1)
+    ret.rightBlinker = (cp.vl["GTW_carState"]["BC_indicatorRStatus"] == 1) and (self.turnSignalStalkState == 0) and (self.tap_direction == 2)
 
     # Seatbelt
     if (self.CP.carFingerprint == CAR.PREAP_MODELS) and self.usesApillarHarness:

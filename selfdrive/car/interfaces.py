@@ -108,6 +108,7 @@ class CarInterfaceBase():
     raise NotImplementedError
 
   def post_update(self,c,ret):
+    self.CS.realSteeringPressed = ret.steeringPressed
     if self.CS.enableHAO:
       ret.gas = 0
       ret.gasPressed = False
@@ -236,7 +237,9 @@ class CarStateBase:
     read_config_file(self)
     #end config section
 
-    self.turn_signal_stalk_state = 0
+    # 0 = off, 1 = indicate left (stalk down), 2 = indicate right (stalk up)
+    self.turnSignalStalkState = 0
+    self.realSteeringPressed = False
 
     # Q = np.matrix([[10.0, 0.0], [0.0, 100.0]])
     # R = 1e3
