@@ -1,0 +1,1 @@
+/data/openpilot_release/phonelibs/qpoases/INCLUDE/EXTRAS/SolutionAnalysis.hpp
