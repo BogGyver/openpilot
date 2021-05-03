@@ -24,6 +24,11 @@ TinklaTogglesPanel::TinklaTogglesPanel(QWidget *parent) : QWidget(parent) {
                                   "Keeps device screen off even when engaged. It wakes the screen any time a message is shown.",
                                   "../assets/offroad/icon_settings.png",
                                   this));
+  tinkla_toggles.append(new TinklaParamControl("TinklaPost1916Fix",
+                                  "Tesls software 2019.16 or newer",
+                                  "Use the DBC for Tesla software after 2019.16 when some of the messages changed.",
+                                  "../assets/offroad/icon_settings.png",
+                                  this));
   tinkla_toggles.append(new TinklaParamControl("TinklaAllowHumanLong",
                                   "preAP: Allow OP to just control LKAS",
                                   "Allows the user to perform longitudinal control via accel/brake without disengaging OP. Requires reboot.",
