@@ -218,10 +218,12 @@ static void update_state(UIState *s) {
         scene.light_sensor = sensor.getLight();
 #endif
       } else if ((!((s->scene.started || s->scene.ignition) && !s->should_turn_screen_off)) && sensor.which() == cereal::SensorEventData::ACCELERATION) {
+#ifndef __linux__ 
         auto accel = sensor.getAcceleration().getV();
         if (accel.totalSize().wordCount){ // TODO: sometimes empty lists are received. Figure out why
           scene.accel_sensor = accel[2];
         }
+#endif        
       } else if ((!((s->scene.started || s->scene.ignition) && !s->should_turn_screen_off)) && sensor.which() == cereal::SensorEventData::GYRO_UNCALIBRATED) {
 #ifndef __linux__
         auto gyro = sensor.getGyroUncalibrated().getV();

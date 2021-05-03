@@ -56,6 +56,8 @@ void HomeWindow::mousePressEvent(QMouseEvent* e) {
     return;
   }
 
+  ui_state->brightness_touched = true;
+
   glWindow->wake();
 
   // Settings button click
@@ -200,15 +202,9 @@ static void handle_display_state(UIState* s, bool user_input) {
   constexpr float accel_samples = 5*UI_FREQ;
   static float accel_prev = 0., gyro_prev = 0.;
 
-  //wake on alert
-  bool alert_wake = false;
-  if (s->scene.alert_text1.length() > 0) {
-    alert_wake = true;
-  }
-
-  bool should_wake = ((s->scene.started || s->scene.ignition) && !s->should_turn_screen_off) || user_input || alert_wake  ;
+  bool should_wake = s->scene.started || s->scene.ignition || user_input;
   if (!should_wake) {
-    // tap detection while display scene.startedis off
+    // tap detection while display is off
     bool accel_trigger = abs(s->scene.accel_sensor - accel_prev) > 0.2;
     bool gyro_trigger = abs(s->scene.gyro_sensor - gyro_prev) > 0.15;
     should_wake = accel_trigger && gyro_trigger;
@@ -218,9 +214,6 @@ static void handle_display_state(UIState* s, bool user_input) {
 
   if (should_wake) {
     awake_timeout = 30 * UI_FREQ;
-    if ((s->scene.started || s->scene.ignition) && s->should_turn_screen_off) {
-      awake_timeout = 3 * UI_FREQ;
-    }
   } else if (awake_timeout > 0) {
     should_wake = true;
   }
@@ -269,6 +262,9 @@ void GLWindow::initializeGL() {
 }
 
 void GLWindow::backlightUpdate() {
+  static int backlight_awake_timeout = 0;
+  backlight_awake_timeout = std::max(backlight_awake_timeout - 1, 0);
+
   // Update brightness
   float clipped_brightness = std::min(100.0f, (ui_state.scene.light_sensor * brightness_m) + brightness_b);
   if (!ui_state.scene.started) {
@@ -281,10 +277,32 @@ void GLWindow::backlightUpdate() {
     emit screen_shutoff();
   }
 
+  bool brightness_on = false;
+  if ((ui_state.scene.alert_text1.length() > 0) || (!ui_state.should_turn_screen_off)) {
+    brightness_on = true;
+  }
+
+  if ((ui_state.should_turn_screen_off) && (ui_state.brightness_touched)) {
+    brightness_on = true;
+    ui_state.brightness_touched = false; 
+    backlight_awake_timeout = 3 * UI_FREQ;
+  }
+
+  if (brightness_on && !ui_state.brightness_on && ui_state.should_turn_screen_off) {
+    backlight_awake_timeout = 3 * UI_FREQ;
+  } else if (backlight_awake_timeout > 0) {
+    brightness_on = true;
+  }
+
+  if (!brightness_on) {
+    brightness = 0;
+  }
+
   if (brightness != last_brightness) {
     std::thread{Hardware::set_brightness, brightness}.detach();
   }
   last_brightness = brightness;
+  ui_state.brightness_on = brightness_on;
 }
 
 void GLWindow::timerUpdate() {
