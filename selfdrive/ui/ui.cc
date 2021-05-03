@@ -217,16 +217,20 @@ static void update_state(UIState *s) {
 #ifndef QCOM2
         scene.light_sensor = sensor.getLight();
 #endif
-      } else if (!scene.started && sensor.which() == cereal::SensorEventData::ACCELERATION) {
+      } else if (!(scene.started && !s->should_turn_screen_off) && sensor.which() == cereal::SensorEventData::ACCELERATION) {
+#ifndef __linux__
         auto accel = sensor.getAcceleration().getV();
         if (accel.totalSize().wordCount){ // TODO: sometimes empty lists are received. Figure out why
           scene.accel_sensor = accel[2];
         }
+#endif
       } else if (!scene.started && sensor.which() == cereal::SensorEventData::GYRO_UNCALIBRATED) {
+#ifndef __linux__
         auto gyro = sensor.getGyroUncalibrated().getV();
         if (gyro.totalSize().wordCount){
           scene.gyro_sensor = gyro[1];
         }
+#endif
       }
     }
   }
