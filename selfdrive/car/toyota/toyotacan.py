@@ -42,6 +42,19 @@ def create_accel_command(packer, accel, pcm_cancel, standstill_req, lead):
   }
   return packer.make_can_msg("ACC_CONTROL", 0, values)
 
+def create_accel_command_alt(packer, accel, pcm_cancel, standstill_req, lead):
+  # TODO: find the exact canceling bit that does not create a chime
+  values = {
+    "ACCEL_CMD": accel,
+    "SET_ME_X01": 1,
+    "DISTANCE": 0,
+    "MINI_CAR": lead,
+    "SET_ME_X3": 3,
+    "PERMIT_BRAKING": 1,
+    "RELEASE_STANDSTILL": not standstill_req,
+    "CANCEL_REQ": pcm_cancel,
+  }
+  return packer.make_can_msg("ACC_CONTROL_ALT", 0, values)
 
 def create_acc_cancel_command(packer):
   values = {
@@ -81,3 +94,12 @@ def create_ui_command(packer, steer, chime, left_line, right_line, left_lane_dep
     "LDA_ALERT": steer,
   }
   return packer.make_can_msg("LKAS_HUD", 0, values)
+
+def create_aeb_command(packer, brake_amt):
+  # do not send this unless it's an emergency takeover
+  # this will disable gas input
+  values = {
+    "DECELERATION": brake_amt * -4.5,
+    "BRKHLD": 1,
+  }
+  return packer.make_can_msg("PRECOLLISION_2_ALT", 0, values)
