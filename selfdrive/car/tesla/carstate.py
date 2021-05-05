@@ -226,7 +226,7 @@ class CarState(CarStateBase):
     if (self.CP.carFingerprint == CAR.PREAP_MODELS) and self.usesApillarHarness:
       ret.seatbeltUnlatched = (cp_cam.vl["SDM1"]["SDM_bcklDrivStatus"] != 1)
     elif (self.CP.carFingerprint in [CAR.AP1_MODELX]):
-      ret.seatbeltUnlatched = False #TODO: find another way to get this
+      ret.seatbeltUnlatched = (cp.vl["RCM_status"]["RCM_buckleDriverStatus"] != 1)
     else:
       ret.seatbeltUnlatched = (cp.vl["SDM1"]["SDM_bcklDrivStatus"] != 1)
 
@@ -337,11 +337,7 @@ class CarState(CarStateBase):
       ("STW_ANGLHP_STAT", 100),
       ("DI_state", 10),
       ("STW_ACTN_RQ", 10),
-      ("GTW_carState", 10),
-      #("UI_gpsVehicleSpeed",1),
-      #("UI_driverAssistMapData",2),
-      #("UI_driverAssistRoadSign",10),
-      
+      ("GTW_carState", 10),     
     ]
 
     if not (CP.carFingerprint in [CAR.PREAP_MODELS] and usesApillarHarness):
@@ -361,6 +357,15 @@ class CarState(CarStateBase):
 
       checks += [
         #("SDM1", 10),
+      ]
+
+    if (CP.carFingerprint in [CAR.AP1_MODELX]):
+      signals += [
+        ("RCM_buckleDriverStatus","RCM_status",0),
+      ]
+
+      checks += [
+        #("RCM_status",10),
       ]
 
     if CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP2_MODELS, CAR.AP1_MODELX]:

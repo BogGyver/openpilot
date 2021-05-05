@@ -282,14 +282,19 @@ void GLWindow::backlightUpdate() {
     brightness_on = true;
   }
 
+  if (!ui_state.sidebar_collapsed) {
+    brightness_on = true;
+    backlight_awake_timeout = 3 / BACKLIGHT_DT;
+  }
+
   if ((ui_state.should_turn_screen_off) && (ui_state.brightness_touched)) {
     brightness_on = true;
     ui_state.brightness_touched = false; 
-    backlight_awake_timeout = 3 * UI_FREQ;
+    backlight_awake_timeout = 3 / BACKLIGHT_DT;
   }
 
   if (brightness_on && !ui_state.brightness_on && ui_state.should_turn_screen_off) {
-    backlight_awake_timeout = 3 * UI_FREQ;
+    backlight_awake_timeout = 3 / BACKLIGHT_DT;
   } else if (backlight_awake_timeout > 0) {
     brightness_on = true;
   }

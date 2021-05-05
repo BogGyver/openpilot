@@ -40,8 +40,14 @@ class CarState(CarStateBase):
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.standstill = not ret.vEgoRaw > 0.001
 
-    ret.leftBlinker = cp.vl["STEERING_LEVERS"]['TURN_SIGNALS'] == 1
-    ret.rightBlinker = cp.vl["STEERING_LEVERS"]['TURN_SIGNALS'] == 2
+    ret.leftBlinker = cp.vl["STEERING_LEVERS"]['TURN_SIGNALS'] == 1 #we can get this from DOORS/TURN_LIGHT_LEFT
+    ret.rightBlinker = cp.vl["STEERING_LEVERS"]['TURN_SIGNALS'] == 2 #we can get this from DOORS/TURN_LIGHT_RIGHT
+    if (cp.vl["TURN_SIGNALS"]["STEERING_LEVERS"] is not None):
+        self.turnSignalStalkState = (
+            0
+            if cp.vl["TURN_SIGNALS"]["STEERING_LEVERS"] >= 3
+            else int(cp.vl["TURN_SIGNALS"]["STEERING_LEVERS"])
+        )
     ret.steeringAngleDeg = cp.vl["STEERING"]['STEER_ANGLE']
     ret.steeringRateDeg = cp.vl["STEERING"]['STEERING_RATE']
     ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(cp.vl['GEAR']['PRNDL'], None))
