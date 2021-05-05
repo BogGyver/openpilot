@@ -92,7 +92,7 @@ class CarState(CarStateBase):
     ret.cruiseState.nonAdaptive = cp.vl["PCM_CRUISE"]['CRUISE_STATE'] in [1, 2, 3, 4, 5, 6]
 
     ret.genericToggle = bool(cp.vl["LIGHT_STALK"]['AUTO_HIGH_BEAM'])
-    ret.stockAeb = bool(cp_cam.vl["PRE_COLLISION"]["PRECOLLISION_ACTIVE"] and cp_cam.vl["PRE_COLLISION"]["FORCE"] < -1e-5)
+    ret.stockAeb = bool(cp.vl["PRE_COLLISION"]["PRECOLLISION_ACTIVE"] and cp.vl["PRE_COLLISION"]["FORCE"] < -1e-5) #no_dsu cars are different
 
     ret.espDisabled = cp.vl["ESP_CONTROL"]['TC_DISABLED'] != 0
     # 2 is standby, 10 is active. TODO: check that everything else is really a faulty state
@@ -135,6 +135,8 @@ class CarState(CarStateBase):
       ("LKA_STATE", "EPS_STATUS", 0),
       ("BRAKE_LIGHTS_ACC", "ESP_CONTROL", 0),
       ("AUTO_HIGH_BEAM", "LIGHT_STALK", 0),
+      ("FORCE", "PRE_COLLISION", 0),
+      ("PRECOLLISION_ACTIVE", "PRE_COLLISION", 0)
     ]
 
     checks = [
@@ -150,6 +152,7 @@ class CarState(CarStateBase):
       ("STEER_ANGLE_SENSOR", 80),
       ("PCM_CRUISE", 33),
       ("STEER_TORQUE_SENSOR", 50),
+      ("PRE_COLLISION", 0), 
     ]
 
     if CP.carFingerprint == CAR.LEXUS_IS:
@@ -185,14 +188,13 @@ class CarState(CarStateBase):
   def get_cam_can_parser(CP):
 
     signals = [
-      ("FORCE", "PRE_COLLISION", 0),
-      ("PRECOLLISION_ACTIVE", "PRE_COLLISION", 0)
+
     ]
 
     # use steering message to check if panda is connected to frc
     checks = [
       ("STEERING_LKA", 42),
-      ("PRE_COLLISION", 0), # TODO: figure out why freq is inconsistent
+      # TODO: figure out why freq is inconsistent
     ]
 
     return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 2)
