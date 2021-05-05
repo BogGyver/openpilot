@@ -10,9 +10,10 @@ export GIT_SSH_COMMAND="ssh -i /data/gitkey"
 # set CLEAN to build outside of CI
 
 # Create folders
-rm -rf /data/openpilot_release
-mkdir -p /data/openpilot_release
-cd /data/openpilot_release
+mv /data/openpilot /data/openpilot_tmp || true
+rm -rf /data/openpilot || true
+mkdir -p /data/openpilot
+cd /data/openpilot
 
 # Create git repo
 git init
@@ -82,3 +83,6 @@ git remote set-url origin git@github.com:boggyver/openpilot.git
 # Push to tesla_unity_release
 git push -f origin tesla_unity_release
 
+
+rm -rf /data/openpilot || true
+mv /data/openpilot_tmp /data/openpilot || true
