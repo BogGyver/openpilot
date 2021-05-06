@@ -1,3 +1,14 @@
+#pragma once
+
+#include <QFrame>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QPushButton>
+#include <QVBoxLayout>
+
+#include "common/params.h"
+#include "selfdrive/ui/qt/widgets/toggle.hpp"
+#include "selfdrive/ui/qt/widgets/controls.hpp"
 
 class TinklaParamControl : public ToggleControl {
   Q_OBJECT
@@ -11,4 +22,5 @@ public:
       Params().tinkla_set_bool_param(param.toStdString().c_str(),state);
     });
   }
-};
+
+}; 

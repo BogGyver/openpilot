@@ -18,7 +18,9 @@
 #include "selfdrive/hardware/hw.h"
 #include "home.hpp"
 
-#include "selfdrive/car/tesla/qt/settings.hpp"
+#include "selfdrive/car/modules/qt/tcontrols.hpp"
+#include "selfdrive/car/modules/qt/tsettings.hpp"
+
 
 TogglesPanel::TogglesPanel(QWidget *parent) : QWidget(parent) {
   QVBoxLayout *toggles_list = new QVBoxLayout();
@@ -293,11 +295,14 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   DevicePanel *device = new DevicePanel(this);
   QObject::connect(device, SIGNAL(reviewTrainingGuide()), this, SIGNAL(reviewTrainingGuide()));
 
+  //TODOBB: add logic to show car panels based on detected model
   QPair<QString, QWidget *> panels[] = {
     {"Device", device},
     {"Network", network_panel(this)},
     {"Toggles", new TogglesPanel(this)},
     {"Tinkla", new TinklaTogglesPanel(this)},
+    {"Tesla", new TeslaTogglesPanel(this)},
+    {"Toyota", new ToyotaTogglesPanel(this)},
     {"Developer", new DeveloperPanel()},
   };
 
@@ -311,10 +316,10 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
         color: grey;
         border: none;
         background: none;
-        font-size: 65px;
+        font-size: 45px;
         font-weight: 500;
-        padding-top: 35px;
-        padding-bottom: 35px;
+        padding-top: 25px;
+        padding-bottom: 25px;
       }
       QPushButton:checked {
         color: white;

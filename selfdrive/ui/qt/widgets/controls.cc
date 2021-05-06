@@ -1,4 +1,5 @@
 #include "controls.hpp"
+#include "selfdrive/car/modules/qt/tcontrols.hpp"
 
 QFrame *horizontal_line(QWidget *parent) {
   QFrame *line = new QFrame(parent);

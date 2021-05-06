@@ -310,7 +310,7 @@ else:
     qt_libs += ["GL"]
 
 qt_env.Tool('qt')
-qt_env['CPPPATH'] += qt_dirs + ["#selfdrive/ui/qt/"]
+qt_env['CPPPATH'] += qt_dirs + ["#selfdrive/ui/qt/"] + ["#selfdrive/car/modules/qt/"]
 qt_flags = [
   "-D_REENTRANT",
   "-DQT_NO_DEBUG",
