@@ -7,6 +7,8 @@ from selfdrive.car.toyota.toyotacan import create_steer_command, create_ui_comma
                                            create_accel_command_alt, create_aeb_command
 from selfdrive.car.toyota.values import Ecu, CAR, STATIC_MSGS, NO_STOP_TIMER_CAR, TSS2_CAR, CarControllerParams
 from opendbc.can.packer import CANPacker
+from selfdrive.car.modules.CFG_module import load_bool_param
+
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
@@ -41,6 +43,8 @@ class CarController():
       self.fake_ecus.add(Ecu.fwdCamera)
     if CP.enableDsu:
       self.fake_ecus.add(Ecu.dsu)
+
+    self.enable_aeb_gateway = load_bool_param("ToyotaUseAEBgateway",False)
 
     self.packer = CANPacker(dbc_name)
 
@@ -116,8 +120,10 @@ class CarController():
       if pcm_cancel_cmd and CS.CP.carFingerprint == CAR.LEXUS_IS:
         can_sends.append(create_acc_cancel_command(self.packer))
       elif CS.CP.openpilotLongitudinalControl:
-        # TODO: detect gateway and send the alt command instead
-        can_sends.append(create_accel_command_alt(self.packer, apply_accel, pcm_cancel_cmd, self.standstill_req, lead))
+        if self.enable_aeb_gateway:
+          can_sends.append(create_accel_command_alt(self.packer, apply_accel, pcm_cancel_cmd, self.standstill_req, lead))
+        else:
+          can_sends.append(create_accel_command(self.packer, apply_accel, pcm_cancel_cmd, self.standstill_req, lead))
       else:
         can_sends.append(create_accel_command(self.packer, 0, pcm_cancel_cmd, False, lead))
 
