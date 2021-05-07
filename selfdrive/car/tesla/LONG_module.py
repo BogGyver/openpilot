@@ -1,4 +1,4 @@
-from selfdrive.car.tesla.values import CAR, CAN_CHASSIS, CAN_POWERTRAIN
+from selfdrive.car.tesla.values import CAR, CAN_CHASSIS, CAN_POWERTRAIN, CruiseState
 from selfdrive.car.tesla.ACC_module import ACCController
 from selfdrive.car.tesla.PCC_module import PCCController
 from selfdrive.config import Conversions as CV
@@ -68,7 +68,7 @@ class LONGController:
                     if not self.ACC.adaptive:
                         CS.cc_state = 3
             else:
-                if CS.cruise_state == 4:
+                if CS.cruise_state == CruiseState.OVERRIDE:  # state #4
                     CS.cc_state = 3
             self.adaptive_cruise = (
                 1
