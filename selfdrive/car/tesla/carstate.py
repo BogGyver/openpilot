@@ -246,7 +246,7 @@ class CarState():
     self.apFollowTimeInS =  2.5 #time in seconds to follow
     self.keepEonOff = False
     self.alcaEnabled = True
-    self.mapAwareSpeed = False
+    self.mapAwareSpeed = self.useTeslaMapData
 
     # Tesla Model
     self.teslaModelDetected = 1
