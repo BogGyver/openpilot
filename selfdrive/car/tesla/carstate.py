@@ -115,12 +115,12 @@ class CarState(CarStateBase):
     # Steering wheel
     steer_warning = None
     if (self.CP.carFingerprint == CAR.PREAP_MODELS):
-      steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp_cam.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
-      steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp_cam.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
+      steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
+      steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
 
-      ret.steeringAngleDeg = -cp_cam.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
-      ret.steeringTorque = -cp_cam.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
-      ret.steeringPressed = abs(cp_cam.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
+      ret.steeringAngleDeg = -cp.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
+      ret.steeringTorque = -cp.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
+      ret.steeringPressed = abs(cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
     else:
       ret.steeringPressed = abs(cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
       steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
@@ -391,8 +391,8 @@ class CarState(CarStateBase):
   @staticmethod
   def get_cam_can_parser(CP):
     enablePedal = load_bool_param("TinklaEnablePedal",False)
-    signals = None
-    checks = None
+    signals = []
+    checks = []
     
     if CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP2_MODELS, CAR.AP1_MODELX]:
       signals = [
