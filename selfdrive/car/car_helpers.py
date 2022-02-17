@@ -149,7 +149,7 @@ def fingerprint(logcan, sendcan):
           car_fingerprint = candidate_cars[b][0]
 
     
-    if (car_fingerprint is None) and load_bool_param("TinklaForceTeslaPreAP",False):
+    if load_bool_param("TinklaForceTeslaPreAP",False):
         print ("Fingerprinting Failed: Returning PreAP Tesla Model S (based on branch)")
         car_fingerprint = "TESLA MODEL S"
         vin = "TESLAFAKEVIN12345"
