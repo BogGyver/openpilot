@@ -57,7 +57,7 @@ public:
   }
 
   inline bool tinkla_get_bool_param(const std::string &tinkla_param) {
-    ifstream ifile;
+    std::ifstream ifile;
     ifile.open(tinkla_params_path + "/" + tinkla_param);
     if (!ifile) {
       //no file assume false and create
