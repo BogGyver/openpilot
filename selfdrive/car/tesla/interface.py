@@ -14,6 +14,8 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=None):
+    if load_bool_param("TinklaForceTeslaPreAP",False):
+      candidate = CAR.PREAP_MODELS
     ret = CarInterfaceBase.get_std_params(candidate, fingerprint)
     ret.carName = "tesla"      
     ret.steerControlType = car.CarParams.SteerControlType.angle

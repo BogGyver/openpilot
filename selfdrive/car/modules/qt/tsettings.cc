@@ -102,6 +102,11 @@ TeslaTogglesPanel::TeslaTogglesPanel(QWidget *parent) : QWidget(parent) {
                                   "Set to true if you retrofitted Tesla Model S iBooster on pre-AutoPilot cars. Requires reboot.",
                                   "../assets/offroad/icon_settings.png",
                                   this));
+  tinkla_toggles.append(new TinklaParamControl("TinklaForceTeslaPreAP",
+                                  "preAP: Force Fingerprint PreAP Tesla Model S ",
+                                  "Forces the fingerprint to match a PreAP Tesla Model S. Requires reboot.",
+                                  "../assets/offroad/icon_settings.png",
+                                  this));
   for(TinklaParamControl *toggle : tinkla_toggles){
     if(tinkla_toggles_list->count() != 0){
       tinkla_toggles_list->addWidget(horizontal_line());
