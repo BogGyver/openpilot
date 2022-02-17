@@ -297,7 +297,7 @@ static void update_params(UIState *s) {
     if (auto last_ping = params.get<float>("LastAthenaPingTime"); last_ping) {
       scene.athenaStatus = nanos_since_boot() - *last_ping < 70e9 ? NET_CONNECTED : NET_ERROR;
     }
-    s->should_turn_screen_off = !params.tinkla_get_bool_param("TinklaDebugMode");
+    s->should_turn_screen_off = ((!params.tinkla_get_bool_param("TinklaDebugMode")) && params.tinkla_get_bool_param("TinklaTurnScreenOff"));
   }
 }
 

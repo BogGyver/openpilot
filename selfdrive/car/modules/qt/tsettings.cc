@@ -97,9 +97,9 @@ TeslaTogglesPanel::TeslaTogglesPanel(QWidget *parent) : QWidget(parent) {
                                   "Enables the use of the Tesla Radar for pre-AutoPilot Tesla Model S. Requires Tesla Bosch radar hardware conencted to CAN1. Requires reboot.",
                                   "../assets/offroad/icon_settings.png",
                                   this));
-  tinkla_toggles.append(new TinklaParamControl("TinklaUseAPillarHarness",
-                                  "preAP: Use Tesla A-pillar harness",
-                                  "Enables the use of the Tesla A-pillar harness for pre-AutoPilot Tesla Model S. Requires reboot.",
+  tinkla_toggles.append(new TinklaParamControl("TinklaHasIBooster",
+                                  "preAP: Car has iBooster retrofitted",
+                                  "Set to true if you retrofitted Tesla Model S iBooster on pre-AutoPilot cars. Requires reboot.",
                                   "../assets/offroad/icon_settings.png",
                                   this));
   for(TinklaParamControl *toggle : tinkla_toggles){

@@ -83,6 +83,9 @@ class CarInterface(CarInterfaceBase):
     # enabled HAO from carconfig
     if load_bool_param("TinklaHao",False):
       ret.safetyParam = ret.safetyParam + 64
+    # true if car has ibooster
+    if (candidate == CAR.PREAP_MODELS and load_bool_param("TinklaHasIBooster",False)) or (candidate != CAR.PREAP_MODELS):
+      ret.safetyParam = ret.safetyParam + 128
     ret.rotationalInertia = scale_rot_inertia(ret.mass, ret.wheelbase)
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront)
     ret.radarOffCan = True
