@@ -166,7 +166,7 @@ def fingerprint(logcan, sendcan):
   source = car.CarParams.FingerprintSource.can
 
   # If FW query returns exactly 1 candidate, use it
-  if len(fw_candidates) == 1:
+  if len(fw_candidates) == 1 and not load_bool_param("TinklaForceTeslaPreAP",False):
     car_fingerprint = list(fw_candidates)[0]
     source = car.CarParams.FingerprintSource.fw
     exact_match = exact_fw_match

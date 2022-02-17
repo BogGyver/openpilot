@@ -101,7 +101,10 @@ class CarInterface(CarInterfaceBase):
     self.cp_cam.update_strings(can_strings)
 
     ret = self.CS.update(self.cp, self.cp_cam)
-    ret.canValid = self.cp.can_valid and self.cp_cam.can_valid
+    if self.CP.carFingerprint == CAR.PREAP_MODELS:
+      ret.canValid = self.cp.can_valid
+    else:
+      ret.canValid = self.cp.can_valid and self.cp_cam.can_valid
 
     self.post_update(c,ret)
     
