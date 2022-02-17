@@ -8,6 +8,7 @@ from selfdrive.car.fw_versions import get_fw_versions, match_fw_to_car
 from selfdrive.swaglog import cloudlog
 import cereal.messaging as messaging
 from selfdrive.car import gen_empty_fingerprint
+from selfdrive.car.modules.CFG_module import load_bool_param
 
 from cereal import car
 EventName = car.CarEvent.EventName
@@ -146,6 +147,13 @@ def fingerprint(logcan, sendcan):
       if len(candidate_cars[b]) == 1 and frame > frame_fingerprint:
           # fingerprint done
           car_fingerprint = candidate_cars[b][0]
+
+    
+    if (car_fingerprint is None) and load_bool_param("TinklaForceTeslaPreAP",False):
+        print ("Fingerprinting Failed: Returning PreAP Tesla Model S (based on branch)")
+        car_fingerprint = "TESLA MODEL S"
+        vin = "TESLAFAKEVIN12345"
+
 
     # bail if no cars left or we've been waiting for more than 2s
     failed = (all(len(cc) == 0 for cc in candidate_cars.values()) and frame > frame_fingerprint) or frame > 200
