@@ -358,33 +358,20 @@ class CarState(CarStateBase):
         #("RCM_status",10),
       ]
 
-    if CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP2_MODELS, CAR.AP1_MODELX]:
-      signals += [
-        ("EPAS_handsOnLevel", "EPAS_sysStatus", 0),
-        ("EPAS_torsionBarTorque", "EPAS_sysStatus", 0),
-        ("EPAS_internalSAS", "EPAS_sysStatus", 0),
-        ("EPAS_eacStatus", "EPAS_sysStatus", 1),
-        ("EPAS_eacErrorCode", "EPAS_sysStatus", 0),
-        ("PARK_sdiBlindSpotRight","PARK_status2",0),
-        ("PARK_sdiBlindSpotLeft","PARK_status2",0),
-      ]
+    signals += [
+      ("EPAS_handsOnLevel", "EPAS_sysStatus", 0),
+      ("EPAS_torsionBarTorque", "EPAS_sysStatus", 0),
+      ("EPAS_internalSAS", "EPAS_sysStatus", 0),
+      ("EPAS_eacStatus", "EPAS_sysStatus", 1),
+      ("EPAS_eacErrorCode", "EPAS_sysStatus", 0),
+      ("PARK_sdiBlindSpotRight","PARK_status2",0),
+      ("PARK_sdiBlindSpotLeft","PARK_status2",0),
+    ]
 
-      checks += [      
-        ("EPAS_sysStatus", 25),
-        #("PARK_status2",4),
-      ]
-
-      signals = [
-        ("EPAS_handsOnLevel", "EPAS_sysStatus", 0),
-        ("EPAS_torsionBarTorque", "EPAS_sysStatus", 0),
-        ("EPAS_internalSAS", "EPAS_sysStatus", 0),
-        ("EPAS_eacStatus", "EPAS_sysStatus", 1),
-        ("EPAS_eacErrorCode", "EPAS_sysStatus", 0),
-      ]
-
-      checks = [      
-        ("EPAS_sysStatus", 25),
-      ]
+    checks += [      
+      ("EPAS_sysStatus", 25),
+      #("PARK_status2",4),
+    ]
 
     return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 0, enforce_checks=False)
 
