@@ -163,10 +163,11 @@ class CarState(CarStateBase):
     if self.cruise_buttons == CruiseButtons.MAIN:
       self.op_lkas_enabled = True
     if self.cruise_buttons == CruiseButtons.CANCEL:
-      self.op_lkas_enabled = True
-    acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
-    self.autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
+      self.op_lkas_enabled = False
+    
     if (self.CP.carFingerprint != CAR.PREAP_MODELS):
+      acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
+      self.autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
       self.cruiseEnabled = acc_enabled and not self.autopilot_enabled and not summon_or_autopark_enabled
       ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
     else:
@@ -261,7 +262,7 @@ class CarState(CarStateBase):
     #PREAP overrides at the last moment
     if self.CP.carFingerprint in [CAR.PREAP_MODELS]:
       if self.enableHumanLongControl:
-        ret.cruiseState.enabled = True
+        ret.cruiseState.enabled = ret.cruiseState.enabled and (not ret.doorOpen) and (ret.gearShifter == car.CarState.GearShifter.drive) and (not ret.seatbeltUnlatched)
         ret.cruiseState.available = True
         ret.cruiseState.standstill = False
         ret.brakePressed = False
