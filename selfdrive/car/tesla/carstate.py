@@ -1,6 +1,6 @@
 import copy
 from cereal import car
-from selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS, CAR
+from selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS, CAR, CruiseButtons
 from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
@@ -64,6 +64,8 @@ class CarState(CarStateBase):
 
     self.speed_units = "MPH"
     self.tap_direction = 0
+
+    self.op_lkas_enabled = False
 
     #preAP long
     self.speed_control_enabled = 0
@@ -158,14 +160,17 @@ class CarState(CarStateBase):
         self.v_cruise_actual = self.v_cruise_actual * CV.MPH_TO_KPH
     self.prev_cruise_buttons = self.cruise_buttons
     self.cruise_buttons = cp.vl["STW_ACTN_RQ"]["SpdCtrlLvr_Stat"]
-
+    if self.cruise_buttons == CruiseButtons.MAIN:
+      self.op_lkas_enabled = True
+    if self.cruise_buttons == CruiseButtons.CANCEL:
+      self.op_lkas_enabled = True
     acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
     self.autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
-    self.cruiseEnabled = acc_enabled and not self.autopilot_enabled and not summon_or_autopark_enabled
     if (self.CP.carFingerprint != CAR.PREAP_MODELS):
-      ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
+      self.cruiseEnabled = acc_enabled and not self.autopilot_enabled and not summon_or_autopark_enabled
     else:
-      ret.cruiseState.enabled = True
+      self.cruiseEnabled = self.op_lkas_enabled
+    ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
     if self.speed_units == "KPH":
       ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
     elif self.speed_units == "MPH":
