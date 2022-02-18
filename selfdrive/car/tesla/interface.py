@@ -21,7 +21,12 @@ class CarInterface(CarInterfaceBase):
     ret.carName = "tesla"      
     ret.steerControlType = car.CarParams.SteerControlType.angle
     ret.enableCamera = True
-    ret.openpilotLongitudinalControl = False
+    if candidate == CAR.PREAP_MODELS:
+      ret.enableCruise = False
+      ret.openpilotLongitudinalControl = True
+    else:
+      ret.enableCruise = True
+      ret.openpilotLongitudinalControl = False
     ret.communityFeature = True
 
     ret.steerActuatorDelay = 0.1
