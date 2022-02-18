@@ -160,10 +160,7 @@ class CarState(CarStateBase):
         self.v_cruise_actual = self.v_cruise_actual * CV.MPH_TO_KPH
     self.prev_cruise_buttons = self.cruise_buttons
     self.cruise_buttons = cp.vl["STW_ACTN_RQ"]["SpdCtrlLvr_Stat"]
-    if self.cruise_buttons == CruiseButtons.MAIN:
-      self.op_lkas_enabled = True
-    if self.cruise_buttons == CruiseButtons.CANCEL:
-      self.op_lkas_enabled = False
+    
     
     if (self.CP.carFingerprint != CAR.PREAP_MODELS):
       acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
@@ -171,7 +168,10 @@ class CarState(CarStateBase):
       self.cruiseEnabled = acc_enabled and not self.autopilot_enabled and not summon_or_autopark_enabled
       ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
     else:
-      self.cruiseEnabled = self.op_lkas_enabled
+      if self.cruise_buttons == CruiseButtons.MAIN:
+        self.cruiseEnabled = True
+      if self.cruise_buttons == CruiseButtons.CANCEL:
+        self.cruiseEnabled = False
       ret.cruiseState.enabled = self.cruiseEnabled
     if self.speed_units == "KPH":
       ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
@@ -263,6 +263,7 @@ class CarState(CarStateBase):
     if self.CP.carFingerprint in [CAR.PREAP_MODELS]:
       if self.enableHumanLongControl:
         ret.cruiseState.enabled = ret.cruiseState.enabled and (not ret.doorOpen) and (ret.gearShifter == car.CarState.GearShifter.drive) and (not ret.seatbeltUnlatched)
+        self.cruiseEnabled = ret.cruiseState.enabled
         ret.cruiseState.available = True
         ret.cruiseState.standstill = False
         ret.brakePressed = False
