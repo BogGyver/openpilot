@@ -10,6 +10,8 @@
 #include "nanovg_gl_utils.h"
 #include "paint.hpp"
 #include "sidebar.hpp"
+//#include "dashcam.h"
+#include "tbui.h"
 
 // TODO: this is also hardcoded in common/transformations/camera.py
 // TODO: choose based on frame input size
@@ -391,6 +393,10 @@ void ui_draw(UIState *s) {
   ui_draw_sidebar(s);
   if (draw_vision) {
     ui_draw_vision(s);
+    nvgScale(s->vg,s->b.scr_scale_x,s->b.scr_scale_y);
+    //dashcam(s, dc_touch_x, dc_touch_y);
+    //bb_ui_draw_UI(s) ;
+    ui_draw_infobar(s);
   }
 
   if (draw_alerts && s->scene.alert_size != cereal::ControlsState::AlertSize::NONE) {

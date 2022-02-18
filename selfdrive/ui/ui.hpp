@@ -28,6 +28,7 @@
 #include "qt/sound.hpp"
 #include "visionipc.h"
 #include "visionipc_client.h"
+#include "bbuistate.h"
 
 #define COLOR_BLACK nvgRGBA(0, 0, 0, 255)
 #define COLOR_BLACK_ALPHA(x) nvgRGBA(0, 0, 0, x)
@@ -138,6 +139,11 @@ typedef struct UIState {
   VisionIpcClient * vipc_client_front;
   VisionIpcClient * vipc_client_rear;
   VisionBuf * last_frame;
+
+  //BB define BBUIState
+  BBUIState b;
+  int plus_state;
+  //BB end
 
   // framebuffer
   int fb_w, fb_h;
