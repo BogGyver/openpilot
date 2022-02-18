@@ -199,16 +199,16 @@ class CarState(CarStateBase):
     self.DAS_notInDrive = 0 if ret.gearShifter == car.CarState.GearShifter.drive else 1
 
     # Buttons
-    buttonEvents = []
-    for button in BUTTONS:
-      state = (cp.vl[button.can_addr][button.can_msg] in button.values)
-      if self.button_states[button.event_type] != state:
-        event = car.CarState.ButtonEvent.new_message()
-        event.type = button.event_type
-        event.pressed = state
-        buttonEvents.append(event)
-      self.button_states[button.event_type] = state
-    ret.buttonEvents = buttonEvents
+    #buttonEvents = []
+    #for button in BUTTONS:
+    #  state = (cp.vl[button.can_addr][button.can_msg] in button.values)
+    #  if self.button_states[button.event_type] != state:
+    #    event = car.CarState.ButtonEvent.new_message()
+    #    event.type = button.event_type
+    #    event.pressed = state
+    #    buttonEvents.append(event)
+    #  self.button_states[button.event_type] = state
+    #ret.buttonEvents = buttonEvents
 
     # Doors
     ret.doorOpen = any([(self.can_define.dv["GTW_carState"][door].get(int(cp.vl["GTW_carState"][door]), "OPEN") == "OPEN") for door in DOORS])

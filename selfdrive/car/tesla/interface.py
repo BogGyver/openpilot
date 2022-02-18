@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 from cereal import car
-from selfdrive.car.tesla.values import CAR
+from selfdrive.car.tesla.values import CAR, CruiseButtons
 from selfdrive.car import STD_CARGO_KG, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness
 from selfdrive.car.interfaces import CarInterfaceBase
 from selfdrive.car.modules.CFG_module import load_bool_param
 
+ButtonType = car.CarState.ButtonEvent.Type
 
 class CarInterface(CarInterfaceBase):
   @staticmethod
@@ -34,6 +35,9 @@ class CarInterface(CarInterfaceBase):
     # 3   - HUD Integration?
     # 4   - Body Controls?
     # 5   - Need Radar Emulation
+    # 6   - Human Acceleration Override
+    # 7   - iBooster
+
 
     if candidate == CAR.AP2_MODELS:
       ret.mass = 2100. + STD_CARGO_KG
@@ -107,6 +111,29 @@ class CarInterface(CarInterfaceBase):
       ret.canValid = self.cp.can_valid and self.cp_cam.can_valid
 
     self.post_update(c,ret)
+
+    buttonEvents = []
+
+    if self.CS.cruise_buttons != self.CS.prev_cruise_buttons:
+      be = car.CarState.ButtonEvent.new_message()
+      be.type = ButtonType.unknown
+      if self.CS.cruise_buttons != 0:
+        be.pressed = True
+        but = self.CS.cruise_buttons
+      else:
+        be.pressed = False
+        but = self.CS.prev_cruise_buttons
+      if but == CruiseButtons.RES_ACCEL:
+        be.type = ButtonType.accelCruise
+      elif but == CruiseButtons.DECEL_SET:
+        be.type = ButtonType.decelCruise
+      elif but == CruiseButtons.CANCEL:
+        be.type = ButtonType.cancel
+      elif but == CruiseButtons.MAIN:
+        be.type = ButtonType.altButton3
+      buttonEvents.append(be)
+
+    ret.buttonEvents = buttonEvents
     
     events = self.create_common_events(ret)
     if self.CS.autopilot_enabled:
