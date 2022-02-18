@@ -162,7 +162,10 @@ class CarState(CarStateBase):
     acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
     self.autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
     self.cruiseEnabled = acc_enabled and not self.autopilot_enabled and not summon_or_autopark_enabled
-    ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
+    if (self.CP.carFingerprint != CAR.PREAP_MODELS):
+      ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
+    else:
+      ret.cruiseState.enabled = True
     if self.speed_units == "KPH":
       ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
     elif self.speed_units == "MPH":
@@ -454,7 +457,6 @@ class CarState(CarStateBase):
       ]
 
     if CP.carFingerprint in [CAR.PREAP_MODELS]:
-
       if enablePedal:
         signals += [
           ("INTERCEPTOR_GAS", "GAS_SENSOR", 0),
