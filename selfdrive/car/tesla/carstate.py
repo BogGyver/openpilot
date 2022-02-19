@@ -6,7 +6,6 @@ from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from selfdrive.config import Conversions as CV
 from selfdrive.car.modules.CFG_module import load_bool_param
-from selfdrive.car.modules.readconfig import read_config_file
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -21,13 +20,6 @@ class CarState(CarStateBase):
     self.das_steeringControl_counter = -1
     self.das_status_counter = -1
     self.autopilot_enabled = False
-
-    #radar stuff for preAP
-    self.radarVIN = ''
-    self.radarOffset = 0.
-    self.radarPosition = 0
-    self.radarEpasType = 0
-    read_config_file(self)
 
     #to control hazard lighgts
     self.needs_hazard = False
