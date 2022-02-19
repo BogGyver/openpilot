@@ -239,7 +239,7 @@ class TeslaCAN:
     return self.packer.make_can_msg("STW_ACTN_RQ", bus, values)
 
   def create_radar_VIN_msg(self, radarId, radarVIN, radarCAN, radarTriggerMessage,
-      useRadar, radarPosition, radarEpasType,bus ):
+      useRadar, radarPosition, radarEpasType ):
     msg_id = 0x560
     msg_len = 8
     msg = create_string_buffer(msg_len)
@@ -285,7 +285,7 @@ class TeslaCAN:
           ord(radarVIN[15]),
           ord(radarVIN[16]),
       )
-    return [msg_id, 0, msg.raw, bus]
+    return [msg_id, 0, msg.raw, radarCAN]
 
   def create_fake_DAS_msg(
     self,

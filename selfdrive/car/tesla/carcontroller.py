@@ -4,7 +4,7 @@ from selfdrive.car.tesla.HUD_module import HUDController
 from selfdrive.car.tesla.LONG_module import LONGController
 from selfdrive.car.modules.CFG_module import load_bool_param
 from opendbc.can.packer import CANPacker
-from selfdrive.car.tesla.values import CAR, CarControllerParams, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CruiseButtons
+from selfdrive.car.tesla.values import CAR, CarControllerParams, CAN_RADAR, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CruiseButtons
 import cereal.messaging as messaging
 from common.numpy_fast import clip, interp
 
@@ -17,6 +17,7 @@ class CarController():
     self.tesla_can = TeslaCAN(dbc_name, self.packer)
     self.prev_das_steeringControl_counter = -1
     self.long_control_counter = 0
+    self.radarVin_idx = 0
 
     #initialize modules
     
@@ -56,6 +57,12 @@ class CarController():
     if not enabled:
       self.v_target = CS.out.vEgo
       self.a_target = 1
+
+    #if using radar, we need to send the VIN
+    if (self.CP.carFingerprint == CAR.PREAP_MODELS) and CS.useTeslaRadar and (frame % 100 == 0):
+      can_sends.append(self.tesla_can.create_radar_VIN_msg(self.radarVin_idx,CS.radarVIN,CAN_RADAR[self.CP.carFingerprint],0x108,1,CS.radarPosition,CS.radarEpasType))
+      self.radarVin_idx += 1
+      self.radarVin_idx = self.radarVin_idx  % 3
 
     # Cancel when openpilot is not enabled anymore and no autopilot
     # BB: do we need to do this? AP/Tesla does not behave this way
