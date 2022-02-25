@@ -1,9 +1,19 @@
 #pragma once
-#include <string>
+
 #include <termios.h>
 
+#include <atomic>
+#include <string>
 
-#include "panda.h"
+#include "selfdrive/boardd/panda.h"
+
+enum sos_restore_response : int {
+  unknown = 0,
+  failed = 1,
+  restored = 2,
+  no_backup = 3,
+  error = -1
+};
 
 class Pigeon {
  public:
@@ -12,8 +22,11 @@ class Pigeon {
   virtual ~Pigeon(){};
 
   void init();
+  void stop();
   bool wait_for_ack();
-  bool send_with_ack(std::string cmd);
+  bool wait_for_ack(const std::string &ack, const std::string &nack, int timeout_ms = 1000);
+  bool send_with_ack(const std::string &cmd);
+  sos_restore_response wait_for_backup_restore_status(int timeout_ms = 1000);
   virtual void set_baud(int baud) = 0;
   virtual void send(const std::string &s) = 0;
   virtual std::string receive() = 0;

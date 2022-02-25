@@ -8,6 +8,14 @@ from multiprocessing import Process
 
 from common.timeout import Timeout
 
+
+class MockResponse:
+  def __init__(self, json, status_code):
+    self.json = json
+    self.text = json
+    self.status_code = status_code
+
+
 class EchoSocket():
   def __init__(self, port):
     self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -42,17 +50,27 @@ class MockApi():
 
 
 class MockParams():
-  def __init__(self):
-    self.params = {
-      "DongleId": b"0000000000000000",
-      "GithubSshKeys": b"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC307aE+nuHzTAgaJhzSf5v7ZZQW9gaperjhCmyPyl4PzY7T1mDGenTlVTN7yoVFZ9UfO9oMQqo0n1OwDIiqbIFxqnhrHU0cYfj88rI85m5BEKlNu5RdaVTj1tcbaPpQc5kZEolaI1nDDjzV0lwS7jo5VYDHseiJHlik3HH1SgtdtsuamGR2T80q1SyW+5rHoMOJG73IH2553NnWuikKiuikGHUYBd00K1ilVAK2xSiMWJp55tQfZ0ecr9QjEsJ+J/efL4HqGNXhffxvypCXvbUYAFSddOwXUPo5BTKevpxMtH+2YrkpSjocWA04VnTYFiPG6U4ItKmbLOTFZtPzoez private"  # noqa: E501
-    }
+  default_params = {
+    "DongleId": b"0000000000000000",
+    "GithubSshKeys": b"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC307aE+nuHzTAgaJhzSf5v7ZZQW9gaperjhCmyPyl4PzY7T1mDGenTlVTN7yoVFZ9UfO9oMQqo0n1OwDIiqbIFxqnhrHU0cYfj88rI85m5BEKlNu5RdaVTj1tcbaPpQc5kZEolaI1nDDjzV0lwS7jo5VYDHseiJHlik3HH1SgtdtsuamGR2T80q1SyW+5rHoMOJG73IH2553NnWuikKiuikGHUYBd00K1ilVAK2xSiMWJp55tQfZ0ecr9QjEsJ+J/efL4HqGNXhffxvypCXvbUYAFSddOwXUPo5BTKevpxMtH+2YrkpSjocWA04VnTYFiPG6U4ItKmbLOTFZtPzoez private",  # noqa: E501
+    "AthenadUploadQueue": '[]'
+  }
+  params = default_params.copy()
+
+  @staticmethod
+  def restore_defaults():
+    MockParams.params = MockParams.default_params.copy()
 
   def get(self, k, encoding=None):
-    ret = self.params.get(k)
+    ret = MockParams.params.get(k)
     if ret is not None and encoding is not None:
       ret = ret.decode(encoding)
     return ret
+
+  def put(self, k, v):
+    if k not in MockParams.params:
+      raise KeyError(f"key: {k} not in MockParams")
+    MockParams.params[k] = v
 
 
 class MockWebsocket():

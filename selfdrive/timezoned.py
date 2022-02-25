@@ -3,6 +3,7 @@ import json
 import os
 import time
 import subprocess
+from typing import NoReturn
 
 import requests
 from timezonefinder import TimezoneFinder
@@ -17,7 +18,7 @@ def set_timezone(valid_timezones, timezone):
     cloudlog.error(f"Timezone not supported {timezone}")
     return
 
-  cloudlog.info(f"Setting timezone to {timezone}")
+  cloudlog.debug(f"Setting timezone to {timezone}")
   try:
     if TICI:
       tzpath = os.path.join("/usr/share/zoneinfo/", timezone)
@@ -30,7 +31,7 @@ def set_timezone(valid_timezones, timezone):
     cloudlog.exception(f"Error setting timezone to {timezone}")
 
 
-def main():
+def main() -> NoReturn:
   params = Params()
   tf = TimezoneFinder()
 
@@ -47,7 +48,7 @@ def main():
     # Set based on param
     timezone = params.get("Timezone", encoding='utf8')
     if timezone is not None:
-      cloudlog.info("Setting timezone based on param")
+      cloudlog.debug("Setting timezone based on param")
       set_timezone(valid_timezones, timezone)
       continue
 
@@ -55,7 +56,7 @@ def main():
 
     # Find timezone based on IP geolocation if no gps location is available
     if location is None:
-      cloudlog.info("Setting timezone based on IP lookup")
+      cloudlog.debug("Setting timezone based on IP lookup")
       try:
         r = requests.get("https://ipapi.co/timezone", timeout=10)
         if r.status_code == 200:
@@ -70,7 +71,7 @@ def main():
 
     # Find timezone by reverse geocoding the last known gps location
     else:
-      cloudlog.info("Setting timezone based on GPS location")
+      cloudlog.debug("Setting timezone based on GPS location")
       try:
         location = json.loads(location)
       except Exception:

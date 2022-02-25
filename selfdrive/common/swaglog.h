@@ -8,10 +8,10 @@
 #define CLOUDLOG_ERROR 40
 #define CLOUDLOG_CRITICAL 50
 
+
+
 void cloudlog_e(int levelnum, const char* filename, int lineno, const char* func,
                 const char* fmt, ...) /*__attribute__ ((format (printf, 6, 7)))*/;
-
-void cloudlog_bind(const char* k, const char* v);
 
 #define cloudlog(lvl, fmt, ...) cloudlog_e(lvl, __FILE__, __LINE__, \
                                            __func__, \
@@ -31,7 +31,7 @@ void cloudlog_bind(const char* k, const char* v);
                                                     \
   if (__begin + __millis*1000000ULL < __ts) {       \
     if (__missed) {                                 \
-      cloudlog(CLOUDLOG_WARNING, "cloudlog: %d messages supressed", __missed); \
+      cloudlog(CLOUDLOG_WARNING, "cloudlog: %d messages suppressed", __missed); \
     }                                               \
     __begin = 0;                                    \
     __printed = 0;                                  \

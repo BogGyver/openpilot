@@ -4,12 +4,19 @@ import os
 import importlib
 import unittest
 from collections import defaultdict, Counter
+from typing import List, Optional, Tuple
 from parameterized import parameterized_class
 
 from cereal import log, car
+from common.params import Params
+from common.realtime import DT_CTRL
+from selfdrive.boardd.boardd import can_capnp_to_can_list, can_list_to_can_capnp
 from selfdrive.car.fingerprints import all_known_cars
 from selfdrive.car.car_helpers import interfaces
-from selfdrive.car.honda.values import HONDA_BOSCH
+from selfdrive.car.gm.values import CAR as GM
+from selfdrive.car.honda.values import CAR as HONDA
+from selfdrive.car.hyundai.values import CAR as HYUNDAI
+from selfdrive.car.toyota.values import CAR as TOYOTA
 from selfdrive.test.test_routes import routes, non_tested_cars
 from selfdrive.test.openpilotci import get_url
 from tools.lib.logreader import LogReader
@@ -19,74 +26,83 @@ from panda.tests.safety.common import package_can_msg
 
 PandaType = log.PandaState.PandaType
 
-ROUTES = {v['carFingerprint']: k for k, v in routes.items() if v['enableCamera']}
+NUM_JOBS = int(os.environ.get("NUM_JOBS", "1"))
+JOB_ID = int(os.environ.get("JOB_ID", "0"))
 
 # TODO: get updated routes for these cars
 ignore_can_valid = [
-  "ACURA ILX 2016 ACURAWATCH PLUS",
-  "TOYOTA PRIUS 2017",
-  "TOYOTA COROLLA 2017",
-  "LEXUS RX HYBRID 2017",
-  "TOYOTA AVALON 2016",
-  "HONDA PILOT 2019 ELITE",
-  "HYUNDAI SANTA FE LIMITED 2019",
-
-  # TODO: get new routes for these cars, current routes are from giraffe with different buses
-  "HONDA CR-V 2019 HYBRID",
-  "HONDA ACCORD 2018 SPORT 2T",
-  "HONDA INSIGHT 2019 TOURING",
-  "HONDA ACCORD 2018 HYBRID TOURING",
+  HYUNDAI.SANTA_FE,
 ]
 
-ignore_carstate_check = [
-  # TODO: chrysler gas state in panda also checks wheel speed, refactor so it's only gas
-  "CHRYSLER PACIFICA HYBRID 2017",
-
-  # TODO: get new routes for these cars, current routes are from giraffe with different buses
-  "HONDA CR-V 2019 HYBRID",
-  "HONDA ACCORD 2018 SPORT 2T",
-  "HONDA INSIGHT 2019 TOURING",
-  "HONDA ACCORD 2018 HYBRID TOURING",
+ignore_addr_checks_valid = [
+  GM.BUICK_REGAL,
+  HYUNDAI.GENESIS_G70_2020,
 ]
 
-@parameterized_class(('car_model'), [(car,) for car in all_known_cars()])
+# build list of test cases
+routes_by_car = defaultdict(set)
+for r in routes:
+  routes_by_car[r.car_fingerprint].add(r.route)
+
+test_cases: List[Tuple[str, Optional[str]]] = []
+for i, c in enumerate(sorted(all_known_cars())):
+  if i % NUM_JOBS == JOB_ID:
+    test_cases.extend((c, r) for r in routes_by_car.get(c, (None, )))
+
+
+@parameterized_class(('car_model', 'route'), test_cases)
 class TestCarModel(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
-    if cls.car_model not in ROUTES:
-      # TODO: get routes for missing cars and remove this
+    if cls.route is None:
       if cls.car_model in non_tested_cars:
         print(f"Skipping tests for {cls.car_model}: missing route")
         raise unittest.SkipTest
-      else:
-        raise Exception(f"missing test route for car {cls.car_model}")
+      raise Exception(f"missing test route for {cls.car_model}")
+
+    params = Params()
+    params.clear_all()
 
     for seg in [2, 1, 0]:
       try:
-        lr = LogReader(get_url(ROUTES[cls.car_model], seg))
-        break
+        lr = LogReader(get_url(cls.route, seg))
       except Exception:
-        if seg == 0:
-          raise
+        continue
 
-    can_msgs = []
-    fingerprint = {i: dict() for i in range(3)}
-    for msg in lr:
-      if msg.which() == "can":
-        for m in msg.can:
-          if m.src < 128:
-            fingerprint[m.src][m.address] = len(m.dat)
-        can_msgs.append(msg)
+      can_msgs = []
+      fingerprint = {i: dict() for i in range(3)}
+      for msg in lr:
+        if msg.which() == "can":
+          for m in msg.can:
+            if m.src < 64:
+              fingerprint[m.src][m.address] = len(m.dat)
+          can_msgs.append(msg)
+        elif msg.which() == "carParams":
+          if msg.carParams.openpilotLongitudinalControl:
+            params.put_bool("DisableRadar", True)
+
+      if len(can_msgs) > int(50 / DT_CTRL):
+        break
+    else:
+      raise Exception(f"Route {repr(cls.route)} not found or no CAN msgs found. Is it uploaded?")
+
     cls.can_msgs = sorted(can_msgs, key=lambda msg: msg.logMonoTime)
 
-    CarInterface, CarController, CarState = interfaces[cls.car_model]
-
-    cls.CP = CarInterface.get_params(cls.car_model, fingerprint, [])
+    cls.CarInterface, cls.CarController, cls.CarState = interfaces[cls.car_model]
+    cls.CP = cls.CarInterface.get_params(cls.car_model, fingerprint, [])
     assert cls.CP
+    assert cls.CP.carFingerprint == cls.car_model
 
-    cls.CI = CarInterface(cls.CP, CarController, CarState)
-    assert cls.CI
+  def setUp(self):
+    self.CI = self.CarInterface(self.CP, self.CarController, self.CarState)
+    assert self.CI
+
+    # TODO: check safetyModel is in release panda build
+    self.safety = libpandasafety_py.libpandasafety
+    set_status = self.safety.set_safety_hooks(self.CP.safetyConfigs[0].safetyModel.raw, self.CP.safetyConfigs[0].safetyParam)
+    self.assertEqual(0, set_status, f"failed to set safetyModel {self.CP.safetyConfigs[0].safetyModel}")
+    self.safety.init_tests()
 
   def test_car_params(self):
     if self.CP.dashcamOnly:
@@ -104,13 +120,8 @@ class TestCarModel(unittest.TestCase):
         self.assertTrue(len(self.CP.lateralTuning.lqr.a))
       elif tuning == 'indi':
         self.assertTrue(len(self.CP.lateralTuning.indi.outerLoopGainV))
-
-    self.assertTrue(self.CP.enableCamera)
-
-    # TODO: check safetyModel is in release panda build
-    safety = libpandasafety_py.libpandasafety
-    set_status = safety.set_safety_hooks(self.CP.safetyModel.raw, self.CP.safetyParam)
-    self.assertEqual(0, set_status, f"failed to set safetyModel {self.CP.safetyModel}")
+      else:
+        raise Exception("unkown tuning")
 
   def test_car_interface(self):
     # TODO: also check for checkusm and counter violations from can parser
@@ -129,7 +140,7 @@ class TestCarModel(unittest.TestCase):
 
   def test_radar_interface(self):
     os.environ['NO_RADAR_SLEEP'] = "1"
-    RadarInterface = importlib.import_module('selfdrive.car.%s.radar_interface' % self.CP.carName).RadarInterface
+    RadarInterface = importlib.import_module(f'selfdrive.car.{self.CP.carName}.radar_interface').RadarInterface
     RI = RadarInterface(self.CP)
     assert RI
 
@@ -144,60 +155,85 @@ class TestCarModel(unittest.TestCase):
     if self.CP.dashcamOnly:
       self.skipTest("no need to check panda safety for dashcamOnly")
 
-    safety = libpandasafety_py.libpandasafety
-    set_status = safety.set_safety_hooks(self.CP.safetyModel.raw, self.CP.safetyParam)
-    self.assertEqual(0, set_status)
+    start_ts = self.can_msgs[0].logMonoTime
 
     failed_addrs = Counter()
     for can in self.can_msgs:
+      # update panda timer
+      t = (can.logMonoTime - start_ts) / 1e3
+      self.safety.set_timer(int(t))
+
+      # run all msgs through the safety RX hook
       for msg in can.can:
-        if msg.src >= 128:
+        if msg.src >= 64:
           continue
+
         to_send = package_can_msg([msg.address, 0, msg.dat, msg.src])
-        if not safety.safety_rx_hook(to_send):
+        if self.safety.safety_rx_hook(to_send) != 1:
           failed_addrs[hex(msg.address)] += 1
+
+      # ensure all msgs defined in the addr checks are valid
+      if self.car_model not in ignore_addr_checks_valid:
+        self.safety.safety_tick_current_rx_checks()
+        if t > 1e6:
+          self.assertTrue(self.safety.addr_checks_valid())
     self.assertFalse(len(failed_addrs), f"panda safety RX check failed: {failed_addrs}")
 
   def test_panda_safety_carstate(self):
+    """
+      Assert that panda safety matches openpilot's carState
+    """
     if self.CP.dashcamOnly:
       self.skipTest("no need to check panda safety for dashcamOnly")
-    if self.car_model in ignore_carstate_check:
-      self.skipTest("see comments in test_models.py")
 
-    safety = libpandasafety_py.libpandasafety
-    set_status = safety.set_safety_hooks(self.CP.safetyModel.raw, self.CP.safetyParam)
-    self.assertEqual(0, set_status)
+    CC = car.CarControl.new_message()
+
+    # warm up pass, as initial states may be different
+    for can in self.can_msgs[:300]:
+      for msg in can_capnp_to_can_list(can.can, src_filter=range(64)):
+        to_send = package_can_msg(msg)
+        self.safety.safety_rx_hook(to_send)
+        self.CI.update(CC, (can_list_to_can_capnp([msg, ]), ))
 
     checks = defaultdict(lambda: 0)
-    CC = car.CarControl.new_message()
     for can in self.can_msgs:
-      for msg in can.can:
-        if msg.src >= 128:
-          continue
-        to_send = package_can_msg([msg.address, 0, msg.dat, msg.src])
-        safety.safety_rx_hook(to_send)
-      CS = self.CI.update(CC, (can.as_builder().to_bytes(),))
+      CS = self.CI.update(CC, (can.as_builder().to_bytes(), ))
+      for msg in can_capnp_to_can_list(can.can, src_filter=range(64)):
+        to_send = package_can_msg(msg)
+        ret = self.safety.safety_rx_hook(to_send)
+        self.assertEqual(1, ret, f"safety rx failed ({ret=}): {to_send}")
 
-      # TODO: check steering state
-      # check that openpilot and panda safety agree on the car's state
-      checks['gasPressed'] += CS.gasPressed != safety.get_gas_pressed_prev()
-      checks['brakePressed'] += CS.brakePressed != safety.get_brake_pressed_prev()
-      checks['controlsAllowed'] += not CS.cruiseState.enabled and safety.get_controls_allowed()
+      # TODO: check rest of panda's carstate (steering, ACC main on, etc.)
 
-    # TODO: reduce tolerance to 0
-    failed_checks = {k: v for k, v in checks.items() if v > 25}
+      # TODO: make the interceptor thresholds in openpilot and panda match, then remove this exception
+      gas_pressed = CS.gasPressed
+      if self.CP.enableGasInterceptor and gas_pressed and not self.safety.get_gas_pressed_prev():
+        # panda intentionally has a higher threshold
+        if self.CP.carName == "toyota" and 15 < CS.gas < 15*1.5:
+          gas_pressed = False
+        if self.CP.carName == "honda":
+          gas_pressed = False
+      checks['gasPressed'] += gas_pressed != self.safety.get_gas_pressed_prev()
 
-    # TODO: the panda and openpilot interceptor thresholds should match
-    if "gasPressed" in failed_checks and self.CP.enableGasInterceptor:
-      if failed_checks['gasPressed'] < 150:
-        del failed_checks['gasPressed']
+      # TODO: remove this exception once this mismatch is resolved
+      brake_pressed = CS.brakePressed
+      if CS.brakePressed and not self.safety.get_brake_pressed_prev():
+        if self.CP.carFingerprint in (HONDA.PILOT, HONDA.PASSPORT, HONDA.RIDGELINE) and CS.brake > 0.05:
+          brake_pressed = False
+      checks['brakePressed'] += brake_pressed != self.safety.get_brake_pressed_prev()
 
-    # TODO: honda nidec: do same checks in carState and panda
-    if "brakePressed" in failed_checks and self.car_model.startswith(("HONDA", "ACURA")) and self.car_model not in HONDA_BOSCH:
-      if failed_checks['brakePressed'] < 150:
-        del failed_checks['brakePressed']
+      if self.CP.pcmCruise:
+        checks['controlsAllowed'] += not CS.cruiseState.enabled and self.safety.get_controls_allowed()
 
-    self.assertFalse(len(failed_checks), f"panda safety doesn't agree with CarState: {failed_checks}")
+      if self.CP.carName == "honda":
+        checks['mainOn'] += CS.cruiseState.available != self.safety.get_acc_main_on()
+
+    # TODO: add flag to toyota safety
+    if self.CP.carFingerprint == TOYOTA.SIENNA and checks['brakePressed'] < 25:
+      checks['brakePressed'] = 0
+
+    failed_checks = {k: v for k, v in checks.items() if v > 0}
+    self.assertFalse(len(failed_checks), f"panda safety doesn't agree with openpilot: {failed_checks}")
 
 if __name__ == "__main__":
   unittest.main()

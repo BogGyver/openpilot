@@ -1,12 +1,27 @@
-#include "request_repeater.hpp"
+#include "selfdrive/ui/qt/request_repeater.h"
 
-RequestRepeater::RequestRepeater(QObject *parent, QString requestURL, const QString &cache_key, int period_seconds, bool disableWithScreen) :
-  HttpRequest(parent, requestURL, cache_key), disableWithScreen(disableWithScreen) {
-  QTimer* timer = new QTimer(this);
-  QObject::connect(timer, &QTimer::timeout, [=](){
-    if (!GLWindow::ui_state.scene.started && reply == NULL && (GLWindow::ui_state.awake || !disableWithScreen)) {
+RequestRepeater::RequestRepeater(QObject *parent, const QString &requestURL, const QString &cacheKey,
+                                 int period, bool while_onroad) : HttpRequest(parent) {
+  timer = new QTimer(this);
+  timer->setTimerType(Qt::VeryCoarseTimer);
+  QObject::connect(timer, &QTimer::timeout, [=]() {
+    if ((!uiState()->scene.started || while_onroad) && uiState()->awake && !active()) {
       sendRequest(requestURL);
     }
   });
-  timer->start(period_seconds * 1000);
+
+  timer->start(period * 1000);
+
+  if (!cacheKey.isEmpty()) {
+    prevResp = QString::fromStdString(params.get(cacheKey.toStdString()));
+    if (!prevResp.isEmpty()) {
+      QTimer::singleShot(500, [=]() { emit requestDone(prevResp, true); });
+    }
+    QObject::connect(this, &HttpRequest::requestDone, [=](const QString &resp, bool success) {
+      if (success && resp != prevResp) {
+        params.put(cacheKey.toStdString(), resp.toStdString());
+        prevResp = resp;
+      }
+    });
+  }
 }

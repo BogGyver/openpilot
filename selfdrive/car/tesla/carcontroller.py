@@ -4,7 +4,7 @@ from selfdrive.car.tesla.HUD_module import HUDController
 from selfdrive.car.tesla.LONG_module import LONGController
 from selfdrive.car.modules.CFG_module import load_bool_param
 from opendbc.can.packer import CANPacker
-from selfdrive.car.tesla.values import CAR, CarControllerParams, CAN_RADAR, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CruiseButtons
+from selfdrive.car.tesla.values import DBC, CAR, CarControllerParams, CAN_RADAR, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CruiseButtons
 import cereal.messaging as messaging
 from common.numpy_fast import clip, interp
 
@@ -14,7 +14,8 @@ class CarController():
     self.CP = CP
     self.last_angle = 0
     self.packer = CANPacker(dbc_name)
-    self.tesla_can = TeslaCAN(dbc_name, self.packer)
+    self.pt_packer = CANPacker(DBC[CP.carFingerprint]['pt'])
+    self.tesla_can = TeslaCAN(dbc_name, self.packer, self.pt_packer)
     self.prev_das_steeringControl_counter = -1
     self.long_control_counter = 0
     self.radarVin_idx = 0
@@ -30,8 +31,11 @@ class CarController():
 
     self.lP = messaging.sub_sock('longitudinalPlan')
     self.rS = messaging.sub_sock('radarState')
-    
 
+    self.long_control_counter = 0
+    
+  
+  #def update(self, c, enabled, CS, frame, actuators, cruise_cancel):
   def update(self, enabled, CS, frame, actuators, cruise_cancel, pcm_speed, pcm_override, hud_alert, audible_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart):
     if frame % 100 == 0:
@@ -106,5 +110,8 @@ class CarController():
     can_messages = self.hud_controller.update(enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart,CS.human_control,radar_state,CS.lat_plan,apply_angle)
     can_sends.extend(can_messages)
+
+    new_actuators = actuators.copy()
+    new_actuators.steeringAngleDeg = apply_angle
     
-    return can_sends
+    return new_actuators, can_sends

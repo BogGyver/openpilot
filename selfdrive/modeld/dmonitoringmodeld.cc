@@ -1,16 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/resource.h>
+#include <limits.h>
 
-#include "visionipc_client.h"
-#include "common/swaglog.h"
-#include "common/util.h"
+#include <cstdio>
+#include <cstdlib>
 
-#include "models/dmonitoring.h"
-
-#ifndef PATH_MAX
-#include <linux/limits.h>
-#endif
+#include "cereal/visionipc/visionipc_client.h"
+#include "selfdrive/common/swaglog.h"
+#include "selfdrive/common/util.h"
+#include "selfdrive/modeld/models/dmonitoring.h"
 
 ExitHandler do_exit;
 
@@ -42,7 +39,7 @@ int main(int argc, char **argv) {
   DMonitoringModelState model;
   dmonitoring_init(&model);
 
-  VisionIpcClient vipc_client = VisionIpcClient("camerad", VISION_STREAM_YUV_FRONT, true);
+  VisionIpcClient vipc_client = VisionIpcClient("camerad", VISION_STREAM_DRIVER, true);
   while (!do_exit && !vipc_client.connect(false)) {
     util::sleep_for(100);
   }

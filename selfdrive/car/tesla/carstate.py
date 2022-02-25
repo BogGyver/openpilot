@@ -14,6 +14,10 @@ class CarState(CarStateBase):
     self.button_states = {button.event_type: False for button in BUTTONS}
     self.can_define = CANDefine(DBC[CP.carFingerprint]['chassis'])
 
+    self.hands_on_level = 0
+    self.steer_warning = None
+    self.acc_state = 0
+
     # Needed by carcontroller
     self.msg_stw_actn_req = None
 
@@ -113,29 +117,31 @@ class CarState(CarStateBase):
     ret.brake = 0
     ret.brakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
     # Steering wheel
-    steer_warning = None
-    if (self.CP.carFingerprint == CAR.PREAP_MODELS):
-      steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
-      steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
-
-      ret.steeringAngleDeg = -cp.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
-      ret.steeringTorque = -cp.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
-      ret.steeringPressed = abs(cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
-    else:
-      ret.steeringPressed = abs(cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]) > 0
-      steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
-      steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
-
-      ret.steeringAngleDeg = -cp.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
-      ret.steeringTorque = -cp.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
+    
+    self.steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
+    steer_status = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacStatus"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacStatus"]), None)
+    ret.steeringAngleDeg = -cp.vl["EPAS_sysStatus"]["EPAS_internalSAS"]
+    ret.steeringTorque = -cp.vl["EPAS_sysStatus"]["EPAS_torsionBarTorque"]
 
     ret.steeringRateDeg = -cp.vl["STW_ANGLHP_STAT"]["StW_AnglHP_Spd"] # This is from a different angle sensor, and at different rate
-
-    ret.steerError = steer_status in ["EAC_FAULT"] #inhibited is not an error, "EAC_INHIBITED"]
-    ret.steerWarning = steer_status == "EAC_FAULT" and steer_warning in ["EAC_ERROR_MAX_SPEED", "EAC_ERROR_MIN_SPEED", "EAC_ERROR_TMP_FAULT", "SNA"]  # TODO: not sure if this list is complete
-    
+    self.hands_on_level = cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
+    ret.steeringPressed = (self.hands_on_level > 0)
+    ret.steerError = steer_status == "EAC_FAULT"
+    ret.steerWarning = self.steer_warning != "EAC_ERROR_IDLE"
 
     # Cruise state
+    #cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
+    #speed_units = self.can_define.dv["DI_state"]["DI_speedUnits"].get(int(cp.vl["DI_state"]["DI_speedUnits"]), None)
+    #acc_enabled = (cruise_state in ("ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"))
+    #ret.cruiseState.enabled = acc_enabled
+    #if speed_units == "KPH":
+    #  ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
+    #elif speed_units == "MPH":
+    #  ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.MPH_TO_MS
+    #ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
+    #et.cruiseState.standstill = False # This needs to be false, since we can resume from stop without sending anything special
+
+
     autopilot_status = None
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
       autopilot_status = self.can_define.dv["DAS_status"]["DAS_autopilotState"].get(int(cp_cam.vl["DAS_status"]["DAS_autopilotState"]), None)
@@ -199,16 +205,16 @@ class CarState(CarStateBase):
     self.DAS_notInDrive = 0 if ret.gearShifter == car.CarState.GearShifter.drive else 1
 
     # Buttons
-    #buttonEvents = []
-    #for button in BUTTONS:
-    #  state = (cp.vl[button.can_addr][button.can_msg] in button.values)
-    #  if self.button_states[button.event_type] != state:
-    #    event = car.CarState.ButtonEvent.new_message()
-    #    event.type = button.event_type
-    #    event.pressed = state
-    #    buttonEvents.append(event)
-    #  self.button_states[button.event_type] = state
-    #ret.buttonEvents = buttonEvents
+    buttonEvents = []
+    for button in BUTTONS:
+      state = (cp.vl[button.can_addr][button.can_msg] in button.values)
+      if self.button_states[button.event_type] != state:
+        event = car.CarState.ButtonEvent.new_message()
+        event.type = button.event_type
+        event.pressed = state
+        buttonEvents.append(event)
+      self.button_states[button.event_type] = state
+    ret.buttonEvents = buttonEvents
 
     # Doors
     ret.doorOpen = any([(self.can_define.dv["GTW_carState"][door].get(int(cp.vl["GTW_carState"][door]), "OPEN") == "OPEN") for door in DOORS])

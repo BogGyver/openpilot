@@ -13,7 +13,10 @@ class TestCarInterfaces(unittest.TestCase):
   @parameterized.expand([(car,) for car in all_known_cars()])
   def test_car_interfaces(self, car_name):
     print(car_name)
-    fingerprint = FINGERPRINTS[car_name][0]
+    if car_name in FINGERPRINTS:
+      fingerprint = FINGERPRINTS[car_name][0]
+    else:
+      fingerprint = {}
 
     CarInterface, CarController, CarState = interfaces[car_name]
     fingerprints = {
@@ -56,7 +59,7 @@ class TestCarInterfaces(unittest.TestCase):
       car_interface.apply(CC)
 
     # Test radar interface
-    RadarInterface = importlib.import_module('selfdrive.car.%s.radar_interface' % car_params.carName).RadarInterface
+    RadarInterface = importlib.import_module(f'selfdrive.car.{car_params.carName}.radar_interface').RadarInterface
     radar_interface = RadarInterface(car_params)
     assert radar_interface
 

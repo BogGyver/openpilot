@@ -47,7 +47,7 @@ if not load_bool_param("TinklaPost1916Fix",True):
   dbc_file_name = 'tesla_can_pre1916'
 
 DBC = {
-  CAR.AP2_MODELS: dbc_dict(None, 'tesla_radar', chassis_dbc=dbc_file_name),
+  CAR.AP2_MODELS: dbc_dict('tesla_powertrain', 'tesla_radar', chassis_dbc=dbc_file_name),
   CAR.AP1_MODELS: dbc_dict(None, 'tesla_radar', chassis_dbc=dbc_file_name),
   CAR.PREAP_MODELS: dbc_dict(None, 'tesla_radar', chassis_dbc=dbc_file_name),
   CAR.AP1_MODELX: dbc_dict(None, 'tesla_radar', chassis_dbc=dbc_file_name),
@@ -82,11 +82,29 @@ CAN_EPAS = {
 }
 
 CAN_POWERTRAIN = {
-  CAR.AP2_MODELS: 0,
+  CAR.AP2_MODELS: 4,
   CAR.AP1_MODELS: 0,
   CAR.PREAP_MODELS: -1, 
-  CAR.AP1_MODELX: 0, 
+  CAR.AP1_MODELX: 4, 
 }
+
+CAN_AP_POWERTRAIN = {
+  CAR.AP2_MODELS: 6,
+  CAR.AP1_MODELS: 2,
+  CAR.PREAP_MODELS: -1, 
+  CAR.AP1_MODELX: 6, 
+}
+
+class CANBUS:
+  # Lateral harness
+  chassis = 0
+  radar = 1
+  autopilot_chassis = 2
+
+  # Longitudinal harness
+  powertrain = 4
+  private = 5
+  autopilot_powertrain = 6
 
 GEAR_MAP = {
   "DI_GEAR_INVALID": car.CarState.GearShifter.unknown,
@@ -112,6 +130,10 @@ BUTTONS = [
 class CarControllerParams:
   RATE_LIMIT_UP = AngleRateLimit(speed_points=[0., 5., 15.], max_angle_diff_points=[5., .8, .15])
   RATE_LIMIT_DOWN = AngleRateLimit(speed_points=[0., 5., 15.], max_angle_diff_points=[5., 3.5, 0.4])
+  JERK_LIMIT_MAX = 8
+  JERK_LIMIT_MIN = -8
+  ACCEL_TO_SPEED_MULTIPLIER = 3
+
 
 class CruiseButtons:
     # VAL_ 69 SpdCtrlLvr_Stat 32 "DN_1ST" 16 "UP_1ST" 8 "DN_2ND" 4 "UP_2ND" 2 "RWD" 1 "FWD" 0 "IDLE" ;
@@ -158,3 +180,4 @@ class CruiseState:
     @classmethod
     def is_off(cls, state):
         return state in [cls.OFF]
+  

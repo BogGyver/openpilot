@@ -96,6 +96,7 @@ MSG_CFG_NMEA = 0x17
 MSG_CFG_NVS = 0x22
 MSG_CFG_PM2 = 0x3B
 MSG_CFG_PM = 0x32
+MSG_CFG_ITMF = 0x39
 MSG_CFG_RINV = 0x34
 MSG_CFG_RST = 0x04
 MSG_CFG_RXM = 0x11
@@ -337,7 +338,7 @@ class UBloxDescriptor:
           ret += '%s, ' % v[a]
         ret = ret[:-2] + '], '
       elif isinstance(v, str):
-        ret += '%s="%s", ' % (f, v.rstrip(' \0'))
+        ret += '{}="{}", '.format(f, v.rstrip(' \0'))
       else:
         ret += '%s=%s, ' % (f, v)
     for r in msg._recs:
@@ -364,6 +365,10 @@ msg_types = {
   UBloxDescriptor('CFG_PRT', '<BBHIIHHHH', [
     'portID', 'reserved0', 'txReady', 'mode', 'baudRate', 'inProtoMask', 'outProtoMask',
     'reserved4', 'reserved5'
+  ]),
+  (CLASS_CFG, MSG_CFG_ITMF):
+  UBloxDescriptor('CFG_ITMF', '<II', [
+    'config', 'config2'
   ]),
   (CLASS_CFG, MSG_CFG_CFG):
   UBloxDescriptor('CFG_CFG', '<III,B',
@@ -769,10 +774,9 @@ class UBlox:
   def read(self, n):
     '''read some bytes'''
     if self.use_sendrecv:
-      import socket
       try:
         return self.dev.recv(n)
-      except socket.error:
+      except OSError:
         return ''
     return self.dev.read(n)
 

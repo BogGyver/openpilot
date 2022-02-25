@@ -1,23 +1,17 @@
 #!/usr/bin/env python3
 from cereal import car
-from selfdrive.swaglog import cloudlog
 from selfdrive.config import Conversions as CV
 from selfdrive.car.ford.values import MAX_ANGLE
-from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, gen_empty_fingerprint
+from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, gen_empty_fingerprint, get_safety_config
 from selfdrive.car.interfaces import CarInterfaceBase
 
 
 class CarInterface(CarInterfaceBase):
-
-  @staticmethod
-  def compute_gb(accel, speed):
-    return float(accel) / 3.0
-
   @staticmethod
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=None):
     ret = CarInterfaceBase.get_std_params(candidate, fingerprint)
     ret.carName = "ford"
-    ret.safetyModel = car.CarParams.SafetyModel.ford
+    ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.ford)]
     ret.dashcamOnly = True
 
     ret.wheelbase = 2.85
@@ -27,7 +21,7 @@ class CarInterface(CarInterfaceBase):
     ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.01], [0.005]]     # TODO: tune this
     ret.lateralTuning.pid.kf = 1. / MAX_ANGLE   # MAX Steer angle to normalize FF
     ret.steerActuatorDelay = 0.1  # Default delay, not measured yet
-    ret.steerLimitTimer = 0.8
+    ret.steerLimitTimer = 1.0
     ret.steerRateCost = 1.0
     ret.centerToFront = ret.wheelbase * 0.44
     tire_stiffness_factor = 0.5328
@@ -43,9 +37,6 @@ class CarInterface(CarInterfaceBase):
 
     ret.steerControlType = car.CarParams.SteerControlType.angle
 
-    ret.enableCamera = True
-    cloudlog.warning("ECU Camera Simulated: %r", ret.enableCamera)
-
     return ret
 
   # returns a car.CarState
@@ -60,7 +51,7 @@ class CarInterface(CarInterfaceBase):
     # events
     events = self.create_common_events(ret)
 
-    if self.CS.lkas_state not in [2, 3] and ret.vEgo > 13. * CV.MPH_TO_MS and ret.cruiseState.enabled:
+    if self.CS.lkas_state not in (2, 3) and ret.vEgo > 13. * CV.MPH_TO_MS and ret.cruiseState.enabled:
       events.add(car.CarEvent.EventName.steerTempUnavailable)
 
     ret.events = events.to_msg()
@@ -71,9 +62,9 @@ class CarInterface(CarInterfaceBase):
   # pass in a car.CarControl
   # to be called @ 100hz
   def apply(self, c):
-    self.pre_apply(c)
-    can_sends = self.CC.update(c.enabled, self.CS, self.frame, c.actuators,
+
+    ret = self.CC.update(c.enabled, self.CS, self.frame, c.actuators,
                                c.hudControl.visualAlert, c.cruiseControl.cancel)
 
     self.frame += 1
-    return can_sends
+    return ret

@@ -8,20 +8,20 @@
 
 
 
-class TinklaTogglesPanel : public QWidget {
+class TinklaTogglesPanel : public ListWidget {
   Q_OBJECT
 public:
-  explicit TinklaTogglesPanel(QWidget *parent = nullptr);
+  explicit TinklaTogglesPanel(SettingsWindow *parent = nullptr);
 };
 
-class TeslaTogglesPanel : public QWidget {
+class TeslaTogglesPanel : public ListWidget {
   Q_OBJECT
 public:
-  explicit TeslaTogglesPanel(QWidget *parent = nullptr);
+  explicit TeslaTogglesPanel(SettingsWindow *parent = nullptr);
 };
 
-class ToyotaTogglesPanel : public QWidget {
+class ToyotaTogglesPanel : public ListWidget {
   Q_OBJECT
 public:
-  explicit ToyotaTogglesPanel(QWidget *parent = nullptr);
+  explicit ToyotaTogglesPanel(SettingsWindow *parent = nullptr);
 };

@@ -7,7 +7,7 @@ import sys
 
 if __name__ == "__main__":
   if len(sys.argv) < 2:
-    print("%s <github username>" % sys.argv[0])
+    print(f"{sys.argv[0]} <github username>")
     exit(1)
 
   username = sys.argv[1]
@@ -15,6 +15,7 @@ if __name__ == "__main__":
 
   if keys.status_code == 200:
     Params().put("GithubSshKeys", keys.text)
-    print("Setup ssh keys sucessfully")
+    Params().put("GithubUsername", username)
+    print("Setup ssh keys successfully")
   else:
     print("Error getting public keys from github")

@@ -4,11 +4,14 @@ from opendbc.can.can_define import CANDefine
 from common.numpy_fast import clip
 from ctypes import create_string_buffer
 import struct
+from selfdrive.config import Conversions as CV
+from selfdrive.car.tesla.values import CarControllerParams
 
 class TeslaCAN:
-  def __init__(self, dbc_name, packer):
+  def __init__(self, dbc_name, packer, pt_packer):
     self.can_define = CANDefine(dbc_name)
     self.packer = packer
+    self.pt_packer = pt_packer
     self.crc = crcmod.mkCrcFun(0x11d, initCrc=0x00, rev=False, xorOut=0xff)
 
   @staticmethod
@@ -374,3 +377,26 @@ class TeslaCAN:
       )
       struct.pack_into("B", msg, msg_len - 1, self.checksum(msg_id,msg.raw))
       return [msg_id, 0, msg.raw, pedalcan]
+
+  #BBTODO: login for long control with ibooster
+  def create_longitudinal_commands(self, acc_state, speed, min_accel, max_accel, cnt, fingerprint):
+    messages = []
+    values = {
+      "DAS_setSpeed": speed * CV.MS_TO_KPH,
+      "DAS_accState": acc_state,
+      "DAS_aebEvent": 0,
+      "DAS_jerkMin": CarControllerParams.JERK_LIMIT_MIN,
+      "DAS_jerkMax": CarControllerParams.JERK_LIMIT_MAX,
+      "DAS_accelMin": min_accel,
+      "DAS_accelMax": max_accel,
+      "DAS_controlCounter": (cnt % 8),
+      "DAS_controlChecksum": 0,
+    }
+
+    #BBTODO: don't think we need to send on both.... gtw should forward
+    #also change counter and checksum so we mod on forward
+    for packer, bus in [(self.packer, CAN_CHASSIS), (self.pt_packer, CAN_POWERTRAIN[fingerprint])]:
+      data = packer.make_can_msg("DAS_control", bus, values)[2]
+      values["DAS_controlChecksum"] = self.checksum(0x2b9, data[:7])
+      messages.append(packer.make_can_msg("DAS_control", bus, values))
+    return messages

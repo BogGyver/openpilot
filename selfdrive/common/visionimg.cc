@@ -1,11 +1,12 @@
+#include "selfdrive/common/visionimg.h"
+
 #include <cassert>
-#include "common/visionimg.h"
 
 #ifdef QCOM
+#include <gralloc_priv.h>
 #include <system/graphics.h>
 #include <ui/GraphicBuffer.h>
 #include <ui/PixelFormat.h>
-#include <gralloc_priv.h>
 #define GL_GLEXT_PROTOTYPES
 #include <GLES2/gl2ext.h>
 using namespace android;
@@ -52,7 +53,7 @@ EGLImageTexture::~EGLImageTexture() {
 EGLImageTexture::EGLImageTexture(const VisionBuf *buf) {
   glGenTextures(1, &frame_tex);
   glBindTexture(GL_TEXTURE_2D, frame_tex);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, buf->width, buf->height, 0, GL_RGB, GL_UNSIGNED_BYTE, buf->addr);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, buf->width, buf->height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
   glGenerateMipmap(GL_TEXTURE_2D);
 }
 
