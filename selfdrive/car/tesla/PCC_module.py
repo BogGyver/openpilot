@@ -2,15 +2,37 @@ from selfdrive.car.tesla.speed_utils.fleet_speed import FleetSpeed
 from common.numpy_fast import clip, interp
 from selfdrive.car.tesla.values import CruiseState, CruiseButtons
 from selfdrive.config import Conversions as CV
-from selfdrive.controls.lib.longitudinal_planner import (
-    calc_cruise_accel_limits,
-    limit_accel_in_turns,
-)
+from selfdrive.controls.lib.longitudinal_planner import limit_accel_in_turns
 import time
 import math
 from collections import OrderedDict
 from common.params import Params
+import numpy as np
 
+# lookup tables VS speed to determine min and max accels in cruise
+# make sure these accelerations are smaller than mpc limits
+_A_CRUISE_MIN_V = [-1.0, -.8, -.67, -.5, -.30]
+_A_CRUISE_MIN_BP = [  0.,  5.,  10., 20.,  40.]
+
+# need fast accel at very low speed for stop and go
+# make sure these accelerations are smaller than mpc limits
+_A_CRUISE_MAX_V = [1.2, 1.2, 0.65, .4]
+_A_CRUISE_MAX_V_FOLLOWING = [1.6, 1.6, 0.65, .4]
+_A_CRUISE_MAX_BP = [0.,  6.4, 22.5, 40.]
+
+# Lookup table for turns
+_A_TOTAL_MAX_V = [1.7, 3.2]
+_A_TOTAL_MAX_BP = [20., 40.]
+
+
+def calc_cruise_accel_limits(v_ego, following):
+  a_cruise_min = interp(v_ego, _A_CRUISE_MIN_BP, _A_CRUISE_MIN_V)
+
+  if following:
+    a_cruise_max = interp(v_ego, _A_CRUISE_MAX_BP, _A_CRUISE_MAX_V_FOLLOWING)
+  else:
+    a_cruise_max = interp(v_ego, _A_CRUISE_MAX_BP, _A_CRUISE_MAX_V)
+  return np.vstack([a_cruise_min, a_cruise_max])
 
 _DT = 0.05  # 10Hz in our case, since we don't want to process more than once the same radarState message
 _DT_MPC = _DT
@@ -313,7 +335,7 @@ class PCCController:
                 and self.lead_1.aLeadK > 0.0
             )
         accel_limits = [
-            float(x) for x in calc_cruise_accel_limits(v_ego, following)
+            float(x) for x in calc_cruise_accel_limits(v_ego,following)
         ]
 
         accel_limits[1] *= _accel_limit_multiplier(CS, self.lead_1)
