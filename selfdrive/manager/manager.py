@@ -44,9 +44,6 @@ def manager_init() -> None:
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
 
-  if TICI:
-    default_params.append(("IsUploadRawEnabled", "1"))
-
   if params.get_bool("RecordFrontLock"):
     params.put_bool("RecordFront", True)
 
