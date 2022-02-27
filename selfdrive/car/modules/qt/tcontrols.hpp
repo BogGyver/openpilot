@@ -6,9 +6,9 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-#include "common/params.h"
-#include "selfdrive/ui/qt/widgets/toggle.hpp"
-#include "selfdrive/ui/qt/widgets/controls.hpp"
+#include "selfdrive/common/params.h"
+#include "selfdrive/ui/qt/widgets/toggle.h"
+#include "selfdrive/ui/qt/widgets/controls.h"
 
 class TinklaParamControl : public ToggleControl {
   Q_OBJECT

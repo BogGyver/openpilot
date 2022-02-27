@@ -165,7 +165,6 @@ static void update_state(UIState *s) {
         if (gyro.totalSize().wordCount) {
           scene.gyro_sensor = gyro[1];
         }
-#endif
       }
     }
   }
