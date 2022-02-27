@@ -300,10 +300,6 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
                                alert_status=AlertStatus.userPrompt),
   },
 
-  EventName.startupFuzzyFingerprint: {
-    ET.PERMANENT: startup_fuzzy_fingerprint_alert,
-  },
-
   EventName.dashcamMode: {
     ET.PERMANENT: NormalPermanentAlert("Dashcam Mode",
                                        priority=Priority.LOWEST),
