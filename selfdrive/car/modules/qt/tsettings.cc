@@ -40,7 +40,7 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "../assets/offroad/icon_settings.png",
       },
   };
-
+  Params params;
   for (auto &[param, title, desc, icon] : tinkla_toggles) {
     auto toggle = new TinklaParamControl(param, title, desc, icon, this);
     bool locked = params.getBool((param + "Lock").toStdString());
@@ -97,6 +97,7 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
     "../assets/offroad/icon_settings.png",
     },
   };
+  Params params;
   for (auto &[param, title, desc, icon] : tinkla_toggles) {
     auto toggle = new TinklaParamControl(param, title, desc, icon, this);
     bool locked = params.getBool((param + "Lock").toStdString());
@@ -118,6 +119,7 @@ ToyotaTogglesPanel::ToyotaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
     "../assets/offroad/icon_settings.png",
     },
   };
+  Params params;
   for (auto &[param, title, desc, icon] : tinkla_toggles) {
     auto toggle = new TinklaParamControl(param, title, desc, icon, this);
     bool locked = params.getBool((param + "Lock").toStdString());
