@@ -4,19 +4,19 @@
 #include <cassert>
 
 #ifndef QCOM
-#include "selfdrive/ui/qt/offroad/networking.hpp"
+#include "selfdrive/ui/qt/offroad/networking.h"
 #endif
-#include "selfdrive/ui/qt/offroad/settings.hpp"
-#include "selfdrive/ui/qt/widgets/input.hpp"
-#include "selfdrive/ui/qt/widgets/toggle.hpp"
-#include "selfdrive/ui/qt/widgets/offroad_alerts.hpp"
-#include "selfdrive/ui/qt/widgets/scrollview.hpp"
-#include "selfdrive/ui/qt/widgets/controls.hpp"
-#include "selfdrive/ui/qt/widgets/ssh_keys.hpp"
+#include "selfdrive/ui/qt/offroad/settings.h"
+#include "selfdrive/ui/qt/widgets/input.h"
+#include "selfdrive/ui/qt/widgets/toggle.h"
+#include "selfdrive/ui/qt/widgets/offroad_alerts.h"
+#include "selfdrive/ui/qt/widgets/scrollview.h"
+#include "selfdrive/ui/qt/widgets/controls.h"
+#include "selfdrive/ui/qt/widgets/ssh_keys.h"
 #include "common/params.h"
 #include "common/util.h"
 #include "selfdrive/hardware/hw.h"
-#include "selfdrive/ui/qt/home.hpp"
+#include "selfdrive/ui/qt/home.h"
 
 #include "tcontrols.hpp"
 #include "tsettings.hpp"
