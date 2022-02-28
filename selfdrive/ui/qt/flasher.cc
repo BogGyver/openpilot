@@ -17,6 +17,7 @@ QPushButton *btn;
 QPushButton *btn2;
 QPushButton *btn3;
 QPushButton *btn4;
+QWidget window;
 
 void set_text_1() {
   label->setText(label->text() + "=================================\n");
@@ -60,10 +61,10 @@ void set_text_5() {
   label->setText(label->text() + "\n");
 }
 
-void run_script(char * script, QWidget *parent) {
-  connect(process,SIGNAL(readyRead()),parent,SLOT(readStdOut()));
-  connect(process,SIGNAL(readyRead()),parent,SLOT(readErrorOut()));
-  connect(process,SIGNAL(finished(int)),parent,SLOT(onFinished(int)));
+void run_script(char * script) {
+  connect(process,SIGNAL(readyRead()),window,SLOT(readStdOut()));
+  connect(process,SIGNAL(readyRead()),window,SLOT(readErrorOut()));
+  connect(process,SIGNAL(finished(int)),window,SLOT(onFinished(int)));
   process->start(script);
 }
 
@@ -107,7 +108,6 @@ void onFinished(int) {
 int main(int argc, char *argv[]) {
   initApp();
   QApplication a(argc, argv);
-  QWidget window;
   setMainWindow(&window);
 
   process = new QProcess();  // create on the heap, so it doesn't go out of scope
@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
     //kill what we have to again (just in case)
     //flash EPAS
     stage = 2;
-    run_script("ls -al", &window);
+    run_script("ls -al");
   });
 
   btn3->setText("Backup");
@@ -167,7 +167,7 @@ int main(int argc, char *argv[]) {
     //kill what we have to
     //baclup EPAS
     stage = 1;
-    run_script("ls", &window);
+    run_script("ls");
   });
   
   btn4->setText("Cancel");
