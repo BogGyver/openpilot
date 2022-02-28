@@ -57,7 +57,7 @@ void readErrorOut() {
 }
 
 void onFinished(int a) {
-  if (stage == 1) {
+  if (a == 1) {
     btn->setEnabled(true);
     btn2->setEnabled(false);
     btn3->setEnabled(false);
@@ -69,10 +69,10 @@ void onFinished(int a) {
     stage = 0;
     return;
   }
-  if (stage == 2) {
+  if (a == 0) {
     btn->setEnabled(true);
-    btn2->setEnabled(false);
-    btn3->setEnabled(false);
+    btn2->setEnabled(true);
+    btn3->setEnabled(true);
     btn4->setEnabled(false);
     btn->repaint(); 
     btn2->repaint(); 
