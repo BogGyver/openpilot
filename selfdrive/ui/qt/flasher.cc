@@ -16,7 +16,7 @@ void set_text_1(QLabel *label) {
   label->setText(label->text() + "=================================\n");
   label->setText(label->text() + "This app will patch your EPAS firmware so you can use OpenPilot on preAP Tesla Model S.\n");
   label->setText(label->text() + "Please press the brake pedal then hit Backup to start the process or Cancel to reboot and return to OpenPilot without changing your firmware.\n");
-  label->setText(label->text() + "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL PATH PROCESS IS COMPLETE\n");
+  label->setText(label->text() + "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL PATCH PROCESS IS COMPLETE\n");
   label->setText(label->text() + "\n");
 }
 
@@ -24,7 +24,7 @@ void set_text_2(QLabel *label) {
   label->setText(label->text() + "=================================\n");
   label->setText(label->text() + "BACKUP PROCESS STARTED\n");
   label->setText(label->text() + "=================================\n");
-  label->setText(label->text() + "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL PATH PROCESS IS COMPLETE\n");
+  label->setText(label->text() + "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL PATCH PROCESS IS COMPLETE\n");
   label->setText(label->text() + "\n");
 }
 
@@ -33,7 +33,7 @@ void set_text_3(QLabel *label) {
   label->setText(label->text() + "BACKUP PROCESS ENDED\n");
   label->setText(label->text() + "=================================\n");
   label->setText(label->text() + "Please press the brake pedal then hit Flash to start the process or Cancel to reboot and return to OpenPilot without changing your firmware.\n");
-  label->setText(label->text() + "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL PATH PROCESS IS COMPLETE\n");
+  label->setText(label->text() + "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL PATCH PROCESS IS COMPLETE\n");
   label->setText(label->text() + "\n");
 }
 
@@ -41,7 +41,7 @@ void set_text_4(QLabel *label) {
   label->setText(label->text() + "=================================\n");
   label->setText(label->text() + "FLASH PROCESS STARTED\n");
   label->setText(label->text() + "=================================\n");
-  label->setText(label->text() + "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL PATH PROCESS IS COMPLETE\n");
+  label->setText(label->text() + "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL PATCH PROCESS IS COMPLETE\n");
   label->setText(label->text() + "\n");
 }
 
@@ -89,6 +89,10 @@ int main(int argc, char *argv[]) {
     btn2->setEnabled(false);
     btn3->setEnabled(false);
     btn4->setEnabled(true);
+    btn->repaint(); 
+    btn2->repaint(); 
+    btn3->repaint(); 
+    btn4->repaint(); 
     //kill what we have to again (just in case)
     //flash EPAS
     set_text_5(label);
@@ -96,6 +100,10 @@ int main(int argc, char *argv[]) {
     btn2->setEnabled(false);
     btn3->setEnabled(false);
     btn4->setEnabled(false);
+    btn->repaint(); 
+    btn2->repaint(); 
+    btn3->repaint(); 
+    btn4->repaint();
   });
   btn3->setText("Backup");
   QObject::connect(btn3, &QPushButton::clicked, [=]() {
@@ -104,6 +112,10 @@ int main(int argc, char *argv[]) {
     btn2->setEnabled(false);
     btn3->setEnabled(false);
     btn4->setEnabled(true);
+    btn->repaint(); 
+    btn2->repaint(); 
+    btn3->repaint(); 
+    btn4->repaint();
     //kill what we have to
     //baclup EPAS
     set_text_3(label);
@@ -111,6 +123,10 @@ int main(int argc, char *argv[]) {
     btn2->setEnabled(true);
     btn3->setEnabled(false);
     btn4->setEnabled(true);
+    btn->repaint(); 
+    btn2->repaint(); 
+    btn3->repaint(); 
+    btn4->repaint();
     //kill what we have to 
   });
   btn4->setText("Cancel");
@@ -142,5 +158,9 @@ int main(int argc, char *argv[]) {
   btn2->setEnabled(false);
   btn3->setEnabled(true);
   btn4->setEnabled(true);
+  btn->repaint(); 
+  btn2->repaint(); 
+  btn3->repaint(); 
+  btn4->repaint();
   return a.exec();
 }
