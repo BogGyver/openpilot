@@ -44,7 +44,36 @@ void set_text_4() {
   label->setText(label->text() + "\n");
 }
 
+void onFinished(int a) {
+  if (a == 0) {
+    btn->setEnabled(true);
+    btn2->setEnabled(false);
+    btn3->setEnabled(false);
+    btn4->setEnabled(false);
+    btn->repaint(); 
+    btn2->repaint(); 
+    btn3->repaint(); 
+    btn4->repaint();
+    stage = 0;
+    return;
+  }
+  if (a == 1) {
+    btn->setEnabled(true);
+    btn2->setEnabled(true);
+    btn3->setEnabled(true);
+    btn4->setEnabled(false);
+    btn->repaint(); 
+    btn2->repaint(); 
+    btn3->repaint(); 
+    btn4->repaint();
+    stage = 0;
+  }
+
+}
+
+
 void run_script(QString script) {
+  process = new QProcess();  // create on the heap, so it doesn't go out of scope
   QObject::connect(process, &QProcess::readyReadStandardOutput, [=](){ 
     label->setText(label->text() + process->readAllStandardOutput()); 
   });
@@ -71,33 +100,6 @@ void readStdOut() {
 
 void readErrorOut() {
   label->setText(label->text() + process->readAllStandardError());
-}
-
-void onFinished(int a) {
-  if (a == 0) {
-    btn->setEnabled(true);
-    btn2->setEnabled(false);
-    btn3->setEnabled(false);
-    btn4->setEnabled(false);
-    btn->repaint(); 
-    btn2->repaint(); 
-    btn3->repaint(); 
-    btn4->repaint();
-    stage = 0;
-    return;
-  }
-  if (a == 1) {
-    btn->setEnabled(true);
-    btn2->setEnabled(true);
-    btn3->setEnabled(true);
-    btn4->setEnabled(false);
-    btn->repaint(); 
-    btn2->repaint(); 
-    btn3->repaint(); 
-    btn4->repaint();
-    stage = 0;
-  }
-
 }
 
 int main(int argc, char *argv[]) {
