@@ -43,6 +43,8 @@ selfdrive/logcatd/logcatd
 selfdrive/mapd/default_speeds_by_region.json
 selfdrive/proclogd/proclogd
 selfdrive/ui/_ui
+selfdrive/ui/qt/flasher
+selfdrive/car/modules/teslaEpasFlasher/flasher
 selfdrive/test/longitudinal_maneuvers/out
 selfdrive/visiond/visiond
 selfdrive/loggerd/loggerd

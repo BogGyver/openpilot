@@ -36,35 +36,11 @@ void set_text_2() {
   label->setText(label->text() + "\n");
 }
 
-void set_text_3(int a) {
-  QString proc = "SUCCEEDED";
-  if (a == 0) {
-    proc = "FAILED";
-  }
-  label->setText(label->text() + "=================================\n");
-  label->setText(label->text() + "FLASH PROCESS " + proc + "\n");
-  label->setText(label->text() + "=================================\n");
-  label->setText(label->text() + "Hit Reboot to return to OpenPilot.\n");
-  label->setText(label->text() + "\n");
-}
-
 void set_text_4() {
   label->setText(label->text() + "=================================\n");
   label->setText(label->text() + "RESTORE PROCESS STARTED\n");
   label->setText(label->text() + "=================================\n");
   label->setText(label->text() + "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL RESTORE PROCESS IS COMPLETE\n");
-  label->setText(label->text() + "\n");
-}
-
-void set_text_5(int a) {
-  QString proc = "SUCCEEDED";
-  if (a == 0) {
-    proc = "FAILED";
-  }
-  label->setText(label->text() + "=================================\n");
-  label->setText(label->text() + "RESTORE PROCESS " + proc + "\n");
-  label->setText(label->text() + "=================================\n");
-  label->setText(label->text() + "Hit Reboot to return to OpenPilot.\n");
   label->setText(label->text() + "\n");
 }
 
@@ -82,7 +58,6 @@ void readErrorOut() {
 
 void onFinished(int a) {
   if (stage == 1) {
-    set_text_3(a);
     btn->setEnabled(true);
     btn2->setEnabled(false);
     btn3->setEnabled(false);
@@ -95,7 +70,6 @@ void onFinished(int a) {
     return;
   }
   if (stage == 2) {
-    set_text_5(a);
     btn->setEnabled(true);
     btn2->setEnabled(false);
     btn3->setEnabled(false);
@@ -130,8 +104,7 @@ int main(int argc, char *argv[]) {
 
   QObject::connect(process, &QProcess::errorOccurred, [=](QProcess::ProcessError error) 
   { 
-    label->setText(label->text() + process->readAllStandardOutput()); 
-    label->setText(label->text() + process->readAllStandardError());
+    label->setText(label->text() + process->readAll());
     onFinished(0); 
   });
   
@@ -160,7 +133,7 @@ int main(int argc, char *argv[]) {
     Hardware::reboot();
   });
 
-  btn2->setText("Flash");
+  btn2->setText("Restore");
   QObject::connect(btn2, &QPushButton::clicked, [=]() {
     set_text_4();
     btn->setEnabled(false);
@@ -174,10 +147,10 @@ int main(int argc, char *argv[]) {
     //kill what we have to again (just in case)
     //flash EPAS
     stage = 2;
-    run_script("PYTHONPATH=/data/openpilot ./patch.py");
+    run_script("/data/openpilot/selfdrive/car/modules/teslaEpasFlasher/restoreEpas.sh");
   });
 
-  btn3->setText("Restore");
+  btn3->setText("Flash");
   QObject::connect(btn3, &QPushButton::clicked, [=]() {
     set_text_2();
     btn->setEnabled(false);
@@ -191,7 +164,7 @@ int main(int argc, char *argv[]) {
     //kill what we have to
     //baclup EPAS
     stage = 1;
-    run_script("PYTHONPATH=~/openpilot ./patch.py --restore");
+    run_script("/data/openpilot/selfdrive/car/modules/teslaEpasFlasher/flashEpas.sh");
   });
   
   btn4->setText("Cancel");
