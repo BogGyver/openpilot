@@ -10,6 +10,10 @@
 #include "selfdrive/ui/qt/qt_window.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 
+QProcess *process;
+QLabel *label;
+int stage = 0;
+
 void set_text_1(QLabel *label) {
   label->setText(label->text() + "=================================\n");
   label->setText(label->text() + "Welcome to the Tesla EPAS flasher\n");
@@ -52,16 +56,62 @@ void set_text_5(QLabel *label) {
   label->setText(label->text() + "\n");
 }
 
+void run_script(char * script) {
+  connect(process,SIGNAL(readyRead()),this,SLOT(readStdOut()));
+  connect(process,SIGNAL(readyRead()),this,SLOT(readErrorOut()));
+  connect(process,SIGNAL(finished(int)),this,SLOT(onFinished(int)));
+  process->start(script);
+}
+
+void readStdOut() {
+  label->setText(label->text() + process->readAllStandardOutput());
+}
+
+void readErrorOut() {
+  label->setText(label->text() + process->readAllStandardError());
+}
+
+void onFinished(int) {
+  if (stage == 1) {
+    set_text_3(label);
+    btn->setEnabled(false);
+    btn2->setEnabled(true);
+    btn3->setEnabled(false);
+    btn4->setEnabled(true);
+    btn->repaint(); 
+    btn2->repaint(); 
+    btn3->repaint(); 
+    btn4->repaint();
+    stage = 0;
+    return;
+  }
+  if (stage == 2) {
+    set_text_5(label);
+    btn->setEnabled(true);
+    btn2->setEnabled(false);
+    btn3->setEnabled(false);
+    btn4->setEnabled(false);
+    btn->repaint(); 
+    btn2->repaint(); 
+    btn3->repaint(); 
+    btn4->repaint();
+    stage = 0;
+  }
+
+}
+
 int main(int argc, char *argv[]) {
   initApp();
   QApplication a(argc, argv);
   QWidget window;
   setMainWindow(&window);
 
+  process = new QProcess();  // create on the heap, so it doesn't go out of scope
+
   QGridLayout *main_layout = new QGridLayout(&window);
   main_layout->setMargin(50);
 
-  QLabel *label = new QLabel(argv[1]);
+  label = new QLabel(argv[1]);
   label->setWordWrap(true);
   label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
   ScrollView *scroll = new ScrollView(label);
@@ -81,6 +131,7 @@ int main(int argc, char *argv[]) {
   QObject::connect(btn, &QPushButton::clicked, [=]() {
     Hardware::reboot();
   });
+
   btn2->setText("Flash");
   QObject::connect(btn2, &QPushButton::clicked, [=]() {
     set_text_4(label);
@@ -94,16 +145,10 @@ int main(int argc, char *argv[]) {
     btn4->repaint(); 
     //kill what we have to again (just in case)
     //flash EPAS
-    set_text_5(label);
-    btn->setEnabled(true);
-    btn2->setEnabled(false);
-    btn3->setEnabled(false);
-    btn4->setEnabled(false);
-    btn->repaint(); 
-    btn2->repaint(); 
-    btn3->repaint(); 
-    btn4->repaint();
+    stage = 2;
+    run_script("ls -al");
   });
+
   btn3->setText("Backup");
   QObject::connect(btn3, &QPushButton::clicked, [=]() {
     set_text_2(label);
@@ -117,17 +162,10 @@ int main(int argc, char *argv[]) {
     btn4->repaint();
     //kill what we have to
     //baclup EPAS
-    set_text_3(label);
-    btn->setEnabled(false);
-    btn2->setEnabled(true);
-    btn3->setEnabled(false);
-    btn4->setEnabled(true);
-    btn->repaint(); 
-    btn2->repaint(); 
-    btn3->repaint(); 
-    btn4->repaint();
-    //kill what we have to 
+    stage = 1;
+    run_script("ls");
   });
+  
   btn4->setText("Cancel");
   QObject::connect(btn4, &QPushButton::clicked, [=]() {
     Hardware::reboot();
