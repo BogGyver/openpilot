@@ -22,12 +22,6 @@ class CarInterface(CarInterfaceBase):
     ret.carName = "tesla"      
     ret.steerControlType = car.CarParams.SteerControlType.angle
     ret.enableCamera = True
-    if candidate == CAR.PREAP_MODELS:
-      ret.enableCruise = False
-      ret.openpilotLongitudinalControl = True
-    else:
-      ret.enableCruise = True
-      ret.openpilotLongitudinalControl = False
     ret.communityFeature = True
 
     # Set kP and kI to 0 over the whole speed range to have the planner accel as actuator command
@@ -90,9 +84,10 @@ class CarInterface(CarInterfaceBase):
       ret.safetyParam = ret.safetyParam  # no AP, ACC
       ret.openpilotLongitudinalControl = False
       ret.safetyModel = car.CarParams.SafetyModel.tesla
-      ret.communityFeature = True
     else:
       raise ValueError(f"Unsupported car: {candidate}")
+    #force community off since there is no toggle anymore
+    ret.communityFeature = False
     # set safetyParam flag for OP Long Control
     if ret.openpilotLongitudinalControl:
       ret.safetyParam = ret.safetyParam | Panda.FLAG_TESLA_LONG_CONTROL
@@ -114,7 +109,7 @@ class CarInterface(CarInterfaceBase):
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront)
     ret.radarOffCan = True
     ret.radarTimeStep = 0.05
-    if load_bool_param("TinklaUseTeslaRadar",False):
+    if candidate == CAR.PREAP_MODELS and not load_bool_param("TinklaUseTeslaRadar",False):
       ret.radarOffCan = False
 
     if candidate == CAR.AP2_MODELS:
@@ -130,7 +125,6 @@ class CarInterface(CarInterfaceBase):
         ret.openpilotLongitudinalControl = False
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, ret.safetyParam)]
     else:
-        ret.openpilotLongitudinalControl = False
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, ret.safetyParam)]
     return ret
 
