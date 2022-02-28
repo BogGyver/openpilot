@@ -396,7 +396,8 @@ class TeslaCAN:
     #BBTODO: don't think we need to send on both.... gtw should forward
     #also change counter and checksum so we mod on forward
     for packer, bus in [(self.packer, CAN_CHASSIS), (self.pt_packer, CAN_POWERTRAIN[fingerprint])]:
-      data = packer.make_can_msg("DAS_control", bus, values)[2]
-      values["DAS_controlChecksum"] = self.checksum(0x2b9, data[:7])
-      messages.append(packer.make_can_msg("DAS_control", bus, values))
+      if packer:
+        data = packer.make_can_msg("DAS_control", bus, values)[2]
+        values["DAS_controlChecksum"] = self.checksum(0x2b9, data[:7])
+        messages.append(packer.make_can_msg("DAS_control", bus, values))
     return messages

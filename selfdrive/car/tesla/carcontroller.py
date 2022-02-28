@@ -14,7 +14,9 @@ class CarController():
     self.CP = CP
     self.last_angle = 0
     self.packer = CANPacker(dbc_name)
-    self.pt_packer = CANPacker(DBC[CP.carFingerprint]['pt'])
+    self.pt_packer = None
+    if DBC[CP.carFingerprint]['pt']:
+      self.pt_packer = CANPacker(DBC[CP.carFingerprint]['pt'])
     self.tesla_can = TeslaCAN(dbc_name, self.packer, self.pt_packer)
     self.prev_das_steeringControl_counter = -1
     self.long_control_counter = 0
