@@ -95,10 +95,10 @@ class CarInterface(CarInterfaceBase):
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_IBOOSTER
     ret.rotationalInertia = scale_rot_inertia(ret.mass, ret.wheelbase)
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront)
-    ret.radarOffCan = True
+    ret.radarOffCan = False
     ret.radarTimeStep = 0.05
-    if candidate == CAR.PREAP_MODELS and not load_bool_param("TinklaUseTeslaRadar",False):
-      ret.radarOffCan = False
+    if candidate == CAR.PREAP_MODELS and load_bool_param("TinklaUseTeslaRadar",False):
+      ret.radarOffCan = True
     # set safetyParam flag for OP Long Control
     if ret.openpilotLongitudinalControl:
       safetyParam = safetyParam | Panda.FLAG_TESLA_LONG_CONTROL
