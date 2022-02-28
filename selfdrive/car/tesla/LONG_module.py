@@ -6,7 +6,7 @@ from selfdrive.config import Conversions as CV
 def _is_present(lead):
   return bool((not (lead is None)) and (lead.dRel > 0))
 
-class LONGController:
+class LONGController: 
 
     def __init__(self,CP,packer, tesla_can):
         self.CP = CP

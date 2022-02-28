@@ -8,7 +8,7 @@ RADAR_MSGS_A = list(range(0x310, 0x36E, 3))
 RADAR_MSGS_B = list(range(0x311, 0x36F, 3))
 NUM_POINTS = len(RADAR_MSGS_A)
 
-def get_radar_can_parser(CP):
+def get_radar_can_parser(CP): 
   # Status messages
   signals = [
     ('RADC_HWFail', 'TeslaRadarSguInfo'),

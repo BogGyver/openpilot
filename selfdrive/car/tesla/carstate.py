@@ -213,7 +213,7 @@ class CarState(CarStateBase):
         event.type = button.event_type
         event.pressed = state
         buttonEvents.append(event)
-      self.button_states[button.event_type] = state
+      self.button_states[button.event_type] = state 
     ret.buttonEvents = buttonEvents
 
     # Doors

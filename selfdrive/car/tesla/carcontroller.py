@@ -29,15 +29,15 @@ class CarController():
     self.cruiseDelayFrame = 0
     self.prevCruiseEnabled = False
 
-    self.lP = messaging.sub_sock('longitudinalPlan')
-    self.rS = messaging.sub_sock('radarState')
+    self.lP = messaging.sub_sock('longitudinalPlan') 
+    self.rS = messaging.sub_sock('radarState') 
 
-    self.long_control_counter = 0
+    self.long_control_counter = 0 
     
   
   #def update(self, c, enabled, CS, frame, actuators, cruise_cancel):
   def update(self, enabled, CS, frame, actuators, cruise_cancel, pcm_speed, pcm_override, hud_alert, audible_alert,
-             left_line, right_line, lead, left_lane_depart, right_lane_depart):
+             left_line, right_line, lead, left_lane_depart, right_lane_depart): 
     if frame % 100 == 0:
       CS.useFollowModeAcc = load_bool_param("TinklaUseFollowACC",False)
       CS.autoresumeAcc = load_bool_param("TinklaAutoResumeACC",False)

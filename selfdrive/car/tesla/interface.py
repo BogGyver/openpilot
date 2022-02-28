@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from cereal import car
-from selfdrive.car.tesla.values import CAR, CruiseButtons
+from selfdrive.car.tesla.values import CAR, CruiseButtons, CAN_AP_POWERTRAIN
 from selfdrive.car import STD_CARGO_KG, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, get_safety_config
 from selfdrive.car.interfaces import CarInterfaceBase
 from selfdrive.car.modules.CFG_module import load_bool_param
@@ -80,7 +80,7 @@ class CarInterface(CarInterfaceBase):
       ret.safetyParam = 1 + 2 # has AP, ACC
       ret.openpilotLongitudinalControl = False
       ret.safetyModel = car.CarParams.SafetyModel.tesla
-    elif candidate == CAR.AP1_MODELS:
+    elif candidate == CAR.AP1_MODELS: 
       ret.mass = 2100. + STD_CARGO_KG
       ret.wheelbase = 2.959
       ret.centerToFront = ret.wheelbase * 0.5

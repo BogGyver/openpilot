@@ -5,9 +5,9 @@ from common.numpy_fast import clip
 from ctypes import create_string_buffer
 import struct
 from selfdrive.config import Conversions as CV
-from selfdrive.car.tesla.values import CarControllerParams
+from selfdrive.car.tesla.values import CarControllerParams, CAN_CHASSIS, CAN_POWERTRAIN
 
-class TeslaCAN:
+class TeslaCAN: 
   def __init__(self, dbc_name, packer, pt_packer):
     self.can_define = CANDefine(dbc_name)
     self.packer = packer

@@ -9,7 +9,7 @@ IC_LANE_SCALE = 0.5
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
 
-class HUDController:
+class HUDController: 
 
     def __init__(self, CP, packer, tesla_can):
         self.CP = CP

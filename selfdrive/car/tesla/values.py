@@ -113,7 +113,7 @@ GEAR_MAP = {
   "DI_GEAR_N": car.CarState.GearShifter.neutral,
   "DI_GEAR_D": car.CarState.GearShifter.drive,
   "DI_GEAR_SNA": car.CarState.GearShifter.unknown,
-}
+} 
 
 DOORS = ["DOOR_STATE_FL", "DOOR_STATE_FR", "DOOR_STATE_RL", "DOOR_STATE_RR", "DOOR_STATE_FrontTrunk", "BOOT_STATE"]
 
