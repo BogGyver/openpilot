@@ -13,8 +13,12 @@
 QProcess *process;
 QLabel *label;
 int stage = 0;
+QPushButton *btn;
+QPushButton *btn2;
+QPushButton *btn3;
+QPushButton *btn4;
 
-void set_text_1(QLabel *label) {
+void set_text_1() {
   label->setText(label->text() + "=================================\n");
   label->setText(label->text() + "Welcome to the Tesla EPAS flasher\n");
   label->setText(label->text() + "=================================\n");
@@ -23,7 +27,7 @@ void set_text_1(QLabel *label) {
   label->setText(label->text() + "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL PATCH PROCESS IS COMPLETE\n");
 }
 
-void set_text_2(QLabel *label) {
+void set_text_2() {
   label->setText(label->text() + "=================================\n");
   label->setText(label->text() + "BACKUP PROCESS STARTED\n");
   label->setText(label->text() + "=================================\n");
@@ -31,7 +35,7 @@ void set_text_2(QLabel *label) {
   label->setText(label->text() + "\n");
 }
 
-void set_text_3(QLabel *label) {
+void set_text_3() {
   label->setText(label->text() + "=================================\n");
   label->setText(label->text() + "BACKUP PROCESS ENDED\n");
   label->setText(label->text() + "=================================\n");
@@ -40,7 +44,7 @@ void set_text_3(QLabel *label) {
   label->setText(label->text() + "\n");
 }
 
-void set_text_4(QLabel *label) {
+void set_text_4() {
   label->setText(label->text() + "=================================\n");
   label->setText(label->text() + "FLASH PROCESS STARTED\n");
   label->setText(label->text() + "=================================\n");
@@ -48,7 +52,7 @@ void set_text_4(QLabel *label) {
   label->setText(label->text() + "\n");
 }
 
-void set_text_5(QLabel *label) {
+void set_text_5() {
   label->setText(label->text() + "=================================\n");
   label->setText(label->text() + "FLASH PROCESS ENDED\n");
   label->setText(label->text() + "=================================\n");
@@ -123,10 +127,10 @@ int main(int argc, char *argv[]) {
     scroll->verticalScrollBar()->setValue(scroll->verticalScrollBar()->maximum());
   });
 
-  QPushButton *btn = new QPushButton();
-  QPushButton *btn2 = new QPushButton();
-  QPushButton *btn3 = new QPushButton();
-  QPushButton *btn4 = new QPushButton();
+  btn = new QPushButton();
+  btn2 = new QPushButton();
+  btn3 = new QPushButton();
+  btn4 = new QPushButton();
   btn->setText("Reboot");
   QObject::connect(btn, &QPushButton::clicked, [=]() {
     Hardware::reboot();
