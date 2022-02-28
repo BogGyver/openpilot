@@ -1,0 +1,6 @@
+#! /bin/sh
+killall boardd
+killall pandad
+killall ui
+cd /data/openpilot/selfdrive/car/modules/teslaEpasFlasher
+exec /data/openpilot/selfdrive/ui/qt/flasher

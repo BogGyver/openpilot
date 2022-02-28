@@ -55,6 +55,19 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
     }
     addItem(toggle);
   };
+
+  QPushButton *flash_btn = new QPushButton("Flash EPAS");
+  reboot_btn->setObjectName("flash_btn");
+  
+  QObject::connect(flash_btn, &QPushButton::clicked, [=](){
+    QProcess::startDetached("/data/selfdrive/car/modules/teslaEpasFlasher/flashTeslaEPAS");
+  });
+
+  setStyleSheet(R"(
+    #flash_btn { height: 120px; border-radius: 15px; background-color: #393939; }
+    #flash_btn:pressed { background-color: #4a4a4a; }
+  )");
+  addItem(reboot_btn);
 }
 
 TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent) {

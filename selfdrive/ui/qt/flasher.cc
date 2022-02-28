@@ -18,7 +18,6 @@ QPushButton *btn;
 QPushButton *btn2;
 QPushButton *btn3;
 QPushButton *btn4;
-QWidget window;
 
 void set_text_1() {
   label->setText(label->text() + "=================================\n");
@@ -106,19 +105,18 @@ void onFinished(int) {
 int main(int argc, char *argv[]) {
   initApp();
   QApplication a(argc, argv);
+  QWidget window;
   setMainWindow(&window);
 
   process = new QProcess();  // create on the heap, so it doesn't go out of scope
-  /*connect(&process, &QProcess::readyReadStandardOutput, [=](){ 
+  QObject::connect(process, &QProcess::readyReadStandardOutput, [=](){ 
     label->setText(label->text() + process->readAllStandardOutput()); 
-  });*/
-  QObject::connect(process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), [=](int exitCode, QProcess::ExitStatus exitStatus){ onFinished(1); });
-  /*QObject::connect(process, static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), [=](int exitCode, QProcess::ExitStatus exitStatus) {
-    onFinished(exitCode);
-  });*/
-  /*QObject::connect(process, static_cast<void (QProcess::*)(QProcess::ProcessError)> (&QProcess::error), [=](QProcess::ProcessError pError) {
-    //script failed
-  });*/
+  });
+
+  QObject::connect(process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), [=](int exitCode, QProcess::ExitStatus exitStatus){ 
+    onFinished(1); 
+  });
+  
 
   QGridLayout *main_layout = new QGridLayout(&window);
   main_layout->setMargin(50);
