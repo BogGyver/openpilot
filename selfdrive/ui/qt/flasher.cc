@@ -36,9 +36,13 @@ void set_text_2() {
   label->setText(label->text() + "\n");
 }
 
-void set_text_3() {
+void set_text_3(int a) {
+  QString proc = "SUCCEEDED";
+  if (a == 0) {
+    proc = "FAILED";
+  }
   label->setText(label->text() + "=================================\n");
-  label->setText(label->text() + "FLASH PROCESS ENDED\n");
+  label->setText(label->text() + "FLASH PROCESS " + proc + "\n");
   label->setText(label->text() + "=================================\n");
   label->setText(label->text() + "Hit Reboot to return to OpenPilot.\n");
   label->setText(label->text() + "\n");
@@ -52,9 +56,13 @@ void set_text_4() {
   label->setText(label->text() + "\n");
 }
 
-void set_text_5() {
+void set_text_5(a) {
+  QString proc = "SUCCEEDED";
+  if (a == 0) {
+    proc = "FAILED";
+  }
   label->setText(label->text() + "=================================\n");
-  label->setText(label->text() + "RESTORE PROCESS ENDED\n");
+  label->setText(label->text() + "RESTORE PROCESS " + proc + "\n");
   label->setText(label->text() + "=================================\n");
   label->setText(label->text() + "Hit Reboot to return to OpenPilot.\n");
   label->setText(label->text() + "\n");
@@ -72,9 +80,9 @@ void readErrorOut() {
   label->setText(label->text() + process->readAllStandardError());
 }
 
-void onFinished(int) {
+void onFinished(int a) {
   if (stage == 1) {
-    set_text_3();
+    set_text_3(a);
     btn->setEnabled(true);
     btn2->setEnabled(false);
     btn3->setEnabled(false);
@@ -87,7 +95,7 @@ void onFinished(int) {
     return;
   }
   if (stage == 2) {
-    set_text_5();
+    set_text_5(a);
     btn->setEnabled(true);
     btn2->setEnabled(false);
     btn3->setEnabled(false);
@@ -111,9 +119,17 @@ int main(int argc, char *argv[]) {
   QObject::connect(process, &QProcess::readyReadStandardOutput, [=](){ 
     label->setText(label->text() + process->readAllStandardOutput()); 
   });
+  QObject::connect(process, &QProcess::readyReadStandardError, [=](){ 
+    label->setText(label->text() + process->readAllStandardError()); 
+  });
 
   QObject::connect(process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), [=](int exitCode, QProcess::ExitStatus exitStatus){ 
     onFinished(1); 
+  });
+
+  QObject::connect(process, &QProcess::errorOccurred, [=](QProcess::ProcessError error) 
+  { 
+    onFinished(0); 
   });
   
 
