@@ -203,7 +203,9 @@ class CarInterfaceBase(ABC):
       else:
         events.add(EventName.steerTempUnavailable)
     else:
-      self.silent_steer_warning = False
+      #add this to disable the annoying sounds during HSO
+      if not self.CS.enableHSO:
+        self.silent_steer_warning = False
     if cs_out.steerError:
       events.add(EventName.steerUnavailable)
 
