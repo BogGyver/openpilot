@@ -4,6 +4,7 @@
 #include <QScrollBar>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QProcess>
 
 #include "selfdrive/hardware/hw.h"
 #include "selfdrive/ui/qt/util.h"
@@ -61,10 +62,7 @@ void set_text_5() {
   label->setText(label->text() + "\n");
 }
 
-void run_script(char * script) {
-  connect(process,SIGNAL(readyRead()),window,SLOT(readStdOut()));
-  connect(process,SIGNAL(readyRead()),window,SLOT(readErrorOut()));
-  connect(process,SIGNAL(finished(int)),window,SLOT(onFinished(int)));
+void run_script(QString script) {
   process->start(script);
 }
 
@@ -111,6 +109,16 @@ int main(int argc, char *argv[]) {
   setMainWindow(&window);
 
   process = new QProcess();  // create on the heap, so it doesn't go out of scope
+  /*connect(&process, &QProcess::readyReadStandardOutput, [=](){ 
+    label->setText(label->text() + process->readAllStandardOutput()); 
+  });*/
+  QObject::connect(process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), [=](int exitCode, QProcess::ExitStatus exitStatus){ onFinished(1); });
+  /*QObject::connect(process, static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), [=](int exitCode, QProcess::ExitStatus exitStatus) {
+    onFinished(exitCode);
+  });*/
+  /*QObject::connect(process, static_cast<void (QProcess::*)(QProcess::ProcessError)> (&QProcess::error), [=](QProcess::ProcessError pError) {
+    //script failed
+  });*/
 
   QGridLayout *main_layout = new QGridLayout(&window);
   main_layout->setMargin(50);
