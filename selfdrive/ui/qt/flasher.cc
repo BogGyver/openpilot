@@ -56,7 +56,7 @@ void set_text_4() {
   label->setText(label->text() + "\n");
 }
 
-void set_text_5(a) {
+void set_text_5(int a) {
   QString proc = "SUCCEEDED";
   if (a == 0) {
     proc = "FAILED";
@@ -124,11 +124,14 @@ int main(int argc, char *argv[]) {
   });
 
   QObject::connect(process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), [=](int exitCode, QProcess::ExitStatus exitStatus){ 
+    label->setText(label->text() + process->readAllStandardOutput()); 
     onFinished(1); 
   });
 
   QObject::connect(process, &QProcess::errorOccurred, [=](QProcess::ProcessError error) 
   { 
+    label->setText(label->text() + process->readAllStandardOutput()); 
+    label->setText(label->text() + process->readAllStandardError());
     onFinished(0); 
   });
   
