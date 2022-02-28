@@ -45,39 +45,27 @@ class CarInterface(CarInterfaceBase):
 
     #safetyParam
     # BIT - MEANING
-    # 0   - Has AP?
-    # 1   - Has ACC?
-    # 2   - OP Long Control?
-    # 3   - HUD Integration?
-    # 4   - Body Controls?
-    # 5   - Need Radar Emulation
-    # 6   - Human Acceleration Override
-    # 7   - iBooster
+    #  Panda.FLAG_TESLA_POWERTRAIN = 1
+    #  Panda.FLAG_TESLA_LONG_CONTROL = 2
+    #  Panda.FLAG_TESLA_HAS_AP = 16
+    #  Panda.FLAG_TESLA_NEED_RADAR_EMULATION = 32
+    #  Panda.FLAG_TESLA_HAO = 64
+    #  Panda.FLAG_TESLA_IBOOSTER = 128
 
 
-    if candidate == CAR.AP2_MODELS:
-      # Check if we have messages on an auxiliary panda, and that 0x2bf (DAS_control) is present on the AP powertrain bus
-      # If so, we assume that it is connected to the longitudinal harness.
-      if (CAN_AP_POWERTRAIN[candidate] in fingerprint.keys()) and (0x2bf in fingerprint[CAN_AP_POWERTRAIN[candidate]].keys()):
-        ret.openpilotLongitudinalControl = True
-        ret.safetyConfigs = [
-          get_safety_config(car.CarParams.SafetyModel.tesla, Panda.FLAG_TESLA_LONG_CONTROL),
-          get_safety_config(car.CarParams.SafetyModel.tesla, Panda.FLAG_TESLA_LONG_CONTROL | Panda.FLAG_TESLA_POWERTRAIN),
-        ]
-      else:
-        ret.openpilotLongitudinalControl = False
-        ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, 0)]
+    
 
     ret.steerLimitTimer = 1.0
     ret.steerActuatorDelay = 0.1
     ret.steerRateCost = 0.5
+    ret.safetyParam = 0
 
     if candidate in (CAR.AP2_MODELS, CAR.AP1_MODELS):
       ret.mass = 2100. + STD_CARGO_KG
       ret.wheelbase = 2.959
       ret.centerToFront = ret.wheelbase * 0.5
       ret.steerRatio = 13.5
-      ret.safetyParam = 1 + 2 # has AP, ACC
+      ret.safetyParam = ret.safetyParam | Panda.FLAG_TESLA_HAS_AP # has AP, ACC
       ret.openpilotLongitudinalControl = False
       ret.safetyModel = car.CarParams.SafetyModel.tesla
     elif candidate == CAR.AP1_MODELS: 
@@ -85,7 +73,7 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.959
       ret.centerToFront = ret.wheelbase * 0.5
       ret.steerRatio = 13.5
-      ret.safetyParam = 1 + 2 # has AP, ACC
+      ret.safetyParam = ret.safetyParam | Panda.FLAG_TESLA_HAS_AP # has AP, ACC
       ret.openpilotLongitudinalControl = False
       ret.safetyModel = car.CarParams.SafetyModel.tesla
     elif candidate == CAR.AP1_MODELX:
@@ -94,7 +82,7 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.964
       ret.centerToFront = ret.wheelbase * 0.5
       ret.steerRatio = 13.5
-      ret.safetyParam = 1 + 2 # has AP, ACC
+      ret.safetyParam = ret.safetyParam | Panda.FLAG_TESLA_HAS_AP  # has AP, ACC
       ret.openpilotLongitudinalControl = False
       ret.safetyModel = car.CarParams.SafetyModel.tesla
     elif candidate == CAR.PREAP_MODELS:
@@ -102,35 +90,51 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.959
       ret.centerToFront = ret.wheelbase * 0.5
       ret.steerRatio = 13.5
-      ret.safetyParam = 0 # no AP, ACC
+      ret.safetyParam = ret.safetyParam  # no AP, ACC
       ret.openpilotLongitudinalControl = False
       ret.safetyModel = car.CarParams.SafetyModel.tesla
       ret.communityFeature = True
     else:
       raise ValueError(f"Unsupported car: {candidate}")
-
     # set safetyParam flag for OP Long Control
     if ret.openpilotLongitudinalControl:
-      ret.safetyParam = ret.safetyParam + 4
-    # enable IC integration
-    ret.safetyParam = ret.safetyParam + 8
-    # enable body controls
-    ret.safetyParam = ret.safetyParam + 16
+      ret.safetyParam = ret.safetyParam | Panda.FLAG_TESLA_LONG_CONTROL
+    # enable IC integration - always enabled
+    # enable body controls - always enabled
     # enabled radar emulation from carconfig
     if candidate == CAR.PREAP_MODELS and load_bool_param("TinklaUseTeslaRadar",False):
-      ret.safetyParam = ret.safetyParam + 32
+      ret.safetyParam = ret.safetyParam | Panda.FLAG_TESLA_NEED_RADAR_EMULATION
     # enabled HAO from carconfig
     if load_bool_param("TinklaHao",False):
-      ret.safetyParam = ret.safetyParam + 64
+      ret.safetyParam = ret.safetyParam | Panda.FLAG_TESLA_ENABLE_HAO
+    if load_bool_param("TinklaEnableOPLong",False) or ret.openpilotLongitudinalControl:
+      ret.safetyParam = ret.safetyParam | Panda.FLAG_TESLA_LONG_CONTROL
+      ret.openpilotLongitudinalControl = True
     # true if car has ibooster
     if (candidate == CAR.PREAP_MODELS and load_bool_param("TinklaHasIBooster",False)) or (candidate != CAR.PREAP_MODELS):
-      ret.safetyParam = ret.safetyParam + 128
+      ret.safetyParam = ret.safetyParam | Panda.FLAG_TESLA_HAS_IBOOSTER
     ret.rotationalInertia = scale_rot_inertia(ret.mass, ret.wheelbase)
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront)
     ret.radarOffCan = True
     ret.radarTimeStep = 0.05
     if load_bool_param("TinklaUseTeslaRadar",False):
       ret.radarOffCan = False
+
+    if candidate == CAR.AP2_MODELS:
+      # Check if we have messages on an auxiliary panda, and that 0x2bf (DAS_control) is present on the AP powertrain bus
+      # If so, we assume that it is connected to the longitudinal harness.
+      if (CAN_AP_POWERTRAIN[candidate] in fingerprint.keys()) and (0x2bf in fingerprint[CAN_AP_POWERTRAIN[candidate]].keys()):
+        ret.openpilotLongitudinalControl = True
+        ret.safetyConfigs = [
+          get_safety_config(car.CarParams.SafetyModel.tesla, ret.safetyParam | Panda.FLAG_TESLA_LONG_CONTROL),
+          get_safety_config(car.CarParams.SafetyModel.tesla, ret.safetyParam | Panda.FLAG_TESLA_LONG_CONTROL | Panda.FLAG_TESLA_POWERTRAIN),
+        ]
+      else:
+        ret.openpilotLongitudinalControl = False
+        ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, ret.safetyParam)]
+    else:
+        ret.openpilotLongitudinalControl = False
+        ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, ret.safetyParam)]
     return ret
 
   def update(self, c, can_strings):
