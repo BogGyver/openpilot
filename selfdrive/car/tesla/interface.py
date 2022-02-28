@@ -79,9 +79,6 @@ class CarInterface(CarInterfaceBase):
       ret.openpilotLongitudinalControl = False
     else:
       raise ValueError(f"Unsupported car: {candidate}")
-    # set safetyParam flag for OP Long Control
-    if ret.openpilotLongitudinalControl:
-      safetyParam = safetyParam | Panda.FLAG_TESLA_LONG_CONTROL
     # enable IC integration - always enabled
     # enable body controls - always enabled
     # enabled radar emulation from carconfig
@@ -102,6 +99,9 @@ class CarInterface(CarInterfaceBase):
     ret.radarTimeStep = 0.05
     if candidate == CAR.PREAP_MODELS and not load_bool_param("TinklaUseTeslaRadar",False):
       ret.radarOffCan = False
+    # set safetyParam flag for OP Long Control
+    if ret.openpilotLongitudinalControl:
+      safetyParam = safetyParam | Panda.FLAG_TESLA_LONG_CONTROL
 
     if candidate == CAR.AP2_MODELS:
       # Check if we have messages on an auxiliary panda, and that 0x2bf (DAS_control) is present on the AP powertrain bus
