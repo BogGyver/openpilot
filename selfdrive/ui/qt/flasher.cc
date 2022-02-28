@@ -34,6 +34,7 @@ int main(int argc, char *argv[]) {
   QPushButton *btn = new QPushButton();
   QPushButton *btn2 = new QPushButton();
   QPushButton *btn3 = new QPushButton();
+  QPushButton *btn4 = new QPushButton();
 #ifdef __aarch64__
   btn->setText("Reboot");
   QObject::connect(btn, &QPushButton::clicked, [=]() {
@@ -47,12 +48,18 @@ int main(int argc, char *argv[]) {
   QObject::connect(btn3, &QPushButton::clicked, [=]() {
     Hardware::reboot();
   });
+  btn4->setText("Backup");
+  QObject::connect(btn5, &QPushButton::clicked, [=]() {
+    Hardware::reboot();
+  });
 #else
   btn->setText("Exit");
   QObject::connect(btn, &QPushButton::clicked, &a, &QApplication::quit);
 #endif
   main_layout->addWidget(btn, 0, 0, Qt::AlignRight | Qt::AlignBottom);
-
+  main_layout->addWidget(btn2, 0, 0, Qt::AlignRight | Qt::AlignBottom);
+  main_layout->addWidget(btn3, 0, 0, Qt::AlignRight | Qt::AlignBottom);
+  main_layout->addWidget(btn4, 0, 0, Qt::AlignRight | Qt::AlignBottom);
   window.setStyleSheet(R"(
     * {
       outline: none;
