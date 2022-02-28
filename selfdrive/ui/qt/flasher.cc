@@ -15,7 +15,41 @@ void set_text_1(QLabel *label) {
   label->setText(label->text() + "Welcome to the Tesla EPAS flasher\n");
   label->setText(label->text() + "=================================\n");
   label->setText(label->text() + "This app will patch your EPAS firmware so you can use OpenPilot on preAP Tesla Model S.\n");
-  label->setText(label->text() + "Please hit Backup to start the process or Cancel to reboot and return to OpenPilot without changing your firmware.\n");
+  label->setText(label->text() + "Please press the brake pedal then hit Backup to start the process or Cancel to reboot and return to OpenPilot without changing your firmware.\n");
+  label->setText(label->text() + "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL PATH PROCESS IS COMPLETE\n");
+  label->setText(label->text() + "\n");
+}
+
+void set_text_2(QLabel *label) {
+  label->setText(label->text() + "=================================\n");
+  label->setText(label->text() + "BACKUP PROCESS STARTED\n");
+  label->setText(label->text() + "=================================\n");
+  label->setText(label->text() + "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL PATH PROCESS IS COMPLETE\n");
+  label->setText(label->text() + "\n");
+}
+
+void set_text_3(QLabel *label) {
+  label->setText(label->text() + "=================================\n");
+  label->setText(label->text() + "BACKUP PROCESS ENDED\n");
+  label->setText(label->text() + "=================================\n");
+  label->setText(label->text() + "Please press the brake pedal then hit Flash to start the process or Cancel to reboot and return to OpenPilot without changing your firmware.\n");
+  label->setText(label->text() + "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL PATH PROCESS IS COMPLETE\n");
+  label->setText(label->text() + "\n");
+}
+
+void set_text_4(QLabel *label) {
+  label->setText(label->text() + "=================================\n");
+  label->setText(label->text() + "FLASH PROCESS STARTED\n");
+  label->setText(label->text() + "=================================\n");
+  label->setText(label->text() + "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL PATH PROCESS IS COMPLETE\n");
+  label->setText(label->text() + "\n");
+}
+
+void set_text_5(QLabel *label) {
+  label->setText(label->text() + "=================================\n");
+  label->setText(label->text() + "FLASH PROCESS ENDED\n");
+  label->setText(label->text() + "=================================\n");
+  label->setText(label->text() + "Hit Reboot to return to OpenPilot.\n");
   label->setText(label->text() + "\n");
 }
 
@@ -33,7 +67,7 @@ int main(int argc, char *argv[]) {
   label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
   ScrollView *scroll = new ScrollView(label);
   scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-  main_layout->addWidget(scroll, 0, 0, Qt::AlignTop);
+  main_layout->addWidget(scroll, 0, 0, 1, 4);
 
   // Scroll to the bottom
   QObject::connect(scroll->verticalScrollBar(), &QAbstractSlider::rangeChanged, [=]() {
@@ -44,29 +78,45 @@ int main(int argc, char *argv[]) {
   QPushButton *btn2 = new QPushButton();
   QPushButton *btn3 = new QPushButton();
   QPushButton *btn4 = new QPushButton();
-#ifdef __aarch64__
   btn->setText("Reboot");
   QObject::connect(btn, &QPushButton::clicked, [=]() {
     Hardware::reboot();
   });
   btn2->setText("Flash");
   QObject::connect(btn2, &QPushButton::clicked, [=]() {
+    set_text_4(label);
+    btn->setEnabled(false);
+    btn2->setEnabled(false);
+    btn3->setEnabled(false);
+    btn4->setEnabled(true);
     //kill what we have to again (just in case)
     //flash EPAS
+    set_text_5(label);
+    btn->setEnabled(true);
+    btn2->setEnabled(false);
+    btn3->setEnabled(false);
+    btn4->setEnabled(false);
   });
   btn3->setText("Backup");
   QObject::connect(btn3, &QPushButton::clicked, [=]() {
+    set_text_2(label);
+    btn->setEnabled(false);
+    btn2->setEnabled(false);
+    btn3->setEnabled(false);
+    btn4->setEnabled(true);
+    //kill what we have to
+    //baclup EPAS
+    set_text_3(label);
+    btn->setEnabled(false);
+    btn2->setEnabled(true);
+    btn3->setEnabled(false);
+    btn4->setEnabled(true);
     //kill what we have to 
-    //backup EPAS
   });
   btn4->setText("Cancel");
   QObject::connect(btn4, &QPushButton::clicked, [=]() {
     Hardware::reboot();
   });
-#else
-  btn->setText("Exit");
-  QObject::connect(btn, &QPushButton::clicked, &a, &QApplication::quit);
-#endif
   main_layout->addWidget(btn, 0, 3, Qt::AlignRight | Qt::AlignBottom);
   main_layout->addWidget(btn2, 0, 2, Qt::AlignRight | Qt::AlignBottom);
   main_layout->addWidget(btn3, 0, 1, Qt::AlignRight | Qt::AlignBottom);
@@ -88,5 +138,9 @@ int main(int argc, char *argv[]) {
     }
   )");
   set_text_1(label);
+  btn->setEnabled(false);
+  btn2->setEnabled(false);
+  btn3->setEnabled(true);
+  btn4->setEnabled(true);
   return a.exec();
 }
