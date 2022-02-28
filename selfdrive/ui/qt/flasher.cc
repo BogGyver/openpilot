@@ -17,7 +17,6 @@ void set_text_1(QLabel *label) {
   label->setText(label->text() + "This app will patch your EPAS firmware so you can use OpenPilot on preAP Tesla Model S.\n");
   label->setText(label->text() + "Please press the brake pedal then hit Backup to start the process or Cancel to reboot and return to OpenPilot without changing your firmware.\n");
   label->setText(label->text() + "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL PATCH PROCESS IS COMPLETE\n");
-  label->setText(label->text() + "\n");
 }
 
 void set_text_2(QLabel *label) {
@@ -140,8 +139,7 @@ int main(int argc, char *argv[]) {
   window.setStyleSheet(R"(
     * {
       outline: none;
-      color: white;
-      background-color: black;
+      padding-bottom: 100px;
       font-size: 60px;
     }
     QPushButton {
