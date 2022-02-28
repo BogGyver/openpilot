@@ -11,9 +11,10 @@ if [ $ret -ne 0 ]; then
   echo " Please check logs above for errors"
   echo " Please hit Reboot to return to OP"
   echo "An error occurred during restore. Exiting..." >&2
-  exit 1 
+  exit 1
 fi
 echo "================================="
 echo " RESTORE PROCESS COMPLETED"
 echo "================================="
 echo " Please hit Reboot to return to OP"
+exit 0

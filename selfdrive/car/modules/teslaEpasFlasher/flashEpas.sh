@@ -17,3 +17,4 @@ echo "================================="
 echo " FLASH PROCESS COMPLETED"
 echo "================================="
 echo " Please hit Reboot to return to OP"
+exit 0

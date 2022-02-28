@@ -45,6 +45,23 @@ void set_text_4() {
 }
 
 void run_script(QString script) {
+  QObject::connect(process, &QProcess::readyReadStandardOutput, [=](){ 
+    label->setText(label->text() + process->readAllStandardOutput()); 
+  });
+  QObject::connect(process, &QProcess::readyReadStandardError, [=](){ 
+    label->setText(label->text() + process->readAllStandardError()); 
+  });
+
+  QObject::connect(process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), [=](int exitCode, QProcess::ExitStatus exitStatus){ 
+    label->setText(label->text() + process->readAll());
+    onFinished(exitCode); 
+  });
+
+  QObject::connect(process, &QProcess::errorOccurred, [=](QProcess::ProcessError error) 
+  { 
+    label->setText(label->text() + process->readAll());
+    onFinished(0); 
+  });
   process->start(script);
 }
 
@@ -57,7 +74,7 @@ void readErrorOut() {
 }
 
 void onFinished(int a) {
-  if (a == 1) {
+  if (a == 0) {
     btn->setEnabled(true);
     btn2->setEnabled(false);
     btn3->setEnabled(false);
@@ -69,7 +86,7 @@ void onFinished(int a) {
     stage = 0;
     return;
   }
-  if (a == 0) {
+  if (a == 1) {
     btn->setEnabled(true);
     btn2->setEnabled(true);
     btn3->setEnabled(true);
@@ -98,8 +115,8 @@ int main(int argc, char *argv[]) {
   });
 
   QObject::connect(process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), [=](int exitCode, QProcess::ExitStatus exitStatus){ 
-    label->setText(label->text() + process->readAllStandardOutput()); 
-    onFinished(1); 
+    label->setText(label->text() + process->readAll());
+    onFinished(exitCode); 
   });
 
   QObject::connect(process, &QProcess::errorOccurred, [=](QProcess::ProcessError error) 
