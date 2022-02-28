@@ -5,6 +5,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QProcess>
 
 #ifndef QCOM
 #include "selfdrive/ui/qt/offroad/networking.h"

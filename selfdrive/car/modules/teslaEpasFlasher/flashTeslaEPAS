@@ -1,6 +1,5 @@
 #! /bin/sh
-killall boardd
-killall pandad
-killall ui
+tmux kill-session -t comma
 cd /data/openpilot/selfdrive/car/modules/teslaEpasFlasher
-exec /data/openpilot/selfdrive/ui/qt/flasher
+cp /data/openpilot/selfdrive/ui/qt/flasher ./flasher
+exec ./flasher
