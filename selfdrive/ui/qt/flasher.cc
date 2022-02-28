@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     Hardware::reboot();
   });
   btn4->setText("Backup");
-  QObject::connect(btn5, &QPushButton::clicked, [=]() {
+  QObject::connect(btn4, &QPushButton::clicked, [=]() {
     Hardware::reboot();
   });
 #else
