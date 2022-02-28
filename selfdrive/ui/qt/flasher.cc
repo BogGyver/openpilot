@@ -10,6 +10,15 @@
 #include "selfdrive/ui/qt/qt_window.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 
+void set_text_1(QLabel *label) {
+  label->setText(label->text() + "=================================\n");
+  label->setText(label->text() + "Welcome to the Tesla EPAS flasher\n");
+  label->setText(label->text() + "=================================\n");
+  label->setText(label->text() + "This app will patch your EPAS firmware so you can use OpenPilot on preAP Tesla Model S.\n");
+  label->setText(label->text() + "Please hit Backup to start the process or Cancel to reboot and return to OpenPilot without changing your firmware.\n");
+  label->setText(label->text() + "\n");
+}
+
 int main(int argc, char *argv[]) {
   initApp();
   QApplication a(argc, argv);
@@ -42,13 +51,15 @@ int main(int argc, char *argv[]) {
   });
   btn2->setText("Flash");
   QObject::connect(btn2, &QPushButton::clicked, [=]() {
-    Hardware::reboot();
+    //kill what we have to again (just in case)
+    //flash EPAS
   });
   btn3->setText("Backup");
   QObject::connect(btn3, &QPushButton::clicked, [=]() {
-    Hardware::reboot();
+    //kill what we have to 
+    //backup EPAS
   });
-  btn4->setText("Backup");
+  btn4->setText("Cancel");
   QObject::connect(btn4, &QPushButton::clicked, [=]() {
     Hardware::reboot();
   });
@@ -56,10 +67,10 @@ int main(int argc, char *argv[]) {
   btn->setText("Exit");
   QObject::connect(btn, &QPushButton::clicked, &a, &QApplication::quit);
 #endif
-  main_layout->addWidget(btn, 0, 0, Qt::AlignRight | Qt::AlignBottom);
-  main_layout->addWidget(btn2, 0, 1, Qt::AlignRight | Qt::AlignBottom);
-  main_layout->addWidget(btn3, 0, 2, Qt::AlignRight | Qt::AlignBottom);
-  main_layout->addWidget(btn4, 0, 3, Qt::AlignRight | Qt::AlignBottom);
+  main_layout->addWidget(btn, 0, 3, Qt::AlignRight | Qt::AlignBottom);
+  main_layout->addWidget(btn2, 0, 2, Qt::AlignRight | Qt::AlignBottom);
+  main_layout->addWidget(btn3, 0, 1, Qt::AlignRight | Qt::AlignBottom);
+  main_layout->addWidget(btn4, 0, 0, Qt::AlignRight | Qt::AlignBottom);
   window.setStyleSheet(R"(
     * {
       outline: none;
@@ -76,6 +87,6 @@ int main(int argc, char *argv[]) {
       margin-right: 40px;
     }
   )");
-
+  set_text_1(label);
   return a.exec();
 }
