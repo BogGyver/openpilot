@@ -52,9 +52,6 @@ class CarInterface(CarInterfaceBase):
     #  Panda.FLAG_TESLA_HAO = 64
     #  Panda.FLAG_TESLA_IBOOSTER = 128
 
-
-    
-
     ret.steerLimitTimer = 1.0
     ret.steerActuatorDelay = 0.1
     ret.steerRateCost = 0.5
