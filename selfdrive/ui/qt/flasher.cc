@@ -60,10 +60,10 @@ void set_text_5() {
   label->setText(label->text() + "\n");
 }
 
-void run_script(char * script) {
-  connect(process,SIGNAL(readyRead()),this,SLOT(readStdOut()));
-  connect(process,SIGNAL(readyRead()),this,SLOT(readErrorOut()));
-  connect(process,SIGNAL(finished(int)),this,SLOT(onFinished(int)));
+void run_script(char * script, QWidget *parent) {
+  connect(process,SIGNAL(readyRead()),parent,SLOT(readStdOut()));
+  connect(process,SIGNAL(readyRead()),parent,SLOT(readErrorOut()));
+  connect(process,SIGNAL(finished(int)),parent,SLOT(onFinished(int)));
   process->start(script);
 }
 
@@ -77,7 +77,7 @@ void readErrorOut() {
 
 void onFinished(int) {
   if (stage == 1) {
-    set_text_3(label);
+    set_text_3();
     btn->setEnabled(false);
     btn2->setEnabled(true);
     btn3->setEnabled(false);
@@ -90,7 +90,7 @@ void onFinished(int) {
     return;
   }
   if (stage == 2) {
-    set_text_5(label);
+    set_text_5();
     btn->setEnabled(true);
     btn2->setEnabled(false);
     btn3->setEnabled(false);
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
 
   btn2->setText("Flash");
   QObject::connect(btn2, &QPushButton::clicked, [=]() {
-    set_text_4(label);
+    set_text_4();
     btn->setEnabled(false);
     btn2->setEnabled(false);
     btn3->setEnabled(false);
@@ -150,12 +150,12 @@ int main(int argc, char *argv[]) {
     //kill what we have to again (just in case)
     //flash EPAS
     stage = 2;
-    run_script("ls -al");
+    run_script("ls -al", &window);
   });
 
   btn3->setText("Backup");
   QObject::connect(btn3, &QPushButton::clicked, [=]() {
-    set_text_2(label);
+    set_text_2();
     btn->setEnabled(false);
     btn2->setEnabled(false);
     btn3->setEnabled(false);
@@ -167,7 +167,7 @@ int main(int argc, char *argv[]) {
     //kill what we have to
     //baclup EPAS
     stage = 1;
-    run_script("ls");
+    run_script("ls", &window);
   });
   
   btn4->setText("Cancel");
@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
       margin-right: 40px;
     }
   )");
-  set_text_1(label);
+  set_text_1();
   btn->setEnabled(false);
   btn2->setEnabled(false);
   btn3->setEnabled(true);
