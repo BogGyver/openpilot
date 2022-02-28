@@ -57,9 +57,9 @@ int main(int argc, char *argv[]) {
   QObject::connect(btn, &QPushButton::clicked, &a, &QApplication::quit);
 #endif
   main_layout->addWidget(btn, 0, 0, Qt::AlignRight | Qt::AlignBottom);
-  main_layout->addWidget(btn2, 0, 0, Qt::AlignRight | Qt::AlignBottom);
-  main_layout->addWidget(btn3, 0, 0, Qt::AlignRight | Qt::AlignBottom);
-  main_layout->addWidget(btn4, 0, 0, Qt::AlignRight | Qt::AlignBottom);
+  main_layout->addWidget(btn2, 0, 1, Qt::AlignRight | Qt::AlignBottom);
+  main_layout->addWidget(btn3, 0, 2, Qt::AlignRight | Qt::AlignBottom);
+  main_layout->addWidget(btn4, 0, 3, Qt::AlignRight | Qt::AlignBottom);
   window.setStyleSheet(R"(
     * {
       outline: none;
