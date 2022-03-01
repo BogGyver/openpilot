@@ -1,5 +1,11 @@
 #! /bin/sh
+echo "================================="
+echo "FLASH PROCESS STARTED"
+echo "================================="
+echo "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL FLASH PROCESS IS COMPLETE"
+echo "  "
 echo "Starting the flash process..."
+echo "  "
 cd /data/openpilot/selfdrive/car/modules/teslaEpasFlasher
 PYTHONPATH=/data/openpilot 
 ./patch.py 
