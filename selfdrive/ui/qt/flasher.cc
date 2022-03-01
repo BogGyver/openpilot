@@ -52,29 +52,6 @@ void onFinished(int a) {
   }
 }
 
-
-void run_script(QString script) {
-  process = new QProcess();  // create on the heap, so it doesn't go out of scope
-  QObject::connect(process, &QProcess::readyReadStandardOutput, [=](){ 
-    label->setText(label->text() + process->readAllStandardOutput()); 
-  });
-  QObject::connect(process, &QProcess::readyReadStandardError, [=](){ 
-    label->setText(label->text() + process->readAllStandardError()); 
-  });
-
-  QObject::connect(process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), [=](int exitCode, QProcess::ExitStatus exitStatus){ 
-    label->setText(label->text() + process->readAll());
-    onFinished(exitCode); 
-  });
-
-  QObject::connect(process, &QProcess::errorOccurred, [=](QProcess::ProcessError error) 
-  { 
-    label->setText(label->text() + process->readAll());
-    onFinished(0); 
-  });
-  process->start(script);
-}
-
 void reformatLabel(QString textToAdd) {
   QString labelText = label->text() + textToAdd;
   bool notDone = true;
@@ -120,14 +97,29 @@ void reformatLabel(QString textToAdd) {
   label->setText(newLabelText+lastRtext);
 }
 
-void readStdOut() {
-  //label->setText(label->text() + process->readAllStandardOutput());
-  reformatLabel(process->readAllStandardOutput());
-}
+void run_script(QString script) {
+  process = new QProcess();  // create on the heap, so it doesn't go out of scope
+  QObject::connect(process, &QProcess::readyReadStandardOutput, [=](){ 
+    //label->setText(label->text() + process->readAllStandardOutput()); 
+    reformatLabel(process->readAllStandardOutput());
+  });
+  QObject::connect(process, &QProcess::readyReadStandardError, [=](){ 
+    //label->setText(label->text() + process->readAllStandardError()); 
+    reformatLabel(process->readAllStandardError());
+  });
 
-void readErrorOut() {
-  //label->setText(label->text() + process->readAllStandardError());
-  reformatLabel(process->readAllStandardError());
+  QObject::connect(process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), [=](int exitCode, QProcess::ExitStatus exitStatus){ 
+    //label->setText(label->text() + process->readAll());
+    reformatLabel(process->readAll());
+    onFinished(exitCode); 
+  });
+
+  QObject::connect(process, &QProcess::errorOccurred, [=](QProcess::ProcessError error) 
+  { 
+    reformatLabel(process->readAll());
+    onFinished(0); 
+  });
+  process->start(script);
 }
 
 int main(int argc, char *argv[]) {
