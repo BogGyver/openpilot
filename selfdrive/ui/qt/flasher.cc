@@ -53,6 +53,9 @@ void onFinished(int a) {
 }
 
 void reformatLabel(QString textToAdd) {
+  
+  label->setText(label->text() + process->readAllStandardOutput()); 
+  return;
   QString labelText = label->text() + textToAdd;
   bool notDone = true;
   int start = 0;
