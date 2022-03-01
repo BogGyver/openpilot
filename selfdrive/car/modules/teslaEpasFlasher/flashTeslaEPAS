@@ -2,4 +2,4 @@
 tmux kill-session -t comma
 cd /data/openpilot/selfdrive/car/modules/teslaEpasFlasher
 cp /data/openpilot/selfdrive/ui/qt/flasher ./flasher
-exec ./flasher
+exec ./flasher "Patch" flash.sh "Restore" restore.sh info.sh

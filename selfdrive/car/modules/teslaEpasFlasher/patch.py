@@ -11,8 +11,8 @@ from panda import Panda
 from panda.python.uds import UdsClient, MessageTimeoutError
 from panda.python.uds import SESSION_TYPE, ACCESS_TYPE, ROUTINE_CONTROL_TYPE, ROUTINE_IDENTIFIER_TYPE, RESET_TYPE
 
-# md5sum of supported firmware
-FW_MD5SUM = 0 # TODO: insert checksum
+# md5sum of supported (unmodified) firmware
+FW_MD5SUM = "9e51ddd80606fbdaaf604c73c8dde0d1"
 FW_START_ADDR = 0x7000
 FW_END_ADDR = 0x45FFF
 FW_SIZE = FW_END_ADDR - FW_START_ADDR + 1
@@ -59,7 +59,7 @@ def wait(uds_client):
       print(".", end="")
   raise Exception("reboot failed!")
 
-def extract_firmware(uds_client, start_addr, size):
+def extract_firmware(uds_client, start_addr, end_addr):
   print("start extended diagnostic session ...")
   uds_client.diagnostic_session_control(SESSION_TYPE.EXTENDED_DIAGNOSTIC)
 
@@ -74,17 +74,16 @@ def extract_firmware(uds_client, start_addr, size):
 
   print("extract firmware ...")
   print(f"  start addr: {hex(start_addr)}")
-  print(f"  end addr: {hex(size-1)}")
+  print(f"  end addr:   {hex(end_addr)}")
   fw = b""
   chunk_size = 128
-  for addr in tqdm(range(start_addr, size, chunk_size)):
-    cs = chunk_size if addr + chunk_size < size else size - addr
-    dat = uds_client.read_memory_by_address(addr, cs)
-    assert len(dat) == cs, f"expected {cs} bytes but received {len(dat)} bytes starting at address {cs}"
+  for addr in tqdm(range(start_addr, end_addr + 1, chunk_size)):
+    dat = uds_client.read_memory_by_address(addr, chunk_size)
+    assert len(dat) == chunk_size, f"expected {chunk_size} bytes but received {len(dat)} bytes starting at address {addr}"
     fw += dat
   return fw
 
-def update_checksums(fw, offset):
+def update_checksums(fw, offset, restore=False):
   for addr in [ 0x79c0, 0x79d0 ]:
     idx = addr - offset
     assert idx >= 0
@@ -95,7 +94,8 @@ def update_checksums(fw, offset):
     assert end-offset < len(fw), f"end addr {end} not inside firmware range"
     crc32 = binascii.crc32(fw[start-offset:end-offset+1])
     cksum = struct.pack("<I", crc32)
-    print(f"  {hex(start)}-{hex(end)} : {hex(crc32)} {'(no change)' if cksum == fw[idx+8:idx+12] else '(change)'}")
+    if not restore:
+      print(f"  {hex(start)}-{hex(end)} : {hex(crc32)} {'(no change)' if cksum == fw[idx+8:idx+12] else '(change)'}")
     fw = fw[:idx+8] + cksum + fw[idx+12:]
   return fw
 
@@ -131,7 +131,7 @@ def flash_bootloader(uds_client, bootloader_filename, start_addr):
   with open(bootloader_filename, "rb") as f:
     fw = f.read()
   fw_len = len(fw)
-  end_addr = start_addr + fw_len
+  end_addr = start_addr + fw_len - 1
 
   print("start programming session ...")
   uds_client.diagnostic_session_control(SESSION_TYPE.PROGRAMMING)
@@ -160,8 +160,8 @@ def flash_bootloader(uds_client, bootloader_filename, start_addr):
     cnt += 1
     uds_client.transfer_data(cnt & 0xFF, fw[i:i+chunk_size])
 
-    print("request transfer exit ...")
-    uds_client.request_transfer_exit()
+  print("request transfer exit ...")
+  uds_client.request_transfer_exit()
 
   print("enter bootloader ...")
   uds_client.routine_control(ROUTINE_CONTROL_TYPE.START, 0x0301, struct.pack(">I", start_addr))
@@ -226,7 +226,7 @@ if __name__ == "__main__":
   parser.add_argument('--extract-only', action='store_true', help='extract the firmware (do not flash)')
   parser.add_argument('--restore', action='store_true', help='flash firmware without modification')
   parser.add_argument('--debug', action='store_true', help='print additional debug messages')
-  parser.add_argument('--bootloader', type=str, default="./bootloader.hex", help='path to bootloader file')
+  parser.add_argument('--bootloader', type=str, default="./epas-bootloader-0x3ff7000-0x3ffacbd.bin", help='path to bootloader file')
   parser.add_argument('--can-addr', type=int, default=0x730, help='TX CAN address for UDS')
   parser.add_argument('--can-bus', type=int, default=0, help='CAN bus number (zero based)')
   args = parser.parse_args()
@@ -238,11 +238,12 @@ if __name__ == "__main__":
   os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
   fw_slice = None
-  fw_fn = f"firmware-{hex(FW_START_ADDR)}-{hex(FW_END_ADDR-1)}.bin"
+  fw_fn = f"./epas-firmware-{hex(FW_START_ADDR)}-{hex(FW_END_ADDR)}.bin"
   if args.extract_only or not os.path.exists(fw_fn):
-    fw_slice = extract_firmware(uds_client, FW_START_ADDR, FW_SIZE)
+    fw_slice = extract_firmware(uds_client, FW_START_ADDR, FW_END_ADDR)
+    # undo firmware changes in case firmware was already patched
     fw_slice = patch_firmware(fw_slice, FW_START_ADDR, restore=True)
-    md5 = hashlib.md5(fw_slice).hexdigest()
+    fw_slice = update_checksums(fw_slice, FW_START_ADDR, restore=True)
     print(f"  file name: {fw_fn}")
     with open(fw_fn, "wb") as f:
       f.write(fw_slice)
@@ -258,7 +259,7 @@ if __name__ == "__main__":
   md5 = hashlib.md5(fw_slice).hexdigest()
 
   assert len(fw_slice) == FW_SIZE, f"expected {FW_SIZE} bytes of firmware but got {len(fw_slice)} bytes"
-  assert md5 != FW_MD5SUM, f"expected md5sum of firmware to be in {FW_MD5SUM} but found {md5}"
+  assert md5 == FW_MD5SUM, f"expected md5sum of firmware to be in {FW_MD5SUM} but found {md5}"
   fw_mod_fn = f"{md5}.modified.bin"
 
   if not args.restore:

@@ -100,6 +100,16 @@ int main(int argc, char *argv[]) {
   QString basePath(fullpath);
   int j = basePath.lastIndexOf('/') + 1;
   basePath = basePath.left(j);
+  if (argc != 6) {
+    fprintf(stderr, "flasher requires 5 arguments\n");
+    fprintf(stderr, "Usage: flasher Button1 script1.sh Button2 script2.sh splash_script.sh\n");
+    exit(1);
+  }
+  QString button1_label(argv[1]);
+  QString button1_script(argv[2]);
+  QString button2_label(argv[3]);
+  QString button2_script(argv[4]);
+  QString splash_script(argv[5]);
   initApp();
   QApplication a(argc, argv);
   QWidget window;
@@ -128,7 +138,7 @@ int main(int argc, char *argv[]) {
   QGridLayout *main_layout = new QGridLayout(&window);
   main_layout->setMargin(50);
 
-  label = new QLabel(argv[1]);
+  label = new QLabel("");
   label->setWordWrap(false);
   label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
   ScrollView *scroll = new ScrollView(label);
@@ -155,7 +165,7 @@ int main(int argc, char *argv[]) {
     Hardware::reboot();
   });
 
-  btn2->setText("Restore");
+  btn2->setText(button2_label);
   QObject::connect(btn2, &QPushButton::clicked, [=]() {
     btn->setEnabled(false);
     btn2->setEnabled(false);
@@ -168,10 +178,10 @@ int main(int argc, char *argv[]) {
     //kill what we have to again (just in case)
     //flash EPAS
     stage = 2;
-    run_script(basePath+"restore.sh");
+    run_script(basePath+button2_script);
   });
 
-  btn3->setText("Flash");
+  btn3->setText(button1_label);
   QObject::connect(btn3, &QPushButton::clicked, [=]() {
     btn->setEnabled(false);
     btn2->setEnabled(false);
@@ -184,7 +194,7 @@ int main(int argc, char *argv[]) {
     //kill what we have to
     //baclup EPAS
     stage = 1;
-    run_script(basePath+"flash.sh");
+    run_script(basePath+button1_script);
   });
   
   btn4->setText("Cancel");
@@ -221,6 +231,6 @@ int main(int argc, char *argv[]) {
   btn3->repaint(); 
   btn4->repaint();
   stage = -1;
-  run_script(basePath+"info.sh");
+  run_script(basePath+splash_script);
   return a.exec();
 }

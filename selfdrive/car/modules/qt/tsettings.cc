@@ -55,6 +55,18 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
     }
     addItem(toggle);
   };
+  QPushButton *flash_btn = new QPushButton("Flash Panda");
+  flash_btn->setObjectName("flash_btn");
+  
+  QObject::connect(flash_btn, &QPushButton::clicked, [=](){
+    QProcess::startDetached("/data/openpilot/panda/board/flashPanda");
+  });
+
+  setStyleSheet(R"(
+    #flash_btn { height: 120px; border-radius: 15px; background-color: #393939; }
+    #flash_btn:pressed { background-color: #4a4a4a; }
+  )");
+  addItem(flash_btn);
 }
 
 TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
