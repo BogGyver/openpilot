@@ -144,6 +144,11 @@ int main(int argc, char *argv[]) {
     scroll->verticalScrollBar()->setValue(scroll->verticalScrollBar()->maximum());
   });
 
+  // Scroll to the left
+  QObject::connect(scroll->horizontalScrollBar(), &QAbstractSlider::rangeChanged, [=]() {
+    scroll->horizontalScrollBar()->setValue(scroll->horizontalScrollBar()->minimum());
+  });
+
   btn = new QPushButton();
   btn2 = new QPushButton();
   btn3 = new QPushButton();
