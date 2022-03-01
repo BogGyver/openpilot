@@ -50,7 +50,6 @@ void onFinished(int a) {
     btn4->repaint();
     stage = 0;
   }
-
 }
 
 
@@ -76,12 +75,53 @@ void run_script(QString script) {
   process->start(script);
 }
 
+void reformatLabel(QString textToAdd) {
+  QString labelText = label->text() + textToAdd;
+  bool notDone = true;
+  int start = 0;
+  while (notDone) {
+    int ind_n = labelText.indexOf("\n",start);
+    int ind_r = labelText.indexOf("\r",start);
+    if ((ind_n == -1) && (ind_n == -1)) {
+      notDone = false;
+    } else {
+      if (ind_n == -1) ind_n = labelText.size() + 5;
+      if (ind_r == -1) ind_r = labelText.size() + 5;
+      int pos = std::min(ind_n,ind_r);
+      int index = 1;
+      if (std::abs(ind_n - ind_r) == 1 ) //consecutive
+        index = 2;
+      labelText.insert(pos+index,QChar(254));
+      start = pos+index+1;
+    }
+  }
+  QStringList ltlist = labelText.split(QChar(254),QString::SkipEmptyParts);
+  QString newLabelText = "";
+  QString lastRtext = "";
+  for ( const auto& line : ltlist  )
+  {
+      int ind_n = line.indexOf("\n",0);
+      int ind_r = line.indexOf("\r",0);
+      if ((ind_n == -1) && (ind_r >= 0)) {
+        //we only have \r, so just save in case is the last line
+        lastRtext = line;
+      } else {
+        newLabelText = newLabelText + line;
+        //reset lastRtext
+        lastRtext = "";
+      }
+  }
+  label->setText(newLabelText+lastRtext);
+}
+
 void readStdOut() {
-  label->setText(label->text() + process->readAllStandardOutput());
+  //label->setText(label->text() + process->readAllStandardOutput());
+  reformatLabel(process->readAllStandardOutput());
 }
 
 void readErrorOut() {
-  label->setText(label->text() + process->readAllStandardError());
+  //label->setText(label->text() + process->readAllStandardError());
+  reformatLabel(process->readAllStandardError());
 }
 
 int main(int argc, char *argv[]) {
