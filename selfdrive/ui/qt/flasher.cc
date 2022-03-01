@@ -91,8 +91,8 @@ void reformatLabel(QString textToAdd) {
       int index = 1;
       if (std::abs(ind_n - ind_r) == 1 ) //consecutive
         index = 2;
-      labelText.insert(pos+index,QChar(254));
-      start = pos+index+1;
+      labelText.insert(pos-1,QChar(254));
+      start = pos+index;
     }
   }
   QStringList ltlist = labelText.split(QChar(254),QString::SkipEmptyParts);
@@ -104,7 +104,7 @@ void reformatLabel(QString textToAdd) {
       counter++;
       int ind_n = line.indexOf("\n",0);
       int ind_r = line.indexOf("\r",0);
-      if ((ind_n == -1) && (ind_r >= 0)) {
+      if ((ind_n == -1) && (ind_r > 0)) {
         //we only have \r, so just save in case is the last line
         lastRtext = line;
       } else {
