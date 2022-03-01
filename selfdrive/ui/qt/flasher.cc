@@ -132,10 +132,11 @@ int main(int argc, char *argv[]) {
   main_layout->setMargin(50);
 
   label = new QLabel(argv[1]);
-  label->setWordWrap(true);
+  label->setWordWrap(false);
   label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
   ScrollView *scroll = new ScrollView(label);
   scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
   main_layout->addWidget(scroll, 0, 0, 1, 4);
 
   // Scroll to the bottom
@@ -198,7 +199,7 @@ int main(int argc, char *argv[]) {
     * {
       outline: none;
       padding-bottom: 100px;
-      font-size: 60px;
+      font-size: 40px;
     }
     QPushButton {
       padding: 50px;
@@ -207,6 +208,7 @@ int main(int argc, char *argv[]) {
       border: 2px solid white;
       border-radius: 20px;
       margin-right: 40px;
+      font-size: 60px;
     }
   )");
   set_text_1();
