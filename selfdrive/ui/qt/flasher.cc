@@ -98,17 +98,23 @@ void reformatLabel(QString textToAdd) {
   QStringList ltlist = labelText.split(QChar(254),QString::SkipEmptyParts);
   QString newLabelText = "";
   QString lastRtext = "";
+  int counter = 0;
   for ( const auto& line : ltlist  )
   {
+      counter++;
       int ind_n = line.indexOf("\n",0);
       int ind_r = line.indexOf("\r",0);
       if ((ind_n == -1) && (ind_r >= 0)) {
         //we only have \r, so just save in case is the last line
         lastRtext = line;
       } else {
-        newLabelText = newLabelText + line;
         //reset lastRtext
-        lastRtext = "";
+        if ((line.size() == 0) && (counter == ltlist.size())) {
+          //this is the last element and most likely empty so we do nothing
+        } else {
+          newLabelText = newLabelText + line;
+          lastRtext = "";
+        }
       }
   }
   label->setText(newLabelText+lastRtext);
