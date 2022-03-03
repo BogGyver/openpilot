@@ -204,6 +204,8 @@ void UIState::updateStatus() {
   if (scene.started && sm->updated("controlsState")) {
     auto controls_state = (*sm)["controlsState"].getControlsState();
     auto alert_status = controls_state.getAlertStatus();
+    auto atext1 = controls_state.getAlertText1();
+    alert_active = (strlen(atext1.cStr()) > 0);
     if (alert_status == cereal::ControlsState::AlertStatus::USER_PROMPT) {
       status = STATUS_WARNING;
     } else if (alert_status == cereal::ControlsState::AlertStatus::CRITICAL) {
@@ -304,8 +306,8 @@ void Device::updateBrightness(const UIState &s) {
     brightness = 0;
   }
 
-  if (awake && s.should_turn_screen_off && interactive_timeout == 0) {
-    brightness = 0;
+  if (awake && s.should_turn_screen_off) {
+    brightness = s.alert_active ? brightness : 0;
   }
 
   if (brightness != last_brightness) {

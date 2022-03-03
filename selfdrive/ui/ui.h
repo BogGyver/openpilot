@@ -121,6 +121,7 @@ public:
 
   int fb_w = 0, fb_h = 0;
   bool should_turn_screen_off = false;
+  bool alert_active = false;
 
   std::unique_ptr<SubMaster> sm;
 
