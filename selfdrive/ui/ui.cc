@@ -304,6 +304,10 @@ void Device::updateBrightness(const UIState &s) {
     brightness = 0;
   }
 
+  if (awake && s.should_turn_screen_off && interactive_timeout == 0) {
+    brightness = 0;
+  }
+
   if (brightness != last_brightness) {
     if (!brightness_future.isRunning()) {
       brightness_future = QtConcurrent::run(Hardware::set_brightness, brightness);
