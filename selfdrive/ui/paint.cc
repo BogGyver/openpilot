@@ -1,4 +1,4 @@
-#include "ui.hpp"
+#include "ui.h"
 
 #include <assert.h>
 #include "common/util.h"

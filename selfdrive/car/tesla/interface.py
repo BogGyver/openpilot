@@ -39,6 +39,7 @@ class CarInterface(CarInterfaceBase):
     # BIT - MEANING
     #  Panda.FLAG_TESLA_POWERTRAIN = 1
     #  Panda.FLAG_TESLA_LONG_CONTROL = 2
+    #  Panda.FLAG_TESLA_HAS_IC_INTEGRATION = 8
     #  Panda.FLAG_TESLA_HAS_AP = 16
     #  Panda.FLAG_TESLA_NEED_RADAR_EMULATION = 32
     #  Panda.FLAG_TESLA_HAO = 64
@@ -90,6 +91,8 @@ class CarInterface(CarInterfaceBase):
     if load_bool_param("TinklaEnableOPLong",False) or ret.openpilotLongitudinalControl:
       safetyParam = safetyParam | Panda.FLAG_TESLA_LONG_CONTROL
       ret.openpilotLongitudinalControl = True
+    if load_bool_param("TinklaHasIcIntegration",False):
+      safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_IC_INTEGRATION
     # true if car has ibooster
     if (candidate == CAR.PREAP_MODELS and load_bool_param("TinklaHasIBooster",False)) or (candidate != CAR.PREAP_MODELS):
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_IBOOSTER

@@ -153,7 +153,7 @@ static void update_state(UIState *s) {
   if (sm.updated("carParams")) {
     scene.longitudinal_control = sm["carParams"].getCarParams().getOpenpilotLongitudinalControl();
   }
-  if (!scene.started && sm.updated("sensorEvents")) {
+  if ((!scene.started && !s->should_turn_screen_off) && sm.updated("sensorEvents")) {
     for (auto sensor : sm["sensorEvents"].getSensorEvents()) {
       if (sensor.which() == cereal::SensorEventData::ACCELERATION) {
         auto accel = sensor.getAcceleration().getV();
@@ -193,7 +193,11 @@ static void update_state(UIState *s) {
 }
 
 void ui_update_params(UIState *s) {
+  const uint64_t frame = s->sm->frame;
   s->scene.is_metric = Params().getBool("IsMetric");
+  if (frame % (6*UI_FREQ) == 0) {
+    s->should_turn_screen_off = ((!Params().tinkla_get_bool_param("TinklaDebugMode")) && Params().tinkla_get_bool_param("TinklaTurnScreenOff"));
+  }
 }
 
 void UIState::updateStatus() {
@@ -330,8 +334,13 @@ void Device::updateWakefulness(const UIState &s) {
   } else if (interactive_timeout > 0 && --interactive_timeout == 0) {
     emit interactiveTimout();
   }
-
-  setAwake(s.scene.ignition || interactive_timeout > 0);
+  if ((interactive_timeout > 2 * UI_FREQ) && ignition_on && s.should_turn_screen_off) {
+    interactive_timeout = 2 * UI_FREQ;
+  };
+  if (s.should_turn_screen_off) {
+    setAwake(interactive_timeout > 0);
+  } else
+    setAwake(s.scene.ignition || interactive_timeout > 0);
 }
 
 UIState *uiState() {

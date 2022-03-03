@@ -272,6 +272,7 @@ class CarState(CarStateBase):
         ret.cruiseState.standstill = False
         ret.brakePressed = False
         ret.gasPressed = False
+        self.DAS_216_driverOverriding = False
 
     return ret
 
