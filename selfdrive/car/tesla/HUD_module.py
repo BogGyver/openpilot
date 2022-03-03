@@ -117,7 +117,7 @@ class HUDController:
 
         #send messages for IC intergration
         #CS.DAS_206_apUnavailable = 1 if enabled and human_control else 0
-        CS.DAS_220_lcTempUnavailableRoad = 1 if enabled and human_control else 0
+        #CS.DAS_220_lcTempUnavailableRoad = 1 if enabled and human_control else 0
         warnings = CS.DAS_gas_to_resume + \
                 CS.DAS_025_steeringOverride + \
                 CS.DAS_202_noisyEnvironment + \
@@ -192,6 +192,9 @@ class HUDController:
                     DAS_hands_on_state = 3
                 else:
                     DAS_hands_on_state = 5
+            #if manual steering overright we will flash the light at the top of IC
+            if enabled and human_control:
+                DAS_hands_on_state = 5
             DAS_collision_warning =  1 if hud_alert == VisualAlert.fcw else 0
             #alcaState 1 if nothing, 8+direction if enabled
             DAS_alca_state = 8 + CS.alca_direction if (CS.alca_pre_engage or CS.alca_engaged) and CS.alca_direction > 0 else 1

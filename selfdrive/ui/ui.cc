@@ -329,7 +329,7 @@ void Device::updateWakefulness(const UIState &s) {
   bool ignition_just_turned_off = !s.scene.ignition && ignition_on;
   ignition_on = s.scene.ignition;
 
-  if (ignition_just_turned_off || motionTriggered(s)) {
+  if (ignition_just_turned_off || (motionTriggered(s) && !ignition_on)) {
     resetInteractiveTimout();
   } else if (interactive_timeout > 0 && --interactive_timeout == 0) {
     emit interactiveTimout();

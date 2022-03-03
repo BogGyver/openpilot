@@ -76,7 +76,8 @@ class CarState(CarStateBase):
     self.apFollowTimeInS = 2.5  # time in seconds to follow
     self.torqueLevel = 0.0
     self.cruise_state = None
-    self.enableHumanLongControl = load_bool_param("TinklaAllowHumanLong",False)
+    self.enableHumanLongControl = load_bool_param("TinklaAllowHumanLong", False)
+    self.enableICIntegration = load_bool_param("TinklaHasIcIntegration", False)
 
     #IC integration
     self.userSpeedLimitOffsetMS = 0
