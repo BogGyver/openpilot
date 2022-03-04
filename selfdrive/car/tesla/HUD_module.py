@@ -20,6 +20,8 @@ class HUDController:
         self.IC_integration_warning_counter = 0
         self.IC_previous_enabled = False
         self.radarVin_idx = 0
+        self.leftLaneQuality = 0.
+        self.rightLaneQuality = 0.
         
 
     # to show lead car on IC
@@ -80,7 +82,7 @@ class HUDController:
         return messages
 
     def update(self, enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
-             left_line, right_line, lead, left_lane_depart, right_lane_depart,human_control,radar_state,lat_plan,apply_angle):
+             left_line, right_line, lead, left_lane_depart, right_lane_depart,human_control,radar_state,lat_plan,apply_angle,model_data):
         # TODO: additional lanes to show on IC
         self.IC_integration_counter = ((self.IC_integration_counter + 2) % 100)
 
@@ -114,6 +116,9 @@ class HUDController:
                 CS.rLine = 1
             else:
                 CS.rLine = 0
+        if model_data is not None:
+            self.leftLaneQuality = model_data.modelV2.laneLineProbs[0]
+            self.rightLaneQuality = model_data.modelV2.laneLineProbs[3]
 
         #send messages for IC intergration
         #CS.DAS_206_apUnavailable = 1 if enabled and human_control else 0
@@ -159,6 +164,8 @@ class HUDController:
             messages.append(self.tesla_can.create_lane_message(CS.laneWidth, 1 if CS.alca_engaged else CS.rLine, 1 if CS.alca_engaged else CS.lLine, 
                 50, CS.curvC0, CS.curvC1, CS.curvC2, CS.curvC3, 
                 CAN_CHASSIS[self.CP.carFingerprint], 1))
+            if frame %10 == 0:
+                messages.append(self.tesla_can.create_telemetry_road_info(self.leftLaneQuality,self.rightLaneQuality ,CS.alca_direction,CAN_CHASSIS[self.CP.carFingerprint]))
 
             if frame %10 == 0:
                 if radar_state is not None:

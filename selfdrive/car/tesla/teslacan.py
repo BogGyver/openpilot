@@ -79,8 +79,28 @@ class TeslaCAN:
     return self.packer.make_can_msg("DAS_bodyControls", bus, values)
 
 
-  def create_telemetry_road_info(self, rLineType, rLineQual, rLineColor, lLineType, lLineQual, lLineColor, alcaState, bus):
+  def create_telemetry_road_info(self, lLineQualRaw, rLineQualRaw, alcaState, bus):
     #alcaState -1 alca to left, 1 alca to right, 0 no alca now
+    rLineType = 7
+    rLineColor = 0
+    rLineQual = 0
+    if rLineQualRaw > 0.45:
+      rLineType = 3
+      rLineColor = 1
+      if rLineQualRaw > 0.75:
+        rLineQual = 3
+      else:
+        rLineQual = 2
+    lLineType = 7
+    lLineColor = 0
+    lLineQual = 0
+    if lLineQualRaw > 0.45:
+      lLineType = 3
+      lLineColor = 1
+      if lLineQualRaw > 0.75:
+        lLineQual = 3
+      else:
+        lLineQual = 2
     values = {
       "DAS_telemetryMultiplexer" : 0,
       "DAS_telLeftLaneType" : lLineType, #0-undecided, 1-solid, 2-road edge, 3-dashed 4-double 5-botts dots 6-barrier

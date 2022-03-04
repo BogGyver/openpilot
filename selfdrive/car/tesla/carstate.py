@@ -172,12 +172,7 @@ class CarState(CarStateBase):
       self.autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
       self.cruiseEnabled = acc_enabled and not self.autopilot_enabled and not summon_or_autopark_enabled
       ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
-    else:
-      if self.cruise_buttons == CruiseButtons.MAIN:
-        self.cruiseEnabled = True
-      if self.cruise_buttons == CruiseButtons.CANCEL:
-        self.cruiseEnabled = False
-      ret.cruiseState.enabled = self.cruiseEnabled
+
     if self.speed_units == "KPH":
       ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
     elif self.speed_units == "MPH":
@@ -255,22 +250,27 @@ class CarState(CarStateBase):
     if sw_a is not None:
       self.msg_stw_actn_req = sw_a
       
-    #Pedal Interceptor
-    self.prev_pedal_interceptor_state = self.pedal_interceptor_state
-    self.prev_pedal_idx = self.pedal_idx
-    if self.CP.carFingerprint in [CAR.PREAP_MODELS] and self.forcePedalOverCC:
-      self.pedal_interceptor_state = cp_cam.vl["GAS_SENSOR"]["STATE"]
-      self.pedal_interceptor_value = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"]
-      self.pedal_interceptor_value2 = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
-      self.pedal_idx = cp_cam.vl["GAS_SENSOR"]["IDX"]
-
     #PREAP overrides at the last moment
     if self.CP.carFingerprint in [CAR.PREAP_MODELS]:
+      #Pedal Interceptor
+      self.prev_pedal_interceptor_state = self.pedal_interceptor_state
+      self.prev_pedal_idx = self.pedal_idx
+      if self.forcePedalOverCC:
+        self.pedal_interceptor_state = cp_cam.vl["GAS_SENSOR"]["STATE"]
+        self.pedal_interceptor_value = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"]
+        self.pedal_interceptor_value2 = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
+        self.pedal_idx = cp_cam.vl["GAS_SENSOR"]["IDX"]
+    
       if self.enableHumanLongControl:
-        ret.cruiseState.enabled = ret.cruiseState.enabled and (not ret.doorOpen) and (ret.gearShifter == car.CarState.GearShifter.drive) and (not ret.seatbeltUnlatched)
+        if self.cruise_buttons == CruiseButtons.MAIN:
+          self.cruiseEnabled = True
+        if self.cruise_buttons == CruiseButtons.CANCEL:
+          self.cruiseEnabled = False
+          
+        ret.cruiseState.enabled = self.cruiseEnabled and (not ret.doorOpen) and (ret.gearShifter == car.CarState.GearShifter.drive) and (not ret.seatbeltUnlatched)
         self.cruiseEnabled = ret.cruiseState.enabled
         ret.cruiseState.available = True
-        ret.cruiseState.standstill = False
+        ret.cruiseState.standstill = ret.standstill
         ret.brakePressed = False
         ret.gasPressed = False
         self.DAS_216_driverOverriding = False

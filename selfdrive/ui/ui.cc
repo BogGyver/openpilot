@@ -222,6 +222,8 @@ void UIState::updateStatus() {
       scene.started_frame = sm->frame;
       scene.end_to_end = Params().getBool("EndToEndToggle");
       wide_camera = Hardware::TICI() ? Params().getBool("EnableWideCamera") : false;
+    } else {
+      alert_active = false;
     }
     started_prev = scene.started;
     emit offroadTransition(!scene.started);
@@ -299,15 +301,16 @@ void Device::updateBrightness(const UIState &s) {
 
     // Scale back to 10% to 100%
     clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
+
+    if (awake && s.should_turn_screen_off) {
+      clipped_brightness = s.alert_active ? clipped_brightness : 0;
+    }
   }
 
   int brightness = brightness_filter.update(clipped_brightness);
+
   if (!awake) {
     brightness = 0;
-  }
-
-  if (awake && s.should_turn_screen_off) {
-    brightness = s.alert_active ? brightness : 0;
   }
 
   if (brightness != last_brightness) {
@@ -340,13 +343,13 @@ void Device::updateWakefulness(const UIState &s) {
   } else if (interactive_timeout > 0 && --interactive_timeout == 0) {
     emit interactiveTimout();
   }
-  if ((interactive_timeout > 2 * UI_FREQ) && ignition_on && s.should_turn_screen_off) {
-    interactive_timeout = 2 * UI_FREQ;
-  };
-  if (s.should_turn_screen_off) {
-    setAwake(interactive_timeout > 0);
-  } else
-    setAwake(s.scene.ignition || interactive_timeout > 0);
+
+  bool should_be_awake = s.scene.ignition;
+  if (s.should_turn_screen_off && should_be_awake) {
+    should_be_awake = (s.alert_active && should_be_awake);
+  }
+  
+  setAwake(should_be_awake || interactive_timeout > 0);
 }
 
 UIState *uiState() {
