@@ -277,7 +277,7 @@ class PCCController:
         set_speed_limit_active,
         speed_limit_offset,
         alca_enabled,
-        radSt
+        model_data
     ):
         idx = self.pedal_idx
 
@@ -316,8 +316,8 @@ class PCCController:
         # Alternative speed decision logic that uses the lead car's distance
         # and speed more directly.
         # Bring in the lead car distance from the radarState feed
-        if radSt is not None:
-            self.lead_1 = radSt.radarState.leadOne
+        if model_data is not None:
+            self.lead_1 = model_data.modelV2.leadsV3[0]
             if _is_present(self.lead_1):
                 self.lead_last_seen_time_ms = _current_time_millis()
                 self.continuous_lead_sightings += 1

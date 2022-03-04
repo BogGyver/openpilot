@@ -24,7 +24,7 @@ class LONGController:
             self.adaptive_cruise = 0
 
 
-    def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state):
+    def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,model_data):
         messages = []
 
         if frame % 100 == 0:
@@ -109,7 +109,7 @@ class LONGController:
                     self.set_speed_limit_active,
                     self.speed_limit_offset_ms,
                     CS.alca_engaged,
-                    radar_state
+                    model_data
                 )
                 messages.append(
                     self.tesla_can.create_pedal_command_msg(
@@ -123,8 +123,8 @@ class LONGController:
         elif enabled and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
             #we use the same logic from planner here to get the speed
 
-            if radar_state is not None:
-                self.lead_1 = radar_state.radarState.leadOne
+            if model_data is not None:
+                self.lead_1 = model_data.modelV2.leadsV3[0]
             if long_plan is not None:
                 self.v_target = long_plan.longitudinalPlan.vTargetFuture # to try vs vTarget
                 self.a_target = abs(long_plan.longitudinalPlan.aTarget) # to try vs aTarget

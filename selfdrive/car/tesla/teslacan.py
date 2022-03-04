@@ -84,23 +84,27 @@ class TeslaCAN:
     rLineType = 7
     rLineColor = 0
     rLineQual = 0
-    if rLineQualRaw > 0.45:
+    if rLineQualRaw > 0.25:
       rLineType = 3
       rLineColor = 1
       if rLineQualRaw > 0.75:
         rLineQual = 3
-      else:
+      elif rLineQualRaw > 0.50:
         rLineQual = 2
+      else:
+        rLineQual = 1
     lLineType = 7
     lLineColor = 0
     lLineQual = 0
-    if lLineQualRaw > 0.45:
+    if lLineQualRaw > 0.25:
       lLineType = 3
       lLineColor = 1
       if lLineQualRaw > 0.75:
         lLineQual = 3
-      else:
+      elif lLineQual > 0.5:
         lLineQual = 2
+      else:
+        lLineQual = 1
     values = {
       "DAS_telemetryMultiplexer" : 0,
       "DAS_telLeftLaneType" : lLineType, #0-undecided, 1-solid, 2-road edge, 3-dashed 4-double 5-botts dots 6-barrier
