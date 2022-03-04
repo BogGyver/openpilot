@@ -318,6 +318,7 @@ class PCCController:
         # Bring in the lead car distance from the radarState feed
         if model_data is not None:
             self.lead_1 = model_data.modelV2.leadsV3[0]
+            #TODOBB: need PCC based on modelV2.leadsV3
             if _is_present(self.lead_1):
                 self.lead_last_seen_time_ms = _current_time_millis()
                 self.continuous_lead_sightings += 1
@@ -330,9 +331,9 @@ class PCCController:
         if self.lead_1:
             following = (
                 self.lead_1.status
-                and self.lead_1.dRel < MAX_RADAR_DISTANCE
-                and self.lead_1.vLeadK > v_ego
-                and self.lead_1.aLeadK > 0.0
+                and self.lead_1.x < MAX_RADAR_DISTANCE
+                and self.lead_1.v > v_ego
+                and self.lead_1.a > 0.0
             )
         accel_limits = [
             float(x) for x in calc_cruise_accel_limits(v_ego,following)
@@ -440,7 +441,7 @@ def _safe_distance_m(v_ego_ms, CS):
 
 
 def _is_present(lead):
-    return bool((not (lead is None)) and (lead.dRel > 0))
+    return bool((lead.prob > 0.5) and (lead.x > 0))
 
 
 def _sec_til_collision(lead, CS):
@@ -450,11 +451,11 @@ def _sec_til_collision(lead, CS):
             return min(
                 0.1,
                 -4
-                + lead.dRel / abs(lead.vRel + min(0, lead.aRel) * CS.apFollowTimeInS),
+                + lead.x / abs(lead.v + min(0, lead.a) * CS.apFollowTimeInS),
             )
         else:
-            return _visual_radar_adjusted_dist_m(lead.dRel, CS) / abs(
-                lead.vRel + min(0, lead.aRel) * CS.apFollowTimeInS
+            return _visual_radar_adjusted_dist_m(lead.x, CS) / abs(
+                lead.v + min(0, lead.a) * CS.apFollowTimeInS
             )
     else:
         return 60.0  # Arbitrary, but better than MAXINT because we can still do math on it.
@@ -510,8 +511,8 @@ def _accel_limit_multiplier(CS, lead):
 
         return min(
             accel_mult
-            * _interp_map(lead.vRel, vrel_multipliers)
-            * _interp_map(lead.dRel, accel_multipliers),
+            * _interp_map(lead.v, vrel_multipliers)
+            * _interp_map(lead.x, accel_multipliers),
             1.0,
         )
     else:
@@ -530,25 +531,25 @@ def _decel_limit(accel_min, v_ego, lead, CS, max_speed_kph):
             max_speed_mult = 1.5
     if _is_present(lead):
         time_to_brake = max(0.1, _sec_til_collision(lead, CS))
-        if 0 < lead.dRel < MIN_SAFE_DIST_M:
+        if 0 < lead.x < MIN_SAFE_DIST_M:
             return -100.0
         elif (
-            lead.vRel >= 0.1 * v_ego
-            and lead.aRel < 0.5
-            and lead.dRel <= 1.1 * safe_dist_m
+            lead.v >= 0.1 * v_ego
+            and lead.a < 0.5
+            and lead.x <= 1.1 * safe_dist_m
         ):
             # going faster but decelerating, reduce with up to the same acceleration
-            return -2 + lead.aRel
+            return -2 + lead.a
         elif (
-            lead.vRel <= 0.1 * v_ego
-            and lead.aLeadK < 0.5
-            and lead.dRel <= 1.1 * safe_dist_m
+            lead.v <= 0.1 * v_ego
+            and lead.a < 0.5
+            and lead.x <= 1.1 * safe_dist_m
         ):
             # going slower AND decelerating
-            accel_to_compensate = min(3 * lead.vRel / time_to_brake, -0.7)
-            return -2 + lead.aRel + accel_to_compensate
-        elif lead.vRel < -0.1 * v_ego and lead.dRel <= 1.1 * safe_dist_m:
-            return -3 + 2 * lead.vRel / time_to_brake
+            accel_to_compensate = min(3 * lead.v / time_to_brake, -0.7)
+            return -2 + lead.a + accel_to_compensate
+        elif lead.v < -0.1 * v_ego and lead.x <= 1.1 * safe_dist_m:
+            return -3 + 2 * lead.v / time_to_brake
         # if we got here, aLeadK >=0 so use the old logic
         decel_map = OrderedDict(
             [
@@ -609,6 +610,6 @@ def _brake_pedal_min(v_ego, v_target, lead, CS, max_speed_kph):
                 (3.0 * safe_dist_m, 0.4),
             ]
         )
-        brake_mult2 = _interp_map(lead.dRel, brake_distance_map)
+        brake_mult2 = _interp_map(lead.x, brake_distance_map)
     brake_mult = max(brake_mult1, brake_mult2)
     return -brake_mult

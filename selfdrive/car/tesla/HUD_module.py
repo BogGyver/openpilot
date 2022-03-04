@@ -31,7 +31,8 @@ class HUDController:
         if self.lastLeadsData is None:
             return messages
         lead_1 = self.lastLeadsData[0]
-        if (lead_1 is not None) and lead_1.status:
+        lead_2 = self.lastLeadsData[1]
+        if lead_1.prob > 0.5:
             self.ahbLead1 = lead_1
             self.leadDx = lead_1.x
             self.leadDy = curv0 - lead_1.y
@@ -44,12 +45,19 @@ class HUDController:
             self.leadClass = 0
             self.leadId = 0
             self.leadVx = 0xF
-        
-        self.lead2Dx = 0.0
-        self.lead2Dy = 0.0
-        self.lead2Class = 0
-        self.lead2Id = 0
-        self.lead2Vx = 0xF
+        if lead_2.prob > 0.5:
+            self.ahbLead2 = lead_2
+            self.leadDx = lead_2.x
+            self.leadDy = curv0 - lead_2.y
+            self.leadId = 1
+            self.leadClass = 2
+            self.leadVx = lead_2.v
+        else:
+            self.lead2Dx = 0.0
+            self.lead2Dy = 0.0
+            self.lead2Class = 0
+            self.lead2Id = 0
+            self.lead2Vx = 0xF
         messages.append(
             self.tesla_can.create_lead_car_object_message(
                 0, #lead vehicle
