@@ -53,66 +53,21 @@ void onFinished(int a) {
 }
 
 void reformatLabel(QString textToAdd) {
-  
-  label->setText(label->text() + process->readAllStandardOutput()); 
-  return;
-  QString labelText = label->text() + textToAdd;
-  bool notDone = true;
-  int start = 0;
-  while (notDone) {
-    int ind_n = labelText.indexOf("\n",start);
-    int ind_r = labelText.indexOf("\r",start);
-    if ((ind_n == -1) && (ind_n == -1)) {
-      notDone = false;
-    } else {
-      if (ind_n == -1) ind_n = labelText.size() + 5;
-      if (ind_r == -1) ind_r = labelText.size() + 5;
-      int pos = std::min(ind_n,ind_r);
-      int index = 1;
-      if (std::abs(ind_n - ind_r) == 1 ) //consecutive
-        index = 2;
-      labelText.insert(pos-1,QChar(254));
-      start = pos+index;
-    }
-  }
-  QStringList ltlist = labelText.split(QChar(254),QString::SkipEmptyParts);
-  QString newLabelText = "";
-  QString lastRtext = "";
-  int counter = 0;
-  for ( const auto& line : ltlist  )
-  {
-      counter++;
-      int ind_n = line.indexOf("\n",0);
-      int ind_r = line.indexOf("\r",0);
-      if ((ind_n == -1) && (ind_r > 0)) {
-        //we only have \r, so just save in case is the last line
-        lastRtext = line;
-      } else {
-        //reset lastRtext
-        if ((line.size() == 0) && (counter == ltlist.size())) {
-          //this is the last element and most likely empty so we do nothing
-        } else {
-          newLabelText = newLabelText + line;
-          lastRtext = "";
-        }
-      }
-  }
-  label->setText(newLabelText+lastRtext);
+  QString labelText = textToAdd;
+  labelText.replace("\r", "\n");
+  label->setText(label->text() + labelText);
 }
 
 void run_script(QString script) {
   process = new QProcess();  // create on the heap, so it doesn't go out of scope
   QObject::connect(process, &QProcess::readyReadStandardOutput, [=](){ 
-    //label->setText(label->text() + process->readAllStandardOutput()); 
     reformatLabel(process->readAllStandardOutput());
   });
   QObject::connect(process, &QProcess::readyReadStandardError, [=](){ 
-    //label->setText(label->text() + process->readAllStandardError()); 
     reformatLabel(process->readAllStandardError());
   });
 
   QObject::connect(process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), [=](int exitCode, QProcess::ExitStatus exitStatus){ 
-    //label->setText(label->text() + process->readAll());
     reformatLabel(process->readAll());
     onFinished(exitCode); 
   });
@@ -206,37 +161,41 @@ int main(int argc, char *argv[]) {
     Hardware::reboot();
   });
 
-  btn2->setText(button2_label);
-  QObject::connect(btn2, &QPushButton::clicked, [=]() {
-    btn->setEnabled(false);
-    btn2->setEnabled(false);
-    btn3->setEnabled(false);
-    btn4->setEnabled(false);
-    btn->repaint(); 
-    btn2->repaint(); 
-    btn3->repaint(); 
-    btn4->repaint(); 
-    //kill what we have to again (just in case)
-    //flash EPAS
-    stage = 2;
-    run_script(basePath+button2_script);
-  });
+  if (button2_label != "-") {
+    btn2->setText(button2_label);
+    QObject::connect(btn2, &QPushButton::clicked, [=]() {
+      btn->setEnabled(false);
+      btn2->setEnabled(false);
+      btn3->setEnabled(false);
+      btn4->setEnabled(false);
+      btn->repaint(); 
+      btn2->repaint(); 
+      btn3->repaint(); 
+      btn4->repaint(); 
+      //kill what we have to again (just in case)
+      //flash EPAS
+      stage = 2;
+      run_script(basePath+button2_script);
+    });
+  }
 
-  btn3->setText(button1_label);
-  QObject::connect(btn3, &QPushButton::clicked, [=]() {
-    btn->setEnabled(false);
-    btn2->setEnabled(false);
-    btn3->setEnabled(false);
-    btn4->setEnabled(false);
-    btn->repaint(); 
-    btn2->repaint(); 
-    btn3->repaint(); 
-    btn4->repaint();
-    //kill what we have to
-    //baclup EPAS
-    stage = 1;
-    run_script(basePath+button1_script);
-  });
+  if (button1_label != "-") {
+    btn3->setText(button1_label);
+    QObject::connect(btn3, &QPushButton::clicked, [=]() {
+      btn->setEnabled(false);
+      btn2->setEnabled(false);
+      btn3->setEnabled(false);
+      btn4->setEnabled(false);
+      btn->repaint(); 
+      btn2->repaint(); 
+      btn3->repaint(); 
+      btn4->repaint();
+      //kill what we have to
+      //baclup EPAS
+      stage = 1;
+      run_script(basePath+button1_script);
+    });
+  }
   
   btn4->setText("Cancel");
   QObject::connect(btn4, &QPushButton::clicked, [=]() {
