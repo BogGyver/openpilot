@@ -22,34 +22,45 @@ class HUDController:
         self.radarVin_idx = 0
         self.leftLaneQuality = 0.
         self.rightLaneQuality = 0.
-        self.lastLeadsData = None
         
 
     # to show lead car on IC
-    def showLeadCarOnICCanMessage(self, curv0):
+    def showLeadCarOnICCanMessage(self, radarStateMsg, curv0):
         messages = []
-        if self.lastLeadsData is None:
+        if radarStateMsg is None:
             return messages
-        lead_1 = self.lastLeadsData[0]
+        leads = radarStateMsg.radarState
+        if leads is None:
+            return messages
+        lead_1 = leads.leadOne
+        lead_2 = leads.leadTwo
         if (lead_1 is not None) and lead_1.status:
             self.ahbLead1 = lead_1
-            self.leadDx = lead_1.x
-            self.leadDy = curv0 - lead_1.y
+            self.leadDx = lead_1.dRel
+            self.leadDy = curv0 - lead_1.yRel
             self.leadId = 1
             self.leadClass = 2
-            self.leadVx = lead_1.v
+            self.leadVx = lead_1.vRel
         else:
             self.leadDx = 0.0
             self.leadDy = 0.0
             self.leadClass = 0
             self.leadId = 0
             self.leadVx = 0xF
-        
-        self.lead2Dx = 0.0
-        self.lead2Dy = 0.0
-        self.lead2Class = 0
-        self.lead2Id = 0
-        self.lead2Vx = 0xF
+        if (lead_2 is not None) and lead_2.status:
+            self.lead2Dx = lead_2.dRel
+            self.lead2Dy = curv0 - lead_2.yRel
+            self.lead2Id = 2
+            self.lead2Class = 2
+            self.lead2Vx = lead_2.vRel
+            if (self.lead2Id <= 0) or (self.lead2Id == 63):
+                self.leadId = 62
+        else:
+            self.lead2Dx = 0.0
+            self.lead2Dy = 0.0
+            self.lead2Class = 0
+            self.lead2Id = 0
+            self.lead2Vx = 0xF
         messages.append(
             self.tesla_can.create_lead_car_object_message(
                 0, #lead vehicle
@@ -71,16 +82,13 @@ class HUDController:
         return messages
 
     def update(self, enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
-             left_line, right_line, lead, left_lane_depart, right_lane_depart,human_control,lat_plan,apply_angle,model_data):
+             left_line, right_line, lead, left_lane_depart, right_lane_depart,human_control,radar_state,lat_plan,apply_angle,model_data):
         # TODO: additional lanes to show on IC
         self.IC_integration_counter = ((self.IC_integration_counter + 2) % 100)
 
         if self.IC_integration_warning_counter > 0:
             self.IC_integration_warning_counter = self.IC_integration_warning_counter - 1
         messages = []
-
-        if model_data is not None:
-            self.lastLeadsData = model_data.modelV2.leadsV3
 
         if lat_plan is not None:
             #let's get the path points and compute poly coef
@@ -156,11 +164,12 @@ class HUDController:
             messages.append(self.tesla_can.create_lane_message(CS.laneWidth, 1 if CS.alca_engaged else CS.rLine, 1 if CS.alca_engaged else CS.lLine, 
                 50, CS.curvC0, CS.curvC1, CS.curvC2, CS.curvC3, 
                 CAN_CHASSIS[self.CP.carFingerprint], 1))
-            
-            messages.append(self.tesla_can.create_telemetry_road_info(self.leftLaneQuality,self.rightLaneQuality ,CS.alca_direction,CAN_CHASSIS[self.CP.carFingerprint]))
+            if frame %10 == 0:
+                messages.append(self.tesla_can.create_telemetry_road_info(self.leftLaneQuality,self.rightLaneQuality ,CS.alca_direction,CAN_CHASSIS[self.CP.carFingerprint]))
 
-            
-            messages.append(self.showLeadCarOnICCanMessage(curv0=CS.curvC0))
+            if frame %10 == 0:
+                if radar_state is not None:
+                    messages.append(self.showLeadCarOnICCanMessage(radarStateMsg=radar_state,curv0=CS.curvC0))
 
             # send DAS_bodyControls
             if (self.IC_integration_counter in [20,70]) or (self.IC_previous_enabled and not enabled):

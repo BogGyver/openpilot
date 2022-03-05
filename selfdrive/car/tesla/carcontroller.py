@@ -32,6 +32,7 @@ class CarController():
     self.prevCruiseEnabled = False
 
     self.lP = messaging.sub_sock('longitudinalPlan') 
+    self.rS = messaging.sub_sock('radarState') 
     self.mD = messaging.sub_sock('modelV2')
 
     self.long_control_counter = 0 
@@ -58,6 +59,7 @@ class CarController():
 
     #receive socks
     long_plan = messaging.recv_one_or_none(self.lP)
+    radar_state = messaging.recv_one_or_none(self.rS)
     model_data = messaging.recv_one_or_none(self.mD)
 
     if not enabled:
@@ -105,13 +107,13 @@ class CarController():
 
 
     #update LONG Control module
-    can_messages = self.long_controller.update(enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,model_data)
+    can_messages = self.long_controller.update(enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state)
     can_sends[0:0] = can_messages
 
     #update HUD Integration module
     if CS.enableICIntegration:
       can_messages = self.hud_controller.update(enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
-              left_line, right_line, lead, left_lane_depart, right_lane_depart,CS.human_control,CS.lat_plan,apply_angle,model_data)
+              left_line, right_line, lead, left_lane_depart, right_lane_depart,CS.human_control,radar_state,CS.lat_plan,apply_angle,model_data)
       can_sends.extend(can_messages)
 
     new_actuators = actuators.copy()

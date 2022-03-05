@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from cereal import car
 from opendbc.can.parser import CANParser
-from selfdrive.car.tesla.values import DBC, CAN_RADAR, CAR
+from selfdrive.car.tesla.values import DBC, CANBUS
 from selfdrive.car.interfaces import RadarInterfaceBase
 
 RADAR_MSGS_A = list(range(0x310, 0x36E, 3))
@@ -46,7 +46,7 @@ def get_radar_can_parser(CP):
       (msg_id_b, 8),
     ])
 
-  return CANParser(DBC[CP.carFingerprint]['radar'], signals, checks, CAN_RADAR[CP.carFingerprint])
+  return CANParser(DBC[CP.carFingerprint]['radar'], signals, checks, CANBUS.radar)
 
 class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
@@ -56,7 +56,6 @@ class RadarInterface(RadarInterfaceBase):
     self.track_id = 0
     self.trigger_msg = RADAR_MSGS_B[-1]
     self.radar_off_can = CP.radarOffCan
-    self.fingerprint = CP.carFingerprint
     if not self.radar_off_can:
       self.rcp = get_radar_can_parser(CP)
 
@@ -76,11 +75,8 @@ class RadarInterface(RadarInterfaceBase):
     errors = []
     sgu_info = self.rcp.vl['TeslaRadarSguInfo']
     if not self.rcp.can_valid:
-      print("radar CAN not valid")
       errors.append('canError')
-    # for preAP where radar could have DRC from being retrofitted, ignore SGUFail message
-    if sgu_info['RADC_HWFail'] or (sgu_info['RADC_SGUFail'] and self.fingerprint != CAR.PREAP_MODELS) or sgu_info['RADC_SensorDirty']:
-      print("radar has HW fault",sgu_info)
+    if sgu_info['RADC_HWFail'] or sgu_info['RADC_SGUFail'] or sgu_info['RADC_SensorDirty']:
       errors.append('fault')
     ret.errors = errors
 
