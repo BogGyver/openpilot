@@ -164,12 +164,12 @@ class HUDController:
             messages.append(self.tesla_can.create_lane_message(CS.laneWidth, 1 if CS.alca_engaged else CS.rLine, 1 if CS.alca_engaged else CS.lLine, 
                 50, CS.curvC0, CS.curvC1, CS.curvC2, CS.curvC3, 
                 CAN_CHASSIS[self.CP.carFingerprint], 1))
-            if frame %10 == 0:
+
+            if model_data:
                 messages.append(self.tesla_can.create_telemetry_road_info(self.leftLaneQuality,self.rightLaneQuality ,CS.alca_direction,CAN_CHASSIS[self.CP.carFingerprint]))
 
-            if frame %10 == 0:
-                if radar_state is not None:
-                    messages.append(self.showLeadCarOnICCanMessage(radarStateMsg=radar_state,curv0=CS.curvC0))
+            if radar_state is not None:
+                messages.append(self.showLeadCarOnICCanMessage(radarStateMsg=radar_state,curv0=CS.curvC0))
 
             # send DAS_bodyControls
             if (self.IC_integration_counter in [20,70]) or (self.IC_previous_enabled and not enabled):
