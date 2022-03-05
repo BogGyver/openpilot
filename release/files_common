@@ -193,6 +193,7 @@ selfdrive/car/tesla/*.py
 selfdrive/car/modules/qt/*.hpp
 selfdrive/car/modules/qt/*.h
 selfdrive/car/modules/qt/*.cc
+selfdrive/car/modules/teslaEpasFlasher/**
 selfdrive/car/tesla/speed_utils/*.py
 selfdrive/car/modules/*.py
 
