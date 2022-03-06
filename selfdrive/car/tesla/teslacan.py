@@ -21,7 +21,7 @@ class TeslaCAN:
     ret += sum(dat)
     return ret & 0xFF
 
-  def create_lane_message(self, lWidth, rLine, lLine, laneRange, curvC0, curvC1, curvC2, curvC3, bus, counter):
+  def create_lane_message(self, lWidth, rLine, lLine, laneRange, curvC0, curvC1, curvC2, curvC3, lLane2,rLane2,bus, counter):
     values = {
       "DAS_leftLaneExists" : lLine,
       "DAS_rightLaneExists" : rLine,
@@ -33,8 +33,8 @@ class TeslaCAN:
       "DAS_virtualLaneC3" : curvC3,
       "DAS_leftLineUsage" : lLine * 2, 
       "DAS_rightLineUsage" : rLine * 2,
-      "DAS_leftFork" : 0,
-      "DAS_rightFork" : 0,
+      "DAS_leftFork" : lLane2,
+      "DAS_rightFork" : rLane2,
       "DAS_lanesCounter" : counter,
     }
     return self.packer.make_can_msg("DAS_lanes", bus, values)

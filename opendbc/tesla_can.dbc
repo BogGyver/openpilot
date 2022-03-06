@@ -91,46 +91,6 @@ VAL_TABLE_ DAS_turnIndicatorRequest 3 "DAS_TURN_INDICATOR_CANCEL" 2 "DAS_TURN_IN
 VAL_TABLE_ DAS_turnIndicatorRequestReason 6 "DAS_ACTIVE_COMMANDED_LANE_CHANGE" 5 "DAS_CANCEL_FORK" 4 "DAS_CANCEL_LANE_CHANGE" 3 "DAS_ACTIVE_FORK" 2 "DAS_ACTIVE_SPEED_LANE_CHANGE" 1 "DAS_ACTIVE_NAV_LANE_CHANGE" 0 "DAS_NONE" ;
 VAL_TABLE_ DAS_wiperSpeed 15 "DAS_WIPER_SPEED_INVALID" 14 "DAS_WIPER_SPEED_14" 13 "DAS_WIPER_SPEED_13" 12 "DAS_WIPER_SPEED_12" 11 "DAS_WIPER_SPEED_11" 10 "DAS_WIPER_SPEED_10" 9 "DAS_WIPER_SPEED_9" 8 "DAS_WIPER_SPEED_8" 7 "DAS_WIPER_SPEED_7" 6 "DAS_WIPER_SPEED_6" 5 "DAS_WIPER_SPEED_5" 4 "DAS_WIPER_SPEED_4" 3 "DAS_WIPER_SPEED_3" 2 "DAS_WIPER_SPEED_2" 1 "DAS_WIPER_SPEED_1" 0 "DAS_WIPER_SPEED_OFF" ;
 
-BO_ 1160 DAS_steeringControl: 4 NEO
- SG_ DAS_steeringControlType : 23|2@0+ (1,0) [0|0] "" EPAS
- SG_ DAS_steeringControlChecksum : 31|8@0+ (1,0) [0|0] "" EPAS
- SG_ DAS_steeringControlCounter : 19|4@0+ (1,0) [0|0] "" EPAS
- SG_ DAS_steeringAngleRequest : 6|15@0+ (0.1,-1638.35) [-1638.35|1638.35] "deg" EPAS
- SG_ DAS_steeringHapticRequest : 7|1@0+ (1,0) [0|0] "" EPAS
-
-BO_ 697 DAS_control: 8 NEO
- SG_ DAS_setSpeed : 0|12@1+ (0.1,0) [0|409.4] "kph" NEO
- SG_ DAS_accState : 12|4@1+ (1,0) [0|0] "" NEO
- SG_ DAS_aebEvent : 16|2@1+ (1,0) [0|3] "" NEO
- SG_ DAS_jerkMin : 18|9@1+ (0.03,-15.232) [-15.232|0.098] "m/s^3" NEO
- SG_ DAS_jerkMax : 27|8@1+ (0.059,0) [0|15.045] "m/s^3" NEO
- SG_ DAS_accelMin : 35|9@1+ (0.04,-15) [-15|5.44] "m/s^2" NEO
- SG_ DAS_accelMax : 44|9@1+ (0.04,-15) [-15|5.44] "m/s^2" NEO
- SG_ DAS_controlCounter : 53|3@1+ (1,0) [0|0] "" NEO
- SG_ DAS_controlChecksum : 56|8@1+ (1,0) [0|0] "" NEO
-
-BO_ 257 GTW_epasControl: 3 NEO
- SG_ GTW_epasControlChecksum : 23|8@0+ (1,0) [0|255] ""  NEO
- SG_ GTW_epasControlCounter : 11|4@0+ (1,0) [0|15] ""  NEO
- SG_ GTW_epasControlType : 15|2@0+ (1,0) [-1|4] ""  NEO
- SG_ GTW_epasEmergencyOn : 7|1@0+ (1,0) [-1|2] ""  NEO
- SG_ GTW_epasLDWEnabled : 12|1@0+ (1,0) [-1|2] ""  NEO
- SG_ GTW_epasPowerMode : 6|4@0+ (1,0) [4|14] ""  NEO
- SG_ GTW_epasTuneRequest : 2|3@0+ (1,0) [-1|8] ""  NEO
-
-BO_ 880 EPAS_sysStatus: 8 EPAS
- SG_ EPAS_currentTuneMode : 7|4@0+ (1,0) [8|15] ""  NEO
- SG_ EPAS_eacErrorCode : 23|4@0+ (1,0) [-1|16] ""  NEO
- SG_ EPAS_eacStatus : 55|3@0+ (1,0) [5|7] ""  NEO
- SG_ EPAS_handsOnLevel : 39|2@0+ (1,0) [-1|4] ""  NEO
- SG_ EPAS_internalSAS : 37|14@0+ (0.1,-819.200012) [0|0] "deg"  NEO
- SG_ EPAS_steeringFault : 2|1@0+ (1,0) [-1|2] ""  NEO
- SG_ EPAS_steeringRackForce : 1|10@0+ (50,-25575) [0|0] "N" NEO
- SG_ EPAS_steeringReduced : 3|1@0+ (1,0) [-1|2] ""  NEO
- SG_ EPAS_sysStatusChecksum : 63|8@0+ (1,0) [0|255] ""  NEO
- SG_ EPAS_sysStatusCounter : 51|4@0+ (1,0) [0|15] ""  NEO
- SG_ EPAS_torsionBarTorque : 19|12@0+ (0.01,-20.5) [0|0] "Nm"  NEO
-
 BO_ 3 STW_ANGL_STAT: 8 STW
  SG_ StW_Angl : 5|14@0+ (0.5,-2048) [0|0] "deg"  NEO
  SG_ StW_AnglSpd : 21|14@0+ (0.5,-2048) [0|0] "/s"  NEO
@@ -146,6 +106,60 @@ BO_ 14 STW_ANGLHP_STAT: 8 STW
  SG_ StW_AnglHP_Sens_Id : 35|2@0+ (1,0) [0|0] ""  NEO
  SG_ MC_STW_ANGLHP_STAT : 55|4@0+ (1,0) [0|15] ""  NEO
  SG_ CRC_STW_ANGLHP_STAT : 63|8@0+ (1,0) [0|0] ""  NEO
+
+BO_ 69 STW_ACTN_RQ: 8 XXX
+ SG_ SpdCtrlLvr_Stat : 0|6@1+ (1,0) [0|0] "" XXX
+ SG_ VSL_Enbl_Rq : 6|1@1+ (1,0) [0|0] "" XXX
+ SG_ SpdCtrlLvrStat_Inv : 7|1@1+ (1,0) [0|0] "" XXX
+ SG_ DTR_Dist_Rq : 8|8@1+ (1,0) [0|200] "" XXX
+ SG_ TurnIndLvr_Stat : 16|2@1+ (1,0) [0|0] "" XXX
+ SG_ HiBmLvr_Stat : 18|2@1+ (1,0) [0|0] "" XXX
+ SG_ WprWashSw_Psd : 20|2@1+ (1,0) [0|0] "" XXX
+ SG_ WprWash_R_Sw_Posn_V2 : 22|2@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Lvr_Stat : 24|3@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Cond_Flt : 27|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Cond_Psd : 28|2@1+ (1,0) [0|0] "" XXX
+ SG_ HrnSw_Psd : 30|2@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw00_Psd : 32|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw01_Psd : 33|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw02_Psd : 34|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw03_Psd : 35|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw04_Psd : 36|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw05_Psd : 37|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw06_Psd : 38|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw07_Psd : 39|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw08_Psd : 40|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw09_Psd : 41|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw10_Psd : 42|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw11_Psd : 43|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw12_Psd : 44|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw13_Psd : 45|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw14_Psd : 46|1@1+ (1,0) [0|0] "" XXX
+ SG_ StW_Sw15_Psd : 47|1@1+ (1,0) [0|0] "" XXX
+ SG_ WprSw6Posn : 48|3@1+ (1,0) [0|0] "" XXX
+ SG_ MC_STW_ACTN_RQ : 52|4@1+ (1,0) [0|15] "" XXX
+ SG_ CRC_STW_ACTN_RQ : 56|8@1+ (1,0) [0|0] "" XXX
+
+BO_ 104 MCU_locationStatus2: 8 XXX
+ SG_ MCU_elevation : 0|32@1- (0.1,0) [0|0] "m" XXX
+ SG_ MCU_navigonExpectedSpeed : 32|7@1+ (1,0) [0|126] "mph" XXX
+
+BO_ 109 SBW_RQ_SCCM: 4 XXX
+ SG_ StW_Sw_Stat3 : 0|3@1+ (1,0) [0|0] "" XXX
+ SG_ MsgTxmtId : 6|2@1+ (1,0) [0|0] "" XXX
+ SG_ TSL_RND_Posn_StW : 8|4@1+ (1,0) [0|0] "" XXX
+ SG_ TSL_P_Psd_StW : 12|2@1+ (1,0) [0|0] "" XXX
+ SG_ MC_SBW_RQ_SCCM : 20|4@1+ (1,0) [0|15] "" XXX
+ SG_ CRC_SBW_RQ_SCCM : 24|8@1+ (1,0) [0|0] "" XXX
+
+BO_ 257 GTW_epasControl: 3 NEO
+ SG_ GTW_epasControlChecksum : 23|8@0+ (1,0) [0|255] ""  NEO
+ SG_ GTW_epasControlCounter : 11|4@0+ (1,0) [0|15] ""  NEO
+ SG_ GTW_epasControlType : 15|2@0+ (1,0) [-1|4] ""  NEO
+ SG_ GTW_epasEmergencyOn : 7|1@0+ (1,0) [-1|2] ""  NEO
+ SG_ GTW_epasLDWEnabled : 12|1@0+ (1,0) [-1|2] ""  NEO
+ SG_ GTW_epasPowerMode : 6|4@0+ (1,0) [4|14] ""  NEO
+ SG_ GTW_epasTuneRequest : 2|3@0+ (1,0) [-1|8] ""  NEO
 
 BO_ 264 DI_torque1: 8 DI
  SG_ DI_torqueDriver : 0|13@1- (0.25,0) [-750|750] "Nm"  NEO
@@ -204,10 +218,231 @@ BO_ 513 SDM1: 5 GTW
  SG_ SDM_bcklPassStatus : 3|2@0+ (1,0) [0|3] "" NEO
  SG_ SDM_bcklDrivStatus : 5|2@0+ (1,0) [0|3] "" NEO
 
+BO_ 521 DAS_longControl: 8 XXX
+ SG_ DAS_locMode : 0|2@1+ (1,0) [0|0] "" XXX
+ SG_ DAS_locState : 2|3@1+ (1,0) [0|0] "" XXX
+ SG_ DAS_locRequest : 5|3@1+ (1,0) [0|0] "" XXX
+ SG_ DAS_locJerkMin : 8|8@1+ (0.034,-8.67) [-8.67|0] "m/s^3" XXX
+ SG_ DAS_locJerkMax : 16|8@1+ (0.034,0) [0|8.67] "m/s^3" XXX
+ SG_ DAS_locSpeed : 24|11@1+ (0.1,0) [0|204.7] "kph" XXX
+ SG_ DAS_locAccelMin : 35|9@1+ (0.04,-15) [-15|5.44] "m/s^2" XXX
+ SG_ DAS_locAccelMax : 44|9@1+ (0.04,-15) [-15|5.44] "m/s^2" XXX
+ SG_ DAS_longControlCounter : 53|3@1+ (1,0) [0|0] "" XXX
+ SG_ DAS_longControlChecksum : 56|8@1+ (1,0) [0|0] "" XXX
+
+BO_ 522 BrakeMessage: 8 XXX
+ SG_ driverBrakeStatus : 2|2@1+ (1,0) [0|3] "" XXX
+
+BO_ 529 RCM_status: 8 RCM
+ SG_ RCM_driverOrientationInitStatus : 2|3@0+ (1,0) [0|7] "" GTW,OCS
+ SG_ RCM_armStatus : 5|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_warningIndicatorState : 7|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_tellTalePassengerState : 9|2@0+ (1,0) [0|3] "" GTW,OCS,DAS
+ SG_ RCM_bucklePassengerStatus : 11|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_tellTaleDriverState : 13|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_buckleDriverStatus : 15|2@0+ (1,0) [0|3] "" GTW,OCS,DAS
+ SG_ RCM_seatTrackPositionDrvr : 19|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_passAirbagRequest : 21|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_chimeState1stRow : 23|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_vinLearnFlag : 25|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_hwConfigPin58 : 27|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_hwConfigPin57 : 29|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_hwConfigPin56 : 31|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_passOccupantStatus : 33|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_airbagCutoffSwStatus : 35|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_privateCANStatus : 37|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_publicCANStatus : 39|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_edr2State : 45|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_edr1State : 47|2@0+ (1,0) [0|3] "" GTW,OCS
+ SG_ RCM_buckle2ndRowStatus : 50|3@0+ (1,0) [0|3] "" GTW,OCS,DAS
+ SG_ RCM_statusCounter : 55|4@0+ (1,0) [0|15] "" GTW,OCS,DAS
+ SG_ RCM_statusChecksum : 63|8@0+ (1,0) [0|255] "" GTW,OCS,DAS
+
 BO_ 532 EPB_epasControl: 3 EPB
  SG_ EPB_epasControlChecksum : 23|8@0+ (1,0) [0|255] ""  XXX
  SG_ EPB_epasControlCounter : 11|4@0+ (1,0) [0|15] ""  XXX
  SG_ EPB_epasEACAllow : 2|3@0+ (1,0) [4|7] ""  XXX
+
+BO_ 536 MCU_chassisControl: 8 XXX
+ SG_ MCU_dasDebugEnable : 0|1@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_parkBrakeRequest : 1|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_trailerModeCH : 3|1@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_fcwSensitivity : 4|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_fcwEnable : 6|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_latControlEnable : 8|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_accOvertakeEnable : 10|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_ldwEnable : 12|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_aebEnable : 14|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_bsdEnable : 16|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_ahlbEnable : 18|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_parkSetting : 20|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_pedalSafetyEnable : 22|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_frontDefrostReq_das : 24|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_autoParkRequest : 26|4@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_redLightStopSignEnable : 30|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_enableCreepTorqueCH : 32|1@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_narrowGarages : 33|1@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_rebootAutopilot : 34|1@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_enableAutowipers : 35|1@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_overPaintedUSS : 38|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_selfParkTune : 40|4@1+ (1,0) [0|15] "" XXX
+ SG_ MCU_towModeEnable : 44|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_zeroSpeedConfirmed : 46|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_aesEnable : 48|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_autoLaneChangeEnable : 50|2@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_chassisControlCounter : 52|4@1+ (1,0) [0|0] "" XXX
+ SG_ MCU_chassisControlChecksum : 56|8@1+ (1,0) [0|0] "" XXX
+
+BO_ 537 DAS_pscControl: 3 DAS
+ SG_ DAS_pscControlCounter : 0|4@1+ (1,0) [0|15] "" PARK,APS
+ SG_ DAS_pscParkState : 4|4@1+ (1,0) [0|15] "" PARK,EPB,APS
+ SG_ DAS_eacState : 8|3@1+ (1,0) [0|3] "" PARK,APS
+ SG_ DAS_pscControlChecksum : 16|8@1+ (1,0) [0|255] "" PARK,APS
+
+BO_ 568 UI_driverAssistRoadSign: 8 XXX
+ SG_ UI_roadSign M : 0|8@1+ (1,0) [0|0] "" XXX
+ SG_ UI_splineLocConfidence : 40|7@1+ (1,0) [0|100] "" XXX
+ SG_ UI_splineID : 48|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ UI_roadSignCounter : 52|4@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UI_roadSignChecksum : 56|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UI_dummyData m0 : 8|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UI_stopSignStopLineDist m1 : 8|10@1+ (0.25,-8) [-8|247.5] "m" Vector__XXX
+ SG_ UI_stopSignStopLineConf m1 : 18|7@1+ (1,0) [0|100] "" Vector__XXX
+ SG_ UI_trafficLightStopLineDist m2 : 8|10@1+ (0.25,-8) [-8|247.5] "m" Vector__XXX
+ SG_ UI_trafficLightStopLineConf m2 : 18|7@1+ (1,0) [0|100] "" Vector__XXX
+ SG_ UI_baseMapSpeedLimitMPS m3 : 8|8@1+ (0.25,0) [0|63.75] "m/s" XXX
+ SG_ UI_bottomQrtlFleetSpeedMPS m3 : 16|8@1+ (0.25,0) [0|63.75] "m/s" XXX
+ SG_ UI_topQrtlFleetSpeedMPS m3 : 24|8@1+ (0.25,0) [0|63.75] "m/s" XXX
+ SG_ UI_meanFleetSplineSpeedMPS m4 : 8|8@1+ (0.25,0) [0|63.75] "m/s" XXX
+ SG_ UI_medianFleetSpeedMPS m4 : 16|8@1+ (0.25,0) [0|63.75] "m/s" XXX
+ SG_ UI_meanFleetSplineAccelMPS2 m4 : 24|8@1+ (0.05,-6.35) [-6.35|6.4] "m/s^2" XXX
+ SG_ UI_rampType m4 : 32|3@1+ (1,0) [0|7] "" XXX
+ SG_ UI_currSplineIdFull m5 : 8|32@1+ (1,0) [0|1] "" XXX
+
+BO_ 569 DAS_lanes: 8 XXX
+ SG_ DAS_leftLaneExists : 0|1@1+ (1,0) [0|0] "" XXX
+ SG_ DAS_rightLaneExists : 1|1@1+ (1,0) [0|0] "" XXX
+ SG_ DAS_virtualLaneWidth : 4|4@1+ (0.3125,2) [2|7] "m" XXX
+ SG_ DAS_virtualLaneViewRange : 8|8@1+ (1,0) [0|160] "m" XXX
+ SG_ DAS_virtualLaneC0 : 16|8@1+ (0.035,-3.5) [-3.5|3.5] "m" XXX
+ SG_ DAS_virtualLaneC1 : 24|8@1+ (0.0016,-0.2) [-0.2|0.2] "rad" XXX
+ SG_ DAS_virtualLaneC2 : 32|8@1+ (2E-05,-0.0025) [-0.0025|0.0025] "m-1" XXX
+ SG_ DAS_virtualLaneC3 : 40|8@1+ (2.4E-07,-3E-05) [-3E-05|3E-05] "m-2" XXX
+ SG_ DAS_leftLineUsage : 48|2@1+ (1,0) [0|3] "" XXX
+ SG_ DAS_rightLineUsage : 50|2@1+ (1,0) [0|3] "" XXX
+ SG_ DAS_leftFork : 52|2@1+ (1,0) [0|3] "" XXX
+ SG_ DAS_rightFork : 54|2@1+ (1,0) [0|3] "" XXX
+ SG_ DAS_lanesCounter : 60|4@1+ (1,0) [0|0] "" XXX
+
+BO_ 582 UI_solarData: 5 XXX
+ SG_ UI_solarAzimuthAngle : 0|16@1- (1,0) [0|360] "deg" XXX
+ SG_ UI_solarAzimuthAngleCarRef : 16|9@1- (1,0) [-180|180] "deg" XXX
+ SG_ UI_isSunUp : 25|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UI_solarElevationAngle : 32|8@1- (1,0) [-90|90] "deg" XXX
+
+BO_ 643 BODY_R1: 8 XXX
+ SG_ AirTemp_Insd : 47|8@0+ (0.25,0) [0|63.5] "C"  XXX
+ SG_ AirTemp_Outsd : 63|8@0+ (0.5,-40) [-40|86.5] "C"  XXX
+ SG_ Bckl_Sw_RL_Stat_SAM_R : 49|2@0+ (1,0) [-1|4] ""  XXX
+ SG_ Bckl_Sw_RM_Stat_SAM_R : 53|2@0+ (1,0) [-1|4] ""  XXX
+ SG_ Bckl_Sw_RR_Stat_SAM_R : 51|2@0+ (1,0) [-1|4] ""  XXX
+ SG_ DL_RLtch_Stat : 9|2@0+ (1,0) [-1|4] ""  XXX
+ SG_ DrRLtch_FL_Stat : 1|2@0+ (1,0) [-1|4] ""  XXX
+ SG_ DrRLtch_FR_Stat : 3|2@0+ (1,0) [-1|4] ""  XXX
+ SG_ DrRLtch_RL_Stat : 5|2@0+ (1,0) [-1|4] ""  XXX
+ SG_ DrRLtch_RR_Stat : 7|2@0+ (1,0) [-1|4] ""  XXX
+ SG_ EngHd_Stat : 11|2@0+ (1,0) [-1|4] ""  XXX
+ SG_ LoBm_On_Rq : 32|1@0+ (1,0) [0|1] ""  XXX
+ SG_ HiBm_On : 33|1@0+ (1,0) [0|1] ""  XXX
+ SG_ Hrn_On : 26|1@0+ (1,0) [0|1] ""  XXX
+ SG_ IrLmp_D_Lt_Flt : 34|1@0+ (1,0) [0|1] ""  XXX
+ SG_ IrLmp_P_Rt_Flt : 35|1@0+ (1,0) [0|1] ""  XXX
+ SG_ LgtSens_Twlgt : 18|3@0+ (1,0) [0|7] "Steps"  XXX
+ SG_ LgtSens_SNA : 19|1@0+ (1,0) [0|1] ""  XXX
+ SG_ LgtSens_Tunnel : 20|1@0+ (1,0) [0|1] ""  XXX
+ SG_ LgtSens_Flt : 21|1@0+ (1,0) [0|1] ""  XXX
+ SG_ LgtSens_Night : 22|1@0+ (1,0) [-1|2] ""  XXX
+ SG_ ADL_LoBm_On_Rq : 23|1@0+ (1,0) [0|1] ""  XXX
+ SG_ LoBm_D_Lt_Flt : 36|1@0+ (1,0) [0|1] ""  XXX
+ SG_ LoBm_P_Rt_Flt : 37|1@0+ (1,0) [0|1] ""  XXX
+ SG_ MPkBrk_Stat : 28|1@0+ (1,0) [-1|2] ""  XXX
+ SG_ RevGr_Engg : 39|2@0+ (1,0) [-1|4] ""  XXX
+ SG_ StW_Cond_Stat : 55|2@0+ (1,0) [-1|4] ""  XXX
+ SG_ Term54_Actv : 27|1@0+ (1,0) [0|1] ""  XXX
+ SG_ Trlr_Stat : 25|2@0+ (1,0) [-1|4] ""  XXX
+ SG_ VTA_Alm_Actv : 13|1@0+ (1,0) [0|1] ""  XXX
+ SG_ WprOutsdPkPosn : 29|1@0+ (1,0) [0|1] ""  XXX
+
+BO_ 696 UI_radarMapData: 8 XXX
+ SG_ UI_radarTargetDx : 0|8@1+ (1,-95) [-95|160] "m" XXX
+ SG_ UI_radarTargetDxEnd : 8|8@1+ (1,0) [0|255] "m" XXX
+ SG_ UI_radarTargetTrustMap : 16|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_radarEnableBraking : 17|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_radarMapDataCounter : 52|4@1+ (1,0) [0|0] "" XXX
+ SG_ UI_radarMapDataChecksum : 56|8@1+ (1,0) [0|0] "" XXX
+
+BO_ 697 DAS_control: 8 NEO
+ SG_ DAS_setSpeed : 0|12@1+ (0.1,0) [0|409.4] "kph" NEO
+ SG_ DAS_accState : 12|4@1+ (1,0) [0|0] "" NEO
+ SG_ DAS_aebEvent : 16|2@1+ (1,0) [0|3] "" NEO
+ SG_ DAS_jerkMin : 18|9@1+ (0.03,-15.232) [-15.232|0.098] "m/s^3" NEO
+ SG_ DAS_jerkMax : 27|8@1+ (0.059,0) [0|15.045] "m/s^3" NEO
+ SG_ DAS_accelMin : 35|9@1+ (0.04,-15) [-15|5.44] "m/s^2" NEO
+ SG_ DAS_accelMax : 44|9@1+ (0.04,-15) [-15|5.44] "m/s^2" NEO
+ SG_ DAS_controlCounter : 53|3@1+ (1,0) [0|0] "" NEO
+ SG_ DAS_controlChecksum : 56|8@1+ (1,0) [0|0] "" NEO
+
+BO_ 712 UI_roadCurvature: 8 XXX
+ SG_ UI_roadCurvC0 : 0|11@1- (0.02,0) [-20.48|20.46] "m" XXX
+ SG_ UI_roadCurvC1 : 11|10@1- (0.00075,0) [-0.384|0.38325] "1" XXX
+ SG_ UI_roadCurvC2 : 21|14@1- (7.5E-06,0) [-0.03072|0.03071625] "1/m" XXX
+ SG_ UI_roadCurvC3 : 35|13@1- (3E-08,0) [-0.00012288|0.00012285] "1/m2" XXX
+ SG_ UI_roadCurvRange : 48|6@1+ (4,0) [0|252] "m" XXX
+ SG_ UI_roadCurvHealth : 54|2@1+ (1,0) [0|0] "" XXX
+ SG_ UI_roadCurvChecksum : 56|8@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 728 UI_csaOfframpCurvature: 8 XXX
+ SG_ UI_csaOfframpCurvC2 : 0|16@1- (1E-06,0) [-0.032768|0.032767] "1/m" XXX
+ SG_ UI_csaOfframpCurvC3 : 16|16@1- (4E-09,0) [-0.000131072|0.000131068] "1/m2" XXX
+ SG_ UI_csaOfframpCurvRange : 32|8@1+ (2,0) [0|510] "m" XXX
+ SG_ UI_csaOfframpCurvCounter : 40|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ UI_csaOfframpCurvUsingTspline : 48|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_csaOfframpCurvReserved : 49|7@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UI_csaOfframpCurvChecksum : 56|8@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 744 UI_csaRoadCurvature: 8 XXX
+ SG_ UI_csaRoadCurvC2 : 0|16@1- (1E-06,0) [-0.032768|0.032767] "1/m" XXX
+ SG_ UI_csaRoadCurvC3 : 16|16@1- (4E-09,0) [-0.000131072|0.000131068] "1/m2" XXX
+ SG_ UI_csaRoadCurvRange : 32|8@1+ (2,0) [0|510] "m" XXX
+ SG_ UI_csaRoadCurvCounter : 40|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ UI_csaRoadCurvUsingTspline : 48|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_csaRoadCurvReserved : 49|7@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UI_csaRoadCurvChecksum : 56|8@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 760 UI_gpsVehicleSpeed: 8 XXX
+ SG_ UI_gpsHDOP : 0|8@1+ (0.1,0) [0|25.5] "1" XXX
+ SG_ UI_gpsVehicleHeading : 8|16@1+ (0.0078125,0) [0|511.9921875] "deg" XXX
+ SG_ UI_gpsVehicleSpeed : 24|16@1+ (0.00390625,0) [0|250.996] "km/hr" Vector__XXX
+ SG_ UI_userSpeedOffset : 40|6@1+ (1,-30) [-30|33] "kph/mph" XXX
+ SG_ UI_mapSpeedLimitUnits : 46|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_userSpeedOffsetUnits : 47|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_mppSpeedLimit : 48|5@1+ (5,0) [0|155] "kph/mph" XXX
+ SG_ UI_gpsNmeaMIA : 53|1@1+ (1,0) [0|0] "" XXX
+
+BO_ 777 DAS_object: 8 XXX
+ SG_ DAS_objectId : 0|3@1+ (1,0) [0|7] "" XXX
+ SG_ DAS_leadVehType : 3|3@1+ (1,0) [0|7] "" XXX
+ SG_ DAS_leadVehRelevantForControl : 7|1@1+ (1,0) [0|1] "" XXX
+ SG_ DAS_leadVehDx : 8|8@1+ (0.5,0) [0|127] "m" XXX
+ SG_ DAS_leadVehVxRel : 16|4@1+ (4,-30) [-30|26] "m/s" XXX
+ SG_ DAS_leadVehDy : 20|7@1+ (0.35,-22.05) [-22.05|22.4] "m" XXX
+ SG_ DAS_leadVehId : 27|7@1+ (1,0) [0|126] "" XXX
+ SG_ DAS_leadVeh2Type : 34|3@1+ (1,0) [0|7] "" XXX
+ SG_ DAS_leadVeh2RelevantForControl : 38|1@1+ (1,0) [0|1] "" XXX
+ SG_ DAS_leadVeh2Dx : 39|8@1+ (0.5,0) [0|127] "m" XXX
+ SG_ DAS_leadVeh2VxRel : 47|4@1+ (4,-30) [-30|26] "m/s" XXX
+ SG_ DAS_leadVeh2Dy : 51|7@1+ (0.35,-22.05) [-22.05|22.4] "m" XXX
+ SG_ DAS_leadVeh2Id : 58|6@1+ (1,0) [0|63] "" XXX
 
 BO_ 782 PARK_status2: 8 PARK
  SG_ PARK_frontSVACharID : 0|6@1+ (1,0) [0|63] "" DAS,GTW
@@ -247,401 +482,6 @@ BO_ 792 GTW_carState: 8 XXX
  SG_ BC_indicatorLStatus : 59|2@0+ (1,0) [0|3] "" XXX
  SG_ BC_indicatorRStatus : 61|2@0+ (1,0) [0|3] "" XXX
 
-BO_ 872 DI_state: 8 DI
- SG_ DI_systemState : 0|3@1+ (1,0) [0|0] ""  NEO
- SG_ DI_vehicleHoldState : 3|3@1+ (1,0) [0|0] ""  NEO
- SG_ DI_proximity : 6|1@1+ (1,0) [0|0] ""  NEO
- SG_ DI_driveReady : 7|1@1+ (1,0) [0|0] ""  NEO
- SG_ DI_regenLight : 8|1@1+ (1,0) [0|0] ""  NEO
- SG_ DI_state : 9|3@1+ (1,0) [0|0] ""  NEO
- SG_ DI_cruiseState : 12|4@1+ (1,0) [0|0] ""  NEO
- SG_ DI_analogSpeed : 16|12@1+ (0.1,0) [0|150] "speed"  NEO
- SG_ DI_immobilizerState : 28|3@1+ (1,0) [0|0] ""  NEO
- SG_ DI_speedUnits : 31|1@1+ (1,0) [0|1] ""  NEO
- SG_ DI_digitalSpeed : 32|8@1+ (1,0) [0|255.5] "speed"  NEO
- SG_ DI_aebState : 41|3@1+ (1,0) [0|0] ""  NEO
- SG_ DI_stateCounter : 44|4@1+ (1,0) [0|0] ""  NEO
- SG_ DI_cruiseSet : 48|8@1+ (1,0) [0|250] ""  NEO
- SG_ DI_stateChecksum : 56|8@1+ (1,0) [0|0] ""  NEO
-
-
- BO_ 521 DAS_longControl: 8 XXX
- SG_ DAS_locMode : 0|2@1+ (1,0) [0|0] "" XXX
- SG_ DAS_locState : 2|3@1+ (1,0) [0|0] "" XXX
- SG_ DAS_locRequest : 5|3@1+ (1,0) [0|0] "" XXX
- SG_ DAS_locJerkMin : 8|8@1+ (0.034,-8.67) [-8.67|0] "m/s^3" XXX
- SG_ DAS_locJerkMax : 16|8@1+ (0.034,0) [0|8.67] "m/s^3" XXX
- SG_ DAS_locSpeed : 24|11@1+ (0.1,0) [0|204.7] "kph" XXX
- SG_ DAS_locAccelMin : 35|9@1+ (0.04,-15) [-15|5.44] "m/s^2" XXX
- SG_ DAS_locAccelMax : 44|9@1+ (0.04,-15) [-15|5.44] "m/s^2" XXX
- SG_ DAS_longControlCounter : 53|3@1+ (1,0) [0|0] "" XXX
- SG_ DAS_longControlChecksum : 56|8@1+ (1,0) [0|0] "" XXX
-
-BO_ 569 DAS_lanes: 8 XXX
- SG_ DAS_leftLaneExists : 0|1@1+ (1,0) [0|0] "" XXX
- SG_ DAS_rightLaneExists : 1|1@1+ (1,0) [0|0] "" XXX
- SG_ DAS_virtualLaneWidth : 4|4@1+ (0.3125,2) [2|7] "m" XXX
- SG_ DAS_virtualLaneViewRange : 8|8@1+ (1,0) [0|160] "m" XXX
- SG_ DAS_virtualLaneC0 : 16|8@1+ (0.035,-3.5) [-3.5|3.5] "m" XXX
- SG_ DAS_virtualLaneC1 : 24|8@1+ (0.0016,-0.2) [-0.2|0.2] "rad" XXX
- SG_ DAS_virtualLaneC2 : 32|8@1+ (2E-05,-0.0025) [-0.0025|0.0025] "m-1" XXX
- SG_ DAS_virtualLaneC3 : 40|8@1+ (2.4E-07,-3E-05) [-3E-05|3E-05] "m-2" XXX
- SG_ DAS_leftLineUsage : 48|2@1+ (1,0) [0|3] "" XXX
- SG_ DAS_rightLineUsage : 50|2@1+ (1,0) [0|3] "" XXX
- SG_ DAS_leftFork : 52|2@1+ (1,0) [0|3] "" XXX
- SG_ DAS_rightFork : 54|2@1+ (1,0) [0|3] "" XXX
- SG_ DAS_lanesCounter : 60|4@1+ (1,0) [0|0] "" XXX
-
-BO_ 109 SBW_RQ_SCCM: 4 XXX
- SG_ StW_Sw_Stat3 : 0|3@1+ (1,0) [0|0] "" XXX
- SG_ MsgTxmtId : 6|2@1+ (1,0) [0|0] "" XXX
- SG_ TSL_RND_Posn_StW : 8|4@1+ (1,0) [0|0] "" XXX
- SG_ TSL_P_Psd_StW : 12|2@1+ (1,0) [0|0] "" XXX
- SG_ MC_SBW_RQ_SCCM : 20|4@1+ (1,0) [0|15] "" XXX
- SG_ CRC_SBW_RQ_SCCM : 24|8@1+ (1,0) [0|0] "" XXX
-
-BO_ 69 STW_ACTN_RQ: 8 XXX
- SG_ SpdCtrlLvr_Stat : 0|6@1+ (1,0) [0|0] "" XXX
- SG_ VSL_Enbl_Rq : 6|1@1+ (1,0) [0|0] "" XXX
- SG_ SpdCtrlLvrStat_Inv : 7|1@1+ (1,0) [0|0] "" XXX
- SG_ DTR_Dist_Rq : 8|8@1+ (1,0) [0|200] "" XXX
- SG_ TurnIndLvr_Stat : 16|2@1+ (1,0) [0|0] "" XXX
- SG_ HiBmLvr_Stat : 18|2@1+ (1,0) [0|0] "" XXX
- SG_ WprWashSw_Psd : 20|2@1+ (1,0) [0|0] "" XXX
- SG_ WprWash_R_Sw_Posn_V2 : 22|2@1+ (1,0) [0|0] "" XXX
- SG_ StW_Lvr_Stat : 24|3@1+ (1,0) [0|0] "" XXX
- SG_ StW_Cond_Flt : 27|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Cond_Psd : 28|2@1+ (1,0) [0|0] "" XXX
- SG_ HrnSw_Psd : 30|2@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw00_Psd : 32|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw01_Psd : 33|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw02_Psd : 34|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw03_Psd : 35|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw04_Psd : 36|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw05_Psd : 37|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw06_Psd : 38|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw07_Psd : 39|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw08_Psd : 40|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw09_Psd : 41|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw10_Psd : 42|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw11_Psd : 43|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw12_Psd : 44|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw13_Psd : 45|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw14_Psd : 46|1@1+ (1,0) [0|0] "" XXX
- SG_ StW_Sw15_Psd : 47|1@1+ (1,0) [0|0] "" XXX
- SG_ WprSw6Posn : 48|3@1+ (1,0) [0|0] "" XXX
- SG_ MC_STW_ACTN_RQ : 52|4@1+ (1,0) [0|15] "" XXX
- SG_ CRC_STW_ACTN_RQ : 56|8@1+ (1,0) [0|0] "" XXX
-
-BO_ 643 BODY_R1: 8 XXX
- SG_ AirTemp_Insd : 47|8@0+ (0.25,0) [0|63.5] "C"  XXX
- SG_ AirTemp_Outsd : 63|8@0+ (0.5,-40) [-40|86.5] "C"  XXX
- SG_ Bckl_Sw_RL_Stat_SAM_R : 49|2@0+ (1,0) [-1|4] ""  XXX
- SG_ Bckl_Sw_RM_Stat_SAM_R : 53|2@0+ (1,0) [-1|4] ""  XXX
- SG_ Bckl_Sw_RR_Stat_SAM_R : 51|2@0+ (1,0) [-1|4] ""  XXX
- SG_ DL_RLtch_Stat : 9|2@0+ (1,0) [-1|4] ""  XXX
- SG_ DrRLtch_FL_Stat : 1|2@0+ (1,0) [-1|4] ""  XXX
- SG_ DrRLtch_FR_Stat : 3|2@0+ (1,0) [-1|4] ""  XXX
- SG_ DrRLtch_RL_Stat : 5|2@0+ (1,0) [-1|4] ""  XXX
- SG_ DrRLtch_RR_Stat : 7|2@0+ (1,0) [-1|4] ""  XXX
- SG_ EngHd_Stat : 11|2@0+ (1,0) [-1|4] ""  XXX
- SG_ LoBm_On_Rq : 32|1@0+ (1,0) [0|1] ""  XXX
- SG_ HiBm_On : 33|1@0+ (1,0) [0|1] ""  XXX
- SG_ Hrn_On : 26|1@0+ (1,0) [0|1] ""  XXX
- SG_ IrLmp_D_Lt_Flt : 34|1@0+ (1,0) [0|1] ""  XXX
- SG_ IrLmp_P_Rt_Flt : 35|1@0+ (1,0) [0|1] ""  XXX
- SG_ LgtSens_Twlgt : 18|3@0+ (1,0) [0|7] "Steps"  XXX
- SG_ LgtSens_SNA : 19|1@0+ (1,0) [0|1] ""  XXX
- SG_ LgtSens_Tunnel : 20|1@0+ (1,0) [0|1] ""  XXX
- SG_ LgtSens_Flt : 21|1@0+ (1,0) [0|1] ""  XXX
- SG_ LgtSens_Night : 22|1@0+ (1,0) [-1|2] ""  XXX
- SG_ ADL_LoBm_On_Rq : 23|1@0+ (1,0) [0|1] ""  XXX
- SG_ LoBm_D_Lt_Flt : 36|1@0+ (1,0) [0|1] ""  XXX
- SG_ LoBm_P_Rt_Flt : 37|1@0+ (1,0) [0|1] ""  XXX
- SG_ MPkBrk_Stat : 28|1@0+ (1,0) [-1|2] ""  XXX
- SG_ RevGr_Engg : 39|2@0+ (1,0) [-1|4] ""  XXX
- SG_ StW_Cond_Stat : 55|2@0+ (1,0) [-1|4] ""  XXX
- SG_ Term54_Actv : 27|1@0+ (1,0) [0|1] ""  XXX
- SG_ Trlr_Stat : 25|2@0+ (1,0) [-1|4] ""  XXX
- SG_ VTA_Alm_Actv : 13|1@0+ (1,0) [0|1] ""  XXX
- SG_ WprOutsdPkPosn : 29|1@0+ (1,0) [0|1] ""  XXX
-
-BO_ 760 UI_gpsVehicleSpeed: 8 XXX
- SG_ UI_gpsHDOP : 0|8@1+ (0.1,0) [0|25.5] "1" XXX
- SG_ UI_gpsVehicleHeading : 8|16@1+ (0.0078125,0) [0|511.9921875] "deg" XXX
- SG_ UI_gpsVehicleSpeed : 24|16@1+ (0.00390625,0) [0|250.996] "km/hr" Vector__XXX
- SG_ UI_userSpeedOffset : 40|6@1+ (1,-30) [-30|33] "kph/mph" XXX
- SG_ UI_mapSpeedLimitUnits : 46|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_userSpeedOffsetUnits : 47|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_mppSpeedLimit : 48|5@1+ (5,0) [0|155] "kph/mph" XXX
- SG_ UI_gpsNmeaMIA : 53|1@1+ (1,0) [0|0] "" XXX
-
-BO_ 536 MCU_chassisControl: 8 XXX
- SG_ MCU_dasDebugEnable : 0|1@1+ (1,0) [0|0] "" XXX
- SG_ MCU_parkBrakeRequest : 1|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_trailerModeCH : 3|1@1+ (1,0) [0|0] "" XXX
- SG_ MCU_fcwSensitivity : 4|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_fcwEnable : 6|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_latControlEnable : 8|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_accOvertakeEnable : 10|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_ldwEnable : 12|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_aebEnable : 14|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_bsdEnable : 16|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_ahlbEnable : 18|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_parkSetting : 20|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_pedalSafetyEnable : 22|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_frontDefrostReq_das : 24|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_autoParkRequest : 26|4@1+ (1,0) [0|0] "" XXX
- SG_ MCU_redLightStopSignEnable : 30|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_enableCreepTorqueCH : 32|1@1+ (1,0) [0|0] "" XXX
- SG_ MCU_narrowGarages : 33|1@1+ (1,0) [0|0] "" XXX
- SG_ MCU_rebootAutopilot : 34|1@1+ (1,0) [0|0] "" XXX
- SG_ MCU_enableAutowipers : 35|1@1+ (1,0) [0|0] "" XXX
- SG_ MCU_overPaintedUSS : 38|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_selfParkTune : 40|4@1+ (1,0) [0|15] "" XXX
- SG_ MCU_towModeEnable : 44|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_zeroSpeedConfirmed : 46|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_aesEnable : 48|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_autoLaneChangeEnable : 50|2@1+ (1,0) [0|0] "" XXX
- SG_ MCU_chassisControlCounter : 52|4@1+ (1,0) [0|0] "" XXX
- SG_ MCU_chassisControlChecksum : 56|8@1+ (1,0) [0|0] "" XXX
-
-BO_ 904 MCU_clusterBacklightRequest: 3 XXX
- SG_ MCU_clusterBacklightOn : 7|1@1+ (1,0) [0|1] "" XXX
- SG_ MCU_clusterBrightnessLevel : 8|8@1+ (0.5,0) [0|127.5] "%" XXX
- SG_ MCU_clusterReadyForDrive : 6|1@1+ (1,0) [-1|2] ""  XXX
- SG_ MCU_clusterReadyForPowerOff : 5|1@1+ (1,0) [0|1] "" XXX
-
-BO_ 984 MCU_locationStatus: 8 XXX
- SG_ MCU_gpsAccuracy : 57|7@1+ (0.2,0) [0|0] "m" XXX
- SG_ MCU_latitude : 0|28@1- (1E-06,0) [0|0] "deg" XXX
- SG_ MCU_longitude : 28|29@1- (1E-06,0) [0|0] "deg" XXX
-
-BO_ 104 MCU_locationStatus2: 8 XXX
- SG_ MCU_elevation : 0|32@1- (0.1,0) [0|0] "m" XXX
- SG_ MCU_navigonExpectedSpeed : 32|7@1+ (1,0) [0|126] "mph" XXX
-
-BO_ 840 GTW_status: 8 XXX
- SG_ GTW_accGoingDown : 6|1@0+ (1,0) [0|1] ""  XXX
- SG_ GTW_accRailReq : 8|1@0+ (1,0) [0|1] ""  XXX
- SG_ GTW_brakePressed : 1|1@0+ (1,0) [0|1] ""  XXX
- SG_ GTW_driveGoingDown : 7|1@0+ (1,0) [0|1] ""  XXX
- SG_ GTW_driveRailReq : 0|1@0+ (1,0) [0|1] ""  XXX
- SG_ GTW_driverIsLeaving : 5|1@0+ (1,0) [0|1] ""  XXX
- SG_ GTW_driverPresent : 2|1@0+ (1,0) [0|1] ""  XXX
- SG_ GTW_hvacGoingDown : 11|1@0+ (1,0) [0|1] ""  XXX
- SG_ GTW_hvacRailReq : 9|1@0+ (1,0) [0|1] ""  XXX
- SG_ GTW_icPowerOff : 4|1@0+ (1,0) [0|1] ""  XXX
- SG_ GTW_notEnough12VForDrive : 3|1@0+ (1,0) [0|1] ""  XXX
- SG_ GTW_preconditionRequest : 10|1@0+ (1,0) [0|1] ""  XXX
- SG_ GTW_statusChecksum : 63|8@0+ (1,0) [0|255] ""  XXX
- SG_ GTW_statusCounter : 51|4@0+ (1,0) [0|15] ""  XXX
-
-BO_ 920 GTW_carConfig: 8 XXX
- SG_ GTW_performanceConfig : 2|3@0+ (1,0) [0|0] "" XXX
- SG_ GTW_fourWheelDrive : 4|2@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_unknown1 : 5|1@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_dasHw : 7|2@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_parkAssistInstalled : 9|2@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_forwardRadarHw : 11|2@0+ (1,0) [0|0] "" XXX
- SG_ GTW_airSuspensionInstalled : 14|3@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_unknown2 : 15|1@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_country : 23|16@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_parkSensorGeometryType : 33|2@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_rhd : 34|1@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_bodyControlsType : 35|1@0+ (1,0) [0|0] "" XXX
- SG_ GTW_radarPosition : 39|4@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_rearCornerRadarHw : 41|2@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_frontCornerRadarHw : 43|2@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_epasType : 45|2@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_chassisType : 47|2@0+ (1,0) [0|2] ""  XXX
- SG_ GTW_wheelType : 52|5@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_rearSeatControllerMask : 55|3@0+ (1,0) [0|7] ""  XXX
- SG_ GTW_euVehicle : 56|1@0+ (1,0) [0|0] "" XXX
- SG_ GTW_foldingMirrorsInstalled : 57|1@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_brakeHwType : 59|2@0+ (1,0) [0|2] ""  XXX
- SG_ GTW_autopilot : 61|2@0+ (1,0) [0|0] ""  XXX
- SG_ GTW_unknown3 : 63|2@0+ (1,0) [0|0] ""  XXX
-
-BO_ 1006 UI_autopilotControl: 8 XXX
- SG_ UI_autopilotControlIndex M : 0|3@1+ (1,0) [0|7] "" XXX
- SG_ UI_hovEnabled m0 : 3|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_donDisableAutoWiperDuration m0 : 4|3@1+ (1,0) [0|0] "" XXX
- SG_ UI_donDisableOnAutoWiperSpeed m0 : 7|4@1+ (1,0) [0|0] "" XXX
- SG_ UI_blindspotMinSpeed m0 : 11|4@1+ (1,0) [0|0] "" XXX
- SG_ UI_blindspotDistance m0 : 15|3@1+ (1,0) [0|0] "" XXX
- SG_ UI_blindspotTTC m0 : 18|3@1+ (1,0) [0|0] "" XXX
- SG_ UI_donStopEndOfRampBuffer m0 : 21|3@1+ (1,0) [0|0] "" XXX
- SG_ UI_donDisableCutin m0 : 24|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_donMinGoreWidthForAbortMap m0 : 25|4@1+ (1,0) [0|0] "" XXX
- SG_ UI_donAlcProgGoreAbortThres m0 : 29|4@1+ (1,0) [0|0] "" XXX
- SG_ UI_donMinGoreWidthForAbortNotMap m0 : 33|4@1+ (1,0) [0|0] "" XXX
- SG_ UI_alcDisableUltrasonicCheck m0 : 37|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_alcUltrasonicDistance m0 : 38|4@1+ (1,0) [0|0] "" XXX
- SG_ UI_alcUltrasonicWaitTime m0 : 42|3@1+ (1,0) [0|0] "" XXX
- SG_ UI_alcEgoLeadingReactionAccel m0 : 48|2@1+ (1,0) [0|0] "" XXX
- SG_ UI_alcMergIntervalRearDHyst m0 : 50|2@1+ (1,0) [0|0] "" XXX
- SG_ UI_alcMergingIntervalHeadwayHyst m0 : 52|2@1+ (1,0) [0|0] "" XXX
- SG_ UI_alcAssertivenessRate m0 : 54|2@1+ (1,0) [0|0] "" XXX
- SG_ UI_alcViewRangeSensitivity m0 : 56|2@1+ (1,0) [0|0] "" XXX
- SG_ UI_camBlockLaneCheckDisable m1 : 3|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_camBlockLaneCheckThreshold m1 : 4|6@1+ (0.01587,0) [0|1] "%" XXX
- SG_ UI_camBlockBlurDisable m1 : 10|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_camBlockBlurThreshold m1 : 11|6@1+ (0.01587,0) [0|1] "%" XXX
-
-BO_ 728 UI_csaOfframpCurvature: 8 XXX
- SG_ UI_csaOfframpCurvC2 : 0|16@1- (1E-06,0) [-0.032768|0.032767] "1/m" XXX
- SG_ UI_csaOfframpCurvC3 : 16|16@1- (4E-09,0) [-0.000131072|0.000131068] "1/m2" XXX
- SG_ UI_csaOfframpCurvRange : 32|8@1+ (2,0) [0|510] "m" XXX
- SG_ UI_csaOfframpCurvCounter : 40|8@1+ (1,0) [0|255] "" Vector__XXX
- SG_ UI_csaOfframpCurvUsingTspline : 48|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_csaOfframpCurvReserved : 49|7@1+ (1,0) [0|0] "" Vector__XXX
- SG_ UI_csaOfframpCurvChecksum : 56|8@1+ (1,0) [0|0] "" Vector__XXX
-
-BO_ 744 UI_csaRoadCurvature: 8 XXX
- SG_ UI_csaRoadCurvC2 : 0|16@1- (1E-06,0) [-0.032768|0.032767] "1/m" XXX
- SG_ UI_csaRoadCurvC3 : 16|16@1- (4E-09,0) [-0.000131072|0.000131068] "1/m2" XXX
- SG_ UI_csaRoadCurvRange : 32|8@1+ (2,0) [0|510] "m" XXX
- SG_ UI_csaRoadCurvCounter : 40|8@1+ (1,0) [0|255] "" Vector__XXX
- SG_ UI_csaRoadCurvUsingTspline : 48|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_csaRoadCurvReserved : 49|7@1+ (1,0) [0|0] "" Vector__XXX
- SG_ UI_csaRoadCurvChecksum : 56|8@1+ (1,0) [0|0] "" Vector__XXX
-
-BO_ 1080 UI_driverAssistAnonDebugParams: 8 XXX
- SG_ UI_anonDebugParam1 : 0|7@1+ (1,0) [0|100] "" XXX
- SG_ UI_anonDebugFlag1 : 7|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_anonDebugParam2 : 8|7@1+ (1,0) [0|100] "" XXX
- SG_ UI_anonDebugFlag2 : 15|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_anonDebugParam3 : 16|7@1+ (1,0) [0|100] "" XXX
- SG_ UI_anonDebugFlag3 : 23|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_anonDebugParam4 : 24|7@1+ (1,0) [0|100] "" XXX
- SG_ UI_anonDebugFlag4 : 31|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_anonDebugParam5 : 32|7@1+ (1,0) [0|100] "" XXX
- SG_ UI_anonDebugParam6 : 40|7@1+ (1,0) [0|100] "" XXX
- SG_ UI_anonDebugParam7 : 48|7@1+ (1,0) [0|100] "" XXX
- SG_ UI_visionSpeedSlider : 56|7@1+ (1,0) [0|100] "" XXX
-
-BO_ 1000 UI_driverAssistControl: 8 XXX
- SG_ UI_autopilotControlRequest : 0|1@1+ (1,0) [1|0] "" XXX
- SG_ UI_ulcStalkConfirm : 1|1@1+ (1,0) [1|0] "" XXX
- SG_ UI_summonHeartbeat : 2|2@1+ (1,0) [0|0] "" XXX
- SG_ UI_curvSpeedAdaptDisable : 4|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_dasDeveloper : 5|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_enableVinAssociation : 6|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_lssLkaEnabled : 7|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_lssLdwEnabled : 8|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_autoSummonEnable : 10|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_exceptionListEnable : 11|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_roadCheckDisable : 12|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_driveOnMapsEnable : 13|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_handsOnRequirementDisable : 14|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_forksEnable : 15|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_fuseLanesDisable : 16|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_fuseHPPDisable : 17|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_fuseVehiclesDisable : 18|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_enableNextGenACC : 19|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_visionSpeedType : 20|2@1+ (1,0) [0|0] "" XXX
- SG_ UI_curvatureDatabaseOnly : 22|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_lssElkEnabled : 23|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_summonExitType : 24|2@1+ (1,0) [0|3] "" XXX
- SG_ UI_summonEntryType : 26|2@1+ (1,0) [0|3] "" XXX
- SG_ UI_selfParkRequest : 28|4@1+ (1,0) [0|15] "" XXX
- SG_ UI_summonReverseDist : 32|6@1+ (1,0) [0|63] "" XXX
- SG_ UI_undertakeAssistEnable : 38|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_adaptiveSetSpeedEnable : 39|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_drivingSide : 40|2@1+ (1,0) [0|3] "" XXX
- SG_ UI_enableClipTelemetry : 42|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_enableTripTelemetry : 43|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_enableRoadSegmentTelemetry : 44|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_followNavRouteEnable : 46|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_ulcSpeedConfig : 48|2@1+ (1,0) [0|3] "" XXX
- SG_ UI_ulcBlindSpotConfig : 50|2@1+ (1,0) [0|3] "" XXX
- SG_ UI_autopilotAlwaysOn : 52|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_accFromZero : 53|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_alcOffHighwayEnable : 54|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_validationLoop : 55|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_ulcOffHighway : 56|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_enableNavRouteCSA : 57|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_enableCutinExperiments : 58|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_source3D : 60|3@1+ (1,0) [0|7] "" XXX
- SG_ UI_enableVisionOnlyStops : 63|1@1+ (1,0) [0|1] "" XXX
-
-BO_ 968 UI_driverAssistMapData: 8 XXX
- SG_ UI_mapSpeedLimitDependency : 0|3@1+ (1,0) [0|0] "" XXX
- SG_ UI_roadClass : 3|3@1+ (1,0) [0|0] "" XXX
- SG_ UI_inSuperchargerGeofence : 6|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_mapSpeedUnits : 7|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_mapSpeedLimit : 8|5@1+ (1,0) [0|0] "" XXX
- SG_ UI_mapSpeedLimitType : 13|3@1+ (1,0) [0|0] "" XXX
- SG_ UI_countryCode : 16|10@1+ (1,0) [0|0] "" XXX
- SG_ UI_streetCount : 26|2@1+ (1,0) [0|0] "" XXX
- SG_ UI_gpsRoadMatch : 28|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_navRouteActive : 29|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_parallelAutoparkEnabled : 30|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_perpendicularAutoparkEnabled : 31|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_nextBranchDist : 32|5@1+ (10,0) [0|300] "m" XXX
- SG_ UI_controlledAccess : 37|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_nextBranchLeftOffRamp : 38|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_nextBranchRightOffRamp : 39|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_rejectLeftLane : 40|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_rejectRightLane : 41|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_rejectHPP : 42|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_rejectNav : 43|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_rejectLeftFreeSpace : 44|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_rejectRightFreeSpace : 45|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_rejectAutosteer : 46|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_rejectHandsOn : 47|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_acceptBottsDots : 48|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_autosteerRestricted : 49|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_pmmEnabled : 50|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_scaEnabled : 51|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_mapDataCounter : 52|4@1+ (1,0) [0|0] "" XXX
- SG_ UI_mapDataChecksum : 56|8@1+ (1,0) [0|0] "" XXX
-
-BO_ 568 UI_driverAssistRoadSign: 8 XXX
- SG_ UI_roadSign M : 0|8@1+ (1,0) [0|0] "" XXX
- SG_ UI_splineLocConfidence : 40|7@1+ (1,0) [0|100] "" XXX
- SG_ UI_splineID : 48|4@1+ (1,0) [0|15] "" Vector__XXX
- SG_ UI_roadSignCounter : 52|4@1+ (1,0) [0|0] "" Vector__XXX
- SG_ UI_roadSignChecksum : 56|8@1+ (1,0) [0|0] "" Vector__XXX
- SG_ UI_dummyData m0 : 8|1@1+ (1,0) [0|0] "" Vector__XXX
- SG_ UI_stopSignStopLineDist m1 : 8|10@1+ (0.25,-8) [-8|247.5] "m" Vector__XXX
- SG_ UI_stopSignStopLineConf m1 : 18|7@1+ (1,0) [0|100] "" Vector__XXX
- SG_ UI_trafficLightStopLineDist m2 : 8|10@1+ (0.25,-8) [-8|247.5] "m" Vector__XXX
- SG_ UI_trafficLightStopLineConf m2 : 18|7@1+ (1,0) [0|100] "" Vector__XXX
- SG_ UI_baseMapSpeedLimitMPS m3 : 8|8@1+ (0.25,0) [0|63.75] "m/s" XXX
- SG_ UI_bottomQrtlFleetSpeedMPS m3 : 16|8@1+ (0.25,0) [0|63.75] "m/s" XXX
- SG_ UI_topQrtlFleetSpeedMPS m3 : 24|8@1+ (0.25,0) [0|63.75] "m/s" XXX
- SG_ UI_meanFleetSplineSpeedMPS m4 : 8|8@1+ (0.25,0) [0|63.75] "m/s" XXX
- SG_ UI_medianFleetSpeedMPS m4 : 16|8@1+ (0.25,0) [0|63.75] "m/s" XXX
- SG_ UI_meanFleetSplineAccelMPS2 m4 : 24|8@1+ (0.05,-6.35) [-6.35|6.4] "m/s^2" XXX
- SG_ UI_rampType m4 : 32|3@1+ (1,0) [0|7] "" XXX
- SG_ UI_currSplineIdFull m5 : 8|32@1+ (1,0) [0|1] "" XXX
-
-
-BO_ 696 UI_radarMapData: 8 XXX
- SG_ UI_radarTargetDx : 0|8@1+ (1,-95) [-95|160] "m" XXX
- SG_ UI_radarTargetDxEnd : 8|8@1+ (1,0) [0|255] "m" XXX
- SG_ UI_radarTargetTrustMap : 16|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_radarEnableBraking : 17|1@1+ (1,0) [0|1] "" XXX
- SG_ UI_radarMapDataCounter : 52|4@1+ (1,0) [0|0] "" XXX
- SG_ UI_radarMapDataChecksum : 56|8@1+ (1,0) [0|0] "" XXX
-
-BO_ 712 UI_roadCurvature: 8 XXX
- SG_ UI_roadCurvC0 : 0|11@1- (0.02,0) [-20.48|20.46] "m" XXX
- SG_ UI_roadCurvC1 : 11|10@1- (0.00075,0) [-0.384|0.38325] "1" XXX
- SG_ UI_roadCurvC2 : 21|14@1- (7.5E-06,0) [-0.03072|0.03071625] "1/m" XXX
- SG_ UI_roadCurvC3 : 35|13@1- (3E-08,0) [-0.00012288|0.00012285] "1/m2" XXX
- SG_ UI_roadCurvRange : 48|6@1+ (4,0) [0|252] "m" XXX
- SG_ UI_roadCurvHealth : 54|2@1+ (1,0) [0|0] "" XXX
- SG_ UI_roadCurvChecksum : 56|8@1+ (1,0) [0|0] "" Vector__XXX
-
-BO_ 582 UI_solarData: 5 XXX
- SG_ UI_solarAzimuthAngle : 0|16@1- (1,0) [0|360] "deg" XXX
- SG_ UI_solarAzimuthAngleCarRef : 16|9@1- (1,0) [-180|180] "deg" XXX
- SG_ UI_isSunUp : 25|1@1+ (1,0) [0|0] "" Vector__XXX
- SG_ UI_solarElevationAngle : 32|8@1- (1,0) [-90|90] "deg" XXX
-
 BO_ 824 UI_status: 8 XXX
  SG_ UI_touchActive : 0|1@1+ (1,0) [0|0] "" IC
  SG_ UI_audioActive : 1|1@1+ (1,0) [0|0] "" IC
@@ -672,27 +512,103 @@ BO_ 824 UI_status: 8 XXX
  SG_ UI_developmentCar : 55|1@1+ (1,0) [0|0] "" Vector__XXX
  SG_ UI_cellReceiverPower : 56|8@1+ (1,-128) [-128|127] "dB" XXX
 
-BO_ 1064 UI_telemetryControl: 8 XXX
- SG_ UI_TCR_enable : 0|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_TCR_moveStateStanding : 1|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_TCR_moveStateStopped : 2|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_TCR_moveStateMoving : 3|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_TCR_moveStateIndeterm : 4|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_TCR_classConstElem : 5|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_TCR_classMovingPed : 6|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_TCR_classMovingTwoWheel : 7|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_TCR_classMovingFourWheel : 8|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_TCR_classUnknown : 9|1@1+ (1,0) [0|0] "" XXX
- SG_ UI_TCR_downSampleFactor : 16|4@1+ (1,0) [0|15] "" Vector__XXX
- SG_ UI_TCR_wExist : 24|5@1+ (1,0) [0|31] "" Vector__XXX
- SG_ UI_TCR_vehSpeed : 32|8@1+ (1,0) [0|0] "" Vector__XXX
- SG_ UI_TCR_minRCS : 40|8@1+ (0.25,-14) [-14|49.75] "dB" Vector__XXX
- SG_ UI_TCR_maxDy : 48|5@1+ (0.5,0) [0|15.5] "m" Vector__XXX
- SG_ UI_TCR_maxObjects : 56|5@1+ (1,0) [0|31] "" Vector__XXX
- SG_ UI_TCR_maxRoadClass : 61|3@1+ (1,0) [0|7] "" Vector__XXX
+BO_ 840 GTW_status: 8 XXX
+ SG_ GTW_accGoingDown : 6|1@0+ (1,0) [0|1] ""  XXX
+ SG_ GTW_accRailReq : 8|1@0+ (1,0) [0|1] ""  XXX
+ SG_ GTW_brakePressed : 1|1@0+ (1,0) [0|1] ""  XXX
+ SG_ GTW_driveGoingDown : 7|1@0+ (1,0) [0|1] ""  XXX
+ SG_ GTW_driveRailReq : 0|1@0+ (1,0) [0|1] ""  XXX
+ SG_ GTW_driverIsLeaving : 5|1@0+ (1,0) [0|1] ""  XXX
+ SG_ GTW_driverPresent : 2|1@0+ (1,0) [0|1] ""  XXX
+ SG_ GTW_hvacGoingDown : 11|1@0+ (1,0) [0|1] ""  XXX
+ SG_ GTW_hvacRailReq : 9|1@0+ (1,0) [0|1] ""  XXX
+ SG_ GTW_icPowerOff : 4|1@0+ (1,0) [0|1] ""  XXX
+ SG_ GTW_notEnough12VForDrive : 3|1@0+ (1,0) [0|1] ""  XXX
+ SG_ GTW_preconditionRequest : 10|1@0+ (1,0) [0|1] ""  XXX
+ SG_ GTW_statusChecksum : 63|8@0+ (1,0) [0|255] ""  XXX
+ SG_ GTW_statusCounter : 51|4@0+ (1,0) [0|15] ""  XXX
 
-BO_ 522 BrakeMessage: 8 XXX
- SG_ driverBrakeStatus : 2|2@1+ (1,0) [0|3] "" XXX
+BO_ 872 DI_state: 8 DI
+ SG_ DI_systemState : 0|3@1+ (1,0) [0|0] ""  NEO
+ SG_ DI_vehicleHoldState : 3|3@1+ (1,0) [0|0] ""  NEO
+ SG_ DI_proximity : 6|1@1+ (1,0) [0|0] ""  NEO
+ SG_ DI_driveReady : 7|1@1+ (1,0) [0|0] ""  NEO
+ SG_ DI_regenLight : 8|1@1+ (1,0) [0|0] ""  NEO
+ SG_ DI_state : 9|3@1+ (1,0) [0|0] ""  NEO
+ SG_ DI_cruiseState : 12|4@1+ (1,0) [0|0] ""  NEO
+ SG_ DI_analogSpeed : 16|12@1+ (0.1,0) [0|150] "speed"  NEO
+ SG_ DI_immobilizerState : 28|3@1+ (1,0) [0|0] ""  NEO
+ SG_ DI_speedUnits : 31|1@1+ (1,0) [0|1] ""  NEO
+ SG_ DI_digitalSpeed : 32|8@1+ (1,0) [0|255.5] "speed"  NEO
+ SG_ DI_aebState : 41|3@1+ (1,0) [0|0] ""  NEO
+ SG_ DI_stateCounter : 44|4@1+ (1,0) [0|0] ""  NEO
+ SG_ DI_cruiseSet : 48|8@1+ (1,0) [0|250] ""  NEO
+ SG_ DI_stateChecksum : 56|8@1+ (1,0) [0|0] ""  NEO
+
+BO_ 880 EPAS_sysStatus: 8 EPAS
+ SG_ EPAS_currentTuneMode : 7|4@0+ (1,0) [8|15] ""  NEO
+ SG_ EPAS_eacErrorCode : 23|4@0+ (1,0) [-1|16] ""  NEO
+ SG_ EPAS_eacStatus : 55|3@0+ (1,0) [5|7] ""  NEO
+ SG_ EPAS_handsOnLevel : 39|2@0+ (1,0) [-1|4] ""  NEO
+ SG_ EPAS_internalSAS : 37|14@0+ (0.1,-819.200012) [0|0] "deg"  NEO
+ SG_ EPAS_steeringFault : 2|1@0+ (1,0) [-1|2] ""  NEO
+ SG_ EPAS_steeringRackForce : 1|10@0+ (50,-25575) [0|0] "N" NEO
+ SG_ EPAS_steeringReduced : 3|1@0+ (1,0) [-1|2] ""  NEO
+ SG_ EPAS_sysStatusChecksum : 63|8@0+ (1,0) [0|255] ""  NEO
+ SG_ EPAS_sysStatusCounter : 51|4@0+ (1,0) [0|15] ""  NEO
+ SG_ EPAS_torsionBarTorque : 19|12@0+ (0.01,-20.5) [0|0] "Nm"  NEO
+
+BO_ 904 MCU_clusterBacklightRequest: 3 XXX
+ SG_ MCU_clusterBacklightOn : 7|1@1+ (1,0) [0|1] "" XXX
+ SG_ MCU_clusterBrightnessLevel : 8|8@1+ (0.5,0) [0|127.5] "%" XXX
+ SG_ MCU_clusterReadyForDrive : 6|1@1+ (1,0) [-1|2] ""  XXX
+ SG_ MCU_clusterReadyForPowerOff : 5|1@1+ (1,0) [0|1] "" XXX
+
+BO_ 905 DAS_status2: 8 XXX
+ SG_ DAS_accSpeedLimit : 0|10@1+ (0.2,0) [0|204.6] "mph" GTW,APS
+ SG_ DAS_pmmObstacleSeverity : 10|3@1+ (1,0) [0|7] "" GTW,APS
+ SG_ DAS_pmmLoggingRequest : 13|1@1+ (1,0) [0|1] "" GTW,APS
+ SG_ DAS_activationFailureStatus : 14|2@1+ (1,0) [0|1] "" GTW,APS
+ SG_ DAS_pmmUltrasonicsFaultReason : 16|3@1+ (1,0) [0|7] "" GTW,APS
+ SG_ DAS_pmmRadarFaultReason : 19|2@1+ (1,0) [0|3] "" GTW,APS
+ SG_ DAS_pmmSysFaultReason : 21|3@1+ (1,0) [0|7] "" GTW,APS
+ SG_ DAS_pmmCameraFaultReason : 24|2@1+ (1,0) [0|3] "" GTW,APS
+ SG_ DAS_ACC_report : 26|5@1+ (1,0) [0|0] "" GTW,APS
+ SG_ DAS_relaxCruiseLimits : 31|1@1+ (1,0) [0|0] "" GTW,APS,APP
+ SG_ DAS_csaState : 32|2@1+ (1,0) [0|0] "" GTW,APS
+ SG_ DAS_radarTelemetry : 34|2@1+ (1,0) [0|0] "" GTW,APS
+ SG_ DAS_robState : 36|2@1+ (1,0) [0|3] "" GTW,APS
+ SG_ DAS_driverInteractionLevel : 38|2@1+ (1,0) [0|3] "" GTW,APS
+ SG_ DAS_ppOffsetDesiredRamp : 40|8@1+ (0.01,-1.28) [-1.28|1.27] "m" GTW,APS
+ SG_ DAS_longCollisionWarning : 48|4@1+ (1,0) [0|15] "" GTW,APS
+ SG_ DAS_status2Counter : 52|4@1+ (1,0) [0|0] "" GTW,APS
+ SG_ DAS_status2Checksum : 56|8@1+ (1,0) [0|0] "" GTW,APS
+
+BO_ 920 GTW_carConfig: 8 XXX
+ SG_ GTW_performanceConfig : 2|3@0+ (1,0) [0|0] "" XXX
+ SG_ GTW_fourWheelDrive : 4|2@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_unknown1 : 5|1@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_dasHw : 7|2@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_parkAssistInstalled : 9|2@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_forwardRadarHw : 11|2@0+ (1,0) [0|0] "" XXX
+ SG_ GTW_airSuspensionInstalled : 14|3@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_unknown2 : 15|1@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_country : 23|16@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_parkSensorGeometryType : 33|2@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_rhd : 34|1@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_bodyControlsType : 35|1@0+ (1,0) [0|0] "" XXX
+ SG_ GTW_radarPosition : 39|4@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_rearCornerRadarHw : 41|2@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_frontCornerRadarHw : 43|2@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_epasType : 45|2@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_chassisType : 47|2@0+ (1,0) [0|2] ""  XXX
+ SG_ GTW_wheelType : 52|5@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_rearSeatControllerMask : 55|3@0+ (1,0) [0|7] ""  XXX
+ SG_ GTW_euVehicle : 56|1@0+ (1,0) [0|0] "" XXX
+ SG_ GTW_foldingMirrorsInstalled : 57|1@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_brakeHwType : 59|2@0+ (1,0) [0|2] ""  XXX
+ SG_ GTW_autopilot : 61|2@0+ (1,0) [0|0] ""  XXX
+ SG_ GTW_unknown3 : 63|2@0+ (1,0) [0|0] ""  XXX
 
 BO_ 921 DAS_status: 8 XXX
  SG_ DAS_autopilotState : 0|4@1+ (1,0) [0|0] "" GTW,APS,TAS2
@@ -721,32 +637,6 @@ BO_ 921 DAS_status: 8 XXX
  SG_ DAS_summonAvailable : 51|1@1+ (1,0) [0|1] "" GTW,APS
  SG_ DAS_statusCounter : 52|4@1+ (1,0) [0|0] "" GTW,APS,TAS2
  SG_ DAS_statusChecksum : 56|8@1+ (1,0) [0|0] "" GTW,APS,TAS2
-
-BO_ 537 DAS_pscControl: 3 DAS
- SG_ DAS_pscControlCounter : 0|4@1+ (1,0) [0|15] "" PARK,APS
- SG_ DAS_pscParkState : 4|4@1+ (1,0) [0|15] "" PARK,EPB,APS
- SG_ DAS_eacState : 8|3@1+ (1,0) [0|3] "" PARK,APS
- SG_ DAS_pscControlChecksum : 16|8@1+ (1,0) [0|255] "" PARK,APS
-
-BO_ 905 DAS_status2: 8 XXX
- SG_ DAS_accSpeedLimit : 0|10@1+ (0.2,0) [0|204.6] "mph" GTW,APS
- SG_ DAS_pmmObstacleSeverity : 10|3@1+ (1,0) [0|7] "" GTW,APS
- SG_ DAS_pmmLoggingRequest : 13|1@1+ (1,0) [0|1] "" GTW,APS
- SG_ DAS_activationFailureStatus : 14|2@1+ (1,0) [0|1] "" GTW,APS
- SG_ DAS_pmmUltrasonicsFaultReason : 16|3@1+ (1,0) [0|7] "" GTW,APS
- SG_ DAS_pmmRadarFaultReason : 19|2@1+ (1,0) [0|3] "" GTW,APS
- SG_ DAS_pmmSysFaultReason : 21|3@1+ (1,0) [0|7] "" GTW,APS
- SG_ DAS_pmmCameraFaultReason : 24|2@1+ (1,0) [0|3] "" GTW,APS
- SG_ DAS_ACC_report : 26|5@1+ (1,0) [0|0] "" GTW,APS
- SG_ DAS_relaxCruiseLimits : 31|1@1+ (1,0) [0|0] "" GTW,APS,APP
- SG_ DAS_csaState : 32|2@1+ (1,0) [0|0] "" GTW,APS
- SG_ DAS_radarTelemetry : 34|2@1+ (1,0) [0|0] "" GTW,APS
- SG_ DAS_robState : 36|2@1+ (1,0) [0|3] "" GTW,APS
- SG_ DAS_driverInteractionLevel : 38|2@1+ (1,0) [0|3] "" GTW,APS
- SG_ DAS_ppOffsetDesiredRamp : 40|8@1+ (0.01,-1.28) [-1.28|1.27] "m" GTW,APS
- SG_ DAS_longCollisionWarning : 48|4@1+ (1,0) [0|15] "" GTW,APS
- SG_ DAS_status2Counter : 52|4@1+ (1,0) [0|0] "" GTW,APS
- SG_ DAS_status2Checksum : 56|8@1+ (1,0) [0|0] "" GTW,APS
 
 BO_ 937 DAS_telemetry: 8 XXX
  SG_ DAS_telemetryMultiplexer : 0|8@1+ (1,0) [0|0] "" XXX
@@ -815,6 +705,88 @@ BO_ 938 DAS_telemetryM: 8 XXX
  SG_ DAS_assAutosteerActive m9 : 30|1@1+ (1,0) [0|1] "" XXX
  SG_ DAS_assSmartSpeedActive m9 : 31|1@1+ (2,0) [0|1] "" XXX
 
+BO_ 968 UI_driverAssistMapData: 8 XXX
+ SG_ UI_mapSpeedLimitDependency : 0|3@1+ (1,0) [0|0] "" XXX
+ SG_ UI_roadClass : 3|3@1+ (1,0) [0|0] "" XXX
+ SG_ UI_inSuperchargerGeofence : 6|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_mapSpeedUnits : 7|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_mapSpeedLimit : 8|5@1+ (1,0) [0|0] "" XXX
+ SG_ UI_mapSpeedLimitType : 13|3@1+ (1,0) [0|0] "" XXX
+ SG_ UI_countryCode : 16|10@1+ (1,0) [0|0] "" XXX
+ SG_ UI_streetCount : 26|2@1+ (1,0) [0|0] "" XXX
+ SG_ UI_gpsRoadMatch : 28|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_navRouteActive : 29|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_parallelAutoparkEnabled : 30|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_perpendicularAutoparkEnabled : 31|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_nextBranchDist : 32|5@1+ (10,0) [0|300] "m" XXX
+ SG_ UI_controlledAccess : 37|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_nextBranchLeftOffRamp : 38|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_nextBranchRightOffRamp : 39|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_rejectLeftLane : 40|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_rejectRightLane : 41|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_rejectHPP : 42|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_rejectNav : 43|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_rejectLeftFreeSpace : 44|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_rejectRightFreeSpace : 45|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_rejectAutosteer : 46|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_rejectHandsOn : 47|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_acceptBottsDots : 48|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_autosteerRestricted : 49|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_pmmEnabled : 50|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_scaEnabled : 51|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_mapDataCounter : 52|4@1+ (1,0) [0|0] "" XXX
+ SG_ UI_mapDataChecksum : 56|8@1+ (1,0) [0|0] "" XXX
+
+BO_ 984 MCU_locationStatus: 8 XXX
+ SG_ MCU_gpsAccuracy : 57|7@1+ (0.2,0) [0|0] "m" XXX
+ SG_ MCU_latitude : 0|28@1- (1E-06,0) [0|0] "deg" XXX
+ SG_ MCU_longitude : 28|29@1- (1E-06,0) [0|0] "deg" XXX
+
+BO_ 1000 UI_driverAssistControl: 8 XXX
+ SG_ UI_autopilotControlRequest : 0|1@1+ (1,0) [1|0] "" XXX
+ SG_ UI_ulcStalkConfirm : 1|1@1+ (1,0) [1|0] "" XXX
+ SG_ UI_summonHeartbeat : 2|2@1+ (1,0) [0|0] "" XXX
+ SG_ UI_curvSpeedAdaptDisable : 4|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_dasDeveloper : 5|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_enableVinAssociation : 6|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_lssLkaEnabled : 7|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_lssLdwEnabled : 8|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_autoSummonEnable : 10|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_exceptionListEnable : 11|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_roadCheckDisable : 12|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_driveOnMapsEnable : 13|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_handsOnRequirementDisable : 14|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_forksEnable : 15|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_fuseLanesDisable : 16|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_fuseHPPDisable : 17|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_fuseVehiclesDisable : 18|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_enableNextGenACC : 19|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_visionSpeedType : 20|2@1+ (1,0) [0|0] "" XXX
+ SG_ UI_curvatureDatabaseOnly : 22|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_lssElkEnabled : 23|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_summonExitType : 24|2@1+ (1,0) [0|3] "" XXX
+ SG_ UI_summonEntryType : 26|2@1+ (1,0) [0|3] "" XXX
+ SG_ UI_selfParkRequest : 28|4@1+ (1,0) [0|15] "" XXX
+ SG_ UI_summonReverseDist : 32|6@1+ (1,0) [0|63] "" XXX
+ SG_ UI_undertakeAssistEnable : 38|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_adaptiveSetSpeedEnable : 39|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_drivingSide : 40|2@1+ (1,0) [0|3] "" XXX
+ SG_ UI_enableClipTelemetry : 42|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_enableTripTelemetry : 43|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_enableRoadSegmentTelemetry : 44|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_followNavRouteEnable : 46|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_ulcSpeedConfig : 48|2@1+ (1,0) [0|3] "" XXX
+ SG_ UI_ulcBlindSpotConfig : 50|2@1+ (1,0) [0|3] "" XXX
+ SG_ UI_autopilotAlwaysOn : 52|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_accFromZero : 53|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_alcOffHighwayEnable : 54|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_validationLoop : 55|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_ulcOffHighway : 56|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_enableNavRouteCSA : 57|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_enableCutinExperiments : 58|1@1+ (1,0) [0|1] "" XXX
+ SG_ UI_source3D : 60|3@1+ (1,0) [0|7] "" XXX
+ SG_ UI_enableVisionOnlyStops : 63|1@1+ (1,0) [0|1] "" XXX
+
 BO_ 1001 DAS_bodyControls: 8 XXX
  SG_ DAS_headlightRequest : 0|2@1+ (1,0) [0|3] "" XXX
  SG_ DAS_hazardLightRequest : 2|2@1+ (1,0) [0|3] "" XXX
@@ -826,79 +798,71 @@ BO_ 1001 DAS_bodyControls: 8 XXX
  SG_ DAS_bodyControlsCounter : 52|4@1+ (1,0) [0|15] "" XXX
  SG_ DAS_bodyControlsChecksum : 56|8@1+ (1,0) [0|255] "" XXX
 
-BO_ 777 DAS_object: 8 XXX
- SG_ DAS_objectId : 0|3@1+ (1,0) [0|7] "" XXX
- SG_ DAS_leadVehType : 3|3@1+ (1,0) [0|7] "" XXX
- SG_ DAS_leadVehRelevantForControl : 7|1@1+ (1,0) [0|1] "" XXX
- SG_ DAS_leadVehDx : 8|8@1+ (0.5,0) [0|127] "m" XXX
- SG_ DAS_leadVehVxRel : 16|4@1+ (4,-30) [-30|26] "m/s" XXX
- SG_ DAS_leadVehDy : 20|7@1+ (0.35,-22.05) [-22.05|22.4] "m" XXX
- SG_ DAS_leadVehId : 27|7@1+ (1,0) [0|126] "" XXX
- SG_ DAS_leadVeh2Type : 34|3@1+ (1,0) [0|7] "" XXX
- SG_ DAS_leadVeh2RelevantForControl : 38|1@1+ (1,0) [0|1] "" XXX
- SG_ DAS_leadVeh2Dx : 39|8@1+ (0.5,0) [0|127] "m" XXX
- SG_ DAS_leadVeh2VxRel : 47|4@1+ (4,-30) [-30|26] "m/s" XXX
- SG_ DAS_leadVeh2Dy : 51|7@1+ (0.35,-22.05) [-22.05|22.4] "m" XXX
- SG_ DAS_leadVeh2Id : 58|6@1+ (1,0) [0|63] "" XXX
+BO_ 1006 UI_autopilotControl: 8 XXX
+ SG_ UI_autopilotControlIndex M : 0|3@1+ (1,0) [0|7] "" XXX
+ SG_ UI_hovEnabled m0 : 3|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_donDisableAutoWiperDuration m0 : 4|3@1+ (1,0) [0|0] "" XXX
+ SG_ UI_donDisableOnAutoWiperSpeed m0 : 7|4@1+ (1,0) [0|0] "" XXX
+ SG_ UI_blindspotMinSpeed m0 : 11|4@1+ (1,0) [0|0] "" XXX
+ SG_ UI_blindspotDistance m0 : 15|3@1+ (1,0) [0|0] "" XXX
+ SG_ UI_blindspotTTC m0 : 18|3@1+ (1,0) [0|0] "" XXX
+ SG_ UI_donStopEndOfRampBuffer m0 : 21|3@1+ (1,0) [0|0] "" XXX
+ SG_ UI_donDisableCutin m0 : 24|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_donMinGoreWidthForAbortMap m0 : 25|4@1+ (1,0) [0|0] "" XXX
+ SG_ UI_donAlcProgGoreAbortThres m0 : 29|4@1+ (1,0) [0|0] "" XXX
+ SG_ UI_donMinGoreWidthForAbortNotMap m0 : 33|4@1+ (1,0) [0|0] "" XXX
+ SG_ UI_alcDisableUltrasonicCheck m0 : 37|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_alcUltrasonicDistance m0 : 38|4@1+ (1,0) [0|0] "" XXX
+ SG_ UI_alcUltrasonicWaitTime m0 : 42|3@1+ (1,0) [0|0] "" XXX
+ SG_ UI_alcEgoLeadingReactionAccel m0 : 48|2@1+ (1,0) [0|0] "" XXX
+ SG_ UI_alcMergIntervalRearDHyst m0 : 50|2@1+ (1,0) [0|0] "" XXX
+ SG_ UI_alcMergingIntervalHeadwayHyst m0 : 52|2@1+ (1,0) [0|0] "" XXX
+ SG_ UI_alcAssertivenessRate m0 : 54|2@1+ (1,0) [0|0] "" XXX
+ SG_ UI_alcViewRangeSensitivity m0 : 56|2@1+ (1,0) [0|0] "" XXX
+ SG_ UI_camBlockLaneCheckDisable m1 : 3|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_camBlockLaneCheckThreshold m1 : 4|6@1+ (0.01587,0) [0|1] "%" XXX
+ SG_ UI_camBlockBlurDisable m1 : 10|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_camBlockBlurThreshold m1 : 11|6@1+ (0.01587,0) [0|1] "%" XXX
 
-BO_ 778 DAS_objectM: 8 XXX
- SG_ DAS_objectIdM M : 0|3@1+ (1,0) [0|7] "" XXX
- SG_ DAS_leadVehType m0 : 3|3@1+ (1,0) [0|7] "" XXX
- SG_ DAS_leadVehRelevantForControl m0 : 7|1@1+ (1,0) [0|1] "" XXX
- SG_ DAS_leadVehDx m0 : 8|8@1+ (0.5,0) [0|127] "m" XXX
- SG_ DAS_leadVehVxRel m0 : 16|4@1+ (4,-30) [-30|26] "m/s" XXX
- SG_ DAS_leadVehDy m0 : 20|7@1+ (0.35,-22.05) [-22.05|22.4] "m" XXX
- SG_ DAS_leadVehId m0 : 27|7@1+ (1,0) [0|126] "" XXX
- SG_ DAS_leadVeh2Type m0 : 34|3@1+ (1,0) [0|7] "" XXX
- SG_ DAS_leadVeh2RelevantForControl m0 : 38|1@1+ (1,0) [0|1] "" XXX
- SG_ DAS_leadVeh2Dx m0 : 39|8@1+ (0.5,0) [0|127] "m" XXX
- SG_ DAS_leadVeh2VxRel m0 : 47|4@1+ (4,-30) [-30|26] "m/s" XXX
- SG_ DAS_leadVeh2Dy m0 : 51|7@1+ (0.35,-22.05) [-22.05|22.4] "m" XXX
- SG_ DAS_leadVeh2Id m0 : 58|6@1+ (1,0) [0|63] "" XXX
- SG_ DAS_leftVehType m1 : 3|3@1+ (1,0) [0|7] "" XXX
- SG_ DAS_leftVehRelevantForControl m1 : 7|1@1+ (1,0) [0|1] "" XXX
- SG_ DAS_leftVehDx m1 : 8|8@1+ (0.5,0) [0|127] "m" XXX
- SG_ DAS_leftVehVxRel m1 : 16|4@1+ (4,-30) [-30|26] "m/s" XXX
- SG_ DAS_leftVehDy m1 : 20|7@1+ (0.35,-22.05) [-22.05|22.4] "m" XXX
- SG_ DAS_leftVehId m1 : 27|7@1+ (1,0) [0|126] "" XXX
- SG_ DAS_leftVeh2Type m1 : 34|3@1+ (1,0) [0|7] "" XXX
- SG_ DAS_leftVeh2RelevantForControl m1 : 38|1@1+ (1,0) [0|1] "" XXX
- SG_ DAS_leftVeh2Dx m1 : 39|8@1+ (0.5,0) [0|127] "m" XXX
- SG_ DAS_leftVeh2VxRel m1 : 47|4@1+ (4,-30) [-30|26] "m/s" XXX
- SG_ DAS_leftVeh2Dy m1 : 51|7@1+ (0.35,-22.05) [-22.05|22.4] "m" XXX
- SG_ DAS_leftVeh2Id m1 : 58|6@1+ (1,0) [0|63] "" XXX
- SG_ DAS_rightVehType m2 : 3|3@1+ (1,0) [0|7] "" XXX
- SG_ DAS_rightVehRelevantForControl m2 : 7|1@1+ (1,0) [0|1] "" XXX
- SG_ DAS_rightVehDx m2 : 8|8@1+ (0.5,0) [0|127] "m" XXX
- SG_ DAS_rightVehVxRel m2 : 16|4@1+ (4,-30) [-30|26] "m/s" XXX
- SG_ DAS_rightVehDy m2 : 20|7@1+ (0.35,-22.05) [-22.05|22.4] "m" XXX
- SG_ DAS_rightVehId m2 : 27|7@1+ (1,0) [0|126] "" XXX
- SG_ DAS_rightVeh2Type m2 : 34|3@1+ (1,0) [0|7] "" XXX
- SG_ DAS_rightVeh2RelevantForControl m2 : 38|1@1+ (1,0) [0|1] "" XXX
- SG_ DAS_rightVeh2Dx m2 : 39|8@1+ (0.5,0) [0|127] "m" XXX
- SG_ DAS_rightVeh2VxRel m2 : 47|4@1+ (4,-30) [-30|26] "m/s" XXX
- SG_ DAS_rightVeh2Dy m2 : 51|7@1+ (0.35,-22.05) [-22.05|22.4] "m" XXX
- SG_ DAS_rightVeh2Id m2 : 58|6@1+ (1,0) [0|63] "" XXX
- SG_ DAS_cutinVehType m3 : 3|3@1+ (1,0) [0|7] "" XXX
- SG_ DAS_cutinVehRelevantForControl m3 : 7|1@1+ (1,0) [0|1] "" XXX
- SG_ DAS_cutinVehDx m3 : 8|8@1+ (0.5,0) [0|127] "m" XXX
- SG_ DAS_cutinVehVxRel m3 : 16|4@1+ (4,-30) [-30|26] "m/s" XXX
- SG_ DAS_cutinVehDy m3 : 20|7@1+ (0.35,-22.05) [-22.05|22.4] "m" XXX
- SG_ DAS_cutinVehId m3 : 27|7@1+ (1,0) [0|126] "" XXX
- SG_ DAS_roadSignColor m4 : 3|3@1+ (1,0) [0|7] "" XXX
- SG_ DAS_roadSignId m4 : 6|8@1+ (1,0) [0|0] "" XXX
- SG_ DAS_roadSignStopLineDist m4 : 14|10@1+ (0.2,-20) [-20|184.4] "m" XXX
- SG_ DAS_roadSignControlActive m4 : 24|1@1+ (1,0) [0|1] "" XXX
- SG_ DAS_roadSignSource m4 : 25|2@1+ (1,0) [0|3] "" XXX
- SG_ DAS_roadSignArrow m4 : 27|3@1+ (1,0) [0|7] "" XXX
- SG_ DAS_roadSignOrientation m4 : 30|2@1+ (1,0) [0|1] "" XXX
- SG_ DAS_leadVehHeading m5 : 8|8@1+ (0.0245437,-3.1415936) [-3.1415936|3.0925062] "rad" XXX
- SG_ DAS_leadVeh2Heading m5 : 16|8@1+ (0.0245437,-3.1415936) [-3.1415936|3.0925062] "rad" XXX
- SG_ DAS_leftVehHeading m5 : 24|8@1+ (0.0245437,-3.1415936) [-3.1415936|3.0925062] "rad" XXX
- SG_ DAS_leftVeh2Heading m5 : 32|8@1+ (0.0245437,-3.1415936) [-3.1415936|3.0925062] "rad" XXX
- SG_ DAS_rightVehHeading m5 : 40|8@1+ (0.0245437,-3.1415936) [-3.1415936|3.0925062] "rad" XXX
- SG_ DAS_rightVeh2Heading m5 : 48|8@1+ (0.0245437,-3.1415936) [-3.1415936|3.0925062] "rad" XXX
- SG_ DAS_cutinVehHeading m5 : 56|8@1+ (0.0245437,-3.1415936) [-3.1415936|3.0925062] "rad" XXX
+BO_ 1064 UI_telemetryControl: 8 XXX
+ SG_ UI_TCR_enable : 0|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_TCR_moveStateStanding : 1|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_TCR_moveStateStopped : 2|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_TCR_moveStateMoving : 3|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_TCR_moveStateIndeterm : 4|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_TCR_classConstElem : 5|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_TCR_classMovingPed : 6|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_TCR_classMovingTwoWheel : 7|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_TCR_classMovingFourWheel : 8|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_TCR_classUnknown : 9|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_TCR_downSampleFactor : 16|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ UI_TCR_wExist : 24|5@1+ (1,0) [0|31] "" Vector__XXX
+ SG_ UI_TCR_vehSpeed : 32|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UI_TCR_minRCS : 40|8@1+ (0.25,-14) [-14|49.75] "dB" Vector__XXX
+ SG_ UI_TCR_maxDy : 48|5@1+ (0.5,0) [0|15.5] "m" Vector__XXX
+ SG_ UI_TCR_maxObjects : 56|5@1+ (1,0) [0|31] "" Vector__XXX
+ SG_ UI_TCR_maxRoadClass : 61|3@1+ (1,0) [0|7] "" Vector__XXX
+
+BO_ 1080 UI_driverAssistAnonDebugParams: 8 XXX
+ SG_ UI_anonDebugParam1 : 0|7@1+ (1,0) [0|100] "" XXX
+ SG_ UI_anonDebugFlag1 : 7|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_anonDebugParam2 : 8|7@1+ (1,0) [0|100] "" XXX
+ SG_ UI_anonDebugFlag2 : 15|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_anonDebugParam3 : 16|7@1+ (1,0) [0|100] "" XXX
+ SG_ UI_anonDebugFlag3 : 23|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_anonDebugParam4 : 24|7@1+ (1,0) [0|100] "" XXX
+ SG_ UI_anonDebugFlag4 : 31|1@1+ (1,0) [0|0] "" XXX
+ SG_ UI_anonDebugParam5 : 32|7@1+ (1,0) [0|100] "" XXX
+ SG_ UI_anonDebugParam6 : 40|7@1+ (1,0) [0|100] "" XXX
+ SG_ UI_anonDebugParam7 : 48|7@1+ (1,0) [0|100] "" XXX
+ SG_ UI_visionSpeedSlider : 56|7@1+ (1,0) [0|100] "" XXX
+
+BO_ 1160 DAS_steeringControl: 4 NEO
+ SG_ DAS_steeringControlType : 23|2@0+ (1,0) [0|0] "" EPAS
+ SG_ DAS_steeringControlChecksum : 31|8@0+ (1,0) [0|0] "" EPAS
+ SG_ DAS_steeringControlCounter : 19|4@0+ (1,0) [0|0] "" EPAS
+ SG_ DAS_steeringAngleRequest : 6|15@0+ (0.1,-1638.35) [-1638.35|1638.35] "deg" EPAS
+ SG_ DAS_steeringHapticRequest : 7|1@0+ (1,0) [0|0] "" EPAS
 
 BO_ 1361 GAS_COMMAND: 6 EON
  SG_ GAS_COMMAND : 7|16@0+ (0.0507968128,-22.85856576) [0|1] "" INTERCEPTOR
@@ -913,31 +877,6 @@ BO_ 1362 GAS_SENSOR: 6 INTERCEPTOR
  SG_ STATE : 35|4@0+ (1,0) [0|15] "" EON
  SG_ IDX : 39|4@0+ (1,0) [0|15] "" EON
  SG_ CHECKSUM : 47|8@0+ (1,0) [0|3] "" EON
-
-BO_ 529 RCM_status: 8 RCM
- SG_ RCM_driverOrientationInitStatus : 2|3@0+ (1,0) [0|7] "" GTW,OCS
- SG_ RCM_armStatus : 5|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_warningIndicatorState : 7|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_tellTalePassengerState : 9|2@0+ (1,0) [0|3] "" GTW,OCS,DAS
- SG_ RCM_bucklePassengerStatus : 11|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_tellTaleDriverState : 13|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_buckleDriverStatus : 15|2@0+ (1,0) [0|3] "" GTW,OCS,DAS
- SG_ RCM_seatTrackPositionDrvr : 19|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_passAirbagRequest : 21|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_chimeState1stRow : 23|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_vinLearnFlag : 25|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_hwConfigPin58 : 27|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_hwConfigPin57 : 29|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_hwConfigPin56 : 31|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_passOccupantStatus : 33|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_airbagCutoffSwStatus : 35|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_privateCANStatus : 37|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_publicCANStatus : 39|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_edr2State : 45|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_edr1State : 47|2@0+ (1,0) [0|3] "" GTW,OCS
- SG_ RCM_buckle2ndRowStatus : 50|3@0+ (1,0) [0|3] "" GTW,OCS,DAS
- SG_ RCM_statusCounter : 55|4@0+ (1,0) [0|15] "" GTW,OCS,DAS
- SG_ RCM_statusChecksum : 63|8@0+ (1,0) [0|255] "" GTW,OCS,DAS
  
 
 VAL_ 3 StW_Angl 16383 "SNA" ;
@@ -1036,48 +975,6 @@ VAL_ 697 DAS_jerkMin 511 "SNA" ;
 VAL_ 697 DAS_jerkMax 255 "SNA" ;
 VAL_ 697 DAS_accelMin 511 "SNA" ;
 VAL_ 697 DAS_accelMax 511 "SNA" ;
-VAL_ 777 DAS_objectId 5 "VEHICLE_HEADINGS" 4 "ROAD_SIGN" 3 "CUTIN_VEHICLE" 2 "RIGHT_VEHICLES" 1 "LEFT_VEHICLES" 0 "LEAD_VEHICLES" ;
-VAL_ 777 DAS_leadVehType 6 "IPSO" 5 "PEDESTRIAN" 4 "BICYCLE" 3 "MOTORCYCLE" 2 "CAR" 1 "TRUCK" 0 "UNKNOWN" ;
-VAL_ 777 DAS_leadVehDx 255 "SNA" ;
-VAL_ 777 DAS_leadVehVxRel 15 "SNA" ;
-VAL_ 777 DAS_leadVehId 127 "SNA" ;
-VAL_ 777 DAS_leadVeh2Type 5 "PEDESTRIAN" 4 "BICYCLE" 3 "MOTORCYCLE" 2 "CAR" 1 "TRUCK" 0 "UNKNOWN" ;
-VAL_ 777 DAS_leadVeh2Dx 255 "SNA" ;
-VAL_ 777 DAS_leadVeh2VxRel 15 "SNA" ;
-VAL_ 777 DAS_leadVeh2Id 0 "SNA" ;
-VAL_ 777 DAS_leftVehType 5 "PEDESTRIAN" 4 "BICYCLE" 3 "MOTORCYCLE" 2 "CAR" 1 "TRUCK" 0 "UNKNOWN" ;
-VAL_ 777 DAS_leftVehDx 255 "SNA" ;
-VAL_ 777 DAS_leftVehVxRel 15 "SNA" ;
-VAL_ 777 DAS_leftVehId 127 "SNA" ;
-VAL_ 777 DAS_leftVeh2Type 5 "PEDESTRIAN" 4 "BICYCLE" 3 "MOTORCYCLE" 2 "CAR" 1 "TRUCK" 0 "UNKNOWN" ;
-VAL_ 777 DAS_leftVeh2Dx 255 "SNA" ;
-VAL_ 777 DAS_leftVeh2VxRel 15 "SNA" ;
-VAL_ 777 DAS_leftVeh2Id 0 "SNA" ;
-VAL_ 777 DAS_rightVehType 5 "PEDESTRIAN" 4 "BICYCLE" 3 "MOTORCYCLE" 2 "CAR" 1 "TRUCK" 0 "UNKNOWN" ;
-VAL_ 777 DAS_rightVehDx 255 "SNA" ;
-VAL_ 777 DAS_rightVehVxRel 15 "SNA" ;
-VAL_ 777 DAS_rightVehId 127 "SNA" ;
-VAL_ 777 DAS_rightVeh2Type 5 "PEDESTRIAN" 4 "BICYCLE" 3 "MOTORCYCLE" 2 "CAR" 1 "TRUCK" 0 "UNKNOWN" ;
-VAL_ 777 DAS_rightVeh2Dx 255 "SNA" ;
-VAL_ 777 DAS_rightVeh2VxRel 15 "SNA" ;
-VAL_ 777 DAS_rightVeh2Id 0 "SNA" ;
-VAL_ 777 DAS_cutinVehType 5 "PEDESTRIAN" 4 "BICYCLE" 3 "MOTORCYCLE" 2 "CAR" 1 "TRUCK" 0 "UNKNOWN" ;
-VAL_ 777 DAS_cutinVehDx 255 "SNA" ;
-VAL_ 777 DAS_cutinVehVxRel 15 "SNA" ;
-VAL_ 777 DAS_cutinVehId 127 "SNA" ;
-VAL_ 777 DAS_roadSignColor 4 "RED_YELLOW" 3 "GREEN" 2 "YELLOW" 1 "RED" 0 "NONE" ;
-VAL_ 777 DAS_roadSignId 255 "SNA" 1 "TRAFFIC_LIGHT" 0 "STOP_SIGN" ;
-VAL_ 777 DAS_roadSignStopLineDist 1023 "SNA" ;
-VAL_ 777 DAS_roadSignSource 2 "VISION" 1 "NAV" 0 "NONE" ;
-VAL_ 777 DAS_roadSignArrow 4 "UNKNOWN" 3 "STRAIGHT" 2 "RIGHT" 1 "LEFT" 0 "CIRCLE" ;
-VAL_ 777 DAS_roadSignOrientation 2 "HORIZONTAL_3_LIGHT" 1 "VERTICAL_3_LIGHT" 0 "UNKNOWN" ;
-VAL_ 777 DAS_leadVehHeading 255 "SNA" ;
-VAL_ 777 DAS_leadVeh2Heading 255 "SNA" ;
-VAL_ 777 DAS_leftVehHeading 255 "SNA" ;
-VAL_ 777 DAS_leftVeh2Heading 255 "SNA" ;
-VAL_ 777 DAS_rightVehHeading 255 "SNA" ;
-VAL_ 777 DAS_rightVeh2Heading 255 "SNA" ;
-VAL_ 777 DAS_cutinVehHeading 255 "SNA" ;
 VAL_ 782 PARK_pscRightCurbType 2 "HIGH_CURB" 1 "LOW_CURB" 0 "VIRTUAL_CURB" ;
 VAL_ 782 PARK_pscLeftCurbType 2 "HIGH_CURB" 1 "LOW_CURB" 0 "VIRTUAL_CURB" ;
 VAL_ 782 PARK_autoCalComplete 1 "COMPLETE" 0 "INCOMPLETE" ;
@@ -1154,25 +1051,6 @@ VAL_ 921 DAS_laneDepartureWarning 5 "SNA" 4 "RIGHT_WARNING_SEVERE" 3 "LEFT_WARNI
 VAL_ 921 DAS_fleetSpeedState 3 "FLEETSPEED_HOLD" 2 "FLEETSPEED_ACTIVE" 1 "FLEETSPEED_AVAILABLE" 0 "FLEETSPEED_UNAVAILABLE" ;
 VAL_ 921 DAS_autopilotHandsOnState 15 "LC_HANDS_ON_SNA" 8 "LC_HANDS_ON_SUSPENDED" 7 "LC_HANDS_ON_REQD_STRUCK_OUT" 5 "LC_HANDS_ON_REQD_CHIME_2" 4 "LC_HANDS_ON_REQD_CHIME_1" 3 "LC_HANDS_ON_REQD_VISUAL" 2 "LC_HANDS_ON_REQD_NOT_DETECTED" 1 "LC_HANDS_ON_REQD_DETECTED" 0 "LC_HANDS_ON_NOT_REQD" ;
 VAL_ 921 DAS_autoLaneChangeState 31 "ALC_SNA" 30 "ALC_ABORT_MISSION_PLAN_INVALID" 29 "ALC_ABORT_TIMEOUT" 28 "ALC_WAITING_HANDS_ON" 27 "ALC_BLOCKED_LANE_TYPE_R" 26 "ALC_BLOCKED_LANE_TYPE_L" 25 "ALC_BLOCKED_VEH_TTC_AND_USS_R" 24 "ALC_BLOCKED_VEH_TTC_R" 23 "ALC_BLOCKED_VEH_TTC_AND_USS_L" 22 "ALC_BLOCKED_VEH_TTC_L" 21 "ALC_UNAVAILABLE_SOLID_LANE_LINE" 20 "ALC_ABORT_OTHER_REASON" 19 "ALC_ABORT_BLINKER_TURNED_OFF" 18 "ALC_ABORT_LC_HEALTH_BAD" 17 "ALC_ABORT_POOR_VIEW_RANGE" 16 "ALC_ABORT_SIDE_OBSTACLE_PRESENT_R" 15 "ALC_ABORT_SIDE_OBSTACLE_PRESENT_L" 14 "ALC_WAITING_FOR_FWD_OBST_TO_PASS_R" 13 "ALC_WAITING_FOR_FWD_OBST_TO_PASS_L" 12 "ALC_WAITING_FOR_SIDE_OBST_TO_PASS_R" 11 "ALC_WAITING_FOR_SIDE_OBST_TO_PASS_L" 10 "ALC_IN_PROGRESS_R" 9 "ALC_IN_PROGRESS_L" 8 "ALC_AVAILABLE_BOTH" 7 "ALC_AVAILABLE_ONLY_R" 6 "ALC_AVAILABLE_ONLY_L" 5 "ALC_UNAVAILABLE_VEHICLE_SPEED" 4 "ALC_UNAVAILABLE_EXITING_HIGHWAY" 3 "ALC_UNAVAILABLE_TP_FOLLOW" 2 "ALC_UNAVAILABLE_SONICS_INVALID" 1 "ALC_UNAVAILABLE_NO_LANES" 0 "ALC_UNAVAILABLE_DISABLED" ;
-VAL_ 937 DAS_telemetryMultiplexer 9 "DAS_TELEMETRY_CRUISE_STALK_INPUT" 8 "DAS_TELEMETRY_STATIONARY_OBST" 7 "DAS_TELEMETRY_CSA_EVENT" 2 "DAS_TELEMETRY_TRAFFIC_SIGNS" 1 "DAS_TELEMETRY_ACC_DRIVER_MONITOR" 0 "DAS_TELEMETRY_ROAD_INFORMATION" ;
-VAL_ 937 DAS_telLeftLaneType 6 "BARRIER" 5 "BOTTS DOTS" 4 "DOUBLE" 3 "DASHED" 2 "ROAD EDGE" 1 "SOLID" 0 "UNDECIDED" ;
-VAL_ 937 DAS_telRightLaneType 6 "BARRIER" 5 "BOTTS DOTS" 4 "DOUBLE" 3 "DASHED" 2 "ROAD EDGE" 1 "SOLID" 0 "UNDECIDED" ;
-VAL_ 937 DAS_telLeftMarkerQuality 3 "HIGH" 2 "MEDIUM" 1 "LOW" 0 "LOWEST" ;
-VAL_ 937 DAS_telRightMarkerQuality 3 "HIGH" 2 "MEDIUM" 1 "LOW" 0 "LOWEST" ;
-VAL_ 937 DAS_telLeftMarkerColor 3 "BLUE" 2 "YELLOW" 1 "WHITE" 0 "UNKNOWN" ;
-VAL_ 937 DAS_telRightMarkerColor 3 "BLUE" 2 "YELLOW" 1 "WHITE" 0 "UNKNOWN" ;
-VAL_ 937 DAS_telLeftLaneCrossing 1 "CROSSING" 0 "NOT_CROSSING" ;
-VAL_ 937 DAS_telRightLaneCrossing 1 "CROSSING" 0 "NOT_CROSSING" ;
-VAL_ 937 DAS_stopSignLongitudinalDist 1023 "SNA" ;
-VAL_ 937 DAS_stopSignLateralDist 255 "SNA" ;
-VAL_ 937 DAS_stopSignHeight 63 "SNA" ;
-VAL_ 937 DAS_stopSignStopLineDistance 1023 "SNA" ;
-VAL_ 937 DAS_stopSignCIPVDistance 63 "SNA" ;
-VAL_ 937 DAS_stopSignHostAccel 1023 "SNA" ;
-VAL_ 937 DAS_csaIntState 4 "CSA_INTERNAL_STATE_ENABLE_HOLD" 3 "CSA_INTERNAL_STATE_ENABLE_ACCELEROMETER" 2 "CSA_INTERNAL_STATE_ENABLE_PREDICTED" 1 "CSA_INTERNAL_STATE_AVAILABLE" 0 "CSA_INTERNAL_STATE_UNAVAILABLE" ;
-VAL_ 937 DAS_soCamCipvStatus 3 "CAM_CIPV_FUSED_W_RAD5" 2 "CAM_CIPV_FUSED_W_OTHER_RAD_OBJ" 1 "CAM_CIPV_UNFUSED" 0 "CAM_CIPV_INVALID" ;
-VAL_ 937 DAS_soRad5Status 3 "RAD5_FUSED_W_OTHER_CAMOBJ" 2 "RAD5_FUSED_W_CIPV" 1 "RAD5_UNFUSED" 0 "RAD5_INVALID" ;
-VAL_ 937 DAS_soRad1Status 3 "RAD1_FUSED_W_OTHER_CAMOBJ" 2 "RAD1_FUSED_W_CIPV" 1 "RAD1_UNFUSED" 0 "RAD1_INVALID" ;
 VAL_ 1001 DAS_headlightRequest 3 "DAS_HEADLIGHT_REQUEST_INVALID" 1 "DAS_HEADLIGHT_REQUEST_ON" 0 "DAS_HEADLIGHT_REQUEST_OFF" ;
 VAL_ 1001 DAS_hazardLightRequest 3 "DAS_REQUEST_HAZARDS_SNA" 2 "DAS_REQUEST_HAZARDS_UNUSED" 1 "DAS_REQUEST_HAZARDS_ON" 0 "DAS_REQUEST_HAZARDS_OFF" ;
 VAL_ 1001 DAS_wiperSpeed 15 "DAS_WIPER_SPEED_INVALID" 14 "DAS_WIPER_SPEED_14" 13 "DAS_WIPER_SPEED_13" 12 "DAS_WIPER_SPEED_12" 11 "DAS_WIPER_SPEED_11" 10 "DAS_WIPER_SPEED_10" 9 "DAS_WIPER_SPEED_9" 8 "DAS_WIPER_SPEED_8" 7 "DAS_WIPER_SPEED_7" 6 "DAS_WIPER_SPEED_6" 5 "DAS_WIPER_SPEED_5" 4 "DAS_WIPER_SPEED_4" 3 "DAS_WIPER_SPEED_3" 2 "DAS_WIPER_SPEED_2" 1 "DAS_WIPER_SPEED_1" 0 "DAS_WIPER_SPEED_OFF" ;
@@ -1184,5 +1062,3 @@ VAL_ 1160 DAS_steeringAngleRequest 16384 "ZERO_ANGLE" ;
 VAL_ 1160 DAS_steeringControlType 1 "ANGLE_CONTROL" 3 "DISABLED" 0 "NONE" 2 "RESERVED" ;
 VAL_ 1160 DAS_steeringHapticRequest 1 "ACTIVE" 0 "IDLE" ;
 VAL_ 1362 STATE 5 "FAULT_TIMEOUT" 4 "FAULT_STARTUP" 3 "FAULT_SCE" 2 "FAULT_SEND" 1 "FAULT_BAD_CHECKSUM" 0 "NO_FAULT" ;
-
-

@@ -541,6 +541,7 @@ panda/certs/**
 panda/crypto/**
 panda/examples/query_fw_versions.py
 panda/python/**
+panda/board/obj/.placeholder
 
 opendbc/.gitignore
 opendbc/__init__.py
