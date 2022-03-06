@@ -36,11 +36,11 @@ class HUDController:
             self.leadClass = 2
             self.leadVx = clip(int(lead_1.vRel),-30,26)
         else:
-            self.leadDx = 255
+            self.leadDx = 0
             self.leadDy = 0.0
-            self.leadClass = 127
+            self.leadClass = 0
             self.leadId = 0
-            self.leadVx = 15
+            self.leadVx = 0
         if (lead_2 is not None) and lead_2.status:
             self.lead2Dx = clip(lead_2.dRel,0,126)
             self.lead2Dy = clip(curv0 - lead_2.yRel,-22.05,22.4)
@@ -48,13 +48,12 @@ class HUDController:
             self.lead2Class = 2
             self.lead2Vx = clip(int(lead_2.vRel),-30,26)
         else:
-            self.lead2Dx = 255
+            self.lead2Dx = 0
             self.lead2Dy = 0.0
-            self.lead2Class = 127
+            self.lead2Class = 0
             self.lead2Id = 0
-            self.lead2Vx = 15
-        messages.append(
-            self.tesla_can.create_lead_car_object_message(
+            self.lead2Vx = 0
+        return self.tesla_can.create_lead_car_object_message(
                 0, #lead vehicle
                 self.leadClass,
                 self.leadId,
@@ -70,8 +69,6 @@ class HUDController:
                 self.lead2Dy,
                 CAN_CHASSIS[self.CP.carFingerprint],
             )
-        )
-        return messages
 
     def update(self, enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart,human_control,radar_state,lat_plan,apply_angle,model_data):
