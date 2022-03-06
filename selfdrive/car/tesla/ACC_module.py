@@ -108,6 +108,8 @@ class ACCController:
                 )
             ):
                 # A double pull enables ACC. updating the max ACC speed if necessary.
+                if not self.enable_adaptive_cruise:
+                    CS.longCtrlEvent = car.CarEvent.EventName.accEnabled
                 self.enable_adaptive_cruise = True
                 # Increase ACC speed to match current, if applicable.
                 if self.adaptive:
@@ -124,6 +126,8 @@ class ACCController:
                     self.enable_adaptive_cruise = False
         # Handle pressing the cancel button.
         if CS.cruise_buttons == CruiseButtons.CANCEL:
+            if self.enable_adaptive_cruise:
+                CS.longCtrlEvent = car.CarEvent.EventName.accDisabled
             self.enable_adaptive_cruise = False
             self.acc_speed_kph = 0.0
             self.last_cruise_stalk_pull_time = 0

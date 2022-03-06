@@ -159,6 +159,10 @@ class CarInterface(CarInterfaceBase):
     events = self.create_common_events(ret)
     if self.CS.autopilot_enabled:
       events.add(car.CarEvent.EventName.invalidLkasSetting)
+
+    if self.CS.longCtrlEvent:
+      events.add(self.CS.longCtrlEvent)
+      self.CS.longCtrlEvent = None
     
     ret.events = events.to_msg()
     

@@ -826,4 +826,43 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
     ET.NO_ENTRY: NoEntryAlert("LKAS Disabled"),
   },
 
+  EventName.pccEnabled: {
+     ET.WARNING: Alert(
+      "Pedal Cruise Enabled",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none,AudibleAlert.engage, 1.),
+  },
+
+  EventName.pccDisabled: {
+    ET.WARNING: Alert(
+      "Pedal Cruise Disabled",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.steerRequired,AudibleAlert.disengage, 1.),
+  },
+
+  EventName.accEnabled: {
+    ET.WARNING: Alert(
+      "Adaptive Cruise Enabled",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none,AudibleAlert.disengage, 1.),
+  },
+
+  EventName.accDisabled: {
+    ET.WARNING: Alert(
+      "Adaptive Cruise Disabled",
+      "",
+      AlertStatus.userPrompt, AlertSize.small,
+      Priority.LOW, VisualAlert.none,AudibleAlert.disengage, 1.),
+  },
+
+  EventName.pccError: {
+    ET.WARNING: Alert(
+      "Pedal Interceptor Error",
+      "",
+      AlertStatus.userPrompt, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 1.),
+  },    
 }

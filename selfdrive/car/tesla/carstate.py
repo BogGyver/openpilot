@@ -78,6 +78,7 @@ class CarState(CarStateBase):
     self.cruise_state = None
     self.enableHumanLongControl = load_bool_param("TinklaAllowHumanLong", False)
     self.enableICIntegration = load_bool_param("TinklaHasIcIntegration", False)
+    self.pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
 
     #IC integration
     self.userSpeedLimitOffsetMS = 0
@@ -255,12 +256,18 @@ class CarState(CarStateBase):
       #Pedal Interceptor
       self.prev_pedal_interceptor_state = self.pedal_interceptor_state
       self.prev_pedal_idx = self.pedal_idx
-      if self.forcePedalOverCC:
-        self.pedal_interceptor_state = cp_cam.vl["GAS_SENSOR"]["STATE"]
-        self.pedal_interceptor_value = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"]
-        self.pedal_interceptor_value2 = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
-        self.pedal_idx = cp_cam.vl["GAS_SENSOR"]["IDX"]
-    
+      if self.enablePedal:
+        if self.pedalcanzero:
+          self.pedal_interceptor_state = cp.vl["GAS_SENSOR"]["STATE"]
+          self.pedal_interceptor_value = cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"]
+          self.pedal_interceptor_value2 = cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
+          self.pedal_idx = cp.vl["GAS_SENSOR"]["IDX"]
+        else:
+          self.pedal_interceptor_state = cp_cam.vl["GAS_SENSOR"]["STATE"]
+          self.pedal_interceptor_value = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"]
+          self.pedal_interceptor_value2 = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
+          self.pedal_idx = cp_cam.vl["GAS_SENSOR"]["IDX"]
+
       if self.enableHumanLongControl:
         if self.cruise_buttons == CruiseButtons.MAIN:
           self.cruiseEnabled = True
@@ -279,6 +286,8 @@ class CarState(CarStateBase):
 
   @staticmethod
   def get_can_parser(CP):
+    enablePedal = load_bool_param("TinklaEnablePedal",False)
+    pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
     signals = [
       # sig_name, sig_address, default
       ("DI_pedalPos", "DI_torque1", 0),
@@ -390,11 +399,24 @@ class CarState(CarStateBase):
       #("PARK_status2",4),
     ]
 
+    if enablePedal and not pedalcanzero:
+      signals += [
+        ("INTERCEPTOR_GAS", "GAS_SENSOR", 0),
+        ("INTERCEPTOR_GAS2", "GAS_SENSOR", 0),
+        ("STATE", "GAS_SENSOR", 0),
+        ("IDX", "GAS_SENSOR", 0),
+      ]
+
+      checks += [
+        ("GAS_SENSOR", 10)
+      ]
+
     return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 0, enforce_checks=False)
 
   @staticmethod
   def get_cam_can_parser(CP):
     enablePedal = load_bool_param("TinklaEnablePedal",False)
+    pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
     signals = []
     checks = []
     
@@ -471,7 +493,7 @@ class CarState(CarStateBase):
       ]
 
     if CP.carFingerprint in [CAR.PREAP_MODELS]:
-      if enablePedal:
+      if enablePedal and not pedalcanzero:
         signals += [
           ("INTERCEPTOR_GAS", "GAS_SENSOR", 0),
           ("INTERCEPTOR_GAS2", "GAS_SENSOR", 0),
