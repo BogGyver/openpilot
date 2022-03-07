@@ -185,7 +185,7 @@ class CarState(CarStateBase):
     else:
       ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
     ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
-    ret.cruiseState.standstill = (cruise_state == "STANDSTILL")
+    ret.cruiseState.standstill = False #(cruise_state == "STANDSTILL")
 
     #speed limit
     msu = cp.vl['UI_gpsVehicleSpeed']["UI_mapSpeedLimitUnits"]
