@@ -265,6 +265,7 @@ class CarStateBase(ABC):
     self.radarEpasType = 0
     self.radarPosition = 0
     self.hsoNumbPeriod = 1.5
+    self.longCtrlEvent = None
 
     read_config_file(self)
     #end config section
