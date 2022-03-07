@@ -121,8 +121,8 @@ class CarState(CarStateBase):
 
     # Brake pedal
     ret.brake = 0
-    CS.realBrakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
-    ret.brakePressed = CS.realBrakePressed
+    self.realBrakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
+    ret.brakePressed = self.realBrakePressed
     # Steering wheel
     
     self.steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)

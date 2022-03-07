@@ -318,45 +318,13 @@ class PCCController:
 
         if not self.pcc_available or not enabled:
             return 0.0, 0, idx
-        # Alternative speed decision logic that uses the lead car's distance
-        # and speed more directly.
-        # Bring in the lead car distance from the radarState feed
-        if radSt is not None:
-            self.lead_1 = radSt.radarState.leadOne
-            if _is_present(self.lead_1):
-                self.lead_last_seen_time_ms = _current_time_millis()
-                self.continuous_lead_sightings += 1
-            else:
-                self.continuous_lead_sightings = 0
-
-        v_ego = CS.out.vEgo
-
-        following = False
-        if self.lead_1:
-            following = (
-                self.lead_1.status
-                and self.lead_1.dRel < MAX_RADAR_DISTANCE
-                and self.lead_1.vLeadK > v_ego
-                and self.lead_1.aLeadK > 0.0
-            )
-        accel_limits = [
-            float(x) for x in calc_cruise_accel_limits(v_ego,following)
-        ]
-
-        accel_limits[1] *= _accel_limit_multiplier(CS, self.lead_1)
-        accel_limits[0] = _decel_limit(
-            accel_limits[0], CS.out.vEgo, self.lead_1, CS, self.pedal_speed_kph
-        )
-
-        accel_limits = limit_accel_in_turns(v_ego, CS.out.steeringAngleDeg, accel_limits, CS.CP)
-
-        output_gb = 0
 
         ##############################################################
         # This mode uses the longitudinal MPC built in OP
         #
         # we use the values from actuators.gas and actuators.brake
         ##############################################################
+        print("actuators are: gas = ",actuators.gas,"  brake =" actuators.brake)
         output_gb = actuators.gas - actuators.brake
         self.v_pid = pcm_speed
         MPC_BRAKE_MULTIPLIER = 12.0

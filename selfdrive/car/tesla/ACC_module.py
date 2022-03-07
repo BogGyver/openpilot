@@ -139,7 +139,7 @@ class ACCController:
         ):
             self._update_max_acc_speed(CS)
 
-        if CS.out.realBrakePressed:
+        if CS.realBrakePressed:
             self.user_has_braked = True
             self.last_brake_press_time = _current_time_millis()
             if not self.autoresume:
