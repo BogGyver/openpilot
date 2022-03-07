@@ -68,7 +68,7 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
   });
 
   QPushButton *flash_pedal_btn = new QPushButton("Flash Pedal");
-  flash_btn->setObjectName("flash_pedal_btn");
+  flash_pedal_btn->setObjectName("flash_pedal_btn");
   
   QObject::connect(flash_pedal_btn, &QPushButton::clicked, [=](){
     QProcess::startDetached("/data/openpilot/panda/board/pedal/flashPedal");
@@ -79,6 +79,7 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
     #flash_btn:pressed { background-color: #4a4a4a; }
   )");
   addItem(flash_btn);
+  addItem(flash_pedal_btn);
 }
 
 TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
