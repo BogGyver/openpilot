@@ -182,10 +182,13 @@ class CarState(CarStateBase):
         ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
       elif self.speed_units == "MPH":
         ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.MPH_TO_MS
+      ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
+      ret.cruiseState.standstill = False #(cruise_state == "STANDSTILL")
     else:
       ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
-    ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
-    ret.cruiseState.standstill = False #(cruise_state == "STANDSTILL")
+      ret.cruiseState.enabled = self.cruiseEnabled and (not ret.doorOpen) and (ret.gearShifter == car.CarState.GearShifter.drive) and (not ret.seatbeltUnlatched)
+      ret.cruiseState.available = True
+      ret.cruiseState.standstill = False
 
     #speed limit
     msu = cp.vl['UI_gpsVehicleSpeed']["UI_mapSpeedLimitUnits"]
