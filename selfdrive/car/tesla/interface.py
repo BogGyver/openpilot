@@ -6,6 +6,7 @@ from selfdrive.car.interfaces import CarInterfaceBase
 from selfdrive.car.modules.CFG_module import load_bool_param
 from panda import Panda
 from selfdrive.car.tesla.tunes import LongTunes, set_long_tune
+from selfdrive.car.LONG_module import ACCEL_MIN, ACCEL_MAX
 
 ButtonType = car.CarState.ButtonEvent.Type
 
@@ -14,6 +15,10 @@ class CarInterface(CarInterfaceBase):
   def compute_gb(accel, speed):
     # TODO: is this correct?
     return float(accel) / 3.0
+
+  @staticmethod
+  def get_pid_accel_limits(CP, current_speed, cruise_speed):
+    return ACCEL_MIN, ACCEL_MAX
 
   @staticmethod
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=None):
