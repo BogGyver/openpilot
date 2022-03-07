@@ -8,21 +8,21 @@ def _is_present(lead):
 
 class LONGController: 
 
-    def __init__(self,CP,packer, tesla_can):
+    def __init__(self,CP,packer, tesla_can, pedalcan):
         self.CP = CP
         self.v_target = None
         self.lead_1 = None
         self.long_control_counter = 1
         self.tesla_can = tesla_can
         self.packer = packer
+        self.pedalcan = pedalcan
         if (CP.carFingerprint == CAR.PREAP_MODELS):
             self.ACC = ACCController(self)
-            self.PCC = PCCController(self,tesla_can)
+            self.PCC = PCCController(self,tesla_can,pedalcan)
             self.speed_limit_ms = 0
             self.set_speed_limit_active = False
             self.speed_limit_offset_ms = 0
             self.adaptive_cruise = 0
-
 
     def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state):
         messages = []
@@ -97,7 +97,6 @@ class LONGController:
                         counter=stlk_counter))
             apply_accel = 0.0
             if self.PCC.pcc_available and frame % 5 == 0:  # pedal processed at 20Hz
-                pedalcan = 2
                 apply_accel, accel_needed, accel_idx = self.PCC.update_pdl(
                     enabled,
                     CS,
@@ -113,7 +112,7 @@ class LONGController:
                 )
                 messages.append(
                     self.tesla_can.create_pedal_command_msg(
-                        apply_accel, int(accel_needed), accel_idx, pedalcan
+                        apply_accel, int(accel_needed), accel_idx, self.pedalcan
                     )
                 )
 

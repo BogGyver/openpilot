@@ -179,6 +179,9 @@ const CanMsg TESLA_PREAP_TX_MSGS[] = {
     {0x2A9, 1, 8},  //GTW_carConfig
     {0x2B9, 1, 8},  //VIP_405HS
     {0x2D9, 1, 8},  //BC_status
+    //pedal
+    {0x551, 0, 6}, //GAS_INTERCEPTOR command can0
+    {0x551, 2, 6}, //GAS_INTERCEPTOR command can2
   };
 #define TESLA_PREAP_TX_LEN (sizeof(TESLA_PREAP_TX_MSGS) / sizeof(TESLA_PREAP_TX_MSGS[0]))
 
@@ -911,7 +914,7 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
       }
     }
 
-    if ((addr == 0x552) && ((bus == 2) || (bus == 3))) {
+    if ((addr == 0x552) && ((bus == 2) || (bus == 0))) {
       pedalPressed = (int)((((GET_BYTES_04(to_push) & 0xFF00) >> 8) + ((GET_BYTES_04(to_push) & 0xFF) << 8)) * 0.050796813 -22.85856576);
       if (pedalCan == -1) {
         pedalCan = bus;

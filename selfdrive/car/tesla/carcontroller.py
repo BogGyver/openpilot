@@ -25,7 +25,10 @@ class CarController():
     #initialize modules
     
     self.hud_controller = HUDController(CP,self.packer,self.tesla_can)
-    self.long_controller = LONGController(CP,self.packer,self.tesla_can)
+    pedalcan = 2
+    if load_bool_param("TinklaPedalCanZero", False):
+      pedalcan = 0
+    self.long_controller = LONGController(CP,self.packer,self.tesla_can,pedalcan)
 
 
     self.cruiseDelayFrame = 0

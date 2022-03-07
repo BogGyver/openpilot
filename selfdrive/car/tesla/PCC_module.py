@@ -8,6 +8,7 @@ import math
 from collections import OrderedDict
 from common.params import Params
 import numpy as np
+from cereal import car
 
 # lookup tables VS speed to determine min and max accels in cruise
 # make sure these accelerations are smaller than mpc limits
@@ -107,7 +108,7 @@ def _current_time_millis():
 
 # this is for the pedal cruise control
 class PCCController:
-    def __init__(self, carcontroller,tesla_can):
+    def __init__(self, carcontroller,tesla_can,pedalcan):
         self.CC = carcontroller
         self.tesla_can = tesla_can
         self.human_cruise_action_time = 0
@@ -157,6 +158,7 @@ class PCCController:
         self.params = Params()
         average_speed_over_x_suggestions = 6  # 0.3 seconds (20x a second)
         self.fleet_speed = FleetSpeed(average_speed_over_x_suggestions)
+        self.pedalcan = pedalcan
 
     def update_stat(self, CS, frame):
 
@@ -170,9 +172,8 @@ class PCCController:
                     # send reset command
                     idx = self.pedal_idx
                     self.pedal_idx = (self.pedal_idx + 1) % 16
-                    pedalcan = 2
                     can_sends.append(
-                        self.tesla_can.create_pedal_command_msg(0, 0, idx, pedalcan)
+                        self.tesla_can.create_pedal_command_msg(0, 0, idx, self.pedalcan)
                     )
             return can_sends
 
@@ -198,10 +199,12 @@ class PCCController:
             )
             ready = (
                 (CruiseState.is_off(CS.cruise_state))
-                or CS.forcePedalOverCC
+                or CS.enablePedal
             )
             if ready and double_pull:
                 # A double pull enables ACC. updating the max ACC speed if necessary.
+                if not self.enable_pedal_cruise:
+                    CS.longCtrlEvent = car.CarEvent.EventName.pccEnabled
                 self.enable_pedal_cruise = True
                 # Increase PCC speed to match current, if applicable.
                 # We round the target speed in the user's units of measurement to avoid jumpy speed readings
@@ -213,6 +216,8 @@ class PCCController:
                 )
         # Handle pressing the cancel button.
         elif CS.cruise_buttons == CruiseButtons.CANCEL:
+            if self.enable_pedal_cruise:
+                CS.longCtrlEvent = car.CarEvent.EventName.pccDisabled
             self.enable_pedal_cruise = False
             self.pedal_speed_kph = 0.0
             self.stalk_pull_time_ms = 0
@@ -243,7 +248,7 @@ class PCCController:
                 self.pedal_speed_kph, MIN_PCC_V_KPH, MAX_PCC_V_KPH
             )
         # If something disabled cruise control, disable PCC too
-        elif self.enable_pedal_cruise and CS.cruise_state and not CS.forcePedalOverCC:
+        elif self.enable_pedal_cruise and CS.cruise_state and not CS.enablePedal:
             self.enable_pedal_cruise = False
         # A single pull disables PCC (falling back to just steering). Wait some time
         # in case a double pull comes along.
@@ -417,7 +422,7 @@ class PCCController:
         pedal_ready = (
             frame < self.pedal_timeout_frame and CS.pedal_interceptor_state == 0
         )
-        acc_disabled = CS.forcePedalOverCC or CruiseState.is_off(CS.cruise_state)
+        acc_disabled = CS.enablePedal or CruiseState.is_off(CS.cruise_state)
         # Mark pedal unavailable while traditional cruise is on.
         self.pcc_available = pedal_ready and acc_disabled
 

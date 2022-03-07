@@ -105,6 +105,11 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     highCpuUsage @105;
     cruiseMismatch @106;
     lkasDisabled @107;
+    pccEnabled @108;
+    pccDisabled @109;
+    pccError @110;
+    accEnabled @111;
+    accDisabled @112;
 
     radarCanErrorDEPRECATED @15;
     communityFeatureDisallowedDEPRECATED @62;
