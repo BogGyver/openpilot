@@ -45,7 +45,6 @@ class CarController():
   def update(self, c, enabled, CS, frame, actuators, cruise_cancel, pcm_speed, pcm_override, hud_alert, audible_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart): 
     if frame % 100 == 0:
-      CS.useFollowModeAcc = load_bool_param("TinklaUseFollowACC",False)
       CS.autoresumeAcc = load_bool_param("TinklaAutoResumeACC",False)
     can_sends = []
     #add 1 second delay logic to wait for AP which has a status at 2Hz

@@ -145,6 +145,7 @@ class ACCController:
             self.last_brake_press_time = _current_time_millis()
             if not self.autoresume:
                 self.enable_adaptive_cruise = False
+                CS.longCtrlEvent = car.CarEvent.EventName.accDisabled
 
         if CS.out.vEgo < self.MIN_CRUISE_SPEED_MS:
             self.has_gone_below_min_speed = True
@@ -242,8 +243,10 @@ class ACCController:
             if lead_1.dRel:
                 self.lead_last_seen_time_ms = current_time_ms
         if self.enable_adaptive_cruise and enabled: 
-            button_to_press = self._calc_button(CS, pcm_speed)
-            self.new_speed = pcm_speed * CV.MS_TO_KPH
+            target_accel = actuators.accel
+            target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
+            button_to_press = self._calc_button(CS, target_speed)
+            self.new_speed = target_speed * CV.MS_TO_KPH
             
         if button_to_press:
             self.automated_cruise_action_time = current_time_ms

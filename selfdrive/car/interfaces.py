@@ -252,7 +252,6 @@ class CarStateBase(ABC):
 
     #start config section
     self.enablePedal = load_bool_param("TinklaEnablePedal",False)
-    self.useFollowModeAcc = load_bool_param("TinklaUseFollowACC",False)
     self.autoresumeAcc = load_bool_param("TinklaAutoResumeACC",False)
     self.enableHSO = load_bool_param("TinklaHso",True)
     self.enableHAO = load_bool_param("TinklaHao",False)
