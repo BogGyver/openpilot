@@ -67,6 +67,13 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
     QProcess::startDetached("/data/openpilot/panda/board/flashPanda");
   });
 
+  QPushButton *flash_pedal_btn = new QPushButton("Flash Pedal");
+  flash_btn->setObjectName("flash_pedal_btn");
+  
+  QObject::connect(flash_pedal_btn, &QPushButton::clicked, [=](){
+    QProcess::startDetached("/data/openpilot/panda/board/pedal/flashPedal");
+  });
+
   setStyleSheet(R"(
     #flash_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #flash_btn:pressed { background-color: #4a4a4a; }
