@@ -41,6 +41,8 @@ class CarState(CarStateBase):
     self.lLine = 0
     self.rLine = 0
 
+    self.acc_speed_kph = 0.
+
     #IC integration
     self.DAS_gas_to_resume = 0
     self.DAS_025_steeringOverride = 0 #use for manual steer?
@@ -79,6 +81,7 @@ class CarState(CarStateBase):
     self.enableHumanLongControl = load_bool_param("TinklaAllowHumanLong", False)
     self.enableICIntegration = load_bool_param("TinklaHasIcIntegration", False)
     self.pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
+    self.realBrakePressed = False
 
     #IC integration
     self.userSpeedLimitOffsetMS = 0
@@ -88,6 +91,7 @@ class CarState(CarStateBase):
     self.prev_pedal_interceptor_state = self.pedal_interceptor_state = 0
     self.pedal_interceptor_value = 0.0
     self.pedal_interceptor_value2 = 0.0
+    self.teslaModel = "S"
 
   def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
     if speed_limit_uom > 0:
@@ -117,7 +121,8 @@ class CarState(CarStateBase):
 
     # Brake pedal
     ret.brake = 0
-    ret.brakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
+    CS.realBrakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
+    ret.brakePressed = CS.realBrakePressed
     # Steering wheel
     
     self.steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
@@ -173,11 +178,12 @@ class CarState(CarStateBase):
       self.autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
       self.cruiseEnabled = acc_enabled and not self.autopilot_enabled and not summon_or_autopark_enabled
       ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
-
-    if self.speed_units == "KPH":
-      ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
-    elif self.speed_units == "MPH":
-      ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.MPH_TO_MS
+      if self.speed_units == "KPH":
+        ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
+      elif self.speed_units == "MPH":
+        ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.MPH_TO_MS
+    else:
+      ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
     ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
     ret.cruiseState.standstill = (cruise_state == "STANDSTILL")
 
@@ -399,7 +405,7 @@ class CarState(CarStateBase):
       #("PARK_status2",4),
     ]
 
-    if enablePedal and not pedalcanzero:
+    if enablePedal and pedalcanzero:
       signals += [
         ("INTERCEPTOR_GAS", "GAS_SENSOR", 0),
         ("INTERCEPTOR_GAS2", "GAS_SENSOR", 0),

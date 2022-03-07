@@ -179,7 +179,7 @@ class PCCController:
 
         prev_enable_pedal_cruise = self.enable_pedal_cruise
         # disable on brake
-        if CS.out.brakePressed and self.enable_pedal_cruise:
+        if CS.realBrakePressed and self.enable_pedal_cruise:
             self.enable_pedal_cruise = False
 
         # process any stalk movement
