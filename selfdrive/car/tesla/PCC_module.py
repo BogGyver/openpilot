@@ -368,7 +368,7 @@ class PCCController:
         self.prev_tesla_pedal = tesla_pedal * enable_pedal
         self.prev_tesla_accel = apply_accel * enable_pedal
         self.prev_v_ego = CS.out.vEgo
-
+        print("returning values for pedal (val,enabled,idx): ",self.prev_tesla_pedal, enable_pedal, idx)
         return self.prev_tesla_pedal, enable_pedal, idx
 
     def pedal_hysteresis(self, pedal, enabled):

@@ -5,6 +5,7 @@ from selfdrive.car import STD_CARGO_KG, gen_empty_fingerprint, scale_rot_inertia
 from selfdrive.car.interfaces import CarInterfaceBase
 from selfdrive.car.modules.CFG_module import load_bool_param
 from panda import Panda
+from selfdrive.car.tesla.tunes import LongTunes, set_long_tune
 
 ButtonType = car.CarState.ButtonEvent.Type
 
@@ -22,11 +23,6 @@ class CarInterface(CarInterfaceBase):
     ret.carName = "tesla"      
     ret.steerControlType = car.CarParams.SteerControlType.angle
 
-    # Set kP and kI to 0 over the whole speed range to have the planner accel as actuator command
-    ret.longitudinalTuning.kpBP = [0]
-    ret.longitudinalTuning.kpV = [0]
-    ret.longitudinalTuning.kiBP = [0]
-    ret.longitudinalTuning.kiV = [0]
     ret.stopAccel = 0.0
     ret.longitudinalActuatorDelayUpperBound = 0.5 # s
     ret.radarTimeStep = (1.0 / 8) # 8Hz
@@ -57,6 +53,7 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 13.5
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_AP # has AP, ACC
       ret.openpilotLongitudinalControl = False
+      set_long_tune(ret.longitudinalTuning, LongTunes.AP)
     elif candidate == CAR.AP1_MODELS: 
       ret.mass = 2100. + STD_CARGO_KG
       ret.wheelbase = 2.959
@@ -64,6 +61,7 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 13.5
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_AP # has AP, ACC
       ret.openpilotLongitudinalControl = False
+      set_long_tune(ret.longitudinalTuning, LongTunes.AP)
     elif candidate == CAR.AP1_MODELX:
       #TODO: update values
       ret.mass = 2560. + STD_CARGO_KG
@@ -72,12 +70,17 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 13.5
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_AP  # has AP, ACC
       ret.openpilotLongitudinalControl = False
+      set_long_tune(ret.longitudinalTuning, LongTunes.AP)
     elif candidate == CAR.PREAP_MODELS:
       ret.mass = 2100. + STD_CARGO_KG
       ret.wheelbase = 2.959
       ret.centerToFront = ret.wheelbase * 0.5
       ret.steerRatio = 13.5
       ret.openpilotLongitudinalControl = False
+      if load_bool_param("TinklaEnablePedal",False):
+        set_long_tune(ret.longitudinalTuning, LongTunes.PEDAL)
+      else:
+        set_long_tune(ret.longitudinalTuning, LongTunes.ACC)
     else:
       raise ValueError(f"Unsupported car: {candidate}")
     # enable IC integration - always enabled
