@@ -135,6 +135,7 @@ class CarState(CarStateBase):
     ret.steeringPressed = (self.hands_on_level > 0)
     ret.steerError = steer_status == "EAC_FAULT"
     ret.steerWarning = self.steer_warning != "EAC_ERROR_IDLE"
+    self.torqueLevel = cp.vl["DI_torque1"]["DI_torqueMotor"]
 
     # Cruise state
     #cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
@@ -301,6 +302,7 @@ class CarState(CarStateBase):
     signals = [
       # sig_name, sig_address, default
       ("DI_pedalPos", "DI_torque1", 0),
+      ("DI_torqueMotor", "DI_torque1", 0),
       ("DI_brakePedal", "DI_torque2", 0),
       ("StW_AnglHP", "STW_ANGLHP_STAT", 0),
       ("StW_AnglHP_Spd", "STW_ANGLHP_STAT", 0),
