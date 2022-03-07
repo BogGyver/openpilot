@@ -3,9 +3,6 @@ from selfdrive.car.tesla.ACC_module import ACCController
 from selfdrive.car.tesla.PCC_module import PCCController
 from selfdrive.config import Conversions as CV
 
-ACCEL_MAX = 2.0
-ACCEL_MIN = -3.5
-
 def _is_present(lead):
   return bool((not (lead is None)) and (lead.dRel > 0))
 

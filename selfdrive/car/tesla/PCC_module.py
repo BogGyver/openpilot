@@ -9,8 +9,9 @@ from collections import OrderedDict
 from common.params import Params
 import numpy as np
 from cereal import car
-from selfdrive.car.LONG_module import ACCEL_MIN, ACCEL_MAX
 
+ACCEL_MAX = 2.0
+ACCEL_MIN = -3.5
 
 # lookup tables VS speed to determine min and max accels in cruise
 # make sure these accelerations are smaller than mpc limits
@@ -182,6 +183,7 @@ class PCCController:
         prev_enable_pedal_cruise = self.enable_pedal_cruise
         # disable on brake
         if CS.realBrakePressed and self.enable_pedal_cruise:
+            CS.longCtrlEvent = car.CarEvent.EventName.pccDisabled
             self.enable_pedal_cruise = False
 
         # process any stalk movement
@@ -252,6 +254,7 @@ class PCCController:
         # If something disabled cruise control, disable PCC too
         elif self.enable_pedal_cruise and CS.cruise_state and not CS.enablePedal:
             self.enable_pedal_cruise = False
+            CS.longCtrlEvent = car.CarEvent.EventName.pccDisabled
         # A single pull disables PCC (falling back to just steering). Wait some time
         # in case a double pull comes along.
         elif (
@@ -261,6 +264,7 @@ class PCCController:
             > STALK_DOUBLE_PULL_MS
         ):
             self.enable_pedal_cruise = False
+            CS.longCtrlEvent = car.CarEvent.EventName.pccDisabled
 
         # Notify if PCC was toggled
         if prev_enable_pedal_cruise and not self.enable_pedal_cruise:
@@ -335,9 +339,7 @@ class PCCController:
         apply_accel = clip(
             output_gb/ACCEL_MAX, 
             0.0,
-            _accel_pedal_max(
-                CS.out.vEgo, self.v_pid, self.lead_1, self.prev_tesla_accel, CS
-            )
+            1.0
         )
         apply_brake = -clip(
             -output_gb/ACCEL_MIN * MPC_BRAKE_MULTIPLIER,
@@ -397,72 +399,16 @@ class PCCController:
         # Mark pedal unavailable while traditional cruise is on.
         self.pcc_available = pedal_ready and acc_disabled
 
-
 def _safe_distance_m(v_ego_ms, CS):
     return max(CS.apFollowTimeInS * (v_ego_ms + 1), MIN_SAFE_DIST_M)
 
-
 def _is_present(lead):
     return bool((not (lead is None)) and (lead.dRel > 0))
-
 
 def _interp_map(val, val_map):
     """Helper to call interp with an OrderedDict for the mapping. I find
     this easier to read than interp, which takes two arrays."""
     return interp(val, list(val_map.keys()), list(val_map.values()))
-
-
-def _accel_limit_multiplier(CS, lead):
-    """Limits acceleration in the presence of a lead car. The further the lead car
-    is, the more accel is allowed. Range: 0 to 1, so that it can be multiplied
-    with other accel limits."""
-    accel_by_speed = OrderedDict(
-        [
-            # (speed m/s, decel)
-            (0.0, 0.95),  #   0 kmh
-            (10.0, 0.95),  #  35 kmh
-            (20.0, 0.925),  #  72 kmh
-            (30.0, 0.875),
-        ]
-    )  # 107 kmh
-    if CS.teslaModel in ["SP", "SPD"]:
-        accel_by_speed = OrderedDict(
-            [
-                # (speed m/s, decel)
-                (0.0, 0.985),  #   0 kmh
-                (10.0, 0.975),  #  35 kmh
-                (20.0, 0.95),  #  72 kmh
-                (30.0, 0.9),
-            ]
-        )  # 107 kmh
-    accel_mult = _interp_map(CS.out.vEgo, accel_by_speed)
-    if _is_present(lead):
-        safe_dist_m = _safe_distance_m(CS.out.vEgo, CS)
-        accel_multipliers = OrderedDict(
-            [
-                # (distance in m, acceleration fraction)
-                (0.6 * safe_dist_m, 0.15),
-                (1.0 * safe_dist_m, 0.2),
-                (3.0 * safe_dist_m, 0.4),
-            ]
-        )
-        vrel_multipliers = OrderedDict(
-            [
-                # vrel m/s, accel mult
-                (0.0, 1.0),
-                (10.0, 1.5),
-            ]
-        )
-
-        return min(
-            accel_mult
-            * _interp_map(lead.vRel, vrel_multipliers)
-            * _interp_map(lead.dRel, accel_multipliers),
-            1.0,
-        )
-    else:
-        return min(accel_mult * 0.4, 1.0)
-
 
 def _brake_pedal_min(v_ego, v_target, lead, CS, max_speed_kph):
     # if less than 7 MPH we don't have much left till 5MPH to brake, so full regen
