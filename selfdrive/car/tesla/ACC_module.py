@@ -4,6 +4,7 @@ from selfdrive.config import Conversions as CV
 import cereal.messaging as messaging
 import sys
 import time
+from cereal import car
 
 # CS.v_ego -> CS.out.vEgo
 # CS.v_ego_raw -> CS.out.vEgoRaw
