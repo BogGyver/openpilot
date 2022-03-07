@@ -324,7 +324,7 @@ class PCCController:
         #
         # we use the values from actuators.gas and actuators.brake
         ##############################################################
-        print("actuators are: gas = ",actuators.gas,"  brake =" actuators.brake)
+        print("actuators are: gas = ",actuators.gas,"  brake =", actuators.brake)
         output_gb = actuators.gas - actuators.brake
         self.v_pid = pcm_speed
         MPC_BRAKE_MULTIPLIER = 12.0
