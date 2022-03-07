@@ -287,6 +287,7 @@ class CarState(CarStateBase):
         ret.brakePressed = False
         ret.gasPressed = False
         self.DAS_216_driverOverriding = False
+        ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
 
     return ret
 
