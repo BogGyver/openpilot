@@ -6,7 +6,7 @@ from selfdrive.car.interfaces import CarInterfaceBase
 from selfdrive.car.modules.CFG_module import load_bool_param
 from panda import Panda
 from selfdrive.car.tesla.tunes import LongTunes, set_long_tune
-from selfdrive.car.PCC_module import ACCEL_MIN, ACCEL_MAX
+from selfdrive.car.tesla.PCC_module import ACCEL_MIN, ACCEL_MAX
 
 ButtonType = car.CarState.ButtonEvent.Type
 
