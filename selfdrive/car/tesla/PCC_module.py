@@ -111,8 +111,8 @@ def _current_time_millis():
 
 # this is for the pedal cruise control
 class PCCController:
-    def __init__(self, carcontroller,tesla_can,pedalcan):
-        self.CC = carcontroller
+    def __init__(self, longcontroller,tesla_can,pedalcan):
+        self.LongCtr = longcontroller
         self.tesla_can = tesla_can
         self.human_cruise_action_time = 0
         self.pcc_available = self.prev_pcc_available = False
@@ -164,6 +164,11 @@ class PCCController:
         self.pedalcan = pedalcan
 
     def update_stat(self, CS, frame):
+        if not self.LongCtr.CP.openpilotLongitudinalControl:
+            return []
+
+        if not self.LongCtr.enablePedal:
+            return []
 
         self._update_pedal_state(CS, frame)
 
@@ -290,6 +295,13 @@ class PCCController:
         alca_enabled,
         radSt
     ):
+
+        if not self.LongCtr.CP.openpilotLongitudinalControl:
+            return 0.0, -1, -1
+
+        if not self.LongCtr.enablePedal:
+            return 0.0, -1, -1
+
         idx = self.pedal_idx
 
         self.prev_speed_limit_kph = self.speed_limit_kph

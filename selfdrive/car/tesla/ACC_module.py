@@ -39,8 +39,8 @@ class ACCController:
     # Tesla cruise only functions above 17 MPH
     MIN_CRUISE_SPEED_MS = 17.1 * CV.MPH_TO_MS
 
-    def __init__(self, carcontroller):
-        self.CC = carcontroller
+    def __init__(self, longcontroller):
+        self.LongCtr = longcontroller
         self.human_cruise_action_time = 0
         self.automated_cruise_action_time = 0
         self.radarState = messaging.sub_sock("radarState", conflate=True)
@@ -77,8 +77,9 @@ class ACCController:
         self.prev_enable_adaptive_cruise = self.enable_adaptive_cruise
         #define 
         self.autoresume = CS.autoresumeAcc
-        self.adaptive = True
         curr_time_ms = _current_time_millis()
+        if not self.LongCtr.CP.openpilotLongitudinalControl:
+            return
         # Handle pressing the enable button.
         if (
             CS.cruise_buttons == CruiseButtons.MAIN
@@ -89,10 +90,8 @@ class ACCController:
             ready = (
                  (
                     enabled
-                    or (
-                        CS.cruise_buttons == CruiseButtons.DECEL_SET
-                        and not self.adaptive
-                    )
+                    or
+                    CS.cruise_buttons == CruiseButtons.DECEL_SET
                 )
                 and CruiseState.is_enabled_or_standby(CS.cruise_state)
                 and CS.out.vEgo > self.MIN_CRUISE_SPEED_MS
@@ -101,13 +100,16 @@ class ACCController:
                 ready
                 and double_pull
                 and (
-                    (self.adaptive and CS.cruise_buttons == CruiseButtons.MAIN)
-                    or (
-                        (not self.adaptive)
-                        and CS.cruise_buttons == CruiseButtons.DECEL_SET
-                    )
+                    CS.cruise_buttons == CruiseButtons.MAIN
+                    or 
+                    CS.cruise_buttons == CruiseButtons.DECEL_SET
                 )
             ):
+                #decide adaptive or not
+                if CS.cruise_buttons == CruiseButtons.MAIN:
+                    self.adaptive = True
+                else:
+                    self.adaptive = False
                 # A double pull enables ACC. updating the max ACC speed if necessary.
                 if not self.enable_adaptive_cruise:
                     CS.longCtrlEvent = car.CarEvent.EventName.accEnabled
@@ -226,7 +228,7 @@ class ACCController:
             button_to_press = CruiseButtons.MAIN
 
         # if plain cc, not adaptive, then just return None or Cancel
-        if (not self.adaptive) and self.enable_adaptive_cruise:
+        if (not self.adaptive):
             self.acc_speed_kph = (
                 CS.v_cruise_actual
             )  
@@ -238,7 +240,7 @@ class ACCController:
             and (CS.cruise_state >= 2)
             and (CS.cruise_state <= 4)
         ):
-            button_to_press = CruiseButtons.CANCEL
+            return CruiseButtons.CANCEL
         lead_1 = None
         # if enabled:
         lead = messaging.recv_one_or_none(self.radarState)
@@ -293,7 +295,7 @@ class ACCController:
         autoresume_ready = (
             self.autoresume
             and CS.out.aEgo >= 0.1
-            and not self.CC.HSO.human_control
+            and not CS.HSO.human_control
             and _current_time_millis() > self.last_brake_press_time + 1000
         )
 
