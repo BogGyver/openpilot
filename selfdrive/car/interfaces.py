@@ -135,9 +135,9 @@ class CarInterfaceBase(ABC):
     if (self.CS.enableALC) and (self.CS.alca_need_engagement):
       ret.steeringPressed = True
       if self.CS.alca_direction == log.LateralPlan.LaneChangeDirection.left:
-        ret.steeringTorque = ret.steeringTorque + 0.1
+        ret.steeringTorque = 0.1
       if self.CS.alca_direction == log.LateralPlan.LaneChangeDirection.right:
-        ret.steeringTorque = ret.steeringTorque - 0.1
+        ret.steeringTorque = - 0.1
 
   def pre_apply(self,c):
     #read params once a second
@@ -252,7 +252,6 @@ class CarStateBase(ABC):
 
     #start config section
     self.enablePedal = load_bool_param("TinklaEnablePedal",False)
-    self.useFollowModeAcc = load_bool_param("TinklaUseFollowACC",False)
     self.autoresumeAcc = load_bool_param("TinklaAutoResumeACC",False)
     self.enableHSO = load_bool_param("TinklaHso",True)
     self.enableHAO = load_bool_param("TinklaHao",False)

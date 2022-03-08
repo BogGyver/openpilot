@@ -2,6 +2,7 @@ from selfdrive.car.tesla.values import CAR, CAN_CHASSIS, CAN_POWERTRAIN, CruiseS
 from selfdrive.car.tesla.ACC_module import ACCController
 from selfdrive.car.tesla.PCC_module import PCCController
 from selfdrive.config import Conversions as CV
+from selfdrive.car.modules.CFG_module import load_bool_param
 
 def _is_present(lead):
   return bool((not (lead is None)) and (lead.dRel > 0))
@@ -16,6 +17,7 @@ class LONGController:
         self.tesla_can = tesla_can
         self.packer = packer
         self.pedalcan = pedalcan
+        self.enablePedal = load_bool_param("TinklaEnablePedal",False)
         if (CP.carFingerprint == CAR.PREAP_MODELS):
             self.ACC = ACCController(self)
             self.PCC = PCCController(self,tesla_can,pedalcan)
@@ -33,12 +35,15 @@ class LONGController:
             self.speed_limit_ms = CS.speed_limit_ms
             self.set_speed_limit_active = True if self.speed_limit_ms > 0 else False
 
-
+        #if not openpilot long control just exit
+        if not self.CP.openpilotLongitudinalControl:
+            return messages
         #preAP ModelS
         if self.CP.carFingerprint == CAR.PREAP_MODELS:
             # update PCC module info
             pedal_can_sends = self.PCC.update_stat(CS, frame)
-            messages.extend(pedal_can_sends)
+            if len(pedal_can_sends) > 0:
+                messages.extend(pedal_can_sends)
             if self.PCC.pcc_available:
                 self.ACC.enable_adaptive_cruise = False
             else:
@@ -76,7 +81,8 @@ class LONGController:
                 or self.PCC.pcc_available
                 else 0
             )
-            if enabled and not self.PCC.pcc_available and frame % 20 == 0:  # acc processed at 5Hz
+            
+            if (not self.PCC.pcc_available) and frame % 20 == 0:  # acc processed at 5Hz
                 cruise_btn = self.ACC.update_acc(
                     enabled,
                     CS,
@@ -110,11 +116,12 @@ class LONGController:
                     CS.alca_engaged,
                     radar_state
                 )
-                messages.append(
-                    self.tesla_can.create_pedal_command_msg(
-                        apply_accel, int(accel_needed), accel_idx, self.pedalcan
+                if (accel_needed > -1) and (accel_idx > -1):
+                    messages.append(
+                        self.tesla_can.create_pedal_command_msg(
+                            apply_accel, int(accel_needed), accel_idx, self.pedalcan
+                        )
                     )
-                )
 
             #TODO: update message sent in HUD
 

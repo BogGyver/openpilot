@@ -41,6 +41,8 @@ class CarState(CarStateBase):
     self.lLine = 0
     self.rLine = 0
 
+    self.acc_speed_kph = 0.
+
     #IC integration
     self.DAS_gas_to_resume = 0
     self.DAS_025_steeringOverride = 0 #use for manual steer?
@@ -79,6 +81,7 @@ class CarState(CarStateBase):
     self.enableHumanLongControl = load_bool_param("TinklaAllowHumanLong", False)
     self.enableICIntegration = load_bool_param("TinklaHasIcIntegration", False)
     self.pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
+    self.realBrakePressed = False
 
     #IC integration
     self.userSpeedLimitOffsetMS = 0
@@ -88,6 +91,7 @@ class CarState(CarStateBase):
     self.prev_pedal_interceptor_state = self.pedal_interceptor_state = 0
     self.pedal_interceptor_value = 0.0
     self.pedal_interceptor_value2 = 0.0
+    self.teslaModel = "S"
 
   def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
     if speed_limit_uom > 0:
@@ -117,7 +121,8 @@ class CarState(CarStateBase):
 
     # Brake pedal
     ret.brake = 0
-    ret.brakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
+    self.realBrakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
+    ret.brakePressed = self.realBrakePressed
     # Steering wheel
     
     self.steer_warning = self.can_define.dv["EPAS_sysStatus"]["EPAS_eacErrorCode"].get(int(cp.vl["EPAS_sysStatus"]["EPAS_eacErrorCode"]), None)
@@ -130,6 +135,7 @@ class CarState(CarStateBase):
     ret.steeringPressed = (self.hands_on_level > 0)
     ret.steerError = steer_status == "EAC_FAULT"
     ret.steerWarning = self.steer_warning != "EAC_ERROR_IDLE"
+    self.torqueLevel = cp.vl["DI_torque1"]["DI_torqueMotor"]
 
     # Cruise state
     #cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
@@ -173,13 +179,17 @@ class CarState(CarStateBase):
       self.autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
       self.cruiseEnabled = acc_enabled and not self.autopilot_enabled and not summon_or_autopark_enabled
       ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
-
-    if self.speed_units == "KPH":
-      ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
-    elif self.speed_units == "MPH":
-      ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.MPH_TO_MS
-    ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
-    ret.cruiseState.standstill = (cruise_state == "STANDSTILL")
+      if self.speed_units == "KPH":
+        ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
+      elif self.speed_units == "MPH":
+        ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.MPH_TO_MS
+      ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
+      ret.cruiseState.standstill = False #(cruise_state == "STANDSTILL")
+    else:
+      ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
+      ret.cruiseState.enabled = self.cruiseEnabled and (not ret.doorOpen) and (ret.gearShifter == car.CarState.GearShifter.drive) and (not ret.seatbeltUnlatched)
+      ret.cruiseState.available = True
+      ret.cruiseState.standstill = False
 
     #speed limit
     msu = cp.vl['UI_gpsVehicleSpeed']["UI_mapSpeedLimitUnits"]
@@ -281,6 +291,7 @@ class CarState(CarStateBase):
         ret.brakePressed = False
         ret.gasPressed = False
         self.DAS_216_driverOverriding = False
+        ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
 
     return ret
 
@@ -291,6 +302,7 @@ class CarState(CarStateBase):
     signals = [
       # sig_name, sig_address, default
       ("DI_pedalPos", "DI_torque1", 0),
+      ("DI_torqueMotor", "DI_torque1", 0),
       ("DI_brakePedal", "DI_torque2", 0),
       ("StW_AnglHP", "STW_ANGLHP_STAT", 0),
       ("StW_AnglHP_Spd", "STW_ANGLHP_STAT", 0),
@@ -399,7 +411,7 @@ class CarState(CarStateBase):
       #("PARK_status2",4),
     ]
 
-    if enablePedal and not pedalcanzero:
+    if enablePedal and pedalcanzero:
       signals += [
         ("INTERCEPTOR_GAS", "GAS_SENSOR", 0),
         ("INTERCEPTOR_GAS2", "GAS_SENSOR", 0),

@@ -10,6 +10,9 @@ from common.params import Params
 import numpy as np
 from cereal import car
 
+ACCEL_MAX = 2.0
+ACCEL_MIN = -3.5
+
 # lookup tables VS speed to determine min and max accels in cruise
 # make sure these accelerations are smaller than mpc limits
 _A_CRUISE_MIN_V = [-1.0, -.8, -.67, -.5, -.30]
@@ -108,8 +111,8 @@ def _current_time_millis():
 
 # this is for the pedal cruise control
 class PCCController:
-    def __init__(self, carcontroller,tesla_can,pedalcan):
-        self.CC = carcontroller
+    def __init__(self, longcontroller,tesla_can,pedalcan):
+        self.LongCtr = longcontroller
         self.tesla_can = tesla_can
         self.human_cruise_action_time = 0
         self.pcc_available = self.prev_pcc_available = False
@@ -161,6 +164,11 @@ class PCCController:
         self.pedalcan = pedalcan
 
     def update_stat(self, CS, frame):
+        if not self.LongCtr.CP.openpilotLongitudinalControl:
+            return []
+
+        if not self.LongCtr.enablePedal:
+            return []
 
         self._update_pedal_state(CS, frame)
 
@@ -179,7 +187,8 @@ class PCCController:
 
         prev_enable_pedal_cruise = self.enable_pedal_cruise
         # disable on brake
-        if CS.out.brakePressed and self.enable_pedal_cruise:
+        if CS.realBrakePressed and self.enable_pedal_cruise:
+            CS.longCtrlEvent = car.CarEvent.EventName.pccDisabled
             self.enable_pedal_cruise = False
 
         # process any stalk movement
@@ -250,6 +259,7 @@ class PCCController:
         # If something disabled cruise control, disable PCC too
         elif self.enable_pedal_cruise and CS.cruise_state and not CS.enablePedal:
             self.enable_pedal_cruise = False
+            CS.longCtrlEvent = car.CarEvent.EventName.pccDisabled
         # A single pull disables PCC (falling back to just steering). Wait some time
         # in case a double pull comes along.
         elif (
@@ -259,6 +269,7 @@ class PCCController:
             > STALK_DOUBLE_PULL_MS
         ):
             self.enable_pedal_cruise = False
+            CS.longCtrlEvent = car.CarEvent.EventName.pccDisabled
 
         # Notify if PCC was toggled
         if prev_enable_pedal_cruise and not self.enable_pedal_cruise:
@@ -284,6 +295,13 @@ class PCCController:
         alca_enabled,
         radSt
     ):
+
+        if not self.LongCtr.CP.openpilotLongitudinalControl:
+            return 0.0, -1, -1
+
+        if not self.LongCtr.enablePedal:
+            return 0.0, -1, -1
+
         idx = self.pedal_idx
 
         self.prev_speed_limit_kph = self.speed_limit_kph
@@ -318,62 +336,30 @@ class PCCController:
 
         if not self.pcc_available or not enabled:
             return 0.0, 0, idx
-        # Alternative speed decision logic that uses the lead car's distance
-        # and speed more directly.
-        # Bring in the lead car distance from the radarState feed
-        if radSt is not None:
-            self.lead_1 = radSt.radarState.leadOne
-            if _is_present(self.lead_1):
-                self.lead_last_seen_time_ms = _current_time_millis()
-                self.continuous_lead_sightings += 1
-            else:
-                self.continuous_lead_sightings = 0
-
-        v_ego = CS.out.vEgo
-
-        following = False
-        if self.lead_1:
-            following = (
-                self.lead_1.status
-                and self.lead_1.dRel < MAX_RADAR_DISTANCE
-                and self.lead_1.vLeadK > v_ego
-                and self.lead_1.aLeadK > 0.0
-            )
-        accel_limits = [
-            float(x) for x in calc_cruise_accel_limits(v_ego,following)
-        ]
-
-        accel_limits[1] *= _accel_limit_multiplier(CS, self.lead_1)
-        accel_limits[0] = _decel_limit(
-            accel_limits[0], CS.out.vEgo, self.lead_1, CS, self.pedal_speed_kph
-        )
-
-        accel_limits = limit_accel_in_turns(v_ego, CS.out.steeringAngleDeg, accel_limits, CS.CP)
-
-        output_gb = 0
 
         ##############################################################
         # This mode uses the longitudinal MPC built in OP
         #
         # we use the values from actuators.gas and actuators.brake
         ##############################################################
-        output_gb = actuators.gas - actuators.brake
+        output_gb = actuators.accel
         self.v_pid = pcm_speed
-        MPC_BRAKE_MULTIPLIER = 12.0
+        MPC_BRAKE_MULTIPLIER = 3.0
 
         self.last_output_gb = output_gb
         # accel and brake
         apply_accel = clip(
-            output_gb, 0.0, 1
-        )  # _accel_pedal_max(CS.out.vEgo, self.v_pid, self.lead_1, self.prev_tesla_accel, CS))
+            output_gb/ACCEL_MAX, 
+            0.0,
+            1.0
+        )
         apply_brake = -clip(
-            output_gb * MPC_BRAKE_MULTIPLIER,
+            -output_gb * MPC_BRAKE_MULTIPLIER / ACCEL_MIN ,
             _brake_pedal_min(
                 CS.out.vEgo, self.v_pid, self.lead_1, CS, self.pedal_speed_kph
             ),
             0.0,
         )
-
         # if speed is over 5mph, the "zero" is at PedalForZeroTorque; otherwise it is zero
         pedal_zero = 0.0
         if CS.out.vEgo >= 5.0 * CV.MPH_TO_MS:
@@ -400,7 +386,6 @@ class PCCController:
         self.prev_tesla_pedal = tesla_pedal * enable_pedal
         self.prev_tesla_accel = apply_accel * enable_pedal
         self.prev_v_ego = CS.out.vEgo
-
         return self.prev_tesla_pedal, enable_pedal, idx
 
     def pedal_hysteresis(self, pedal, enabled):
@@ -426,163 +411,16 @@ class PCCController:
         # Mark pedal unavailable while traditional cruise is on.
         self.pcc_available = pedal_ready and acc_disabled
 
-
-def _visual_radar_adjusted_dist_m(m, CS):
-    # visual radar sucks at short distances. It rarely shows readings below 7m.
-    # So rescale distances with 7m -> 0m. Maxes out at 1km, if that matters.
-    mapping = OrderedDict(
-        [
-            # (input distance, output distance)
-            (7, 0),  # anything below 7m is set to 0m.
-            (1000, 1000),
-        ]
-    )  # values >7m are scaled, maxing out at 1km.
-    return _interp_map(m, mapping)
-
-
 def _safe_distance_m(v_ego_ms, CS):
     return max(CS.apFollowTimeInS * (v_ego_ms + 1), MIN_SAFE_DIST_M)
 
-
 def _is_present(lead):
     return bool((not (lead is None)) and (lead.dRel > 0))
-
-
-def _sec_til_collision(lead, CS):
-    if _is_present(lead) and lead.vRel < 0:
-        if CS.useTeslaRadar:
-            # BB: take in consideration acceleration when looking at time to collision.
-            return min(
-                0.1,
-                -4
-                + lead.dRel / abs(lead.vRel + min(0, lead.aRel) * CS.apFollowTimeInS),
-            )
-        else:
-            return _visual_radar_adjusted_dist_m(lead.dRel, CS) / abs(
-                lead.vRel + min(0, lead.aRel) * CS.apFollowTimeInS
-            )
-    else:
-        return 60.0  # Arbitrary, but better than MAXINT because we can still do math on it.
-
 
 def _interp_map(val, val_map):
     """Helper to call interp with an OrderedDict for the mapping. I find
     this easier to read than interp, which takes two arrays."""
     return interp(val, list(val_map.keys()), list(val_map.values()))
-
-
-def _accel_limit_multiplier(CS, lead):
-    """Limits acceleration in the presence of a lead car. The further the lead car
-    is, the more accel is allowed. Range: 0 to 1, so that it can be multiplied
-    with other accel limits."""
-    accel_by_speed = OrderedDict(
-        [
-            # (speed m/s, decel)
-            (0.0, 0.95),  #   0 kmh
-            (10.0, 0.95),  #  35 kmh
-            (20.0, 0.925),  #  72 kmh
-            (30.0, 0.875),
-        ]
-    )  # 107 kmh
-    if CS.teslaModel in ["SP", "SPD"]:
-        accel_by_speed = OrderedDict(
-            [
-                # (speed m/s, decel)
-                (0.0, 0.985),  #   0 kmh
-                (10.0, 0.975),  #  35 kmh
-                (20.0, 0.95),  #  72 kmh
-                (30.0, 0.9),
-            ]
-        )  # 107 kmh
-    accel_mult = _interp_map(CS.out.vEgo, accel_by_speed)
-    if _is_present(lead):
-        safe_dist_m = _safe_distance_m(CS.out.vEgo, CS)
-        accel_multipliers = OrderedDict(
-            [
-                # (distance in m, acceleration fraction)
-                (0.6 * safe_dist_m, 0.15),
-                (1.0 * safe_dist_m, 0.2),
-                (3.0 * safe_dist_m, 0.4),
-            ]
-        )
-        vrel_multipliers = OrderedDict(
-            [
-                # vrel m/s, accel mult
-                (0.0, 1.0),
-                (10.0, 1.5),
-            ]
-        )
-
-        return min(
-            accel_mult
-            * _interp_map(lead.vRel, vrel_multipliers)
-            * _interp_map(lead.dRel, accel_multipliers),
-            1.0,
-        )
-    else:
-        return min(accel_mult * 0.4, 1.0)
-
-
-def _decel_limit(accel_min, v_ego, lead, CS, max_speed_kph):
-    max_speed_mult = 1.0
-    safe_dist_m = _safe_distance_m(v_ego, CS)
-    # if above speed limit quickly decel
-    if v_ego * CV.MS_TO_KPH > max_speed_kph:
-        overshot = v_ego * CV.MS_TO_KPH - max_speed_kph
-        if overshot >= 5:
-            max_speed_mult = 2.0
-        elif overshot >= 2.0:
-            max_speed_mult = 1.5
-    if _is_present(lead):
-        time_to_brake = max(0.1, _sec_til_collision(lead, CS))
-        if 0 < lead.dRel < MIN_SAFE_DIST_M:
-            return -100.0
-        elif (
-            lead.vRel >= 0.1 * v_ego
-            and lead.aRel < 0.5
-            and lead.dRel <= 1.1 * safe_dist_m
-        ):
-            # going faster but decelerating, reduce with up to the same acceleration
-            return -2 + lead.aRel
-        elif (
-            lead.vRel <= 0.1 * v_ego
-            and lead.aLeadK < 0.5
-            and lead.dRel <= 1.1 * safe_dist_m
-        ):
-            # going slower AND decelerating
-            accel_to_compensate = min(3 * lead.vRel / time_to_brake, -0.7)
-            return -2 + lead.aRel + accel_to_compensate
-        elif lead.vRel < -0.1 * v_ego and lead.dRel <= 1.1 * safe_dist_m:
-            return -3 + 2 * lead.vRel / time_to_brake
-        # if we got here, aLeadK >=0 so use the old logic
-        decel_map = OrderedDict(
-            [
-                # (sec to collision, decel)
-                (0, 10.0),
-                (4, 1.0),
-                (7, 0.5),
-                (10, 0.3),
-            ]
-        )
-        decel_speed_map = OrderedDict(
-            [
-                # (m/s, decel)
-                (0, 10.0),
-                (4, 5.0),
-                (7, 2.50),
-                (10, 1.0),
-            ]
-        )
-        return (
-            accel_min
-            * max_speed_mult
-            * _interp_map(_sec_til_collision(lead, CS), decel_map)
-            * _interp_map(v_ego, decel_speed_map)
-        )
-    else:
-        # BB: if we don't have a lead, don't do full regen to slow down smoother
-        return accel_min * 0.5 * max_speed_mult
-
 
 def _brake_pedal_min(v_ego, v_target, lead, CS, max_speed_kph):
     # if less than 7 MPH we don't have much left till 5MPH to brake, so full regen

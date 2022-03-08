@@ -67,11 +67,19 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
     QProcess::startDetached("/data/openpilot/panda/board/flashPanda");
   });
 
+  QPushButton *flash_pedal_btn = new QPushButton("Flash Pedal");
+  flash_pedal_btn->setObjectName("flash_pedal_btn");
+  
+  QObject::connect(flash_pedal_btn, &QPushButton::clicked, [=](){
+    QProcess::startDetached("/data/openpilot/panda/board/pedal/flashPedal");
+  });
+
   setStyleSheet(R"(
     #flash_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #flash_btn:pressed { background-color: #4a4a4a; }
   )");
   addItem(flash_btn);
+  addItem(flash_pedal_btn);
 }
 
 TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
@@ -96,11 +104,6 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
     {"TinklaPedalCanZero",
     "preAP: Use CAN0 for pedal interceptor",
     "Uses CAN0 for pedal interceptor. Default (and safest option) is CAN2. Only enable if you know what you're doing.",
-    "../assets/offroad/icon_speed_limit.png",
-    },
-    {"TinklaUseFollowACC",
-    "preAP: Use Follow mode ACC",
-    "Enables the use of the Follow mode ACC instead of the OP longitudinal control. Works with both CC and Pedal.",
     "../assets/offroad/icon_speed_limit.png",
     },
     {"TinklaAutoResumeACC",

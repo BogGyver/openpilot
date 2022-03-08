@@ -89,11 +89,22 @@ int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp) {
 
 #endif
 
+// ***************************** pedal can checksum *****************************
+uint8_t pedal_checksum(uint8_t *dat, int len, int addr) {
+  int i;
+  uint8_t s = 0;
+  s += ((addr)&0xFF) + ((addr>>8)&0xFF);
+  for (i = 0; i < len; i++) {
+    s = (s + dat[i]) & 0xFF;
+  }
+  return s;
+}
+
 // ***************************** can port *****************************
 
 // addresses to be used on CAN
-#define CAN_GAS_INPUT  0x200
-#define CAN_GAS_OUTPUT 0x201U
+#define CAN_GAS_INPUT  0x551U
+#define CAN_GAS_OUTPUT 0x552U
 #define CAN_GAS_SIZE 6
 #define COUNTER_CYCLE 0xFU
 
@@ -149,7 +160,7 @@ void CAN1_RX0_IRQ_Handler(void) {
       uint16_t value_1 = (dat[2] << 8) | dat[3];
       bool enable = ((dat[4] >> 7) & 1U) != 0U;
       uint8_t index = dat[4] & COUNTER_CYCLE;
-      if (crc_checksum(dat, CAN_GAS_SIZE - 1, crc_poly) == dat[5]) {
+      if (pedal_checksum(dat, CAN_GAS_SIZE - 1, CAN_GAS_INPUT) == dat[5]) {
         if (((current_index + 1U) & COUNTER_CYCLE) == index) {
           #ifdef DEBUG
             puts("setting gas ");
@@ -212,7 +223,7 @@ void TIM3_IRQ_Handler(void) {
     dat[2] = (pdl1 >> 8) & 0xFFU;
     dat[3] = (pdl1 >> 0) & 0xFFU;
     dat[4] = ((state & 0xFU) << 4) | pkt_idx;
-    dat[5] = crc_checksum(dat, CAN_GAS_SIZE - 1, crc_poly);
+    dat[5] = pedal_checksum(dat, CAN_GAS_SIZE - 1, CAN_GAS_OUTPUT);
     CAN->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
     CAN->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8);
     CAN->sTxMailBox[0].TDTR = 6;  // len of packet is 5
