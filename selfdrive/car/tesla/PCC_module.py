@@ -349,12 +349,12 @@ class PCCController:
         self.last_output_gb = output_gb
         # accel and brake
         apply_accel = clip(
-            output_gb/ACCEL_MAX, 
+            output_gb, 
             0.0,
             1.0
         )
         apply_brake = -clip(
-            -output_gb * MPC_BRAKE_MULTIPLIER / ACCEL_MIN ,
+            output_gb * MPC_BRAKE_MULTIPLIER ,
             _brake_pedal_min(
                 CS.out.vEgo, self.v_pid, self.lead_1, CS, self.pedal_speed_kph
             ),
