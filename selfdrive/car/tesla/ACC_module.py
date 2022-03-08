@@ -111,7 +111,7 @@ class ACCController:
                 # A double pull enables ACC. updating the max ACC speed if necessary.
                 if not self.enable_adaptive_cruise:
                     CS.longCtrlEvent = car.CarEvent.EventName.accEnabled
-                self.enable_adaptive_cruise = True
+                    self.enable_adaptive_cruise = True
                 # Increase ACC speed to match current, if applicable.
                 if self.adaptive:
                     self.acc_speed_kph = max(
@@ -124,13 +124,15 @@ class ACCController:
             else:
                 # A single pull disables ACC (falling back to just steering).
                 if CS.cruise_buttons == CruiseButtons.MAIN:
-                    self.enable_adaptive_cruise = False
-                    CS.longCtrlEvent = car.CarEvent.EventName.accDisabled
+                    if self.enable_adaptive_cruise:
+                        CS.longCtrlEvent = car.CarEvent.EventName.accDisabled
+                        self.enable_adaptive_cruise = False
+                    
         # Handle pressing the cancel button.
         if CS.cruise_buttons == CruiseButtons.CANCEL:
             if self.enable_adaptive_cruise:
                 CS.longCtrlEvent = car.CarEvent.EventName.accDisabled
-            self.enable_adaptive_cruise = False
+                self.enable_adaptive_cruise = False
             self.acc_speed_kph = 0.0
             self.last_cruise_stalk_pull_time = 0
         # Handle pressing up and down buttons.
@@ -158,8 +160,9 @@ class ACCController:
                 or self.user_has_braked
                 or self.has_gone_below_min_speed
             ):
-                self.enable_adaptive_cruise = False
-                CS.longCtrlEvent = car.CarEvent.EventName.accDisabled
+                if self.enable_adaptive_cruise:
+                    self.enable_adaptive_cruise = False
+                    CS.longCtrlEvent = car.CarEvent.EventName.accDisabled
 
         # Update prev state after all other actions.
         self.prev_cruise_buttons = CS.cruise_buttons
@@ -244,8 +247,9 @@ class ACCController:
             if lead_1.dRel:
                 self.lead_last_seen_time_ms = current_time_ms
         if self.enable_adaptive_cruise and enabled: 
-            target_accel = actuators.accel
-            target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
+            #target_accel = actuators.accel
+            #target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
+            target_speed = pcm_speed
             button_to_press = self._calc_button(CS, target_speed)
             self.new_speed = target_speed * CV.MS_TO_KPH
             
