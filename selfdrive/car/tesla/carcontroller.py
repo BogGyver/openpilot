@@ -110,8 +110,8 @@ class CarController():
 
 
     #update LONG Control module
-    can_messages = self.long_controller.update(enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state)
-    can_sends[0:0] = can_messages
+    #can_messages = self.long_controller.update(enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state)
+    #can_sends[0:0] = can_messages
 
     #update HUD Integration module
     if CS.enableICIntegration:
