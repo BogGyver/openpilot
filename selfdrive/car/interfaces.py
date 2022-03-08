@@ -135,9 +135,9 @@ class CarInterfaceBase(ABC):
     if (self.CS.enableALC) and (self.CS.alca_need_engagement):
       ret.steeringPressed = True
       if self.CS.alca_direction == log.LateralPlan.LaneChangeDirection.left:
-        ret.steeringTorque = ret.steeringTorque + 0.1
+        ret.steeringTorque = 0.1
       if self.CS.alca_direction == log.LateralPlan.LaneChangeDirection.right:
-        ret.steeringTorque = ret.steeringTorque - 0.1
+        ret.steeringTorque = - 0.1
 
   def pre_apply(self,c):
     #read params once a second
