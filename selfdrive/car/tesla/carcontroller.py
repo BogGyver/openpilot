@@ -117,7 +117,7 @@ class CarController():
     if CS.enableICIntegration:
       can_messages = self.hud_controller.update(enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
               left_line, right_line, lead, left_lane_depart, right_lane_depart,CS.human_control,radar_state,CS.lat_plan,apply_angle,model_data)
-      if len(can_messages > 0):
+      if len(can_messages) > 0:
         can_sends.extend(can_messages)
 
     new_actuators = actuators.copy()

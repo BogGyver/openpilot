@@ -36,7 +36,7 @@ class LONGController:
             self.set_speed_limit_active = True if self.speed_limit_ms > 0 else False
 
         #if not openpilot long control just exit
-        if not CP.openpilotLongitudinalControl:
+        if not self.CP.openpilotLongitudinalControl:
             return messages
         #preAP ModelS
         if self.CP.carFingerprint == CAR.PREAP_MODELS:
