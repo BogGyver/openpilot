@@ -318,7 +318,7 @@ class PCCController:
             and abs(CS.torqueLevel) < abs(self.lastTorqueForPedalForZeroTorque)
             and self.prev_tesla_accel > 0.0
         ):
-            self.PedalForZeroTorque = self.prev_tesla_accel
+            self.PedalForZeroTorque = self.prev_tesla_pedal
             self.lastTorqueForPedalForZeroTorque = CS.torqueLevel
             # print ("Detected new Pedal For Zero Torque at %s" % (self.PedalForZeroTorque))
             # print ("Torque level at detection %s" % (CS.torqueLevel))
@@ -340,7 +340,7 @@ class PCCController:
         ##############################################################
         # This mode uses the longitudinal MPC built in OP
         #
-        # we use the values from actuators.gas and actuators.brake
+        # we use the values from actuators.accel
         ##############################################################
         output_gb = actuators.accel
         self.v_pid = pcm_speed

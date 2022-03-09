@@ -249,9 +249,9 @@ class ACCController:
             if lead_1.dRel:
                 self.lead_last_seen_time_ms = current_time_ms
         if self.enable_adaptive_cruise and enabled: 
-            #target_accel = actuators.accel
-            #target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
-            target_speed = pcm_speed
+            target_accel = actuators.accel
+            target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
+            #target_speed = pcm_speed
             button_to_press = self._calc_button(CS, target_speed)
             self.new_speed = target_speed * CV.MS_TO_KPH
             
