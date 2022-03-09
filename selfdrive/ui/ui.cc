@@ -303,7 +303,7 @@ void Device::updateBrightness(const UIState &s) {
     clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
 
     if (awake && s.should_turn_screen_off) {
-      clipped_brightness = s.alert_active ? clipped_brightness : 0;
+      clipped_brightness = (s.alert_active || (interactive_timeout > 0)) ? clipped_brightness : 0;
     }
   }
 
