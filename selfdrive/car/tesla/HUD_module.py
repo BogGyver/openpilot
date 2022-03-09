@@ -26,7 +26,6 @@ class HUDController:
 
     # to show lead car on IC
     def showLeadCarOnICCanMessage(self, leadsData, curv0):
-        messages = []
         lead_1 = leadsData.leadOne
         lead_2 = leadsData.leadTwo
         if (lead_1 is not None) and lead_1.status:
@@ -221,18 +220,18 @@ class HUDController:
                     v_cruise_pcm = max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH) * speed_uom_kph
                 messages.append(
                     self.tesla_can.create_fake_DAS_msg(
-                        1 if CS.cruiseEnabled else 0,
-                        CS.DAS_216_driverOverriding,
+                        CS.speed_control_enabled,
+                        CS.DAS_216_driverOverriding, 
                         CS.DAS_206_apUnavailable,
                         DAS_collision_warning,
-                        5 if enabled else 2,
+                        5 if enabled else 2, 
                         max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH),#
                         CS.tap_direction,
                         DAS_collision_warning,
-                        1 if CS.cruiseEnabled else 0,
+                        CS.adaptive_cruise,
                         DAS_hands_on_state,
-                        2 if CS.cruiseEnabled else 3,
-                        1 if CS.cruiseEnabled else 0, #self.PCC.pcc_available 
+                        CS.cc_state,
+                        1 if CS.pcc_available else 0, 
                         DAS_alca_state,
                         v_cruise_pcm,
                         1, #CS.DAS_fusedSpeedLimit,

@@ -24,7 +24,6 @@ class LONGController:
             self.speed_limit_ms = 0
             self.set_speed_limit_active = False
             self.speed_limit_offset_ms = 0
-            self.adaptive_cruise = 0
 
     def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state):
         messages = []
@@ -75,12 +74,13 @@ class LONGController:
             else:
                 if CS.cruise_state == CruiseState.OVERRIDE:  # state #4
                     CS.cc_state = 3
-            self.adaptive_cruise = (
+            CS.adaptive_cruise = (
                 1
                 if (not self.PCC.pcc_available and self.ACC.adaptive)
                 or self.PCC.pcc_available
                 else 0
             )
+            CS.pcc_available = self.PCC.pcc_available
             
             if (not self.PCC.pcc_available) and frame % 20 == 0:  # acc processed at 5Hz
                 cruise_btn = self.ACC.update_acc(
