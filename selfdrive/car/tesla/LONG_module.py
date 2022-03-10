@@ -52,7 +52,7 @@ class LONGController:
             # update CS.v_cruise_pcm based on module selected.
             speed_uom_kph = 1.0
             # cruise state: 0 unavailable, 1 available, 2 enabled, 3 hold
-            if CS.DAS_notInDrive:
+            if CS.carNotInDrive:
                 CS.cc_state = 0
             else:
                 CS.cc_state = 1
@@ -152,7 +152,7 @@ class LONGController:
             if self.CP.carFingerprint == CAR.AP2_MODELS:
                 messages.append(self.tesla_can.create_ap2_long_control(self.v_target, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
             if self.CP.carFingerprint == CAR.AP1_MODELS:
-                messages.append(self.tesla_can.create_ap1_long_control(not CS.DAS_notInDrive, True, True ,self.v_target, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
+                messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, True, True ,self.v_target, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
 
         #AP ModelS with OP Long and not enabled
         elif (not enabled) and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
@@ -162,7 +162,7 @@ class LONGController:
             if self.CP.carFingerprint == CAR.AP2_MODELS:
                 messages.append(self.tesla_can.create_ap2_long_control(350.0/3.6, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
             if self.CP.carFingerprint == CAR.AP1_MODELS:
-                messages.append(self.tesla_can.create_ap1_long_control(not CS.DAS_notInDrive, False, False , 350.0/3.6, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
+                messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, False, False , 350.0/3.6, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
 
         return messages
 
