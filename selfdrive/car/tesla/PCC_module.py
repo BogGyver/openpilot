@@ -409,7 +409,7 @@ class PCCController:
         )
         acc_disabled = CS.enablePedal or CruiseState.is_off(CS.cruise_state)
         # Mark pedal unavailable while traditional cruise is on.
-        self.pcc_available = pedal_ready and acc_disabled
+        self.pcc_available = pedal_ready and self.LongCtr.enablePedal
 
 def _safe_distance_m(v_ego_ms, CS):
     return max(CS.apFollowTimeInS * (v_ego_ms + 1), MIN_SAFE_DIST_M)
