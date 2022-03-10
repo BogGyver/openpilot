@@ -5,6 +5,7 @@ from common.numpy_fast import clip
 from ctypes import create_string_buffer
 import struct
 from selfdrive.config import Conversions as CV
+from selfdrive.car import make_can_msg
 from selfdrive.car.tesla.values import CarControllerParams, CAN_CHASSIS, CAN_POWERTRAIN
 
 class TeslaCAN: 
