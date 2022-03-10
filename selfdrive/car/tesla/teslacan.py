@@ -337,9 +337,6 @@ class TeslaCAN:
     park_brake_request,
     bus,
   ):
-    msg_id = 0x659  # we will use DAS_udsRequest to send this info to IC
-    msg_len = 8
-    msg = create_string_buffer(msg_len)
     units_included = 1
     c_apply_steer = int(
         ((int(apply_angle * 10 + 0x4000)) & 0x7FFF) + (enable_steer_control << 15)

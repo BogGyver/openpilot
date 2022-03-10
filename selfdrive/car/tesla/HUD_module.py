@@ -211,13 +211,25 @@ class HUDController:
             self.IC_previous_enabled = enabled
 
             #send message for TB if preAP
-            if (self.CP.carFingerprint == CAR.PREAP_MODELS):
+            if (self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter %10 == 0):
                 speed_uom_kph = 1.0
                 if CS.speed_units == "MPH":
                     speed_uom_kph = CV.KPH_TO_MPH
                 v_cruise_pcm = max(0.0, CS.out.vEgo * CV.MS_TO_KPH) * speed_uom_kph
                 if CS.cruiseEnabled:
                     v_cruise_pcm = max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH) * speed_uom_kph
+                DAS_control_speed = v_cruise_pcm
+                if CS.DAS_notInDrive:
+                    DAS_control_speed = 350.0/3.6
+                messages.append(
+                    self.tesla_can.create_ap1_long_control(
+                        DAS_control_speed,
+                        [-1.4000000000000004,1.8000000000000007],
+                        [-0.46000000000000085,0.47600000000000003],
+                        CAN_CHASSIS[self.CP.carFingerprint], 
+                        1
+                    )
+                )
                 messages.append(
                     self.tesla_can.create_fake_DAS_msg(
                         CS.speed_control_enabled,
