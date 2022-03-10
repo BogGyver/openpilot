@@ -51,11 +51,11 @@ class LONGController:
                 self.PCC.enable_pedal_cruise = False
             # update CS.v_cruise_pcm based on module selected.
             speed_uom_kph = 1.0
-            #determine cc_state 2 unavailble - 3 available - 4 enabled - 5?
+            # cruise state: 0 unavailable, 1 available, 2 enabled, 3 hold
             if CS.DAS_notInDrive:
-                CS.cc_state = 2
+                CS.cc_state = 0
             else:
-                CS.cc_state = 3
+                CS.cc_state = 1
             CS.speed_control_enabled = 0
             if enabled:
                 if CS.speed_units == "MPH":
@@ -71,12 +71,12 @@ class LONGController:
                     self.ACC.enable_adaptive_cruise
                 ):
                     CS.speed_control_enabled = 1
-                    CS.cc_state = 4
+                    CS.cc_state = 2
                     if not self.ACC.adaptive:
-                        CS.cc_state = 5 #find other values we can use
+                        CS.cc_state = 3 #find other values we can use
             else:
                 if CS.cruise_state == CruiseState.OVERRIDE:  # state #4
-                    CS.cc_state = 5
+                    CS.cc_state = 3
             CS.adaptive_cruise = (
                 1
                 if (not self.PCC.pcc_available and self.ACC.adaptive)
