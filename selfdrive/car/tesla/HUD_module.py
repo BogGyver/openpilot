@@ -223,6 +223,9 @@ class HUDController:
                     DAS_control_speed = 350.0/3.6
                 messages.append(
                     self.tesla_can.create_ap1_long_control(
+                        not CS.DAS_notInDrive, 
+                        not CS.adaptive_cruise,
+                        CS.cc_state > 1,
                         DAS_control_speed,
                         [-1.4000000000000004,1.8000000000000007],
                         [-0.46000000000000085,0.47600000000000003],
