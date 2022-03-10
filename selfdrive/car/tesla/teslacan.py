@@ -5,6 +5,7 @@ from common.numpy_fast import clip
 from ctypes import create_string_buffer
 import struct
 from selfdrive.config import Conversions as CV
+from selfdrive.car import make_can_msg
 from selfdrive.car.tesla.values import CarControllerParams, CAN_CHASSIS, CAN_POWERTRAIN
 
 class TeslaCAN: 
@@ -336,17 +337,11 @@ class TeslaCAN:
     park_brake_request,
     bus,
   ):
-    msg_id = 0x659  # we will use DAS_udsRequest to send this info to IC
-    msg_len = 8
-    msg = create_string_buffer(msg_len)
     units_included = 1
     c_apply_steer = int(
         ((int(apply_angle * 10 + 0x4000)) & 0x7FFF) + (enable_steer_control << 15)
     )
-    struct.pack_into(
-        "BBBBBBBB",
-        msg,
-        0,
+    dat = [
         int(
             (speed_control_enabled << 7)
             + (speed_override << 6)
@@ -362,17 +357,17 @@ class TeslaCAN:
             + (adaptive_cruise << 3)
             + hands_on_state
         ),
-        int((cc_state << 6) + (pcc_available << 5) + alca_state),
+        int((pcc_available << 5) + cc_state),
         int(
             acc_speed_limit + 0.5
         ),  # IC rounds current speed, so we need to round cruise speed the same way
         int(
-            (legal_speed_limit & 0x1F) + ((park_brake_request << 5) & 0x20)
+            (legal_speed_limit & 0x1F) + ((park_brake_request << 5) & 0x20) + (0x01 << 6) #new extended cc_state
         ),  # positions 7 and 6 not used yet
         int(c_apply_steer & 0xFF),
-        int((c_apply_steer >> 8) & 0xFF),
-    )
-    return [msg_id, 0, msg.raw, bus]
+        int((c_apply_steer >> 8) & 0xFF)
+    ]
+    return make_can_msg(0x659, bytes(dat), bus)
 
   def create_pedal_command_msg(self,accelCommand, enable, idx, pedalcan):
       """Create GAS_COMMAND (0x551) message to comma pedal"""

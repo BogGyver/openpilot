@@ -847,7 +847,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
       "Adaptive Cruise Enabled",
       "",
       AlertStatus.normal, AlertSize.small,
-      Priority.LOW, VisualAlert.none,AudibleAlert.disengage, 1.),
+      Priority.LOW, VisualAlert.none,AudibleAlert.engage, 1.),
   },
 
   EventName.accDisabled: {

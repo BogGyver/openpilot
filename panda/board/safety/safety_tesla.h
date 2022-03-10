@@ -59,6 +59,7 @@ int pedalCan = -1;
 //use for preAP IC integration
 int IC_send_counter = 0;
 int DAS_bodyControls_idx = 0;
+int DAS_control_idx = 0;
 int DAS_status_idx = 0;
 int DAS_status2_idx = 0;
 int DAS_lanes_idx = 0;
@@ -207,6 +208,7 @@ CanMsgFwd TESLA_PREAP_FWD_MODDED[] = {
   {.msg = {0x3E9,0,8},.fwd_to_bus=0,.expected_timestep = 500000U,.counter_mask_H=0x00F00000,.counter_mask_L=0x00000000}, // DAS_bodyControls - Control Body - 2Hz
   //used for IC integration
   {.msg = {0x399,0,8},.fwd_to_bus=0,.expected_timestep = 500000U,.counter_mask_H=0x00F00000,.counter_mask_L=0x00000000}, // DAS_status - Status - 2Hz
+  {.msg = {0x2B9,0,8},.fwd_to_bus=0,.expected_timestep = 500000U,.counter_mask_H=0x00E00000,.counter_mask_L=0x00000000}, // DAS_control - Long Control 
   {.msg = {0x389,0,8},.fwd_to_bus=0,.expected_timestep = 500000U,.counter_mask_H=0x00F00000,.counter_mask_L=0x00000000}, // DAS_status2 - Status - 2Hz
   {.msg = {0x329,0,8},.fwd_to_bus=0,.expected_timestep = 1000000U,.counter_mask_H=0x00000000,.counter_mask_L=0x00000000}, // DAS_warningMatrix0 - Status - 1Hz - nocounter/nochecksum
   {.msg = {0x369,0,8},.fwd_to_bus=0,.expected_timestep = 1000000U,.counter_mask_H=0x00000000,.counter_mask_L=0x00000000}, // DAS_warningMatrix1 - Status - 1Hz - nocounter/nochecksum
@@ -651,10 +653,14 @@ static void teslaPreAp_generate_message(int id) {
   uint32_t RDHR = TESLA_PREAP_FWD_MODDED[index].dataH;
   
   //these messages need counter added
-  //0x3E9 0x399 0x389 0x239 0x488
+  //0x3E9 0x399 0x389 0x239 0x488 0x2B9
   if (id == 0x488) {
     RDLR = RDLR | (DAS_steeringControl_idx << 16);
     DAS_steeringControl_idx = (DAS_steeringControl_idx + 1) % 16;
+  }
+  if (id == 0x2B9) {
+    RDHR = RDHR | (DAS_control_idx << 21);
+    DAS_control_idx = (DAS_control_idx + 1) % 7;
   }
   if (id == 0x3E9) {
     RDHR = RDHR | (DAS_bodyControls_idx << 20);
@@ -745,6 +751,8 @@ static void teslaPreAp_send_IC_messages(void) {
     teslaPreAp_generate_message(0x399);
     //DAS_status2
     teslaPreAp_generate_message(0x389);
+    //DAS_control
+    teslaPreAp_generate_message(0x2B9);
   }
   //generate everything at 1Hz
   if (IC_send_counter == 3) {
