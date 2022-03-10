@@ -224,7 +224,7 @@ class HUDController:
                         CS.DAS_216_driverOverriding, 
                         CS.DAS_206_apUnavailable,
                         DAS_collision_warning,
-                        5 if enabled else 2, 
+                        DAS_op_status, 
                         max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH),#
                         CS.tap_direction,
                         DAS_collision_warning,
