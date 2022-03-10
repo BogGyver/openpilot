@@ -83,7 +83,12 @@ class ACCController:
         # Handle pressing the enable button.
         if (
             CS.cruise_buttons == CruiseButtons.MAIN
-            or CS.cruise_buttons == CruiseButtons.DECEL_SET
+            or (
+                CS.cruise_buttons == CruiseButtons.DECEL_SET
+                and
+                not self.enable_adaptive_cruise
+            )
+
         ) and self.prev_cruise_buttons != CS.cruise_buttons:
             double_pull = curr_time_ms - self.last_cruise_stalk_pull_time < 750
             self.last_cruise_stalk_pull_time = curr_time_ms
@@ -91,7 +96,11 @@ class ACCController:
                  (
                     enabled
                     or
-                    CS.cruise_buttons == CruiseButtons.DECEL_SET
+                    (
+                        CS.cruise_buttons == CruiseButtons.DECEL_SET
+                        and
+                        not self.enable_adaptive_cruise
+                    )
                 )
                 and CruiseState.is_enabled_or_standby(CS.cruise_state)
                 and CS.out.vEgo > self.MIN_CRUISE_SPEED_MS
@@ -102,7 +111,11 @@ class ACCController:
                 and (
                     CS.cruise_buttons == CruiseButtons.MAIN
                     or 
-                    CS.cruise_buttons == CruiseButtons.DECEL_SET
+                    (
+                        CS.cruise_buttons == CruiseButtons.DECEL_SET
+                        and
+                        not self.enable_adaptive_cruise
+                    )
                 )
             ):
                 #decide adaptive or not
@@ -250,7 +263,7 @@ class ACCController:
                 self.lead_last_seen_time_ms = current_time_ms
         if self.enable_adaptive_cruise and enabled: 
             target_accel = actuators.accel
-            target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
+            target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER_ACC), 0)
             #target_speed = pcm_speed
             button_to_press = self._calc_button(CS, target_speed)
             self.new_speed = target_speed * CV.MS_TO_KPH
