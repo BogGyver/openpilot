@@ -65,7 +65,7 @@ class CarState(CarStateBase):
 
     self.cruiseEnabled = False
     self.cruiseDelay = False
-    self.carNotInDrive = False
+    self.carNotInDrive = True
 
     self.speed_units = "MPH"
     self.tap_direction = 0
@@ -212,7 +212,7 @@ class CarState(CarStateBase):
     # Gear
     ret.gearShifter = GEAR_MAP[self.can_define.dv["DI_torque2"]["DI_gear"].get(int(cp.vl["DI_torque2"]["DI_gear"]), "DI_GEAR_INVALID")]
     self.DAS_notInDrive = 0 if ret.gearShifter == car.CarState.GearShifter.drive else 1
-    self.carNotInDrive = not (ret.gearShifter == car.CarState.GearShifter.drive)
+    self.carNotInDrive = (not (ret.gearShifter == car.CarState.GearShifter.drive))
 
     # Buttons
     buttonEvents = []
