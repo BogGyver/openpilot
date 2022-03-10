@@ -129,12 +129,12 @@ class TeslaCAN:
     }
     return self.packer.make_can_msg("DAS_steeringControl", bus, values)
 
-  def create_ap1_long_control(self, speed, accel_limits, jerk_limits, bus, counter):
+  def create_ap1_long_control(self, in_drive, static_cruise, cruise_enabled, speed, accel_limits, jerk_limits, bus, counter):
     accState = 0
-    if speed == 0:
-      accState = 3
-    else:
+    if in_drive:
       accState = 4
+      if static_cruise and cruise_enabled:
+        accState = 3
     values = {
       "DAS_setSpeed" :  clip(speed*3.6,0,410), #kph
       "DAS_accState" :  accState, # 4-ACC ON, 3-HOLD, 0-CANCEL

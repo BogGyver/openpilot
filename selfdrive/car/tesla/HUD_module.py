@@ -219,10 +219,13 @@ class HUDController:
                 if CS.cruiseEnabled:
                     v_cruise_pcm = max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH) * speed_uom_kph
                 DAS_control_speed = v_cruise_pcm
-                if CS.DAS_notInDrive:
+                if CS.carNotInDrive:
                     DAS_control_speed = 350.0/3.6
                 messages.append(
                     self.tesla_can.create_ap1_long_control(
+                        not CS.carNotInDrive, 
+                        not CS.adaptive_cruise,
+                        CS.cc_state > 1,
                         DAS_control_speed,
                         [-1.4000000000000004,1.8000000000000007],
                         [-0.46000000000000085,0.47600000000000003],
