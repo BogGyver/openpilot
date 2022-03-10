@@ -195,6 +195,8 @@ selfdrive/car/modules/qt/*.h
 selfdrive/car/modules/qt/*.cc
 selfdrive/car/modules/teslaEpasFlasher/*
 selfdrive/car/tesla/speed_utils/*.py
+selfdrive/car/tesla/radar_tools/*
+
 selfdrive/car/modules/*.py
 
 selfdrive/clocksd/.gitignore
