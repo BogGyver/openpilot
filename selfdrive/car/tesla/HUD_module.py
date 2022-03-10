@@ -249,7 +249,7 @@ class HUDController:
                         1 if CS.pcc_available else 0, 
                         DAS_alca_state,
                         v_cruise_pcm,
-                        1, #CS.DAS_fusedSpeedLimit,
+                        CS.DAS_fusedSpeedLimit,
                         apply_angle,
                         1 if enabled else 0,
                         0, #park_brake_request
