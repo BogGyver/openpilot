@@ -100,7 +100,7 @@ class CarState(CarStateBase):
     if speed_limit_uom > 0:
       if speed_limit_type == 0x1E: # Autobahn with no speed limit
         return 0x1F # no speed limit sign
-      return int(speed_limit_uom / 5 + 0.5) # sign ID in 5 kph/mph increments (7 shows as 5)
+      return int(speed_limit_uom + 0.5)
     else:
       if speed_limit_type == 0x1F: # SNA (parking lot, no public road, etc.)
         return 0 # no sign
