@@ -208,7 +208,7 @@ class TeslaCAN:
       "DAS_blindSpotRearLeft" : 1 if blindSpotLeft else 0,
       "DAS_blindSpotRearRight" : 1 if blindSpotRight else 0,
       "DAS_fusedSpeedLimit" : DAS_speed_limit_kph,
-      "DAS_suppressSpeedWarning" : 1,
+      "DAS_suppressSpeedWarning" : 0,
       "DAS_summonObstacle" : 0,
       "DAS_summonClearedGate" : 0,
       "DAS_visionOnlySpeedLimit" : DAS_speed_limit_kph,

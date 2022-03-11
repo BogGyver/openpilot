@@ -103,8 +103,8 @@ class CarState(CarStateBase):
       return int(speed_limit_uom + 0.5)
     else:
       if speed_limit_type == 0x1F: # SNA (parking lot, no public road, etc.)
-        return 35 # no sign or show 35 for debug
-      return 45 # show 5 kph/mph for unknown limit where we should have one
+        return 0 # no sign or show 35 for debug
+      return 5 # show 5 kph/mph for unknown limit where we should have one
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
