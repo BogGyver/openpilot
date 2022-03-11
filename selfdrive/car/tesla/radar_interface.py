@@ -3,6 +3,8 @@ from cereal import car
 from opendbc.can.parser import CANParser
 from selfdrive.car.tesla.values import DBC, CAR, CAN_RADAR
 from selfdrive.car.interfaces import RadarInterfaceBase
+from selfdrive.car.modules.CFG_module import load_bool_param
+
 
 RADAR_MSGS_A = list(range(0x310, 0x36E, 3))
 RADAR_MSGS_B = list(range(0x311, 0x36F, 3))
@@ -59,6 +61,7 @@ class RadarInterface(RadarInterfaceBase):
     self.fingerprint = CP.carFingerprint
     if not self.radar_off_can:
       self.rcp = get_radar_can_parser(CP)
+    self.behindNoseCone = load_bool_param("TinklaTeslaRadarBehindNosecone",False)
 
   def update(self, can_strings):
     if self.rcp is None or self.radar_off_can:
@@ -78,7 +81,25 @@ class RadarInterface(RadarInterfaceBase):
     if not self.rcp.can_valid:
       errors.append('canError')
     #ignore RADC_SGUFail on PREAP MODEL S due to retrofit
-    if sgu_info['RADC_HWFail'] or (sgu_info['RADC_SGUFail'] and self.fingerprint != CAR.PREAP_MODELS) or sgu_info['RADC_SensorDirty']:
+    if (
+          sgu_info['RADC_HWFail'] 
+          or 
+          (
+            sgu_info['RADC_SGUFail'] 
+            and 
+            self.fingerprint != CAR.PREAP_MODELS
+          ) 
+          or 
+          (
+            sgu_info['RADC_SensorDirty']
+            and 
+            (
+              self.fingerprint != CAR.PREAP_MODELS
+              or
+              not self.behindNoseCone
+            )
+          )
+    ):
       errors.append('fault')
     ret.errors = errors
 
