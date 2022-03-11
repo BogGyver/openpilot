@@ -99,12 +99,12 @@ class CarState(CarStateBase):
   def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
     if speed_limit_uom > 0:
       if speed_limit_type == 0x1E: # Autobahn with no speed limit
-        return 0x1F # no speed limit sign
+        return 0x1F * 5 # no speed limit sign
       return int(speed_limit_uom + 0.5)
     else:
       if speed_limit_type == 0x1F: # SNA (parking lot, no public road, etc.)
-        return 0 # no sign
-      return 1 # show 5 kph/mph for unknown limit where we should have one
+        return 35 # no sign or show 35 for debug
+      return 45 # show 5 kph/mph for unknown limit where we should have one
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
