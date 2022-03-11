@@ -62,6 +62,7 @@ class CarState(CarStateBase):
     self.DAS_notInDrive = 0
     self.DAS_fusedSpeedLimit = 0
     self.baseMapSpeedLimitMPS = 0
+    self.fleet_speed_state = 0
 
     self.cruiseEnabled = False
     self.cruiseDelay = False
@@ -98,12 +99,12 @@ class CarState(CarStateBase):
   def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
     if speed_limit_uom > 0:
       if speed_limit_type == 0x1E: # Autobahn with no speed limit
-        return 0x1F # no speed limit sign
-      return int(speed_limit_uom / 5 + 0.5) # sign ID in 5 kph/mph increments (7 shows as 5)
+        return 0x1F * 5 # no speed limit sign
+      return int(speed_limit_uom + 0.5)
     else:
       if speed_limit_type == 0x1F: # SNA (parking lot, no public road, etc.)
-        return 0 # no sign
-      return 1 # show 5 kph/mph for unknown limit where we should have one
+        return 0 # no sign or show 35 for debug
+      return 5 # show 5 kph/mph for unknown limit where we should have one
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -203,12 +204,15 @@ class CarState(CarStateBase):
       self.baseMapSpeedLimitMPS = cp.vl["UI_driverAssistRoadSign"]["UI_baseMapSpeedLimitMPS"]
       # we round the speed limit in the map's units of measurement to fix noisy data (there are no signs with a limit of 79.2 kph)
       self.baseMapSpeedLimitMPS = int(self.baseMapSpeedLimitMPS * map_speed_ms_to_uom + 0.99) / map_speed_ms_to_uom
-    if self.baseMapSpeedLimitMPS > 0 and (speed_limit_type != 0x1F or self.baseMapSpeedLimitMPS <= 5.56):
+    if self.CP.carFingerprint != CAR.PREAP_MODELS and self.baseMapSpeedLimitMPS > 0 and (speed_limit_type != 0x1F or self.baseMapSpeedLimitMPS >= 5.56):
       self.speed_limit_ms = self.baseMapSpeedLimitMPS # this one is earlier than the actual sign but can also be unreliable, so we ignore it on SNA at higher speeds
     else:
       self.speed_limit_ms = cp.vl['UI_gpsVehicleSpeed']["UI_mppSpeedLimit"] * map_speed_uom_to_ms
     self.DAS_fusedSpeedLimit = self._convert_to_DAS_fusedSpeedLimit(self.speed_limit_ms * map_speed_ms_to_uom, speed_limit_type)
-
+    if self.DAS_fusedSpeedLimit > 1:
+      self.fleet_speed_state = 2
+    else:
+      self.fleet_speed_state = 0
     # Gear
     ret.gearShifter = GEAR_MAP[self.can_define.dv["DI_torque2"]["DI_gear"].get(int(cp.vl["DI_torque2"]["DI_gear"]), "DI_GEAR_INVALID")]
     self.DAS_notInDrive = 0 if ret.gearShifter == car.CarState.GearShifter.drive else 1

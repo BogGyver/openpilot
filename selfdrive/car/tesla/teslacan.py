@@ -202,13 +202,13 @@ class TeslaCAN:
   def create_das_status (self, DAS_op_status, DAS_collision_warning,
     DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
     blindSpotLeft, blindSpotRight,
-    DAS_speed_limit_kph, bus, counter):
+    DAS_speed_limit_kph, DAS_fleetSpeedState, bus, counter):
     values = {
       "DAS_autopilotState" : DAS_op_status,
       "DAS_blindSpotRearLeft" : 1 if blindSpotLeft else 0,
       "DAS_blindSpotRearRight" : 1 if blindSpotRight else 0,
       "DAS_fusedSpeedLimit" : DAS_speed_limit_kph,
-      "DAS_suppressSpeedWarning" : 1,
+      "DAS_suppressSpeedWarning" : 0,
       "DAS_summonObstacle" : 0,
       "DAS_summonClearedGate" : 0,
       "DAS_visionOnlySpeedLimit" : DAS_speed_limit_kph,
@@ -224,7 +224,7 @@ class TeslaCAN:
       "DAS_sideCollisionInhibit" : 0,
       "DAS_lssState" : 0, #0-FAULT 
       "DAS_laneDepartureWarning" : DAS_ldwStatus,
-      "DAS_fleetSpeedState" : 0,
+      "DAS_fleetSpeedState" : DAS_fleetSpeedState,
       "DAS_autopilotHandsOnState" : DAS_hands_on_state, # 3 quiet, 5 with alerts
       "DAS_autoLaneChangeState" : DAS_alca_state,
       "DAS_summonAvailable" : 0,
