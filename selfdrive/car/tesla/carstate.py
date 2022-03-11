@@ -62,6 +62,7 @@ class CarState(CarStateBase):
     self.DAS_notInDrive = 0
     self.DAS_fusedSpeedLimit = 0
     self.baseMapSpeedLimitMPS = 0
+    self.fleet_speed_state = 0
 
     self.cruiseEnabled = False
     self.cruiseDelay = False
@@ -203,12 +204,15 @@ class CarState(CarStateBase):
       self.baseMapSpeedLimitMPS = cp.vl["UI_driverAssistRoadSign"]["UI_baseMapSpeedLimitMPS"]
       # we round the speed limit in the map's units of measurement to fix noisy data (there are no signs with a limit of 79.2 kph)
       self.baseMapSpeedLimitMPS = int(self.baseMapSpeedLimitMPS * map_speed_ms_to_uom + 0.99) / map_speed_ms_to_uom
-    if self.baseMapSpeedLimitMPS > 0 and (speed_limit_type != 0x1F or self.baseMapSpeedLimitMPS <= 5.56):
+    if self.CP.carFingerprint != CAR.PREAP_MODELS and self.baseMapSpeedLimitMPS > 0 and (speed_limit_type != 0x1F or self.baseMapSpeedLimitMPS >= 5.56):
       self.speed_limit_ms = self.baseMapSpeedLimitMPS # this one is earlier than the actual sign but can also be unreliable, so we ignore it on SNA at higher speeds
     else:
       self.speed_limit_ms = cp.vl['UI_gpsVehicleSpeed']["UI_mppSpeedLimit"] * map_speed_uom_to_ms
     self.DAS_fusedSpeedLimit = self._convert_to_DAS_fusedSpeedLimit(self.speed_limit_ms * map_speed_ms_to_uom, speed_limit_type)
-
+    if self.DAS_fusedSpeedLimit > 1:
+      self.fleet_speed_state = 2
+    else:
+      self.fleet_speed_state = 0
     # Gear
     ret.gearShifter = GEAR_MAP[self.can_define.dv["DI_torque2"]["DI_gear"].get(int(cp.vl["DI_torque2"]["DI_gear"]), "DI_GEAR_INVALID")]
     self.DAS_notInDrive = 0 if ret.gearShifter == car.CarState.GearShifter.drive else 1

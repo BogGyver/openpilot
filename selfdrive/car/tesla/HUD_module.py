@@ -205,7 +205,7 @@ class HUDController:
                 messages.append(self.tesla_can.create_das_status(DAS_op_status, DAS_collision_warning,
                     DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
                     CS.out.leftBlindspot, CS.out.rightBlindspot,
-                    CS.DAS_fusedSpeedLimit, CAN_CHASSIS[self.CP.carFingerprint], 1))
+                    CS.DAS_fusedSpeedLimit, CS.fleet_speed_state, CAN_CHASSIS[self.CP.carFingerprint], 1))
                 messages.append(self.tesla_can.create_das_status2(CS.out.cruiseState.speed * CV.MS_TO_MPH, 
                     DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1))
             self.IC_previous_enabled = enabled
