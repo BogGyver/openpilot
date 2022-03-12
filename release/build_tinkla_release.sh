@@ -46,13 +46,16 @@ git commit -m "Tesla OpenPilot $TINKLAVERSION (openpilot v$VERSION)"
 
 # Build signed panda firmware
 cd /data/openpilot
-pushd panda/
-CERT=/data/openpilot/panda/certs/debug RELEASE=0 scons -u .
-pushd board
-PEDAL=1 scons -u
-popd
-mv board/obj/panda.bin.signed /tmp/panda.bin.signed
-mv board/obj/pedal.bin.signed /tmp/pedal.bin.signed
+pushd panda/board
+CERT=/data/openpilot/panda/certs/debug RELEASE=0 scons -u
+CERT=/data/openpilot/panda/certs/debug RELEASE=0 PEDAL=1 scons -u
+CERT=/data/openpilot/panda/certs/debug RELEASE=0 PEDAL=1 PEDAL_USB=1 scons -u
+mv obj/panda.bin.signed /tmp/panda.bin.signed
+mv obj/pedal.bin.signed /tmp/pedal.bin.signed
+mv obj/bootstub.panda.bin /tmp/bootstub.panda.bin 
+mv obj/bootstub.pedal.bin /tmp/bootstub.pedal.bin
+mv obj/bootstub.pedal_usb.bin /tmp/bootstub.pedal_usb.bin
+mv obj/pedal_usb.bin.signed /tmp/pedal_usb.bin.signed 
 popd
 
 # Build stuff
@@ -75,6 +78,10 @@ rm models/supercombo.dlc
 cp -r /data/openpilot_tmp/release/panda_files/board /data/openpilot/panda/
 mv /tmp/panda.bin.signed panda/board/obj/panda.bin.signed
 mv /tmp/pedal.bin.signed panda/board/obj/pedal.bin.signed
+mv /tmp/bootstub.panda.bin panda/board/obj/bootstub.panda.bin
+mv /tmp/bootstub.pedal.bin panda/board/obj/bootstub.pedal.bin
+mv /tmp/bootstub.pedal_usb.bin panda/board/obj/bootstub.pedal_usb.bin
+mv /tmp/pedal_usb.bin.signed panda/board/obj/pedal_usb.bin.signed
 
 # Restore third_party
 git checkout third_party/
