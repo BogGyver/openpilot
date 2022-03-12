@@ -10,7 +10,6 @@ export GIT_SSH_COMMAND="ssh -i /data/gitkey"
 # set CLEAN to build outside of CI
 
 # Create folders
-mv /data/openpilot /data/openpilot_tmp || true
 rm -rf /data/openpilot || true
 mkdir -p /data/openpilot
 cd /data/openpilot
@@ -75,13 +74,14 @@ rm -rf .sconsign.dblite Jenkinsfile release/
 rm models/supercombo.dlc
 
 # Move back signed panda fw
-cp -r /data/openpilot_tmp/release/panda_files/board /data/openpilot/panda/
-mv /tmp/panda.bin.signed panda/board/obj/panda.bin.signed
-mv /tmp/pedal.bin.signed panda/board/obj/pedal.bin.signed
-mv /tmp/bootstub.panda.bin panda/board/obj/bootstub.panda.bin
-mv /tmp/bootstub.pedal.bin panda/board/obj/bootstub.pedal.bin
-mv /tmp/bootstub.pedal_usb.bin panda/board/obj/bootstub.pedal_usb.bin
-mv /tmp/pedal_usb.bin.signed panda/board/obj/pedal_usb.bin.signed
+cp -r /data/openpilot/release/panda_files/board /data/openpilot/panda/
+mkdir -p /data/openpilot/panda/board/obj
+mv /tmp/panda.bin.signed /data/openpilot/panda/board/obj/panda.bin.signed
+mv /tmp/pedal.bin.signed /data/openpilot/panda/board/obj/pedal.bin.signed
+mv /tmp/bootstub.panda.bin /data/openpilot/panda/board/obj/bootstub.panda.bin
+mv /tmp/bootstub.pedal.bin /data/openpilot/panda/board/obj/bootstub.pedal.bin
+mv /tmp/bootstub.pedal_usb.bin /data/openpilot/panda/board/obj/bootstub.pedal_usb.bin
+mv /tmp/pedal_usb.bin.signed /data/openpilot/panda/board/obj/pedal_usb.bin.signed
 
 # Restore third_party
 git checkout third_party/
@@ -101,7 +101,3 @@ git remote set-url origin git@github.com:boggyver/openpilot.git
 
 # Push to tesla_unity_release
 git push -f origin $RELEASE_BRANCH
-
-
-rm -rf /data/openpilot || true
-mv /data/openpilot_tmp /data/openpilot || true
