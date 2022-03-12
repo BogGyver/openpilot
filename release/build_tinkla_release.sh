@@ -15,16 +15,26 @@ rm -rf /data/openpilot || true
 mkdir -p /data/openpilot
 cd /data/openpilot
 
+if [ -f /TICI ]; then
+  FILES_SRC="release/files_tici"
+  RELEASE_BRANCH=tesla_unity_releaseC3
+elif [ -f /EON ]; then
+  FILES_SRC="release/files_eon"
+  RELEASE_BRANCH=tesla_unity_releaseC2
+else
+  exit 0
+fi
+
 # Create git repo
 git init
 git remote add origin git@github.com:boggyver/openpilot.git
 git fetch origin tesla_unity_beta
 
 
-git fetch origin tesla_unity_release
+git fetch origin $RELEASE_BRANCH
 
 # Create tesla_unity_release with no history
-git checkout --orphan tesla_unity_release origin/tesla_unity_beta
+git checkout --orphan $RELEASE_BRANCH origin/tesla_unity_beta
 
 
 VERSION=$(cat selfdrive/common/version.h | awk -F[\"-]  '{print $2}')
@@ -35,9 +45,14 @@ echo "#define TINKLA_VERSION \"$TINKLAVERSION-release\"" > selfdrive/common/tink
 git commit -m "Tesla OpenPilot $TINKLAVERSION (openpilot v$VERSION)"
 
 # Build signed panda firmware
+cd /data/openpilot
 pushd panda/
-CERT=/data/pandaextra/certs/debug RELEASE=0 scons -u .
+CERT=/data/openpilot/panda/certs/debug RELEASE=0 scons -u .
+pushd board
+PEDAL=1 scons -u
+popd
 mv board/obj/panda.bin.signed /tmp/panda.bin.signed
+mv board/obj/pedal.bin.signed /tmp/pedal.bin.signed
 popd
 
 # Build stuff
@@ -45,10 +60,6 @@ ln -sfn /data/openpilot /data/pythonpath
 export PYTHONPATH="/data/openpilot:/data/openpilot/pyextra"
 SCONS_CACHE=1 scons -j3
 
-# Run tests
-tmux kill-session -t comma || true
-python selfdrive/manager/test/test_manager.py
-selfdrive/car/tests/test_car_interfaces.py
 
 # Cleanup
 find . -name '*.a' -delete
@@ -61,11 +72,12 @@ rm -rf .sconsign.dblite Jenkinsfile release/
 rm models/supercombo.dlc
 
 # Move back signed panda fw
-mkdir -p panda/board/obj
+cp -r /data/openpilot_tmp/release/panda_files/board /data/openpilot/panda/
 mv /tmp/panda.bin.signed panda/board/obj/panda.bin.signed
+mv /tmp/pedal.bin.signed panda/board/obj/pedal.bin.signed
 
-# Restore phonelibs
-git checkout phonelibs/
+# Restore third_party
+git checkout third_party/
 
 # Mark as prebuilt release
 touch prebuilt
@@ -75,13 +87,13 @@ git add -f .
 git commit --amend -m "Tesla OpenPilot $TINKLAVERSION (openpilot v$VERSION)"
 
 # Print committed files that are normally gitignored
-#git status --ignored
+git status --ignored
 
 
 git remote set-url origin git@github.com:boggyver/openpilot.git
 
 # Push to tesla_unity_release
-git push -f origin tesla_unity_release
+git push -f origin $RELEASE_BRANCH
 
 
 rm -rf /data/openpilot || true
