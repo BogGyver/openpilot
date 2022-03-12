@@ -19,3 +19,4 @@ nosetests.xml
 .mypy_cache/
 .sconsign.dblite
 board/flasher
+board/pedal/flasher
