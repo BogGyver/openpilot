@@ -38,7 +38,7 @@ def calc_cruise_accel_limits(v_ego, following):
     a_cruise_max = interp(v_ego, _A_CRUISE_MAX_BP, _A_CRUISE_MAX_V)
   return np.vstack([a_cruise_min, a_cruise_max])
 
-_DT = 0.05  # 10Hz in our case, since we don't want to process more than once the same radarState message
+_DT = 0.05  # 20Hz in our case, since we don't want to process more than once the same radarState message
 _DT_MPC = _DT
 
 # Reset the PID completely on disengage of PCC
@@ -51,8 +51,8 @@ MAX_PEDAL_VALUE = 100.0
 PEDAL_HYST_GAP = (
     1.0  # don't change pedal command for small oscilalitons within this value
 )
-# Cap the pedal to go from 0 to max in 2 seconds
-PEDAL_MAX_UP = MAX_PEDAL_VALUE * _DT / 2
+# Cap the pedal to go from 0 to max in 4 seconds
+PEDAL_MAX_UP = MAX_PEDAL_VALUE * _DT / 4
 # Cap the pedal to go from max to 0 in 0.4 seconds
 PEDAL_MAX_DOWN = MAX_PEDAL_VALUE * _DT / 0.4
 
@@ -287,7 +287,7 @@ class PCCController:
         CS,
         frame,
         actuators,
-        pcm_speed,
+        v_target,
         pcm_override,
         speed_limit_ms,
         set_speed_limit_active,
@@ -343,7 +343,8 @@ class PCCController:
         # we use the values from actuators.accel
         ##############################################################
         output_gb = actuators.accel
-        self.v_pid = pcm_speed
+        #we don't get target speed anymore, use current speed
+        self.v_pid = v_target
         MPC_BRAKE_MULTIPLIER = 3.0
 
         self.last_output_gb = output_gb

@@ -106,12 +106,15 @@ class LONGController:
                         counter=stlk_counter))
             apply_accel = 0.0
             if self.PCC.pcc_available and frame % 5 == 0:  # pedal processed at 20Hz
+                v_target = 0
+                if long_plan is not None:
+                    v_target = long_plan.longitudinalPlan.speeds[0]
                 apply_accel, accel_needed, accel_idx = self.PCC.update_pdl(
                     enabled,
                     CS,
                     frame,
                     actuators,
-                    pcm_speed,
+                    v_target,
                     pcm_override,
                     self.speed_limit_ms,
                     self.set_speed_limit_active,
@@ -135,8 +138,9 @@ class LONGController:
             if radar_state is not None:
                 self.lead_1 = radar_state.radarState.leadOne
             if long_plan is not None:
-                self.v_target = long_plan.longitudinalPlan.vTargetFuture # to try vs vTarget
-                self.a_target = abs(long_plan.longitudinalPlan.aTarget) # to try vs aTarget
+                self.v_target = long_plan.longitudinalPlan.speeds[0] # to try vs vTarget
+                self.a_target = abs(long_plan.longitudinalPlan.accels[0]) # to try vs aTarget
+                #we also have jerks here too
             if self.v_target is None:
                 self.v_target = CS.out.vEgo
                 self.a_target = 1
