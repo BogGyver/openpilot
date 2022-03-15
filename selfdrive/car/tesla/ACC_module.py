@@ -376,7 +376,7 @@ class ACCController:
             elif CS.out.vEgo > self.MIN_CRUISE_SPEED_MS:
                 # How much we can accelerate without exceeding max allowed speed.
                 available_speed_kph = self.acc_speed_kph - CS.v_cruise_actual
-                if actuators.accel > 0.6 and full_press_kph < available_speed_kph and pending_delta_kph < 0.5 full_press_kph:
+                if actuators.accel > 0.6 and full_press_kph < available_speed_kph and pending_delta_kph < 0.5 * full_press_kph:
                   button_to_press = CruiseButtons.RES_ACCEL_2ND
                 elif actuators.accel > 0 and half_press_kph < available_speed_kph and pending_delta_kph < 0.9 * half_press_kph:
                   button_to_press = CruiseButtons.RES_ACCEL  # small acceleration
