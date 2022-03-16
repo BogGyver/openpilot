@@ -2,41 +2,14 @@ from selfdrive.car.tesla.speed_utils.fleet_speed import FleetSpeed
 from common.numpy_fast import clip, interp
 from selfdrive.car.tesla.values import CruiseState, CruiseButtons
 from selfdrive.config import Conversions as CV
-from selfdrive.controls.lib.longitudinal_planner import limit_accel_in_turns
 import time
 import math
 from collections import OrderedDict
 from common.params import Params
-import numpy as np
 from cereal import car
 
 ACCEL_MAX = 2.0
 ACCEL_MIN = -3.5
-
-# lookup tables VS speed to determine min and max accels in cruise
-# make sure these accelerations are smaller than mpc limits
-_A_CRUISE_MIN_V = [-1.0, -.8, -.67, -.5, -.30]
-_A_CRUISE_MIN_BP = [  0.,  5.,  10., 20.,  40.]
-
-# need fast accel at very low speed for stop and go
-# make sure these accelerations are smaller than mpc limits
-_A_CRUISE_MAX_V = [1.2, 1.2, 0.65, .4]
-_A_CRUISE_MAX_V_FOLLOWING = [1.6, 1.6, 0.65, .4]
-_A_CRUISE_MAX_BP = [0.,  6.4, 22.5, 40.]
-
-# Lookup table for turns
-_A_TOTAL_MAX_V = [1.7, 3.2]
-_A_TOTAL_MAX_BP = [20., 40.]
-
-
-def calc_cruise_accel_limits(v_ego, following):
-  a_cruise_min = interp(v_ego, _A_CRUISE_MIN_BP, _A_CRUISE_MIN_V)
-
-  if following:
-    a_cruise_max = interp(v_ego, _A_CRUISE_MAX_BP, _A_CRUISE_MAX_V_FOLLOWING)
-  else:
-    a_cruise_max = interp(v_ego, _A_CRUISE_MAX_BP, _A_CRUISE_MAX_V)
-  return np.vstack([a_cruise_min, a_cruise_max])
 
 _DT = 0.05  # 20Hz in our case, since we don't want to process more than once the same radarState message
 _DT_MPC = _DT
@@ -51,8 +24,8 @@ MAX_PEDAL_VALUE = 100.0
 PEDAL_HYST_GAP = (
     1.0  # don't change pedal command for small oscilalitons within this value
 )
-# Cap the pedal to go from 0 to max in 4 seconds
-PEDAL_MAX_UP = MAX_PEDAL_VALUE * _DT / 4
+# Cap the pedal to go from 0 to max in 6 seconds
+PEDAL_MAX_UP = MAX_PEDAL_VALUE * _DT / 6
 # Cap the pedal to go from max to 0 in 0.4 seconds
 PEDAL_MAX_DOWN = MAX_PEDAL_VALUE * _DT / 0.4
 
@@ -360,7 +333,7 @@ class PCCController:
                 CS.out.vEgo, self.v_pid, self.lead_1, CS, self.pedal_speed_kph
             ),
             0.0,
-        )
+        )    
         # if speed is over 5mph, the "zero" is at PedalForZeroTorque; otherwise it is zero
         pedal_zero = 0.0
         if CS.out.vEgo >= 5.0 * CV.MPH_TO_MS:
@@ -383,6 +356,12 @@ class PCCController:
         )
         enable_pedal = 1.0 if self.enable_pedal_cruise else 0.0
 
+        #trim accel based on multiplier
+        pedal_delta_mult = _accel_pedal_max(CS.out.vEgo,self.v_pid)
+        if tesla_pedal > self.prev_tesla_pedal:
+            tesla_pedal = (
+                clip(tesla_pedal, 0.0, self.prev_tesla_pedal + (tesla_pedal - self.prev_tesla_pedal) * pedal_delta_mult) if self.enable_pedal_cruise else 0.0
+            )
         self.torqueLevel_last = CS.torqueLevel
         self.prev_tesla_pedal = tesla_pedal * enable_pedal
         self.prev_tesla_accel = apply_accel * enable_pedal
@@ -408,7 +387,7 @@ class PCCController:
         pedal_ready = (
             frame < self.pedal_timeout_frame and CS.pedal_interceptor_state == 0
         )
-        acc_disabled = CS.enablePedal or CruiseState.is_off(CS.cruise_state)
+        #acc_disabled = CS.enablePedal or CruiseState.is_off(CS.cruise_state)
         # Mark pedal unavailable while traditional cruise is on.
         self.pcc_available = pedal_ready and self.LongCtr.enablePedal
 
@@ -422,6 +401,20 @@ def _interp_map(val, val_map):
     """Helper to call interp with an OrderedDict for the mapping. I find
     this easier to read than interp, which takes two arrays."""
     return interp(val, list(val_map.keys()), list(val_map.values()))
+
+def _accel_pedal_max(v_ego, v_target):
+    speed_delta_perc = 100 * (v_target - v_ego) / v_ego
+    accel_perc_map = OrderedDict(
+        [
+            # (perc change, decel)
+            (0.0, 0.1),
+            (1.5, 0.2),
+            (5.0, 0.3),
+            (7.0, 0.4),
+            (50.0, 0.8),
+        ]
+    )
+    return _interp_map(speed_delta_perc, accel_perc_map)
 
 def _brake_pedal_min(v_ego, v_target, lead, CS, max_speed_kph):
     # if less than 7 MPH we don't have much left till 5MPH to brake, so full regen

@@ -34,7 +34,8 @@ def flash_panda(panda_serial: str) -> Panda:
 
   if panda.bootstub or panda_signature != fw_signature:
     cloudlog.info("Panda firmware out of date, update required")
-    panda.flash()
+    #panda.flash()
+    panda.recover() #BB trying to see if auto flash will work this way when the system boots
     cloudlog.info("Done flashing")
 
   if panda.bootstub:
