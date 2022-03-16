@@ -84,14 +84,16 @@ class LONGController:
                 else 0
             )
             CS.pcc_available = self.PCC.pcc_available
-            
+           
+            if long_plan and long_plan.longitudinalPlan:
+                self.v_target = long_plan.longitudinalPlan.speeds[-1]
             if (not self.PCC.pcc_available) and frame % 20 == 0:  # acc processed at 5Hz
                 cruise_btn = self.ACC.update_acc(
                     enabled,
                     CS,
                     frame,
                     actuators,
-                    pcm_speed,
+                    self.v_target,
                     self.speed_limit_ms * CV.MS_TO_KPH,
                     self.set_speed_limit_active,
                     self.speed_limit_offset_ms * CV.MS_TO_KPH,
@@ -100,10 +102,10 @@ class LONGController:
                     # insert the message first since it is racing against messages from the real stalk
                     stlk_counter = ((CS.msg_stw_actn_req['MC_STW_ACTN_RQ'] + 1) % 16)
                     messages.insert(0, self.tesla_can.create_action_request(
-                        msg_stw_actn_req=CS.msg_stw_actn_req,
-                        button_to_press=cruise_btn,
-                        bus=CAN_CHASSIS[self.CP.carFingerprint],
-                        counter=stlk_counter))
+                         msg_stw_actn_req=CS.msg_stw_actn_req,
+                         button_to_press=cruise_btn,
+                         bus=CAN_CHASSIS[self.CP.carFingerprint],
+                         counter=stlk_counter))
             apply_accel = 0.0
             if self.PCC.pcc_available and frame % 5 == 0:  # pedal processed at 20Hz
                 v_target = 0
