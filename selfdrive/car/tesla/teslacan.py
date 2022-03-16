@@ -22,6 +22,15 @@ class TeslaCAN:
     ret += sum(dat)
     return ret & 0xFF
 
+  def create_ibst_command(self, enabled, brake, raw_cnt, bus):
+    values = {
+      "BRAKE_POSITION_COMMAND" : brake * 20,
+      "BRAKE_RELATIVE_COMMAND": 0,
+      "BRAKE_MODE": enabled * 2,
+      "COUNTER" : raw_cnt,
+    }
+    return self.packer.make_can_msg("BRAKE_COMMAND", bus, values)
+
   def create_lane_message(self, lWidth, rLine, lLine, laneRange, curvC0, curvC1, curvC2, curvC3, lLane2,rLane2,bus, counter):
     values = {
       "DAS_leftLaneExists" : lLine,

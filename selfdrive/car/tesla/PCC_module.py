@@ -3,12 +3,10 @@ from common.numpy_fast import clip, interp
 from selfdrive.car.tesla.values import CruiseState, CruiseButtons
 from selfdrive.config import Conversions as CV
 import time
-import math
-from collections import OrderedDict
 from common.params import Params
 from cereal import car
 
-ACCEL_MAX = 2.0
+ACCEL_MAX = 0.6  #0.6m/s2 * 36 = ~ 0 -> 50mph in 6 seconds
 ACCEL_MIN = -3.5
 
 _DT = 0.05  # 20Hz in our case, since we don't want to process more than once the same radarState message
@@ -21,6 +19,8 @@ RESET_PID_ON_DISENGAGE = False
 # Accel limits
 MAX_RADAR_DISTANCE = 120.0  # max distance to take in consideration radar reading
 MAX_PEDAL_VALUE = 100.0
+MAX_PEDAL_REGEN_VALUE = 0.0
+MAX_BRAKE_VALUE = 1 #ibooster fully pressed BBTODO determine the exact value we need
 PEDAL_HYST_GAP = (
     1.0  # don't change pedal command for small oscilalitons within this value
 )
@@ -48,27 +48,6 @@ STALK_DOUBLE_PULL_MS = 750
 
 def tesla_compute_gb(accel, speed):
     return float(accel) / 3.0
-
-def max_v_in_mapped_curve_ms(map_data, pedal_set_speed_kph):
-    """Use HD map data to limit speed in sharper turns."""
-    if map_data and map_data.curvatureValid:
-        pedal_set_speed_ms = pedal_set_speed_kph * CV.KPH_TO_MS
-        # Max lateral acceleration, used to caclulate how much to slow down in turns
-        a_y_max = 1.85  # m/s^2
-        curvature = abs(map_data.curvature)
-        v_curvature_ms = math.sqrt(a_y_max / max(1e-4, curvature))
-        time_to_turn_s = max(0, map_data.distToTurn / max(pedal_set_speed_ms, 1.0))
-        v_approaching_turn_ms = OrderedDict(
-            [
-                # seconds til turn, max allowed velocity
-                (0, pedal_set_speed_ms),
-                (8, v_curvature_ms),
-            ]
-        )
-        return _interp_map(time_to_turn_s, v_approaching_turn_ms)
-    else:
-        return None
-
 
 class PCCState:
     # Possible state of the PCC system, following the DI_cruiseState naming scheme.
@@ -107,6 +86,7 @@ class PCCController:
         self.pedal_steady = 0.0
         self.prev_tesla_accel = 0.0
         self.prev_tesla_pedal = 0.0
+        self.prev_tesla_brake = 0.0
         self.torqueLevel_last = 0.0
         self.prev_v_ego = 0.0
         self.PedalForZeroTorque = (
@@ -270,10 +250,10 @@ class PCCController:
     ):
 
         if not self.LongCtr.CP.openpilotLongitudinalControl:
-            return 0.0, -1, -1
+            return 0.0, 0.0, -1, -1
 
         if not self.LongCtr.enablePedal:
-            return 0.0, -1, -1
+            return 0.0, 0.0, -1, -1
 
         idx = self.pedal_idx
 
@@ -289,7 +269,6 @@ class PCCController:
             and CS.torqueLevel > TORQUE_LEVEL_DECEL
             and CS.out.vEgo >= 10.0 * CV.MPH_TO_MS
             and abs(CS.torqueLevel) < abs(self.lastTorqueForPedalForZeroTorque)
-            and self.prev_tesla_accel > 0.0
         ):
             self.PedalForZeroTorque = self.prev_tesla_pedal
             self.lastTorqueForPedalForZeroTorque = CS.torqueLevel
@@ -315,58 +294,30 @@ class PCCController:
         #
         # we use the values from actuators.accel
         ##############################################################
-        output_gb = actuators.accel
-        #we don't get target speed anymore, use current speed
-        self.v_pid = v_target
-        MPC_BRAKE_MULTIPLIER = 3.0
+        ZERO_ACCEL = self.PedalForZeroTorque
+        if CS.out.vEgo < 5 * CV.MPH_TO_MS:
+            ZERO_ACCEL = 0
+        ACCEL_LOOKUP_BP = [ACCEL_MIN, 0., ACCEL_MAX]
+        ACCEL_LOOKUP_V = [MAX_PEDAL_REGEN_VALUE, ZERO_ACCEL, MAX_PEDAL_VALUE]
 
-        self.last_output_gb = output_gb
-        # accel and brake
-        apply_accel = clip(
-            output_gb, 
-            0.0,
-            1.0
-        )
-        apply_brake = -clip(
-            output_gb * MPC_BRAKE_MULTIPLIER ,
-            _brake_pedal_min(
-                CS.out.vEgo, self.v_pid, self.lead_1, CS, self.pedal_speed_kph
-            ),
-            0.0,
-        )    
-        # if speed is over 5mph, the "zero" is at PedalForZeroTorque; otherwise it is zero
-        pedal_zero = 0.0
-        if CS.out.vEgo >= 5.0 * CV.MPH_TO_MS:
-            pedal_zero = self.PedalForZeroTorque
-        tesla_brake = clip((1.0 - apply_brake) * pedal_zero, 0, pedal_zero)
-        tesla_accel = clip(
-            apply_accel * (MAX_PEDAL_VALUE - pedal_zero),
-            0,
-            MAX_PEDAL_VALUE - pedal_zero,
-        )
-        tesla_pedal = tesla_brake + tesla_accel
-        tesla_pedal = self.pedal_hysteresis(tesla_pedal, enabled)
-        tesla_pedal = clip(
-            tesla_pedal,
-            self.prev_tesla_pedal - PEDAL_MAX_DOWN,
-            self.prev_tesla_pedal + PEDAL_MAX_UP,
-        )
-        tesla_pedal = (
-            clip(tesla_pedal, 0.0, MAX_PEDAL_VALUE) if self.enable_pedal_cruise else 0.0
-        )
+        BRAKE_LOOKUP_BP = [ACCEL_MIN, -1.]
+        BRAKE_LOOKUP_V = [MAX_BRAKE_VALUE, 0.]
+
         enable_pedal = 1.0 if self.enable_pedal_cruise else 0.0
+        tesla_pedal = int(round(interp(actuators.accel, ACCEL_LOOKUP_BP, ACCEL_LOOKUP_V)))
+        tesla_pedal = self.pedal_hysteresis(tesla_pedal, enable_pedal)
+        if CS.out.vEgo < 0.1 and actuators.accel < 0.01:
+            #hold brake pressed at when standstill
+            #BBTODO: show HOLD indicator in IC with integration
+            tesla_brake = 0.26
+        else:
+            tesla_brake = interp(actuators.accel, BRAKE_LOOKUP_BP, BRAKE_LOOKUP_V)
 
-        #trim accel based on multiplier
-        pedal_delta_mult = _accel_pedal_max(CS.out.vEgo,self.v_pid)
-        if tesla_pedal > self.prev_tesla_pedal:
-            tesla_pedal = (
-                clip(tesla_pedal, 0.0, self.prev_tesla_pedal + (tesla_pedal - self.prev_tesla_pedal) * pedal_delta_mult) if self.enable_pedal_cruise else 0.0
-            )
+        self.prev_tesla_brake = tesla_brake * enable_pedal
         self.torqueLevel_last = CS.torqueLevel
         self.prev_tesla_pedal = tesla_pedal * enable_pedal
-        self.prev_tesla_accel = apply_accel * enable_pedal
         self.prev_v_ego = CS.out.vEgo
-        return self.prev_tesla_pedal, enable_pedal, idx
+        return self.prev_tesla_pedal, self.prev_tesla_brake, enable_pedal, idx
 
     def pedal_hysteresis(self, pedal, enabled):
         # for small accel oscillations within PEDAL_HYST_GAP, don't change the command
@@ -391,61 +342,3 @@ class PCCController:
         # Mark pedal unavailable while traditional cruise is on.
         self.pcc_available = pedal_ready and self.LongCtr.enablePedal
 
-def _safe_distance_m(v_ego_ms, CS):
-    return max(CS.apFollowTimeInS * (v_ego_ms + 1), MIN_SAFE_DIST_M)
-
-def _is_present(lead):
-    return bool((not (lead is None)) and (lead.dRel > 0))
-
-def _interp_map(val, val_map):
-    """Helper to call interp with an OrderedDict for the mapping. I find
-    this easier to read than interp, which takes two arrays."""
-    return interp(val, list(val_map.keys()), list(val_map.values()))
-
-def _accel_pedal_max(v_ego, v_target):
-    speed_delta_perc = 100 * (v_target - v_ego) / v_ego
-    accel_perc_map = OrderedDict(
-        [
-            # (perc change, decel)
-            (0.0, 0.1),
-            (1.5, 0.2),
-            (5.0, 0.3),
-            (7.0, 0.4),
-            (50.0, 0.8),
-        ]
-    )
-    return _interp_map(speed_delta_perc, accel_perc_map)
-
-def _brake_pedal_min(v_ego, v_target, lead, CS, max_speed_kph):
-    # if less than 7 MPH we don't have much left till 5MPH to brake, so full regen
-    if v_ego <= 7 * CV.MPH_TO_MS:
-        return -1
-    # if above speed limit quickly decel
-    if v_ego * CV.MS_TO_KPH > max_speed_kph:
-        return -0.8
-    speed_delta_perc = 100 * (v_ego - v_target) / v_ego
-    brake_perc_map = OrderedDict(
-        [
-            # (perc change, decel)
-            (0.0, 0.3),
-            (1.5, 0.5),
-            (5.0, 0.8),
-            (7.0, 1.0),
-            (50.0, 1.0),
-        ]
-    )
-    brake_mult1 = _interp_map(speed_delta_perc, brake_perc_map)
-    brake_mult2 = 0.0
-    if _is_present(lead):
-        safe_dist_m = _safe_distance_m(CS.out.vEgo, CS)
-        brake_distance_map = OrderedDict(
-            [
-                # (distance in m, decceleration fraction)
-                (0.8 * safe_dist_m, 1.0),
-                (1.0 * safe_dist_m, 0.6),
-                (3.0 * safe_dist_m, 0.4),
-            ]
-        )
-        brake_mult2 = _interp_map(lead.dRel, brake_distance_map)
-    brake_mult = max(brake_mult1, brake_mult2)
-    return -brake_mult

@@ -12,12 +12,15 @@ class LONGController:
     def __init__(self,CP,packer, tesla_can, pedalcan):
         self.CP = CP
         self.v_target = None
+        self.a_target = None
+        self.j_target = None
         self.lead_1 = None
         self.long_control_counter = 1
         self.tesla_can = tesla_can
         self.packer = packer
         self.pedalcan = pedalcan
         self.enablePedal = load_bool_param("TinklaEnablePedal",False)
+        self.has_ibooster_ecu = False
         if (CP.carFingerprint == CAR.PREAP_MODELS):
             self.ACC = ACCController(self)
             self.PCC = PCCController(self,tesla_can,pedalcan)
@@ -111,7 +114,8 @@ class LONGController:
                 v_target = 0
                 if long_plan is not None:
                     v_target = long_plan.longitudinalPlan.speeds[0]
-                apply_accel, accel_needed, accel_idx = self.PCC.update_pdl(
+                apply_brake = 0.0
+                apply_accel, apply_brake, accel_needed, accel_idx = self.PCC.update_pdl(
                     enabled,
                     CS,
                     frame,
@@ -130,6 +134,12 @@ class LONGController:
                             apply_accel, int(accel_needed), accel_idx, self.pedalcan
                         )
                     )
+                if self.has_ibooster_ecu:
+                    messages.append(
+                        self.tesla_can.create_ibst_command(
+                            enabled, apply_brake, frame, CAN_CHASSIS[self.CP.carFingerprint]
+                        )
+                    )
 
             #TODO: update message sent in HUD
 
@@ -142,10 +152,11 @@ class LONGController:
             if long_plan is not None:
                 self.v_target = long_plan.longitudinalPlan.speeds[0] # to try vs vTarget
                 self.a_target = abs(long_plan.longitudinalPlan.accels[0]) # to try vs aTarget
-                #we also have jerks here too
+                self.j_target = abs(long_plan.longitudinalPlan.jerks[0])
             if self.v_target is None:
                 self.v_target = CS.out.vEgo
                 self.a_target = 1
+                self.j_target = 1
 
             #following = False
             #TODO: see what works best for these
