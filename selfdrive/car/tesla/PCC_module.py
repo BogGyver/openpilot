@@ -287,7 +287,7 @@ class PCCController:
         self.pedal_idx = (self.pedal_idx + 1) % 16
 
         if not self.pcc_available or not enabled:
-            return 0.0, 0, idx
+            return 0.0, 0,0, 0, idx
 
         ##############################################################
         # This mode uses the longitudinal MPC built in OP
