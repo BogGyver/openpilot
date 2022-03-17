@@ -31,6 +31,7 @@ class LONGController:
 
     def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state):
         messages = []
+        self.has_ibooster_ecu = CS.has_ibooster_ecu
 
         if frame % 100 == 0:
             self.speed_limit_offset_ms = CS.userSpeedLimitOffsetMS
