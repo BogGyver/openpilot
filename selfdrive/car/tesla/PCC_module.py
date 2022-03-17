@@ -18,7 +18,7 @@ RESET_PID_ON_DISENGAGE = False
 # TODO: these should end up in values.py at some point, probably variable by trim
 # Accel limits
 MAX_RADAR_DISTANCE = 120.0  # max distance to take in consideration radar reading
-MAX_PEDAL_VALUE = 100.0
+MAX_PEDAL_VALUE = 75.0
 MAX_PEDAL_REGEN_VALUE = 0.0
 MAX_BRAKE_VALUE = 1 #ibooster fully pressed BBTODO determine the exact value we need
 PEDAL_HYST_GAP = (
