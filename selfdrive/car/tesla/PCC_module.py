@@ -313,6 +313,8 @@ class PCCController:
         else:
             tesla_brake = interp(actuators.accel, BRAKE_LOOKUP_BP, BRAKE_LOOKUP_V)
 
+        if CS.has_ibooster_ecu and CS.brakeUnavailable:
+            CS.longCtrlEvent = car.CarEvent.EventName.iBoosterBrakeNotOk
         self.prev_tesla_brake = tesla_brake * enable_pedal
         self.torqueLevel_last = CS.torqueLevel
         self.prev_tesla_pedal = tesla_pedal * enable_pedal

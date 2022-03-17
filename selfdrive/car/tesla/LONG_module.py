@@ -21,6 +21,7 @@ class LONGController:
         self.pedalcan = pedalcan
         self.enablePedal = load_bool_param("TinklaEnablePedal",False)
         self.has_ibooster_ecu = False
+        self.apply_brake = 0.0
         if (CP.carFingerprint == CAR.PREAP_MODELS):
             self.ACC = ACCController(self)
             self.PCC = PCCController(self,tesla_can,pedalcan)
@@ -114,8 +115,8 @@ class LONGController:
                 v_target = 0
                 if long_plan is not None:
                     v_target = long_plan.longitudinalPlan.speeds[0]
-                apply_brake = 0.0
-                apply_accel, apply_brake, accel_needed, accel_idx = self.PCC.update_pdl(
+                self.apply_brake = 0.0
+                apply_accel, self.apply_brake, accel_needed, accel_idx = self.PCC.update_pdl(
                     enabled,
                     CS,
                     frame,
@@ -134,12 +135,13 @@ class LONGController:
                             apply_accel, int(accel_needed), accel_idx, self.pedalcan
                         )
                     )
-                if self.has_ibooster_ecu:
-                    messages.append(
-                        self.tesla_can.create_ibst_command(
-                            enabled, apply_brake, frame, CAN_CHASSIS[self.CP.carFingerprint]
-                        )
+                    
+            if self.PCC.pcc_available and self.has_ibooster_ecu:
+                messages.append(
+                    self.tesla_can.create_ibst_command(
+                        enabled, self.apply_brake, frame, CAN_CHASSIS[self.CP.carFingerprint]
                     )
+                )
 
             #TODO: update message sent in HUD
 

@@ -84,6 +84,8 @@ class CarState(CarStateBase):
     self.enableHumanLongControl = load_bool_param("TinklaAllowHumanLong", False)
     self.enableICIntegration = load_bool_param("TinklaHasIcIntegration", False)
     self.pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
+    self.has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
+    self.brakeUnavailable = True
     self.realBrakePressed = False
 
     #IC integration
@@ -124,7 +126,12 @@ class CarState(CarStateBase):
 
     # Brake pedal
     ret.brake = 0
-    self.realBrakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
+    if self.has_ibooster_ecu:
+      self.realBrakePressed = bool(cp.vl["ECU_BrakeStatus"]['DriverBrakeApplied'])
+      ret.brakeLights = bool(cp.vl["ECU_BrakeStatus"]['BrakeApplied'])
+      self.brakeUnavailable = not bool(cp.vl["ECU_BrakeStatus"]['BrakeOK'])
+    else:
+      self.realBrakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
     ret.brakePressed = self.realBrakePressed
     # Steering wheel
     
@@ -306,6 +313,7 @@ class CarState(CarStateBase):
   def get_can_parser(CP):
     enablePedal = load_bool_param("TinklaEnablePedal",False)
     pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
+    has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
     signals = [
       # sig_name, sig_address, default
       ("DI_pedalPos", "DI_torque1", 0),
@@ -417,6 +425,18 @@ class CarState(CarStateBase):
       ("EPAS_sysStatus", 25),
       #("PARK_status2",4),
     ]
+
+    if has_ibooster_ecu:
+      signals += [
+        ("BrakeApplied", "ECU_BrakeStatus", 0),
+        ("BrakeOK", "ECU_BrakeStatus", 0),
+        ("DriverBrakeApplied", "ECU_BrakeStatus", 0),
+        ("BrakePedalPosition", "ECU_BrakeStatus", 0),
+      ]
+
+      checks += [
+        ("ECU_BrakeStatus", 80)
+      ]
 
     if enablePedal and pedalcanzero:
       signals += [
