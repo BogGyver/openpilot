@@ -45,6 +45,7 @@ selfdrive/proclogd/proclogd
 selfdrive/ui/_ui
 selfdrive/ui/qt/flasher
 selfdrive/car/modules/teslaEpasFlasher/flasher
+selfdrive/car/modules/radarFlasher/flasher
 selfdrive/panda/board/flasher
 selfdrive/panda/board/pedal/flasher
 selfdrive/test/longitudinal_maneuvers/out
