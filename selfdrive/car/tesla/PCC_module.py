@@ -12,9 +12,6 @@ ACCEL_MIN = -3.5
 _DT = 0.05  # 20Hz in our case, since we don't want to process more than once the same radarState message
 _DT_MPC = _DT
 
-# Reset the PID completely on disengage of PCC
-RESET_PID_ON_DISENGAGE = False
-
 # TODO: these should end up in values.py at some point, probably variable by trim
 # Accel limits
 MAX_RADAR_DISTANCE = 120.0  # max distance to take in consideration radar reading
@@ -29,19 +26,12 @@ PEDAL_MAX_UP = MAX_PEDAL_VALUE * _DT / 6
 # Cap the pedal to go from max to 0 in 0.4 seconds
 PEDAL_MAX_DOWN = MAX_PEDAL_VALUE * _DT / 0.4
 
-# min safe distance in meters. Roughly 2 car lengths.
-MIN_SAFE_DIST_M = 6.0
-
 # BBTODO: move the vehicle variables; maybe make them speed variable
 TORQUE_LEVEL_ACC = 0.0
 TORQUE_LEVEL_DECEL = -30.0
 
 MIN_PCC_V_KPH = 0.0  #
 MAX_PCC_V_KPH = 270.0
-
-ANGLE_STOP_ACCEL = 10.0  # this should be speed dependent
-
-MIN_CAN_SPEED = 0.3  # TODO: parametrize this in car interface
 
 # Pull the cruise stalk twice in this many ms for a 'double pull'
 STALK_DOUBLE_PULL_MS = 750
@@ -301,7 +291,7 @@ class PCCController:
         BRAKE_LOOKUP_V = [MAX_BRAKE_VALUE, 0.]
 
         enable_pedal = 1.0 if self.enable_pedal_cruise else 0.0
-        tesla_pedal = int(round(interp(actuators.accel, ACCEL_LOOKUP_BP, ACCEL_LOOKUP_V)))
+        tesla_pedal = int(round(interp(actuators.accel/2, ACCEL_LOOKUP_BP, ACCEL_LOOKUP_V)))
         tesla_pedal = self.pedal_hysteresis(tesla_pedal, enable_pedal)
         if CS.out.vEgo < 0.1 and actuators.accel < 0.01:
             #hold brake pressed at when standstill
@@ -313,7 +303,7 @@ class PCCController:
         if CS.has_ibooster_ecu and CS.brakeUnavailable:
             CS.longCtrlEvent = car.CarEvent.EventName.iBoosterBrakeNotOk
         #since they don't use the compute_gb anymore divide by 3
-        tesla_pedal = tesla_pedal / 3.0
+        #tesla_pedal = tesla_pedal / 2.0
         tesla_pedal = clip(tesla_pedal, self.prev_tesla_pedal - PEDAL_MAX_DOWN, self.prev_tesla_pedal + PEDAL_MAX_UP)
         self.prev_tesla_brake = tesla_brake * enable_pedal
         self.torqueLevel_last = CS.torqueLevel

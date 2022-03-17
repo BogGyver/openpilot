@@ -7,12 +7,10 @@ from opendbc.can.can_define import CANDefine
 from selfdrive.config import Conversions as CV
 from selfdrive.car.modules.CFG_module import load_bool_param
 
-#tesla uses various tires, this is for now for the 245/45R19s
-#TODOBB: can we get this from car info?
-#section height
-SECTION_HEIGHT = 245 * 0.45 #mm
-RIM_RADIUS = (19 * 25.4)/2 #mm
-WHEEL_RADIUS = (RIM_RADIUS + SECTION_HEIGHT)/1000 #m
+#tesla uses various tires, this is for now for the 245/45R19s or 245/35ZR21s and they are 27.8" diameter = 0.353m
+#TODOBB: sometimes tesla on the rear has 265/35ZR21 and they are 28.3" diameter 0.359m
+#for now OP does not allow for various uom per tire ... to look into it
+WHEEL_RADIUS = 0.353
 
 class CarState(CarStateBase):
   def __init__(self, CP):
