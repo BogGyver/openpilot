@@ -46,9 +46,6 @@ MIN_CAN_SPEED = 0.3  # TODO: parametrize this in car interface
 # Pull the cruise stalk twice in this many ms for a 'double pull'
 STALK_DOUBLE_PULL_MS = 750
 
-def tesla_compute_gb(accel, speed):
-    return float(accel) / 3.0
-
 class PCCState:
     # Possible state of the PCC system, following the DI_cruiseState naming scheme.
     OFF = 0  # Disabled by UI (effectively never happens since button switches over to ACC mode).
@@ -315,6 +312,9 @@ class PCCController:
 
         if CS.has_ibooster_ecu and CS.brakeUnavailable:
             CS.longCtrlEvent = car.CarEvent.EventName.iBoosterBrakeNotOk
+        #since they don't use the compute_gb anymore divide by 3
+        tesla_pedal = tesla_pedal / 3.0
+        tesla_pedal = clip(tesla_pedal, self.prev_tesla_pedal - PEDAL_MAX_DOWN, self.prev_tesla_pedal + PEDAL_MAX_UP)
         self.prev_tesla_brake = tesla_brake * enable_pedal
         self.torqueLevel_last = CS.torqueLevel
         self.prev_tesla_pedal = tesla_pedal * enable_pedal

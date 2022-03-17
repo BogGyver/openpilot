@@ -7,6 +7,13 @@ from opendbc.can.can_define import CANDefine
 from selfdrive.config import Conversions as CV
 from selfdrive.car.modules.CFG_module import load_bool_param
 
+#tesla uses various tires, this is for now for the 245/45R19s
+#TODOBB: can we get this from car info?
+#section height
+SECTION_HEIGHT = 245 * 0.45 #mm
+RIM_RADIUS = (19 * 25.4)/2 #mm
+WHEEL_RADIUS = (RIM_RADIUS + SECTION_HEIGHT)/1000 #m
+
 class CarState(CarStateBase):
   def __init__(self, CP):
     super().__init__(CP)
@@ -115,6 +122,14 @@ class CarState(CarStateBase):
     ret.vEgoRaw = cp.vl["ESP_B"]["ESP_vehicleSpeed"] * CV.KPH_TO_MS
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.standstill = (ret.vEgo < 0.1)
+
+    ret.wheelSpeeds = self.get_wheel_speeds(
+      cp.vl["ESP_B"]["ESP_wheelPulseCountFrL"],
+      cp.vl["ESP_B"]["ESP_wheelPulseCountFrR"],
+      cp.vl["ESP_B"]["ESP_wheelPulseCountReL"],
+      cp.vl["ESP_B"]["ESP_wheelPulseCountReR"],
+      unit=WHEEL_RADIUS,
+    )
 
     # Gas pedal
     ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
@@ -386,6 +401,10 @@ class CarState(CarStateBase):
 
     signals += [
       ("ESP_vehicleSpeed", "ESP_B", 0),
+      ("ESP_wheelPulseCountFrL", "ESP_B", 0),
+      ("ESP_wheelPulseCountFrR", "ESP_B", 0),
+      ("ESP_wheelPulseCountReL", "ESP_B", 0),
+      ("ESP_wheelPulseCountReR", "ESP_B", 0),
       ("driverBrakeStatus", "BrakeMessage", 0),
     ]
     checks += [
