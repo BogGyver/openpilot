@@ -282,12 +282,13 @@ class PCCController:
         # we use the values from actuators.accel
         ##############################################################
         ZERO_ACCEL = self.PedalForZeroTorque
+        REGEN_DECEL = -0.5 #BB needs to be calculated based on regen available
         if CS.out.vEgo < 5 * CV.MPH_TO_MS:
             ZERO_ACCEL = 0
-        ACCEL_LOOKUP_BP = [ACCEL_MIN, 0., ACCEL_MAX]
+        ACCEL_LOOKUP_BP = [REGEN_DECEL, 0., ACCEL_MAX]
         ACCEL_LOOKUP_V = [MAX_PEDAL_REGEN_VALUE, ZERO_ACCEL, MAX_PEDAL_VALUE]
 
-        BRAKE_LOOKUP_BP = [ACCEL_MIN, -1.]
+        BRAKE_LOOKUP_BP = [ACCEL_MIN, REGEN_DECEL]
         BRAKE_LOOKUP_V = [MAX_BRAKE_VALUE, 0.]
 
         enable_pedal = 1.0 if self.enable_pedal_cruise else 0.0
