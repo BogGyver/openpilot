@@ -62,8 +62,6 @@ class ACCController:
         self.has_gone_below_min_speed = False
         self.fast_decel_time = 0
         self.lead_last_seen_time_ms = 0
-        # BB speed for testing
-        self.new_speed = 0
         average_speed_over_x_suggestions = 20  # 1 second (20x a second)
         self.fleet_speed = FleetSpeed(average_speed_over_x_suggestions)
 
@@ -75,7 +73,6 @@ class ACCController:
         # cruise control should be enabled. Twice in .75 seconds counts as a double
         # pull.
         self.prev_enable_adaptive_cruise = self.enable_adaptive_cruise
-        #define 
         self.autoresume = CS.autoresumeAcc
         curr_time_ms = _current_time_millis()
         if not self.LongCtr.CP.openpilotLongitudinalControl:
@@ -261,13 +258,8 @@ class ACCController:
             lead_1 = lead.radarState.leadOne
             if lead_1.dRel:
                 self.lead_last_seen_time_ms = current_time_ms
-        if self.enable_adaptive_cruise and enabled: 
-            target_accel = actuators.accel
-            target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER_ACC), 0)
-            #target_speed = pcm_speed
-            button_to_press = self._calc_button(CS, target_speed)
-            self.new_speed = target_speed * CV.MS_TO_KPH
-            
+        if self.enable_adaptive_cruise and enabled and pcm_speed is not None: 
+            button_to_press = self._calc_button(CS, pcm_speed)
         if button_to_press:
             self.automated_cruise_action_time = current_time_ms
             # If trying to slow below the min cruise speed, just cancel cruise.
@@ -348,10 +340,7 @@ class ACCController:
             full_press_kph = 5
         return half_press_kph, full_press_kph
 
-    # Adjust speed based off OP's longitudinal model. As of OpenPilot 0.5.3, this
-    # is inoperable because the planner crashes when given only visual radar
-    # inputs. (Perhaps this can be used in the future with a radar install, or if
-    # OpenPilot planner changes.)
+    # Adjust speed based off OP's longitudinal model.
     def _calc_button(self, CS, desired_speed_ms):
         button_to_press = None
         # Automatically engange traditional cruise if appropriate.
@@ -363,7 +352,7 @@ class ACCController:
             # But don't make adjustments if a human has manually done so in
             # the last 3 seconds. Human intention should not be overridden.
             and self._no_human_action_for(milliseconds=3000)
-            and self._no_automated_action_for(milliseconds=500)
+            and self._no_automated_action_for(milliseconds=400)
         ):
             # The difference between OP's target speed and the current cruise
             # control speed, in KPH.

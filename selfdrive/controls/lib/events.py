@@ -865,4 +865,10 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
       AlertStatus.userPrompt, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 1.),
   },    
+
+  EventName.iBoosterBrakeNotOk: {
+    ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("iBooster ECU Fault: Restart the Car"),
+    ET.PERMANENT: NormalPermanentAlert("iBooster ECU Fault: Restart the car to engage"),
+    ET.NO_ENTRY: NoEntryAlert("iBooster ECU Fault: Restart the Car"),
+  },
 }

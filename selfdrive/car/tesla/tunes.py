@@ -12,10 +12,12 @@ class LongTunes(Enum):
 def set_long_tune(tune, name):
   # Improved longitudinal tune
   if name == LongTunes.PEDAL:
-    tune.kpBP = [0., 5., 20.]
-    tune.kpV = [0.5, 0.35, 0.25]
-    tune.kiBP = [0., 5., 12., 20., 27.]
-    tune.kiV = [.01, .005, 0.001, .0008, .0005]
+    tune.kpBP = [0., 5., 35.]
+    tune.kpV = [0.50, 0.45, 0.4]
+    tune.kiBP = [0., 5., 35.]
+    tune.kiV = [0.01,0.01,0.01]
+
+
   # Default longitudinal tune
   elif name == LongTunes.ACC:
     tune.kpBP = [0]

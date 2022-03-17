@@ -110,6 +110,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     pccError @110;
     accEnabled @111;
     accDisabled @112;
+    iBoosterBrakeNotOk @113;
 
     radarCanErrorDEPRECATED @15;
     communityFeatureDisallowedDEPRECATED @62;

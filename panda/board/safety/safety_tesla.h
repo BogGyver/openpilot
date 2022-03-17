@@ -41,6 +41,7 @@ const uint16_t FLAG_TESLA_HAS_IBOOSTER = 128;
 
 bool has_ap_hardware = false;
 bool has_ibooster = false;
+bool has_ibooster_ecu = false;
 bool has_acc = false;
 bool has_hud_integration = false;
 bool has_body_controls = false;
@@ -550,7 +551,8 @@ static void teslaPreAp_fwd_to_radar_modded(uint8_t bus_num, CANPacket_t *to_fwd)
 
     return;
   }
-  if ((addr == 0x175) && (has_ibooster)) {
+  if (addr == 0x175) {
+    has_ibooster = true;
     to_send.addr = (0x169);
     WORD_TO_BYTE_ARRAY(&to_send.data[4],RDHR);
     WORD_TO_BYTE_ARRAY(&to_send.data[0],RDLR);
@@ -1316,7 +1318,7 @@ static const addr_checks* tesla_init(int16_t param) {
   tesla_powertrain = GET_FLAG(param, FLAG_TESLA_POWERTRAIN);
   tesla_longitudinal = GET_FLAG(param, FLAG_TESLA_LONG_CONTROL);
   has_ap_hardware = GET_FLAG(param, FLAG_TESLA_HAS_AP);
-  has_ibooster = GET_FLAG(param, FLAG_TESLA_HAS_IBOOSTER) || GET_FLAG(param, FLAG_TESLA_HAS_AP);
+  has_ibooster_ecu = GET_FLAG(param, FLAG_TESLA_HAS_IBOOSTER) || GET_FLAG(param, FLAG_TESLA_HAS_AP);
   has_acc = GET_FLAG(param, FLAG_TESLA_HAS_AP);
   has_hud_integration = GET_FLAG(param,FLAG_TESLA_HAS_IC_INTEGRATION);
   has_body_controls = true;

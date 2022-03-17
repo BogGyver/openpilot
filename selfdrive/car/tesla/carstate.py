@@ -7,6 +7,11 @@ from opendbc.can.can_define import CANDefine
 from selfdrive.config import Conversions as CV
 from selfdrive.car.modules.CFG_module import load_bool_param
 
+#tesla uses various tires, this is for now for the 245/45R19s or 245/35ZR21s and they are 27.8" diameter = 0.353m
+#TODOBB: sometimes tesla on the rear has 265/35ZR21 and they are 28.3" diameter 0.359m
+#for now OP does not allow for various uom per tire ... to look into it
+WHEEL_RADIUS = 0.353
+
 class CarState(CarStateBase):
   def __init__(self, CP):
     super().__init__(CP)
@@ -84,6 +89,8 @@ class CarState(CarStateBase):
     self.enableHumanLongControl = load_bool_param("TinklaAllowHumanLong", False)
     self.enableICIntegration = load_bool_param("TinklaHasIcIntegration", False)
     self.pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
+    self.has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
+    self.brakeUnavailable = True
     self.realBrakePressed = False
 
     #IC integration
@@ -114,6 +121,14 @@ class CarState(CarStateBase):
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.standstill = (ret.vEgo < 0.1)
 
+    ret.wheelSpeeds = self.get_wheel_speeds(
+      cp.vl["ESP_B"]["ESP_wheelPulseCountFrL"],
+      cp.vl["ESP_B"]["ESP_wheelPulseCountFrR"],
+      cp.vl["ESP_B"]["ESP_wheelPulseCountReL"],
+      cp.vl["ESP_B"]["ESP_wheelPulseCountReR"],
+      unit=WHEEL_RADIUS,
+    )
+
     # Gas pedal
     ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
     ret.gasPressed = (ret.gas > 0) 
@@ -124,7 +139,12 @@ class CarState(CarStateBase):
 
     # Brake pedal
     ret.brake = 0
-    self.realBrakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
+    if self.has_ibooster_ecu:
+      self.realBrakePressed = bool(cp.vl["ECU_BrakeStatus"]['DriverBrakeApplied'])
+      ret.brakeLights = bool(cp.vl["ECU_BrakeStatus"]['BrakeApplied'])
+      self.brakeUnavailable = not bool(cp.vl["ECU_BrakeStatus"]['BrakeOK'])
+    else:
+      self.realBrakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
     ret.brakePressed = self.realBrakePressed
     # Steering wheel
     
@@ -306,6 +326,7 @@ class CarState(CarStateBase):
   def get_can_parser(CP):
     enablePedal = load_bool_param("TinklaEnablePedal",False)
     pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
+    has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
     signals = [
       # sig_name, sig_address, default
       ("DI_pedalPos", "DI_torque1", 0),
@@ -378,6 +399,10 @@ class CarState(CarStateBase):
 
     signals += [
       ("ESP_vehicleSpeed", "ESP_B", 0),
+      ("ESP_wheelPulseCountFrL", "ESP_B", 0),
+      ("ESP_wheelPulseCountFrR", "ESP_B", 0),
+      ("ESP_wheelPulseCountReL", "ESP_B", 0),
+      ("ESP_wheelPulseCountReR", "ESP_B", 0),
       ("driverBrakeStatus", "BrakeMessage", 0),
     ]
     checks += [
@@ -417,6 +442,18 @@ class CarState(CarStateBase):
       ("EPAS_sysStatus", 25),
       #("PARK_status2",4),
     ]
+
+    if has_ibooster_ecu:
+      signals += [
+        ("BrakeApplied", "ECU_BrakeStatus", 0),
+        ("BrakeOK", "ECU_BrakeStatus", 0),
+        ("DriverBrakeApplied", "ECU_BrakeStatus", 0),
+        ("BrakePedalPosition", "ECU_BrakeStatus", 0),
+      ]
+
+      checks += [
+        ("ECU_BrakeStatus", 80)
+      ]
 
     if enablePedal and pedalcanzero:
       signals += [

@@ -12,12 +12,16 @@ class LONGController:
     def __init__(self,CP,packer, tesla_can, pedalcan):
         self.CP = CP
         self.v_target = None
+        self.a_target = None
+        self.j_target = None
         self.lead_1 = None
         self.long_control_counter = 1
         self.tesla_can = tesla_can
         self.packer = packer
         self.pedalcan = pedalcan
         self.enablePedal = load_bool_param("TinklaEnablePedal",False)
+        self.has_ibooster_ecu = False
+        self.apply_brake = 0.0
         if (CP.carFingerprint == CAR.PREAP_MODELS):
             self.ACC = ACCController(self)
             self.PCC = PCCController(self,tesla_can,pedalcan)
@@ -27,6 +31,7 @@ class LONGController:
 
     def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state):
         messages = []
+        self.has_ibooster_ecu = CS.has_ibooster_ecu
 
         if frame % 100 == 0:
             self.speed_limit_offset_ms = CS.userSpeedLimitOffsetMS
@@ -84,14 +89,16 @@ class LONGController:
                 else 0
             )
             CS.pcc_available = self.PCC.pcc_available
-            
+           
+            if long_plan and long_plan.longitudinalPlan:
+                self.v_target = long_plan.longitudinalPlan.speeds[-1]
             if (not self.PCC.pcc_available) and frame % 20 == 0:  # acc processed at 5Hz
                 cruise_btn = self.ACC.update_acc(
                     enabled,
                     CS,
                     frame,
                     actuators,
-                    pcm_speed,
+                    self.v_target,
                     self.speed_limit_ms * CV.MS_TO_KPH,
                     self.set_speed_limit_active,
                     self.speed_limit_offset_ms * CV.MS_TO_KPH,
@@ -100,18 +107,22 @@ class LONGController:
                     # insert the message first since it is racing against messages from the real stalk
                     stlk_counter = ((CS.msg_stw_actn_req['MC_STW_ACTN_RQ'] + 1) % 16)
                     messages.insert(0, self.tesla_can.create_action_request(
-                        msg_stw_actn_req=CS.msg_stw_actn_req,
-                        button_to_press=cruise_btn,
-                        bus=CAN_CHASSIS[self.CP.carFingerprint],
-                        counter=stlk_counter))
+                         msg_stw_actn_req=CS.msg_stw_actn_req,
+                         button_to_press=cruise_btn,
+                         bus=CAN_CHASSIS[self.CP.carFingerprint],
+                         counter=stlk_counter))
             apply_accel = 0.0
             if self.PCC.pcc_available and frame % 5 == 0:  # pedal processed at 20Hz
-                apply_accel, accel_needed, accel_idx = self.PCC.update_pdl(
+                v_target = 0
+                if long_plan is not None:
+                    v_target = long_plan.longitudinalPlan.speeds[0]
+                self.apply_brake = 0.0
+                apply_accel, self.apply_brake, accel_needed, accel_idx = self.PCC.update_pdl(
                     enabled,
                     CS,
                     frame,
                     actuators,
-                    pcm_speed,
+                    v_target,
                     pcm_override,
                     self.speed_limit_ms,
                     self.set_speed_limit_active,
@@ -125,6 +136,13 @@ class LONGController:
                             apply_accel, int(accel_needed), accel_idx, self.pedalcan
                         )
                     )
+                    
+            if self.PCC.pcc_available and self.has_ibooster_ecu:
+                messages.append(
+                    self.tesla_can.create_ibst_command(
+                        enabled, self.apply_brake, frame, CAN_CHASSIS[self.CP.carFingerprint]
+                    )
+                )
 
             #TODO: update message sent in HUD
 
@@ -135,11 +153,13 @@ class LONGController:
             if radar_state is not None:
                 self.lead_1 = radar_state.radarState.leadOne
             if long_plan is not None:
-                self.v_target = long_plan.longitudinalPlan.vTargetFuture # to try vs vTarget
-                self.a_target = abs(long_plan.longitudinalPlan.aTarget) # to try vs aTarget
+                self.v_target = long_plan.longitudinalPlan.speeds[0] # to try vs vTarget
+                self.a_target = abs(long_plan.longitudinalPlan.accels[0]) # to try vs aTarget
+                self.j_target = abs(long_plan.longitudinalPlan.jerks[0])
             if self.v_target is None:
                 self.v_target = CS.out.vEgo
                 self.a_target = 1
+                self.j_target = 1
 
             #following = False
             #TODO: see what works best for these

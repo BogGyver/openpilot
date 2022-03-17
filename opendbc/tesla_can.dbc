@@ -44,6 +44,7 @@ BU_:
 	STW
 	APP
 	DAS
+	iBooster
 	XXX
 
 VAL_TABLE_ StW_AnglHP_Spd 16383 "SNA" ;
@@ -877,7 +878,267 @@ BO_ 1362 GAS_SENSOR: 6 INTERCEPTOR
  SG_ STATE : 39|4@0+ (1,0) [0|15] "" EON
  SG_ IDX : 35|4@0+ (1,0) [0|15] "" EON
  SG_ CHECKSUM : 47|8@0+ (1,0) [0|3] "" EON
- 
+
+BO_ 1364 ECU_BrakeStatus: 5 iBooster
+ SG_ DriverBrakeApplied : 17|1@1+ (1,0) [0|1] ""  EON
+ SG_ BrakePedalPosition : 20|12@1+ (0.015625,-5) [0|47] "mm"  EON
+ SG_ BrakeApplied : 18|1@1+ (1,0) [0|1] ""  EON
+ SG_ BrakeOK : 16|1@1+ (1,0) [0|1] ""  EON
+ SG_ Status : 12|4@1+ (1,0) [0|15] ""  EON
+ SG_ Brake_Counter : 8|4@1+ (1,0) [0|15] ""  EON
+ SG_ Brake_Checksum : 0|8@1+ (1,0) [0|255] ""  EON
+
+BO_ 1363 ECU_BrakeCommand: 6 EON
+ SG_ BrakePositionCommand : 32|12@1+ (0.015625,-5) [0|20] "mm"  iBooster
+ SG_ BrakeRelativeCommand : 16|16@1+ (0.0078125,-252) [-252|252] "ml/s"  iBooster
+ SG_ BrakeMode : 12|2@1+ (1,0) [0|3] ""  iBooster
+ SG_ Brake_Counter : 8|4@1+ (1,0) [0|15] ""  iBooster
+ SG_ Brake_Checksum : 0|8@1+ (1,0) [0|255] ""  iBooster
+
+BO_ 861 IBST_dtcMatrix: 4 iBooster
+ SG_ IBST_dtcIndex M : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d000_bmsInitTestFail m0 : 8|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d001_bmcSingleTransTest m0 : 10|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d002_tle5012SsccrcFail m0 : 12|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d003_tle5012Config m0 : 14|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d004_deadlMonTaskx1Ovr m0 : 16|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d005_ecuWdFltCntTstFls m0 : 18|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d006_ecuWdScheduleTout m0 : 20|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d007_ecuWdStarttestFls m0 : 22|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d008_ecuWdStatusContErr m0 : 24|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d009_netOvrvolt m0 : 26|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d010_micSpiTout m0 : 28|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d011_micSpiTransferErr m0 : 30|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d012_netUndvolt m0 : 32|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d013_xpassToutErr m0 : 34|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d014_rpsOffsEeReadEmpty m0 : 36|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d015_rtpEnaHigh m0 : 38|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d016_xpassEchoCountErr m0 : 40|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d017_preDriveChckFail m0 : 42|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d018_ucSafetyFlt m0 : 44|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d019_unsupportedHw m0 : 46|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d020_voltPreRegModeFld m0 : 48|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d021_ubbSupplyLine m0 : 50|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d022_stmAswSysTout m0 : 52|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d023_stackOvrUndFlow m0 : 54|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d024_smmOneReqsInit m0 : 56|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d025_ptsSupply m0 : 58|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d026_ptsSupplyUndvolt m0 : 60|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d027_tempB6Plaus m0 : 62|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d028_ecuWdErrCntContErr m1 : 8|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d029_bmcShortedGateTest m1 : 10|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d030_controllerDevTooBig m1 : 12|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d031_ibDtrFail m1 : 14|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d032_oc6InitTestFail m1 : 16|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d033_oc6Monitor m1 : 18|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d034_motorOscillationDet m1 : 20|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d035_rpsOffsEeReadFail m1 : 22|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d036_sysErrHook m1 : 24|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d037_calIdlePosNotPlaus m1 : 26|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d038_boostSupUndrvolt m1 : 28|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d039_calRoutineAbort m1 : 30|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d040_bmcGateUndervoltPro m1 : 32|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d041_hswInitPhseUndrvolt m1 : 34|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d042_ltmWarnLevelReached m1 : 36|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d043_rpsVctrLengthRelErr m1 : 38|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d044_b6TempDegradeLevel1 m1 : 40|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d045_B6TempDegradeLevel2 m1 : 42|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d046_spiAnglOrRawNotUp m1 : 44|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d047_dcomIboosterNotInit m1 : 46|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d048_unintendMotorReturn m1 : 48|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d049_cdmOvrvoltLevel1 m1 : 50|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d050_cdmUndrvoltLevel2 m1 : 52|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d051_cdmUndrvoltLevel1 m1 : 54|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d052_motTrvlRelReadFail m1 : 56|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d053_tle5012UnexpReset m1 : 58|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d054_bmsGateUndrvolt m1 : 60|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d055_kl15HwPlausSw m1 : 62|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d056_ibNotShutDownRight m2 : 8|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d057_cdmHardUndrvolt m2 : 10|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d058_cdmHardOvrvolt m2 : 12|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d059_maxTrvlAdjstUpdFail m2 : 14|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d060_ltmLimitReached m2 : 16|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d061_dcomEcuDefect m2 : 18|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d062_inputStroke1RngHigh m2 : 20|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d063_inputStroke1RngLow m2 : 22|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d064_inputStroke2RngHigh m2 : 24|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d065_inputStroke2RngLow m2 : 26|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d066_ibSupVoltDivDrift m2 : 28|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d067_sOutRodToPressVal m2 : 30|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d068_tle5012LifeCnt m2 : 32|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d069_cdmExtendedUndrvolt m2 : 34|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d070_cdmExtendedOvrvolt m2 : 36|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d071_tempB6Ch1LineHigh m2 : 38|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d072_tempB6Ch1LineLow m2 : 40|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d073_tempB6Ch2LineHigh m2 : 42|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d074_tempB6Ch2LineLow m2 : 44|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d075_hevSwitchOffDcom m2 : 46|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d076_tle5012VoltFail m2 : 48|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d077_bcsFltCurrentHigh m2 : 50|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d078_bcsFltCurrentLow m2 : 52|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d079_ecuSupVoltDivDrift m2 : 54|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d080_inputstroke1Grad m2 : 56|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d081_pts1Err m2 : 58|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d082_pts1LineGnd m2 : 60|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d083_pts1LineHigh m2 : 62|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d084_inputStroke2Grad m3 : 8|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d085_pts2Err m3 : 10|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d086_pts2LineGnd m3 : 12|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d087_pts2LineHigh m3 : 14|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d088_faildevInputStroke m3 : 16|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d089_ptsOffsTooHigh m3 : 18|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d090_pbistErr m3 : 20|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d091_ramInitErr m3 : 22|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d092_ramsinlgeFlt m3 : 24|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d093_bertFlt m3 : 26|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d094_CalDataNotPlaus m3 : 28|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d095_canEHwError m3 : 30|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d096_canETout m3 : 32|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d097_cpuException m3 : 34|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d098_ecuBandGap m3 : 36|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d099_ecuBmsOnWhileWdTout m3 : 38|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d100_ecuErrpinCntTstFls m3 : 40|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d101_ecuHetException m3 : 42|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d102_ecuHetTuAddErr m3 : 44|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d103_ecuHetTuBusErr m3 : 46|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d104_ecuHetTuBusyErr m3 : 48|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d105_ecuHetTuException m3 : 50|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d106_ecuTaskMissing m3 : 52|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d107_hetRefError m3 : 54|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d108_micInitSpiTstFld m3 : 56|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d109_micInitSpiTransfErr m3 : 58|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d110_micIntMonGenBitMon m3 : 60|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d111_micIntVoltMonFld m3 : 62|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d112_motPosTrvlReadEmpty m4 : 8|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d113_motAngBoundReadEmpt m4 : 10|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d114_motShaftShiftDetect m4 : 12|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d115_osErrHook m4 : 14|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d116_pdurEInitFail m4 : 16|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d117_pdurEPduInstLost m4 : 18|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d118_pts1OffsEeReadEmpty m4 : 20|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d119_pts2OffsEeReadEmpty m4 : 22|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d120_rpsOffsXEeReadFail m4 : 24|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d121_rpsOffsYEeReadFail m4 : 26|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d122_rpsSynchEeReadFail m4 : 28|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d123_rpsAnglRecalcErr m4 : 30|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d124_motTrvlRelWriteFail m4 : 32|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d125_motTrvlRelReadEmpty m4 : 34|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d126_ptsEeReadEmpty m4 : 36|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d127_ecuAdcConversionErr m4 : 38|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d128_ecuAdcSelftestErr m4 : 40|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d129_ccmFlt m4 : 42|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d130_ecuRomCheck m4 : 44|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d131_esmNmiFlt m4 : 46|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d132_esmSafetyFlt m4 : 48|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d133_motPosTrvlReadFail m4 : 50|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d134_motPosTrvlWriteFail m4 : 52|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d135_motAnglBndReadErr m4 : 54|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d136_motAnglBndWriteErr m4 : 56|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d137_motAnglGradTooLarge m4 : 58|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d138_pdmCustomerIdMis m4 : 60|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d139_pdmDtFormatMis m4 : 62|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d140_pdmOutOfMemory m5 : 8|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d141_pdmFieldSizeMis m5 : 10|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d142_pdmHwAcsErr m5 : 12|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d143_pdmInternalHWErr m5 : 14|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d144_ptsCalHysWritFail m5 : 16|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d145_ptsCalValuesChkFail m5 : 18|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d146_pts1CalEeReadFail m5 : 20|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d147_pts1CalEeWriteFail m5 : 22|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d148_rpsFailCompErr m5 : 24|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d149_pts1OffsEeWriteFail m5 : 26|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d150_pts2CalEeReadFail m5 : 28|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d151_pts2CalEeWriteFail m5 : 30|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d152_pts2OffsEeReadFail m5 : 32|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d153_pts2OffsEeWriteFail m5 : 34|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d154_rpsOffsXEeReadEmpty m5 : 36|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d155_rpsOffsXEeWriteFail m5 : 38|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d156_rpsOffsYEeReadEmpty m5 : 40|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d157_rpsOffsYEeWriteFail m5 : 42|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d158_rpsSynchEeReadEmpty m5 : 44|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d159_rpsSynchEeWriteFail m5 : 46|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d160_assertionFail m5 : 48|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d161_comsclBrkPrsPduLen m5 : 50|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d162_comsclBrkPrsPduTout m5 : 52|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d163_comsclEspIb1CntErr m5 : 54|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d164_comsclEspIb1CsErr m5 : 56|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d165_comsclEspIb1DlcErr m5 : 58|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d166_comsclEspIb1Tout m5 : 60|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d167_comsclEspIb2CntErr m5 : 62|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d168_comsclEspIb2CsErr m6 : 8|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d169_comsclEspIb2DlcErr m6 : 10|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d170_comsclEspIb2Tout m6 : 12|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d171_comsclEspIb3CntErr m6 : 14|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d172_comsclEspIb3CsErr m6 : 16|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d173_comsclEspIb3DlcErr m6 : 18|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d174_comsclEspIb3Tout m6 : 20|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d175_comsclGtwEsp1CntErr m6 : 22|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d176_comsclGtwEsp1CsErr m6 : 24|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d177_comsclGtwEsp1Corrpt m6 : 26|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d178_comsclGtwEsp1Tout m6 : 28|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d179_dcomSmrtActuNotInit m6 : 30|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d180_rpsLengthAbsolHigh m6 : 32|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d181_rpsLengthAbsolLow m6 : 34|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d182_shutDownEeReadFail m6 : 36|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d183_shutDownEeWriteFail m6 : 38|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d184_maxTrvlAdjstReadErr m6 : 40|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d185_psOffsMcEeReadFail m6 : 42|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d186_psOffsMcEeWriteFail m6 : 44|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d187_ltmSelfProtDeact m6 : 46|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d188_pts1OffsEeReadFail m6 : 48|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d189_diffStrokeRange m6 : 50|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d190_notProgVin m6 : 52|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d191_plausVin m6 : 54|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d192_dlCorCSumVin m6 : 56|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d193_ToutVin m6 : 58|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d194_ecuEnableB6Fail m6 : 60|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d195_ecuIbEnContErr m6 : 62|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d196_sclEspIb1pEstMax m7 : 8|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d197_sclEspIb1VehSpd m7 : 10|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d198_sclEspIb2pLimExt m7 : 12|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d199_sclEspIb2qTarExt m7 : 14|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d200_sclEspIb3pFBlend m7 : 16|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d201_sclEspIb3pMc1 m7 : 18|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d202_sclEspIb3pTarDriver m7 : 20|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d203_netBusOffNet0 m7 : 22|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d204_netErrPassivNet0 m7 : 24|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d205_netBusOffNet1 m7 : 26|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d206_netErrPassivNet1 m7 : 28|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d207_maxStrokeReached m7 : 30|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d208_sysSwClockMismatch m7 : 32|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d209_comsclGtwOdoCorrpt m7 : 34|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d210_comsclGtwStatCorrpt m7 : 36|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d211_comsclEpbStatCorrpt m7 : 38|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d212_comsclGtwOdoTout m7 : 40|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d213_comsclGtwStatTout m7 : 42|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d214_comsclEpbStatTout m7 : 44|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d215_comSclEpbStatCsErr m7 : 46|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d216_comSclEpbStatCntFlt m7 : 48|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d217_comSclDiTrq1Tout m7 : 50|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d218_comSclDiTrq1Corrpt m7 : 52|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d219_comSclDiTrq1CsErr m7 : 54|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_d220_comSclDiTrq1CntFlt m7 : 56|2@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 813 IBST_info: 4 iBooster
+ SG_ IBST_infoIndex M : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_buildType m10 : 8|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_componentId m10 : 48|16@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_pcbaId m11 : 16|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_assemblyId m11 : 24|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_usageId m11 : 32|16@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_udsProtocolVersion m20 : 8|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_bootloaderCrc m20 : 32|32@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_applicationCrc m13 : 32|32@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_variantCrc m22 : 32|32@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 925 IBST_status: 4 iBooster
+ SG_ IBST_brakeInputStroke : 20|10@1+ (0.05,-0.5) [0|0] "mm" Vector__XXX
+ SG_ IBST_iBoosterStatus : 17|3@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_pedalCalCurrentChecksum : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_pedalCalCurrentCounter : 8|4@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ IBST_pedalCalCurrentCurve : 12|4@1+ (1,0) [0|0] "1" Vector__XXX
+ SG_ IBST_pedalCalTxEnabled : 16|1@1+ (1,0) [0|0] "1" Vector__XXX
+
 
 VAL_ 3 StW_Angl 16383 "SNA" ;
 VAL_ 3 StW_AnglSens_Id 2 "MUST" 0 "PSBL" 1 "SELF" ;
@@ -1062,3 +1323,232 @@ VAL_ 1160 DAS_steeringAngleRequest 16384 "ZERO_ANGLE" ;
 VAL_ 1160 DAS_steeringControlType 1 "ANGLE_CONTROL" 3 "DISABLED" 0 "NONE" 2 "RESERVED" ;
 VAL_ 1160 DAS_steeringHapticRequest 1 "ACTIVE" 0 "IDLE" ;
 VAL_ 1362 STATE 5 "FAULT_TIMEOUT" 4 "FAULT_STARTUP" 3 "FAULT_SCE" 2 "FAULT_SEND" 1 "FAULT_BAD_CHECKSUM" 0 "NO_FAULT" ;
+VAL_ 1364 DriverBrakeApplied 1 "Yes" 0 "No" ;
+VAL_ 1364 BrakeApplied 1 "Yes" 0 "No" ;
+VAL_ 1364 BrakeOK 1 "Yes" 0 "No" ;
+VAL_ 1364 Status 5 "FAULT_TIMEOUT" 4 "FAULT_STARTUP" 3 "FAULT_SCE" 2 "FAULT_SEND" 1 "FAULT_BAD_CHECKSUM" 0 "NO_FAULT" ;
+VAL_ 1363 BrakeMode 3 "Reserved" 2 "Position Control" 1 "Relative Control" 0 "Disengadged" ;
+VAL_ 861 IBST_d000_bmsInitTestFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d001_bmcSingleTransTest 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d002_tle5012SsccrcFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d003_tle5012Config 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d004_deadlMonTaskx1Ovr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d005_ecuWdFltCntTstFls 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d006_ecuWdScheduleTout 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d007_ecuWdStarttestFls 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d008_ecuWdStatusContErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d009_netOvrvolt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d010_micSpiTout 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d011_micSpiTransferErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d012_netUndvolt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d013_xpassToutErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d014_rpsOffsEeReadEmpty 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d015_rtpEnaHigh 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d016_xpassEchoCountErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d017_preDriveChckFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d018_ucSafetyFlt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d019_unsupportedHw 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d020_voltPreRegModeFld 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d021_ubbSupplyLine 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d022_stmAswSysTout 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d023_stackOvrUndFlow 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d024_smmOneReqsInit 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d025_ptsSupply 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d026_ptsSupplyUndvolt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d027_tempB6Plaus 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d028_ecuWdErrCntContErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d029_bmcShortedGateTest 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d030_controllerDevTooBig 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d031_ibDtrFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d032_oc6InitTestFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d033_oc6Monitor 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d034_motorOscillationDet 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d035_rpsOffsEeReadFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d036_sysErrHook 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d037_calIdlePosNotPlaus 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d038_boostSupUndrvolt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d039_calRoutineAbort 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d040_bmcGateUndervoltPro 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d041_hswInitPhseUndrvolt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d042_ltmWarnLevelReached 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d043_rpsVctrLengthRelErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d044_b6TempDegradeLevel1 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d045_B6TempDegradeLevel2 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d046_spiAnglOrRawNotUp 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d047_dcomIboosterNotInit 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d048_unintendMotorReturn 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d049_cdmOvrvoltLevel1 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d050_cdmUndrvoltLevel2 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d051_cdmUndrvoltLevel1 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d052_motTrvlRelReadFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d053_tle5012UnexpReset 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d054_bmsGateUndrvolt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d055_kl15HwPlausSw 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d056_ibNotShutDownRight 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d057_cdmHardUndrvolt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d058_cdmHardOvrvolt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d059_maxTrvlAdjstUpdFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d060_ltmLimitReached 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d061_dcomEcuDefect 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d062_inputStroke1RngHigh 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d063_inputStroke1RngLow 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d064_inputStroke2RngHigh 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d065_inputStroke2RngLow 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d066_ibSupVoltDivDrift 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d067_sOutRodToPressVal 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d068_tle5012LifeCnt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d069_cdmExtendedUndrvolt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d070_cdmExtendedOvrvolt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d071_tempB6Ch1LineHigh 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d072_tempB6Ch1LineLow 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d073_tempB6Ch2LineHigh 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d074_tempB6Ch2LineLow 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d075_hevSwitchOffDcom 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d076_tle5012VoltFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d077_bcsFltCurrentHigh 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d078_bcsFltCurrentLow 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d079_ecuSupVoltDivDrift 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d080_inputstroke1Grad 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d081_pts1Err 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d082_pts1LineGnd 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d083_pts1LineHigh 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d084_inputStroke2Grad 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d085_pts2Err 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d086_pts2LineGnd 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d087_pts2LineHigh 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d088_faildevInputStroke 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d089_ptsOffsTooHigh 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d090_pbistErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d091_ramInitErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d092_ramsinlgeFlt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d093_bertFlt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d094_CalDataNotPlaus 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d095_canEHwError 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d096_canETout 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d097_cpuException 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d098_ecuBandGap 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d099_ecuBmsOnWhileWdTout 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d100_ecuErrpinCntTstFls 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d101_ecuHetException 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d102_ecuHetTuAddErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d103_ecuHetTuBusErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d104_ecuHetTuBusyErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d105_ecuHetTuException 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d106_ecuTaskMissing 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d107_hetRefError 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d108_micInitSpiTstFld 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d109_micInitSpiTransfErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d110_micIntMonGenBitMon 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d111_micIntVoltMonFld 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d112_motPosTrvlReadEmpty 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d113_motAngBoundReadEmpt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d114_motShaftShiftDetect 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d115_osErrHook 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d116_pdurEInitFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d117_pdurEPduInstLost 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d118_pts1OffsEeReadEmpty 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d119_pts2OffsEeReadEmpty 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d120_rpsOffsXEeReadFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d121_rpsOffsYEeReadFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d122_rpsSynchEeReadFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d123_rpsAnglRecalcErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d124_motTrvlRelWriteFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d125_motTrvlRelReadEmpty 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d126_ptsEeReadEmpty 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d127_ecuAdcConversionErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d128_ecuAdcSelftestErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d129_ccmFlt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d130_ecuRomCheck 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d131_esmNmiFlt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d132_esmSafetyFlt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d133_motPosTrvlReadFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d134_motPosTrvlWriteFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d135_motAnglBndReadErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d136_motAnglBndWriteErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d137_motAnglGradTooLarge 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d138_pdmCustomerIdMis 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d139_pdmDtFormatMis 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d140_pdmOutOfMemory 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d141_pdmFieldSizeMis 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d142_pdmHwAcsErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d143_pdmInternalHWErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d144_ptsCalHysWritFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d145_ptsCalValuesChkFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d146_pts1CalEeReadFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d147_pts1CalEeWriteFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d148_rpsFailCompErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d149_pts1OffsEeWriteFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d150_pts2CalEeReadFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d151_pts2CalEeWriteFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d152_pts2OffsEeReadFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d153_pts2OffsEeWriteFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d154_rpsOffsXEeReadEmpty 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d155_rpsOffsXEeWriteFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d156_rpsOffsYEeReadEmpty 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d157_rpsOffsYEeWriteFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d158_rpsSynchEeReadEmpty 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d159_rpsSynchEeWriteFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d160_assertionFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d161_comsclBrkPrsPduLen 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d162_comsclBrkPrsPduTout 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d163_comsclEspIb1CntErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d164_comsclEspIb1CsErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d165_comsclEspIb1DlcErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d166_comsclEspIb1Tout 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d167_comsclEspIb2CntErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d168_comsclEspIb2CsErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d169_comsclEspIb2DlcErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d170_comsclEspIb2Tout 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d171_comsclEspIb3CntErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d172_comsclEspIb3CsErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d173_comsclEspIb3DlcErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d174_comsclEspIb3Tout 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d175_comsclGtwEsp1CntErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d176_comsclGtwEsp1CsErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d177_comsclGtwEsp1Corrpt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d178_comsclGtwEsp1Tout 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d179_dcomSmrtActuNotInit 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d180_rpsLengthAbsolHigh 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d181_rpsLengthAbsolLow 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d182_shutDownEeReadFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d183_shutDownEeWriteFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d184_maxTrvlAdjstReadErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d185_psOffsMcEeReadFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d186_psOffsMcEeWriteFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d187_ltmSelfProtDeact 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d188_pts1OffsEeReadFail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d189_diffStrokeRange 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d190_notProgVin 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d191_plausVin 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d192_dlCorCSumVin 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d193_ToutVin 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d194_ecuEnableB6Fail 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d195_ecuIbEnContErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d196_sclEspIb1pEstMax 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d197_sclEspIb1VehSpd 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d198_sclEspIb2pLimExt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d199_sclEspIb2qTarExt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d200_sclEspIb3pFBlend 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d201_sclEspIb3pMc1 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d202_sclEspIb3pTarDriver 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d203_netBusOffNet0 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d204_netErrPassivNet0 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d205_netBusOffNet1 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d206_netErrPassivNet1 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d207_maxStrokeReached 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d208_sysSwClockMismatch 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d209_comsclGtwOdoCorrpt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d210_comsclGtwStatCorrpt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d211_comsclEpbStatCorrpt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d212_comsclGtwOdoTout 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d213_comsclGtwStatTout 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d214_comsclEpbStatTout 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d215_comSclEpbStatCsErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d216_comSclEpbStatCntFlt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d217_comSclDiTrq1Tout 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d218_comSclDiTrq1Corrpt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d219_comSclDiTrq1CsErr 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 861 IBST_d220_comSclDiTrq1CntFlt 0 "NOT_TESTED_DTC" 1 "PASSED_DTC" 2 "FAILED_DTC" 3 "UNABLE_TO_TEST_DTC" ;
+VAL_ 813 IBST_infoIndex 0 "DEPRECATED_0" 1 "DEPRECATED_1" 2 "DEPRECATED_2" 3 "DEPRECATED_3" 4 "DEPRECATED_4" 5 "DEPRECATED_5" 6 "DEPRECATED_6" 7 "DEPRECATED_7" 8 "DEPRECATED_8" 9 "DEPRECATED_9" 10 "BUILD_HWID_COMPONENTID" 11 "PCBAID_ASSYID_USAGEID" 13 "APP_CRC" 14 "BOOTLOADER_SVN" 15 "BOOTLOADER_CRC" 16 "SUBCOMPONENT" 17 "APP_GITHASH" 18 "BOOTLOADER_GITHASH" 19 "VERSION_DEPRECATED" 20 "UDS_PROTOCOL_BOOTCRC" 22 "VARIANT_CRC" 255 "END" ;
+VAL_ 925 IBST_brakeInputStroke 1022 "NOT_VALID" 1023 "SNA" ;
+VAL_ 925 IBST_iBoosterStatus 0 "NOT_INITIALIZED_OR_SUP" 1 "FAILURE" 2 "DIAGNOSIS" 3 "MAX_STROKE" 4 "STANDALONE" 5 "REDUCED" 6 "POST_RUN_REDUCED" 7 "READY" ;

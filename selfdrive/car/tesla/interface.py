@@ -14,7 +14,7 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def compute_gb(accel, speed):
     # TODO: is this correct?
-    return float(accel) / 3.0
+    return float(accel) / 6.0
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
@@ -50,7 +50,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerActuatorDelay = 0.1
     ret.steerRateCost = 0.5
     safetyParam = 0
-
+    ret.wheelSpeedFactor = 1.
     if candidate in (CAR.AP2_MODELS, CAR.AP1_MODELS):
       ret.mass = 2100. + STD_CARGO_KG
       ret.wheelbase = 2.959

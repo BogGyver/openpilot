@@ -74,7 +74,7 @@ rm -rf .sconsign.dblite Jenkinsfile release/
 rm models/supercombo.dlc
 
 # Move back signed panda fw
-cp -r /data/openpilot/release/panda_files/board /data/openpilot/panda/
+cp -r /data/openpilot_tmp/release/panda_files/board /data/openpilot/panda/
 mkdir -p /data/openpilot/panda/board/obj
 mv /tmp/panda.bin.signed /data/openpilot/panda/board/obj/panda.bin.signed
 mv /tmp/pedal.bin.signed /data/openpilot/panda/board/obj/pedal.bin.signed
