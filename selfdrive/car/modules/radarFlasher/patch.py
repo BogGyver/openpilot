@@ -6,10 +6,11 @@ import struct
 import binascii
 from tqdm import tqdm
 from enum import IntEnum
+import time
 
 from selfdrive.car.modules.CFG_module import load_bool_param
 from panda import Panda
-from panda.python.uds import UdsClient, MessageTimeoutError,NegativeResponseError
+from panda.python.uds import UdsClient, MessageTimeoutError, NegativeResponseError, _negative_response_codes
 from panda.python.uds import SESSION_TYPE, ACCESS_TYPE, ROUTINE_CONTROL_TYPE, ROUTINE_IDENTIFIER_TYPE, RESET_TYPE,DATA_IDENTIFIER_TYPE
 
 # md5sum of supported (unmodified) firmware
@@ -270,9 +271,24 @@ def vin_learn(udcli):
   print("Starting VIN learn...")
   output = udcli.routine_control(ROUTINE_CONTROL_TYPE.START, 2563)
   print(output)
-  output = udcli.routine_control(ROUTINE_CONTROL_TYPE.REQUEST_RESULTS, 2563)
-  print(output)
-  print("VIN learn complete!")
+  ns = 0
+  nsmax = 2
+  while output == '' and ns < nsmax:
+    for i in range(3):
+      time.sleep(2)
+      try:
+        output = udcli.routine_control(ROUTINE_CONTROL_TYPE.STOP, 2563)
+      except NegativeResponseError as e:
+        print(('Failed to stop vin learning on attempt #{0}. ({1})').format(i + 1,_negative_response_codes[e.error_code]))
+        if i == 2:
+          raise
+      else:
+        if output == '':
+          ns += 1
+          if ns >= nsmax:
+            output = udcli.routine_control(ROUTINE_CONTROL_TYPE.REQUEST_RESULTS, 2563)
+          break
+  print("VIN learn complete! [",output,"]")
 
 def read_values_from_radar(udcli):
   print("\n[START DIAGNOSTIC SESSION]")
@@ -341,7 +357,8 @@ if __name__ == "__main__":
 
   panda = Panda()
   panda.reset()
-  panda.set_safety_mode(Panda.SAFETY_TESLA, safetyParam)
+  #negative safetyParam used when doing VIN learn in our SAFETY_TESL for now
+  panda.set_safety_mode(Panda.SAFETY_TESLA, -safetyParam)
   uds_client = UdsClient(panda, args.can_addr, bus=args.can_bus, rx_addr=args.can_addr + 0x10, timeout=3, debug=args.debug)
 
   os.chdir(os.path.dirname(os.path.realpath(__file__)))
