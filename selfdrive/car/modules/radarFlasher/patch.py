@@ -6,10 +6,11 @@ import struct
 import hashlib
 import binascii
 from tqdm import tqdm
+from enum import IntEnum
 
 from panda import Panda
-from panda.python.uds import UdsClient, MessageTimeoutError
-from panda.python.uds import SESSION_TYPE, ACCESS_TYPE, ROUTINE_CONTROL_TYPE, ROUTINE_IDENTIFIER_TYPE, RESET_TYPE
+from panda.python.uds import UdsClient, MessageTimeoutError,NegativeResponseError
+from panda.python.uds import SESSION_TYPE, ACCESS_TYPE, ROUTINE_CONTROL_TYPE, ROUTINE_IDENTIFIER_TYPE, RESET_TYPE,DATA_IDENTIFIER_TYPE
 
 # md5sum of supported (unmodified) firmware
 FW_MD5SUM = "9e51ddd80606fbdaaf604c73c8dde0d1"
@@ -18,9 +19,15 @@ FW_END_ADDR = 0x45FFF
 FW_SIZE = FW_END_ADDR - FW_START_ADDR + 1
 BOOTLOADER_ADDR = 0x3ff7000
 
-def tesla_radar_security_access_algorithm(seed):
+#tesla access codes
+class ACCESS_TYPE_LEVEL_1(IntEnum):
+  REQUEST_SEED = 0x11
+  SEND_KEY = REQUEST_SEED + 1
+
+def tesla_radar_security_access_algorithm(seeda, DEBUG=False):
     # k4 = 4 bits
-    k4 = seed >> 5 & 8 | seed >> 0xB & 4 | seed >> 0x18 & 1 | seed >> 1 & 2
+    seed = int.from_bytes(seeda, byteorder="big")
+    k4 = ((seed >> 5) & 8) | ((seed >> 0xB) & 4) | ((seed >> 0x18) & 1) | ((seed >> 1) & 2)
     if DEBUG: print("k4=",hex(k4))
     if DEBUG: print("seed&0x20000=",hex(seed&0x20000))
 
@@ -250,40 +257,57 @@ def flash_firmware(uds_client, fw_slice, start_addr, end_addr):
 
 def vin_learn(udcli):
   print("\n[START DIAGNOSTIC SESSION]")
+  udcli.tester_present()
+  udcli.diagnostic_session_control(SESSION_TYPE.DEFAULT)
   udcli.diagnostic_session_control(SESSION_TYPE.EXTENDED_DIAGNOSTIC)
+  wait(udcli)
+  print("request security access seed ...")
+  seed = udcli.security_access(ACCESS_TYPE_LEVEL_1.REQUEST_SEED)
+  print(f"  seed: 0x{seed.hex()}")
+
+  print("send security access key ...")
+  key = struct.pack("!I",get_security_access_key(seed))
+  udcli.security_access(ACCESS_TYPE_LEVEL_1.SEND_KEY, key)
+
   print("Starting VIN learn...")
-  uds_client.routine_control(ROUTINE_CONTROL_TYPE.START, 2563)
+  output = udcli.routine_control(ROUTINE_CONTROL_TYPE.START, 2563)
+  print(output)
+  output = udcli.routine_control(ROUTINE_CONTROL_TYPE.REQUEST_RESULTS, 2563)
+  print(output)
   print("VIN learn complete!")
 
 def read_values_from_radar(udcli):
   print("\n[START DIAGNOSTIC SESSION]")
+  #udcli.tester_present()
+  udcli.diagnostic_session_control(SESSION_TYPE.DEFAULT)
   udcli.diagnostic_session_control(SESSION_TYPE.EXTENDED_DIAGNOSTIC)
+
   print("reading VIN from radar...")
   vin = udcli.read_data_by_identifier(DATA_IDENTIFIER_TYPE.VIN)
-  print("new VIN: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
+  print("new VIN: {} [{}]".format(vin.decode("utf-8"), binascii.hexlify(vin)))
   vin = udcli.read_data_by_identifier(0xA022)
-  print("plant mode: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
+  print("plant mode: {} [{}]".format(vin.decode("utf-8"), binascii.hexlify(vin)))
   vin = udcli.read_data_by_identifier(0xF014)
-  print("board part #: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
+  print("board part #: {} [{}]".format(vin.decode("utf-8"), binascii.hexlify(vin)))
   vin = udcli.read_data_by_identifier(0xF015)
-  print("board ser #: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
+  print("board ser #: {} [{}]".format(vin.decode("utf-8"), binascii.hexlify(vin)))
   
   vin = udcli.read_data_by_identifier(0xFC01)
-  print("Active alignment horizontal angle: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
+  print("Active alignment horizontal angle: {} [{}]".format(vin.decode("utf-8"), binascii.hexlify(vin)))
   vin = udcli.read_data_by_identifier(0x508)
-  print("Active Alignment Horizontal Screw: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
+  print("Active Alignment Horizontal Screw: {} [{}]".format(vin.decode("utf-8"), binascii.hexlify(vin)))
   vin = udcli.read_data_by_identifier(0x505)
-  print("Active Alignment State: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
+  print("Active Alignment State: {} [{}]".format(vin.decode("utf-8"), binascii.hexlify(vin)))
   vin = udcli.read_data_by_identifier(0xFC02)
-  print("Active Alignment Vertical Angle: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
+  print("Active Alignment Vertical Angle: {} [{}]".format(vin.decode("utf-8"), binascii.hexlify(vin)))
   vin = udcli.read_data_by_identifier(0x507)
-  print("Active Alignment Vertical Screw: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
+  print("Active Alignment Vertical Screw: {} [{}]".format(vin.decode("utf-8"), binascii.hexlify(vin)))
   vin = udcli.read_data_by_identifier(0x506)
-  print("Active Alignment Operation: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
+  print("Active Alignment Operation: {} [{}]".format(vin.decode("utf-8"), binascii.hexlify(vin)))
   vin = udcli.read_data_by_identifier(0x50A)
-  print("Service Drive Alignment State: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
+  print("Service Drive Alignment State: {} [{}]".format(vin.decode("utf-8"), binascii.hexlify(vin)))
   vin = udcli.read_data_by_identifier(0x509)
-  print("Service Drive Alignment Status: {} [{}]".format(vin.decode("utf-8"), hexlify(vin)))
+  print("Service Drive Alignment Status: {} [{}]".format(vin.decode("utf-8"), binascii.hexlify(vin)))
   
   print("reading variables from radar...")
   for i in range(0xF100, 0xF2FF):
@@ -294,7 +318,7 @@ def read_values_from_radar(udcli):
         desc = " [" + DATA_IDENTIFIER_TYPE(i).name + "]"
       except ValueError:
         pass
-      print("{}:{} {} {}".format(hex(i), desc, hexlify(dat), "")) #, dat.decode(errors="ignore")))
+      print("{}:{} {} {}".format(hex(i), desc, binascii.hexlify(dat), "")) #, dat.decode(errors="ignore")))
     except NegativeResponseError as e:
       if e.error_code != 0x31:
         print("{}: {}".format(hex(i), e))
@@ -303,16 +327,20 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument('--extract-only', action='store_true', help='extract the firmware (do not flash)')
   parser.add_argument('--extract-params', action='store_true', help='extract the programmed params from radar')
+  parser.add_argument('--vin-learn', action='store_true', help='switch radar in programming mode to learn VIN')
   parser.add_argument('--restore', action='store_true', help='flash firmware without modification')
   parser.add_argument('--debug', action='store_true', help='print additional debug messages')
   parser.add_argument('--bootloader', type=str, default="./radarfw.bin", help='path to firmware file')
-  parser.add_argument('--can-addr', type=int, default=0x671, help='TX CAN address for UDS')  #receives on 0x671, answers on 0x681  - UDS_radcRequest 1649 -  RADC_udsResponse 1665
+  parser.add_argument('--can-addr', type=int, default=0x641, help='TX CAN address for UDS')  #receives on 0x671, answers on 0x681  - UDS_radcRequest 1649 -  RADC_udsResponse 1665
   parser.add_argument('--can-bus', type=int, default=1, help='CAN bus number (zero based)')
   args = parser.parse_args()
 
   panda = Panda()
-  panda.set_safety_mode(Panda.SAFETY_ELM327)
-  uds_client = UdsClient(panda, args.can_addr, bus=args.can_bus, timeout=1, debug=args.debug)
+  panda.reset()
+  #panda.set_safety_mode(Panda.SAFETY_ELM327)
+  panda.set_safety_mode(Panda.SAFETY_ALLOUTPUT)
+  #uds_client = UdsClient(panda, args.can_addr, bus=args.can_bus, rx_addr=0x651, timeout=3, debug=args.debug)
+  uds_client = UdsClient(panda, 0x641, rx_addr=0x651, bus=args.can_bus, timeout=3, debug=args.debug)
 
   os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
@@ -320,6 +348,10 @@ if __name__ == "__main__":
   
   if args.extract_params:
     read_values_from_radar(uds_client)
+    sys.exit(0)
+
+  if args.vin_learn:
+    vin_learn(uds_client)
     sys.exit(0)
 
   # fw_slice = None
