@@ -84,6 +84,10 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
   setStyleSheet(R"(
     #flash_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #flash_btn:pressed { background-color: #4a4a4a; }
+    #flash_pedal_btn { height: 120px; border-radius: 15px; background-color: #393939; }
+    #flash_pedal_btn:pressed { background-color: #4a4a4a; }
+    #vin_radar_btn { height: 120px; border-radius: 15px; background-color: #393939; }
+    #vin_radar_btn:pressed { background-color: #4a4a4a; }
   )");
   addItem(flash_btn);
   addItem(flash_pedal_btn);
