@@ -19,7 +19,6 @@ class HUDController:
         self.IC_integration_counter = 0
         self.IC_integration_warning_counter = 0
         self.IC_previous_enabled = False
-        self.radarVin_idx = 0
         self.leftLaneQuality = 0
         self.rightLaneQuality = 0
         
