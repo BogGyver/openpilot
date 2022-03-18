@@ -3,11 +3,11 @@ import argparse
 import os
 import sys
 import struct
-import hashlib
 import binascii
 from tqdm import tqdm
 from enum import IntEnum
 
+from selfdrive.car.modules.CFG_module import load_bool_param
 from panda import Panda
 from panda.python.uds import UdsClient, MessageTimeoutError,NegativeResponseError
 from panda.python.uds import SESSION_TYPE, ACCESS_TYPE, ROUTINE_CONTROL_TYPE, ROUTINE_IDENTIFIER_TYPE, RESET_TYPE,DATA_IDENTIFIER_TYPE
@@ -49,14 +49,12 @@ def tesla_radar_security_access_algorithm(seeda, DEBUG=False):
         return k32 ^ seed
     return k32
 
-def get_security_access_key(seed):
-  #testing with what we had before
-  return tesla_radar_security_access_algorithm(seed)
+def tesla_epas_security_access_key(seed):
 
   key = 0xc541a9
 
   mask = struct.unpack('<I', seed.ljust(4, b'\x00'))[0] | 0x20000000
-  for i in range(32):
+  for _i in range(32):
     msb = key & 1 ^ mask & 1
     mask = mask >> 1
     key = key >> 1
@@ -64,7 +62,7 @@ def get_security_access_key(seed):
       key = (key | msb << 0x17) ^ 0x109028
 
   mask = 0x55f222f9
-  for i in range(32):
+  for _i in range(32):
     msb = key & 1 ^ mask & 1
     mask = mask >> 1
     key = key >> 1
@@ -102,7 +100,7 @@ def extract_firmware(uds_client, start_addr, end_addr):
   print(f"  seed: 0x{seed.hex()}")
 
   print("send security access key ...")
-  key = get_security_access_key(seed)
+  key = tesla_radar_security_access_algorithm(seed)
   print(f"  key: 0x{key.hex()}")
   uds_client.security_access(ACCESS_TYPE.SEND_KEY, key)
 
@@ -161,7 +159,7 @@ def patch_firmware(fw, offset, restore=False):
   return fw
 
 def flash_bootloader(uds_client, bootloader_filename, start_addr):
-  print(f"read bootloader ...")
+  print("read bootloader ...")
   with open(bootloader_filename, "rb") as f:
     fw = f.read()
   fw_len = len(fw)
@@ -176,7 +174,7 @@ def flash_bootloader(uds_client, bootloader_filename, start_addr):
   print(f"  seed: 0x{seed.hex()}")
 
   print("send security access key ...")
-  key = get_security_access_key(seed)
+  key = tesla_radar_security_access_algorithm(seed)
   print(f"  key: 0x{key.hex()}")
   uds_client.security_access(ACCESS_TYPE.SEND_KEY, key)
 
@@ -246,7 +244,7 @@ def flash_firmware(uds_client, fw_slice, start_addr, end_addr):
   print(f"  seed: 0x{seed.hex()}")
 
   print("send security access key ...")
-  key = get_security_access_key(seed)
+  key = tesla_radar_security_access_algorithm(seed)
   print(f"  key: 0x{key.hex()}")
   uds_client.security_access(ACCESS_TYPE.SEND_KEY, key)
 
@@ -266,7 +264,7 @@ def vin_learn(udcli):
   print(f"  seed: 0x{seed.hex()}")
 
   print("send security access key ...")
-  key = struct.pack("!I",get_security_access_key(seed))
+  key = struct.pack("!I",tesla_radar_security_access_algorithm(seed))
   udcli.security_access(ACCESS_TYPE_LEVEL_1.SEND_KEY, key)
 
   print("Starting VIN learn...")
@@ -335,12 +333,16 @@ if __name__ == "__main__":
   parser.add_argument('--can-bus', type=int, default=1, help='CAN bus number (zero based)')
   args = parser.parse_args()
 
+  safetyParam = 0
+  if load_bool_param("TinklaUseTeslaRadar",False):
+      safetyParam = safetyParam | Panda.FLAG_TESLA_NEED_RADAR_EMULATION
+  if load_bool_param("TinklaHasIBooster",False):
+      safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_IBOOSTER
+
   panda = Panda()
   panda.reset()
-  #panda.set_safety_mode(Panda.SAFETY_ELM327)
-  panda.set_safety_mode(Panda.SAFETY_ALLOUTPUT)
-  #uds_client = UdsClient(panda, args.can_addr, bus=args.can_bus, rx_addr=0x651, timeout=3, debug=args.debug)
-  uds_client = UdsClient(panda, 0x641, rx_addr=0x651, bus=args.can_bus, timeout=3, debug=args.debug)
+  panda.set_safety_mode(Panda.SAFETY_TESLA, safetyParam)
+  uds_client = UdsClient(panda, args.can_addr, bus=args.can_bus, rx_addr=args.can_addr + 0x10, timeout=3, debug=args.debug)
 
   os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
