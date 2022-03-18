@@ -194,6 +194,7 @@ selfdrive/car/modules/qt/*.hpp
 selfdrive/car/modules/qt/*.h
 selfdrive/car/modules/qt/*.cc
 selfdrive/car/modules/teslaEpasFlasher/*
+selfdrive/car/modules/radarFlasher/*
 selfdrive/car/tesla/speed_utils/*.py
 selfdrive/car/tesla/radar_tools/*
 
