@@ -270,10 +270,9 @@ def vin_learn(udcli):
 
   print("Starting VIN learn...")
   output = udcli.routine_control(ROUTINE_CONTROL_TYPE.START, 2563)
-  print(output)
   ns = 0
   nsmax = 2
-  while output == '' and ns < nsmax:
+  while ns < nsmax:
     for i in range(3):
       time.sleep(2)
       try:
@@ -283,7 +282,6 @@ def vin_learn(udcli):
         if i == 2:
           raise
       else:
-        if output == '':
           ns += 1
           if ns >= nsmax:
             output = udcli.routine_control(ROUTINE_CONTROL_TYPE.REQUEST_RESULTS, 2563)
@@ -358,7 +356,7 @@ if __name__ == "__main__":
   panda = Panda()
   panda.reset()
   #negative safetyParam used when doing VIN learn in our SAFETY_TESL for now
-  panda.set_safety_mode(Panda.SAFETY_TESLA, -safetyParam)
+  panda.set_safety_mode(Panda.SAFETY_TESLA, param=-safetyParam)
   uds_client = UdsClient(panda, args.can_addr, bus=args.can_bus, rx_addr=args.can_addr + 0x10, timeout=3, debug=args.debug)
 
   os.chdir(os.path.dirname(os.path.realpath(__file__)))
