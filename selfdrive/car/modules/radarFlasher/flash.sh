@@ -1,18 +1,18 @@
 #! /bin/sh
 echo "================================="
-echo "FLASH PROCESS STARTED"
+echo "RADAR FLASH PROCESS STARTED"
 echo "================================="
 echo "NOTE: KEEP BRAKE PEDAL PRESSED UNTIL FLASH PROCESS IS COMPLETE"
 echo "  "
-echo "Starting the flash process..."
+echo "Starting the radar flash process..."
 echo "  "
 cd /data/openpilot/selfdrive/car/modules/radarFlasher
 PYTHONPATH=/data/openpilot 
-./patch.py 
+./patch.py --flash-firmware
 ret=$?
 if [ $ret -ne 0 ]; then
   echo "================================="
-  echo " FLASH PROCESS FAILED"
+  echo "RADAR FLASH PROCESS FAILED"
   echo "================================="
   echo " Please check logs above for errors"
   echo " Please hit Reboot to return to OP"
@@ -20,7 +20,7 @@ if [ $ret -ne 0 ]; then
   exit 1
 fi
 echo "================================="
-echo " FLASH PROCESS COMPLETED"
+echo "RADAR FLASH PROCESS COMPLETED"
 echo "================================="
 echo " Please hit Reboot to return to OP"
 exit 0
