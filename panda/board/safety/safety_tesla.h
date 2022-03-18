@@ -551,8 +551,7 @@ static void teslaPreAp_fwd_to_radar_modded(uint8_t bus_num, CANPacket_t *to_fwd)
 
     return;
   }
-  if (addr == 0x175) {
-    has_ibooster = true;
+  if ((addr == 0x175) && (has_ibooster)){
     to_send.addr = (0x169);
     WORD_TO_BYTE_ARRAY(&to_send.data[4],RDHR);
     WORD_TO_BYTE_ARRAY(&to_send.data[0],RDLR);
@@ -788,6 +787,11 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
 
   int bus = GET_BUS(to_push);
   int addr = GET_ADDR(to_push);
+
+  if ((bus == 0) && (addr == 0x39D) && (!has_ibooster_ecu)) {
+    //found IBST_status, it has official ibooster
+    has_ibooster = true;
+  }
 
   //looking for radar messages to see if we have a timeout
   if ((addr == 0x300) && (bus == tesla_radar_can)) 
