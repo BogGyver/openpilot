@@ -74,12 +74,24 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
     QProcess::startDetached("/data/openpilot/panda/board/pedal/flashPedal");
   });
 
+  QPushButton *vin_radar_btn = new QPushButton("Radar VIN Learn");
+  vin_radar_btn->setObjectName("vin_radar_btn");
+  
+  QObject::connect(vin_radar_btn, &QPushButton::clicked, [=](){
+    QProcess::startDetached("/data/openpilot/selfdrive/car/modules/radarFlasher/flashTeslaRadar");
+  });
+
   setStyleSheet(R"(
     #flash_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #flash_btn:pressed { background-color: #4a4a4a; }
+    #flash_pedal_btn { height: 120px; border-radius: 15px; background-color: #393939; }
+    #flash_pedal_btn:pressed { background-color: #4a4a4a; }
+    #vin_radar_btn { height: 120px; border-radius: 15px; background-color: #393939; }
+    #vin_radar_btn:pressed { background-color: #4a4a4a; }
   )");
   addItem(flash_btn);
   addItem(flash_pedal_btn);
+  addItem(vin_radar_btn);
 }
 
 TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent) {

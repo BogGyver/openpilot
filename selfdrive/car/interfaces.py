@@ -259,10 +259,6 @@ class CarStateBase(ABC):
     self.useTeslaRadar = load_bool_param("TinklaUseTeslaRadar",False)
     self.usesApillarHarness = load_bool_param("TinklaUseAPillarHarness",False)
     self.autoStartAlcaDelay = 2
-    self.radarVIN = '"                 "'
-    self.radarOffset = 0.0
-    self.radarEpasType = 0
-    self.radarPosition = 0
     self.hsoNumbPeriod = 1.5
     self.longCtrlEvent = None
 

@@ -1,1 +1,1 @@
-#define TINKLA_VERSION "Unity v0.8.13.Beta18-devel"
+#define TINKLA_VERSION "Unity v0.8.13.Beta19-devel"
