@@ -55,7 +55,8 @@ cp -pR --parents $(cat release/files_common) $TARGET_DIR/
 if [ ! -z "$DEVEL_TEST" ]; then
   cp -pR --parents tools/ $TARGET_DIR/
 fi
-
+git checkout -- selfdrive/common/version.h
+git checkout -- selfdrive/common/tinkla_version.h
 # in the directory
 cd $TARGET_DIR
 
