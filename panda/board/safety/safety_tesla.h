@@ -1158,13 +1158,14 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
       if ((bus_num == 0) && (addr == 0x671)) {
         //change addr
         teslaPreAp_fwd_to_radar_as_is(tesla_radar_can, to_fwd, 0x641);
+        return -1;
       }
       //forward 0x651 on can1 to 0x681 on can0 radar UDS
       if ((bus_num == tesla_radar_can) && (addr == 0x651)) {
         //change addr
         teslaPreAp_fwd_to_radar_as_is(0, to_fwd, 0x681);
+        return -1;
       }
-      return -1;
   }
 
   if (has_ap_hardware) {
@@ -1189,12 +1190,14 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
     (addr == 0x115 ) ||  (addr == 0x145)))
     {
       teslaPreAp_fwd_to_radar_modded(tesla_radar_can, to_fwd);
+      return -1;
     }
 
     //check all messages we need to also send to radar, moddified, all the time
     if  (((addr == 0xE ) || (addr == 0x308 ) || (addr == 0x45 ) || (addr == 0x398 ) ||
     (addr == 0x405 ) ||  (addr == 0x30A) ||  (addr == 0x175) ||  (addr == 0x148)))  {
       teslaPreAp_fwd_to_radar_modded(tesla_radar_can, to_fwd);
+      return -1;
     }
   }
 
