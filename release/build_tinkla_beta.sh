@@ -9,7 +9,7 @@ fi
 
 TINKLA_BETA_NUMBER="$1"
 
-SOURCE_DIR=/data/openpilot
+SOURCE_DIR=/data/openpilot_dev
 TARGET_DIR=/data/openpilot_beta
 
 ln -sf $TARGET_DIR /data/pythonpath
@@ -60,7 +60,7 @@ cp -pR --parents $(cat $SOURCE_DIR/release/files_common) $TARGET_DIR/
 
 #update version files
 echo "#define COMMA_VERSION \"$VERSION Beta-$TINKLA_BETA_NUMBER\"" > $TARGET_DIR/selfdrive/common/version.h
-echo "#define TINKLA_VERSION \"$VERSION Release\"" > $TARGET_DIR/selfdrive/common/tinkla_version.h
+echo "#define TINKLA_VERSION \"$VERSION.$TINKLA_BETA_NUMBER Release\"" > $TARGET_DIR/selfdrive/common/tinkla_version.h
 
 # test files
 if [ ! -z "$DEVEL_TEST" ]; then
