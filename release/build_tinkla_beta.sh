@@ -1,13 +1,13 @@
 #!/usr/bin/bash -e
 
-if [ $# -ne 2 ]
+if [ $# -ne 1 ]
   then
     echo "Please provide the Beta version #"
     echo "Usage: build_tinkla_beta.sh 12"
     exit 0
 fi
 
-TINKLA_BETA_NUMBER="$2"
+TINKLA_BETA_NUMBER="$1"
 
 SOURCE_DIR=/data/openpilot
 TARGET_DIR=/data/openpilot_beta
