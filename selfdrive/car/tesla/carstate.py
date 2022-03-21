@@ -138,12 +138,11 @@ def get_can_signals(CP):
   ]
 
   checks = [
-      ("STW_ACTN_RQ",  20), #JCT Actual message freq is 3.5 Hz (0.285 sec)
-      ("DI_torque1", 59), #JCT Actual message freq is 11.8 Hz (0.084 sec)
-      ("DI_torque2", 18), #JCT Actual message freq is 3.7 Hz (0.275 sec)
-      ("GTW_carState", 20), #JCT Actual message freq is 3.3 Hz (0.3 sec)
-      ("DI_state", 7), #JCT Actual message freq is 1 Hz (1 sec)
-      ("GTW_carConfig", 7), #BB Actual message freq  is 1 Hz (1 sec)
+      ("STW_ACTN_RQ",  10), #JCT Actual message freq is 3.5 Hz (0.285 sec)
+      ("DI_torque1", 100), #JCT Actual message freq is 11.8 Hz (0.084 sec)
+      ("DI_torque2", 100), #JCT Actual message freq is 3.7 Hz (0.275 sec)
+      ("GTW_carState", 10), #JCT Actual message freq is 3.3 Hz (0.3 sec)
+      ("DI_state", 10), #JCT Actual message freq is 1 Hz (1 sec)
   ]
 
   #checks = []
@@ -161,7 +160,7 @@ def get_epas_can_signals(CP):
   ]
 
   checks = [
-      ("EPAS_sysStatus", 12), #JCT Actual message freq is 1.3 Hz (0.76 sec)
+      ("EPAS_sysStatus", 25), #JCT Actual message freq is 1.3 Hz (0.76 sec)
   ]
 
   #checks = []
