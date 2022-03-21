@@ -11,7 +11,7 @@ from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX
 from selfdrive.controls.lib.events import Events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
-from selfdrive.car.modules.CFG_module import read_config_file,load_bool_param
+from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
 from selfdrive.car.modules.HSO_module import HSOController
 from selfdrive.car.modules.BLNK_module import BLNKController
 from selfdrive.car.modules.ALC_module import ALCController
@@ -258,11 +258,10 @@ class CarStateBase(ABC):
     self.enableALC = load_bool_param("TinklaAlc",False)
     self.useTeslaRadar = load_bool_param("TinklaUseTeslaRadar",False)
     self.usesApillarHarness = load_bool_param("TinklaUseAPillarHarness",False)
-    self.autoStartAlcaDelay = 2
-    self.hsoNumbPeriod = 1.5
+    self.autoStartAlcaDelay = load_float_param("TinklaAlcDelay",2.0)
+    self.hsoNumbPeriod = load_float_param("TinklaHsoNumbPeriod",1.5)
     self.longCtrlEvent = None
 
-    read_config_file(self)
     #end config section
 
     # 0 = off, 1 = indicate left (stalk down), 2 = indicate right (stalk up)

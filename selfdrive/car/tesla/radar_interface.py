@@ -3,7 +3,7 @@ from cereal import car
 from opendbc.can.parser import CANParser
 from selfdrive.car.tesla.values import DBC, CAR, CAN_RADAR
 from selfdrive.car.interfaces import RadarInterfaceBase
-from selfdrive.car.modules.CFG_module import load_bool_param
+from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
 
 
 RADAR_MSGS_A = list(range(0x310, 0x36E, 3))
@@ -62,6 +62,7 @@ class RadarInterface(RadarInterfaceBase):
     if not self.radar_off_can:
       self.rcp = get_radar_can_parser(CP)
     self.behindNoseCone = load_bool_param("TinklaTeslaRadarBehindNosecone",False)
+    self.radar_offset = load_float_param("TinklaRadarOffset",0.0)
 
   def update(self, can_strings):
     if self.rcp is None or self.radar_off_can:
@@ -126,7 +127,7 @@ class RadarInterface(RadarInterfaceBase):
 
       # Parse track data
       self.pts[i].dRel = msg_a['LongDist']
-      self.pts[i].yRel = msg_a['LatDist']
+      self.pts[i].yRel = msg_a['LatDist'] - self.radar_offset
       self.pts[i].vRel = msg_a['LongSpeed']
       self.pts[i].aRel = msg_a['LongAccel']
       self.pts[i].yvRel = msg_b['LatSpeed']
