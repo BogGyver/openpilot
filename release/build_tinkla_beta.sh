@@ -82,7 +82,4 @@ cd $SOURCE_DIR
 git checkout selfdrive/common/version.h
 git checkout selfdrive/common/tinkla_version.h
 
-# Run build
-SCONS_CACHE=1 scons -j3
-
 echo "[-] done T=$SECONDS"
