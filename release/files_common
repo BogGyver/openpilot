@@ -180,13 +180,7 @@ selfdrive/car/mazda/radar_interface.py
 selfdrive/car/mazda/values.py
 selfdrive/car/mazda/carcontroller.py
 selfdrive/car/mazda/mazdacan.py
-selfdrive/car/tesla/__init__.py
-selfdrive/car/tesla/teslacan.py
-selfdrive/car/tesla/carcontroller.py
-selfdrive/car/tesla/radar_interface.py
-selfdrive/car/tesla/values.py
-selfdrive/car/tesla/carstate.py
-selfdrive/car/tesla/interface.py
+
 selfdrive/car/mock/*.py
 
 selfdrive/car/tesla/*.py
@@ -611,7 +605,6 @@ opendbc/tesla_can.dbc
 opendbc/tesla_can_pre1916.dbc
 opendbc/tesla_radar.dbc
 
-opendbc/toyota_rav4_hybrid_2017_pt_generated.dbc
 opendbc/toyota_rav4_2017_pt_generated.dbc
 opendbc/toyota_prius_2017_pt_generated.dbc
 opendbc/toyota_corolla_2017_pt_generated.dbc
@@ -625,6 +618,4 @@ opendbc/toyota_tss2_adas.dbc
 
 opendbc/vw_mqb_2010.dbc
 
-opendbc/tesla_can.dbc
-opendbc/tesla_radar.dbc
 opendbc/tesla_powertrain.dbc
