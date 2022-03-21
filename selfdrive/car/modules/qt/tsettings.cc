@@ -9,6 +9,8 @@
 
 #include "tcontrols.hpp"
 
+#include "num_param.h"
+
 
 TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
 
@@ -60,6 +62,8 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
     }
     addItem(toggle);
   };
+  addItem(new NumParamControl("ALC delay", "The time, in seconds, that ALC will wait and keep the turn signal on and check blind spot monitoring (when available) before automatically starting the lange change.", "Enter time (in seconds) for ALC delay:", "TinklaAlcDelay", 2.0));
+  addItem(new NumParamControl("HSO numb period", "The time, in seconds, to delay the reengagement of LKAS after HSO has been engaged by user by taking control of steering.", "Enter time (in seconds) for HSO numb period:", "TinklaHsoNumbPeriod", 1.5));
   QPushButton *flash_btn = new QPushButton("Flash Panda");
   flash_btn->setObjectName("flash_btn");
   
@@ -159,6 +163,7 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
     }
     addItem(toggle);
   };
+  addItem(new NumParamControl("Radar offset", "The distance, in meters from center of car, the radar is offset.", "Enter distance (in meters) for radar offset:", "TinklaRadarOffset", 0.0));
   QPushButton *flash_btn = new QPushButton("Flash EPAS");
   flash_btn->setObjectName("flash_btn");
   
