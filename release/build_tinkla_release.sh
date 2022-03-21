@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+SOURCE_DIR=/data/openpilot_beta
+TARGET_DIR=/data/openpilot_release
+
 export GIT_COMMITTER_NAME="BogGyver"
 export GIT_COMMITTER_EMAIL="bogdan.butoi@gmail.com"
 export GIT_AUTHOR_NAME="BogGyver"
@@ -10,15 +13,15 @@ export GIT_SSH_COMMAND="ssh -i /data/gitkey"
 # set CLEAN to build outside of CI
 
 # Create folders
-rm -rf /data/openpilot || true
-mkdir -p /data/openpilot
-cd /data/openpilot
+rm -rf $TARGET_DIR || true
+mkdir -p $TARGET_DIR
+cd $TARGET_DIR
 
 if [ -f /TICI ]; then
-  FILES_SRC="release/files_tici"
+  FILES_SRC="$SOURCE_DIR/release/files_tici"
   RELEASE_BRANCH=tesla_unity_releaseC3
 elif [ -f /EON ]; then
-  FILES_SRC="release/files_eon"
+  FILES_SRC="$SOURCE_DIR/release/files_eon"
   RELEASE_BRANCH=tesla_unity_releaseC2
 else
   exit 0
@@ -38,17 +41,15 @@ git checkout --orphan $RELEASE_BRANCH origin/tesla_unity_beta
 
 VERSION=$(cat selfdrive/common/version.h | awk -F[\"-]  '{print $2}')
 TINKLAVERSION=$(cat selfdrive/common/tinkla_version.h | awk -F[\"-]  '{print $2}')
-echo "#define COMMA_VERSION \"$VERSION-release\"" > selfdrive/common/version.h
-echo "#define TINKLA_VERSION \"$TINKLAVERSION-release\"" > selfdrive/common/tinkla_version.h
 
 git commit -m "Tesla OpenPilot $TINKLAVERSION (openpilot v$VERSION)"
 
 # Build signed panda firmware
-cd /data/openpilot
+cd $TARGET_DIR
 pushd panda/board
-CERT=/data/openpilot/panda/certs/debug RELEASE=0 scons -u
-CERT=/data/openpilot/panda/certs/debug RELEASE=0 PEDAL=1 scons -u
-CERT=/data/openpilot/panda/certs/debug RELEASE=0 PEDAL=1 PEDAL_USB=1 scons -u
+CERT=$TARGET_DIR/panda/certs/debug RELEASE=0 scons -u
+CERT=$TARGET_DIR/panda/certs/debug RELEASE=0 PEDAL=1 scons -u
+CERT=$TARGET_DIR/panda/certs/debug RELEASE=0 PEDAL=1 PEDAL_USB=1 scons -u
 mv obj/panda.bin.signed /tmp/panda.bin.signed
 mv obj/pedal.bin.signed /tmp/pedal.bin.signed
 mv obj/bootstub.panda.bin /tmp/bootstub.panda.bin 
@@ -58,8 +59,8 @@ mv obj/pedal_usb.bin.signed /tmp/pedal_usb.bin.signed
 popd
 
 # Build stuff
-ln -sfn /data/openpilot /data/pythonpath
-export PYTHONPATH="/data/openpilot:/data/openpilot/pyextra"
+ln -sfn $TARGET_DIR /data/pythonpath
+export PYTHONPATH="$TARGET_DIR:$TARGET_DIR/pyextra"
 SCONS_CACHE=1 scons -j3
 
 
@@ -74,17 +75,21 @@ rm -rf .sconsign.dblite Jenkinsfile release/
 rm models/supercombo.dlc
 
 # Move back signed panda fw
-cp -r /data/openpilot_tmp/release/panda_files/board /data/openpilot/panda/
-mkdir -p /data/openpilot/panda/board/obj
-mv /tmp/panda.bin.signed /data/openpilot/panda/board/obj/panda.bin.signed
-mv /tmp/pedal.bin.signed /data/openpilot/panda/board/obj/pedal.bin.signed
-mv /tmp/bootstub.panda.bin /data/openpilot/panda/board/obj/bootstub.panda.bin
-mv /tmp/bootstub.pedal.bin /data/openpilot/panda/board/obj/bootstub.pedal.bin
-mv /tmp/bootstub.pedal_usb.bin /data/openpilot/panda/board/obj/bootstub.pedal_usb.bin
-mv /tmp/pedal_usb.bin.signed /data/openpilot/panda/board/obj/pedal_usb.bin.signed
+cp -r $SOURCE_DIR/release/panda_files/board $TARGET_DIR/panda/
+mkdir -p $TARGET_DIR/panda/board/obj
+mv /tmp/panda.bin.signed $TARGET_DIR/panda/board/obj/panda.bin.signed
+mv /tmp/pedal.bin.signed $TARGET_DIR/panda/board/obj/pedal.bin.signed
+mv /tmp/bootstub.panda.bin $TARGET_DIR/panda/board/obj/bootstub.panda.bin
+mv /tmp/bootstub.pedal.bin $TARGET_DIR/panda/board/obj/bootstub.pedal.bin
+mv /tmp/bootstub.pedal_usb.bin $TARGET_DIR/panda/board/obj/bootstub.pedal_usb.bin
+mv /tmp/pedal_usb.bin.signed $TARGET_DIR/panda/board/obj/pedal_usb.bin.signed
 
 # Restore third_party
 git checkout third_party/
+
+# Add version
+#update version files
+echo "#define COMMA_VERSION \"$TINKLAVERSION\"" > $TARGET_DIR/selfdrive/common/version.h
 
 # Mark as prebuilt release
 touch prebuilt
