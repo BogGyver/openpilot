@@ -7,8 +7,8 @@ if [ $# -ne 2 ]
     exit 0
 fi
 
-TINKLA_BETA_VERSION = "$1"
-TINKLA_BETA_NUMBER = "$2"
+TINKLA_BETA_VERSION="$1"
+TINKLA_BETA_NUMBER="$2"
 
 SOURCE_DIR=/data/openpilot
 TARGET_DIR=/data/openpilot_beta
@@ -81,8 +81,5 @@ git push --set-upstream origin tesla_unity_beta
 cd $SOURCE_DIR
 git checkout selfdrive/common/version.h
 git checkout selfdrive/common/tinkla_version.h
-
-# Run build
-SCONS_CACHE=1 scons -j3
 
 echo "[-] done T=$SECONDS"
