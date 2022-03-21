@@ -59,8 +59,8 @@ cd $SOURCE_DIR
 cp -pR --parents $(cat $SOURCE_DIR/release/files_common) $TARGET_DIR/
 
 #update version files
-echo "#define COMMA_VERSION \"$VERSION.$TINKLA_BETA_NUMBER Beta\"" > $TARGET_DIR/selfdrive/common/version.h
-echo "#define TINKLA_VERSION \"$VERSION.$TINKLA_BETA_NUMBER\"" > $TARGET_DIR/selfdrive/common/tinkla_version.h
+echo "#define COMMA_VERSION \"$VERSION-$TINKLA_BETA_NUMBER Beta\"" > $TARGET_DIR/selfdrive/common/version.h
+echo "#define TINKLA_VERSION \"$VERSION-$TINKLA_BETA_NUMBER\"" > $TARGET_DIR/selfdrive/common/tinkla_version.h
 
 # test files
 if [ ! -z "$DEVEL_TEST" ]; then
@@ -74,7 +74,7 @@ rm -f panda/board/obj/panda.bin.signed
 echo "[-] committing version $VERSION T=$SECONDS"
 git add -f .
 git status
-git commit -a -m "Tesla Unity v$VERSION.$TINKLA_BETA_NUMBER Beta"
+git commit -a -m "Tesla Unity v$VERSION-$TINKLA_BETA_NUMBER Beta"
 git push --set-upstream origin tesla_unity_beta
 
 cd $SOURCE_DIR
