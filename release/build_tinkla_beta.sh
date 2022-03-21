@@ -2,12 +2,11 @@
 
 if [ $# -ne 2 ]
   then
-    echo "Please provide the Tinkla Version # and Beta version #"
-    echo "Usage: build_tinkla_beta.sh v1.7 12"
+    echo "Please provide the Beta version #"
+    echo "Usage: build_tinkla_beta.sh 12"
     exit 0
 fi
 
-TINKLA_BETA_VERSION="$1"
 TINKLA_BETA_NUMBER="$2"
 
 SOURCE_DIR=/data/openpilot
@@ -60,8 +59,8 @@ cd $SOURCE_DIR
 cp -pR --parents $(cat $SOURCE_DIR/release/files_common) $TARGET_DIR/
 
 #update version files
-echo "#define COMMA_VERSION \"v$TINKLA_BETA_VERSION Beta$TINKLA_BETA_NUMBER ($VERSION)\"" > $TARGET_DIR/selfdrive/common/version.h
-echo "#define TINKLA_VERSION \"v$TINKLA_BETA_VERSION Rel ($VERSION)\"" > $TARGET_DIR/selfdrive/common/tinkla_version.h
+echo "#define COMMA_VERSION \"$VERSION Beta-$TINKLA_BETA_NUMBER\"" > $TARGET_DIR/selfdrive/common/version.h
+echo "#define TINKLA_VERSION \"$VERSION Release\"" > $TARGET_DIR/selfdrive/common/tinkla_version.h
 
 # test files
 if [ ! -z "$DEVEL_TEST" ]; then
@@ -75,7 +74,7 @@ rm -f panda/board/obj/panda.bin.signed
 echo "[-] committing version $VERSION T=$SECONDS"
 git add -f .
 git status
-git commit -a -m "Tesla Unity v$TINKLA_BETA_VERSION-Beta$TINKLA_BETA_NUMBER (openpilot v$VERSION)"
+git commit -a -m "Tesla Unity v$VERSION-Beta$TINKLA_BETA_NUMBER"
 git push --set-upstream origin tesla_unity_beta
 
 cd $SOURCE_DIR
