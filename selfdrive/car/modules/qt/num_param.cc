@@ -19,7 +19,7 @@ NumParamControl::NumParamControl(QString theLabel, QString theDescription,
 
   QObject::connect(this, &ButtonControl::clicked, [=]() {
     try {
-      QString txtValue = InputDialog::getText(window_title, this,
+      QString txtValue = InputDialog::getNumber(window_title, this,
                   window_info, false, 1, QString::number(value));
       if (txtValue != "") {
         QTextStream floatTextStream(&txtValue);
