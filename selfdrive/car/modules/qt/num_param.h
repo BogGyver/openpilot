@@ -15,6 +15,9 @@ private:
   QString param_name;
   QString window_info;
   QLabel param_label;
+  QString description_txt;
+  QString label_txt;
+
   float default_value;
   float value;
 

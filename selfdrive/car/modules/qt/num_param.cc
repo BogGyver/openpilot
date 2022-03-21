@@ -10,13 +10,18 @@ NumParamControl::NumParamControl(QString theLabel, QString theDescription, QStri
   param_name = theParam;
   default_value = theDefaultValue;
   window_info = theWindowInfo;
+  description_txt = theDescription;
+  label_txt = theLabel;
 
   QObject::connect(this, &ButtonControl::clicked, [=]() {
     try {
-      QString txtValue = InputDialog::getText(window_info, this);
-      QTextStream floatTextStream(&txtValue);
-      floatTextStream >> value;
-      tinkla_set_float_param(param_name.toStdString(),value);
+      QString txtValue = InputDialog::getText(window_info, this,
+                  description_txt, true, 1, QString::number(value));
+      if (txtValue != "") {
+        QTextStream floatTextStream(&txtValue);
+        floatTextStream >> value;
+        tinkla_set_float_param(param_name.toStdString(),value);
+      }
     } catch(std::exception e) {
       //restore to last value
     }
@@ -25,6 +30,7 @@ NumParamControl::NumParamControl(QString theLabel, QString theDescription, QStri
 
   refresh();
 }
+
 
 void NumParamControl::refresh() {
   value = tinkla_get_float_param(param_name.toStdString(),default_value);
