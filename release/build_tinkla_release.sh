@@ -42,7 +42,7 @@ git checkout --orphan $RELEASE_BRANCH origin/tesla_unity_beta
 VERSION=$(cat selfdrive/common/version.h | awk -F[\"-]  '{print $2}')
 TINKLAVERSION=$(cat selfdrive/common/tinkla_version.h | awk -F[\"-]  '{print $2}')
 
-git commit -m "Tesla OpenPilot $TINKLAVERSION (openpilot v$VERSION)"
+git commit -m "Tesla OpenPilot $TINKLAVERSION"
 
 cd $TARGET_DIR
 
@@ -96,7 +96,7 @@ touch prebuilt
 
 # Add built files to git
 git add -f .
-git commit --amend -m "Tesla OpenPilot $TINKLAVERSION (openpilot v$VERSION)"
+git commit --amend -m "Tesla OpenPilot $TINKLAVERSION"
 
 # Print committed files that are normally gitignored
 git status --ignored
