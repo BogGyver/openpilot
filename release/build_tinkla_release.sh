@@ -44,12 +44,18 @@ TINKLAVERSION=$(cat selfdrive/common/tinkla_version.h | awk -F[\"-]  '{print $2}
 
 git commit -m "Tesla OpenPilot $TINKLAVERSION (openpilot v$VERSION)"
 
-# Build signed panda firmware
 cd $TARGET_DIR
+
+# Build stuff
+ln -sfn $TARGET_DIR /data/pythonpath
+export PYTHONPATH="$TARGET_DIR:$TARGET_DIR/pyextra"
+SCONS_CACHE=1 scons -j3
+
+# Build signed panda firmware
 pushd panda/board
-CERT=$TARGET_DIR/panda/certs/debug RELEASE=0 scons -u
-CERT=$TARGET_DIR/panda/certs/debug RELEASE=0 PEDAL=1 scons -u
-CERT=$TARGET_DIR/panda/certs/debug RELEASE=0 PEDAL=1 PEDAL_USB=1 scons -u
+CERT=$TARGET_DIR/panda/certs/debug RELEASE=1 scons -u
+CERT=$TARGET_DIR/panda/certs/debug RELEASE=1 PEDAL=1 scons -u
+CERT=$TARGET_DIR/panda/certs/debug RELEASE=1 PEDAL=1 PEDAL_USB=1 scons -u
 mv obj/panda.bin.signed /tmp/panda.bin.signed
 mv obj/pedal.bin.signed /tmp/pedal.bin.signed
 mv obj/bootstub.panda.bin /tmp/bootstub.panda.bin 
@@ -57,12 +63,6 @@ mv obj/bootstub.pedal.bin /tmp/bootstub.pedal.bin
 mv obj/bootstub.pedal_usb.bin /tmp/bootstub.pedal_usb.bin
 mv obj/pedal_usb.bin.signed /tmp/pedal_usb.bin.signed 
 popd
-
-# Build stuff
-ln -sfn $TARGET_DIR /data/pythonpath
-export PYTHONPATH="$TARGET_DIR:$TARGET_DIR/pyextra"
-SCONS_CACHE=1 scons -j3
-
 
 # Cleanup
 find . -name '*.a' -delete
