@@ -40,7 +40,7 @@ def get_radar_can_parser(CP):
       ('Meas', msg_id_a),
       ('Tracked', msg_id_a),
       ('Index', msg_id_a),
-      ('ProbExist', msg_id_a)
+      ('ProbExist', msg_id_a),
       ('LatSpeed', msg_id_b),
       ('Index2', msg_id_b),
     ])
