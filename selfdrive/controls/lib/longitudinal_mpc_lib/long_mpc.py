@@ -49,16 +49,17 @@ T_IDXS_LST = [index_function(idx, max_val=MAX_T, max_idx=N+1) for idx in range(N
 
 T_IDXS = np.array(T_IDXS_LST)
 T_DIFFS = np.diff(T_IDXS, prepend=[0.])
-MIN_ACCEL = -3.5
+MIN_ACCEL = -4.5
 T_FOLLOW = load_float_param("TinklaFollowDistance",1.45)
 COMFORT_BRAKE = 2.5
-STOP_DISTANCE = 6.0
+STOP_DISTANCE = 3.0 #base it if we have radar or just visual
+DIST_FACTOR = 3
 
 def get_stopped_equivalence_factor(v_lead):
-  return (v_lead**2) / (2 * COMFORT_BRAKE)
+  return (v_lead**2) / (DIST_FACTOR * COMFORT_BRAKE)
 
 def get_safe_obstacle_distance(v_ego):
-  return (v_ego**2) / (2 * COMFORT_BRAKE) + T_FOLLOW * v_ego + STOP_DISTANCE
+  return (v_ego**2) / (DIST_FACTOR * COMFORT_BRAKE) + T_FOLLOW * v_ego + STOP_DISTANCE
 
 def desired_follow_distance(v_ego, v_lead):
   return get_safe_obstacle_distance(v_ego) - get_stopped_equivalence_factor(v_lead)
@@ -290,7 +291,7 @@ class LongitudinalMpc:
 
     # MPC will not converge if immediate crash is expected
     # Clip lead distance to what is still possible to brake for
-    min_x_lead = ((v_ego + v_lead)/2) * (v_ego - v_lead) / (-MIN_ACCEL * 2)
+    min_x_lead = ((v_ego + v_lead)/2) * (v_ego - v_lead) / (-MIN_ACCEL * DIST_FACTOR)
     x_lead = clip(x_lead, min_x_lead, 1e8)
     v_lead = clip(v_lead, 0.0, 1e8)
     a_lead = clip(a_lead, -10., 5.)
