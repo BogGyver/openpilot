@@ -38,7 +38,7 @@ def load_float_param(param_name,param_def_value):
     try:
         with open(OP_PARAMS_PATH+"/"+param_name, 'r') as f:
             for line in f:
-                value_saved = line
+                value_saved = float(line)
         #print("Reading Params ",param_name , "value", value_saved)
         return value_saved * 1.0
     except IOError:
