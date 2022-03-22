@@ -122,9 +122,9 @@ class RadarInterface(RadarInterfaceBase):
         continue
 
       #BB Check if it's a valid point
-      if (msg_a["LongDist"] > BOSCH_MAX_DIST)
-          or (msg_a["LongDist"] <= 0)
-          or (msg_a["ProbExist"] < OBJECT_MIN_PROBABILITY):
+      if ((msg_a["LongDist"] > BOSCH_MAX_DIST) or
+          (msg_a["LongDist"] <= 0) or
+          (msg_a["ProbExist"] < OBJECT_MIN_PROBABILITY)):
         if i in self.pts:
           del self.pts[i]
         continue
