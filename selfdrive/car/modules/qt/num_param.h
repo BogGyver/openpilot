@@ -9,7 +9,7 @@ class NumParamControl : public ButtonControl {
   Q_OBJECT
 
 public:
-  NumParamControl(QString theLabel, QString theDescription, QString theWindowTitle, QString theWindowInfo, QString theUom, QString theParam, float theDefaultValue);
+  NumParamControl(QString theLabel, QString theDescription, QString theWindowTitle, QString theWindowInfo, QString theUom, QString theParam, float theDefaultValue, float minVal, float maxVal, float stepVal);
 
 private:
   QString param_name;
@@ -22,6 +22,9 @@ private:
 
   float default_value;
   float value;
+  float min_val;
+  float max_val;
+  float step_val;
 
   void refresh();
 };

@@ -66,12 +66,14 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "ALC delay:", 
       "Enter time in seconds.", 
       "s",
-      "TinklaAlcDelay", 2.0));
+      "TinklaAlcDelay", 2.0,
+      1.0,3.0,0.5));
   addItem(new NumParamControl("HSO numb period", "The time, in seconds, to delay the reengagement of LKAS after HSO has been engaged by user by taking control of steering.", 
       "HSO numb period:", 
       "Enter time in seconds.", 
       "s",
-      "TinklaHsoNumbPeriod", 1.5));
+      "TinklaHsoNumbPeriod", 1.5,
+      0.5,3.0,0.5));
   QPushButton *flash_btn = new QPushButton("Flash Panda");
   flash_btn->setObjectName("flash_btn");
   
@@ -175,7 +177,8 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
   "Radar offset:",
   "Enter distance in meters. Positive towards left.",
   "m",
-  "TinklaRadarOffset", 0.0));
+  "TinklaRadarOffset", 0.0,
+  -1.0,1.0,0.01));
   QPushButton *flash_btn = new QPushButton("Flash EPAS");
   flash_btn->setObjectName("flash_btn");
   
