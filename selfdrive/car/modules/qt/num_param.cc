@@ -14,7 +14,7 @@ NumParamControl::NumParamControl(QString theLabel, QString theDescription,
   icon_label->setPixmap(pix.scaledToWidth(80, Qt::SmoothTransformation));
   icon_label->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
   hlayout->insertWidget(0,icon_label);
-  hlayout->insertWidget(1, &param_label);
+  hlayout->insertWidget(2, &param_label);
   param_name = theParam;
   default_value = theDefaultValue;
   window_title = theWindowTitle;
