@@ -180,9 +180,9 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
   "TinklaRadarOffset", 0.0,
   -1.0,1.0,0.01));
   addItem(new NumParamControl("preAP: Follow Distance", "The number of seconds based on current speed between you and the lead vehicle.",
-  "Radar offset:",
-  "Enter distance in meters. Positive towards left.",
-  "m",
+  "Follow Distance:",
+  "Enter time in seconds.",
+  "s",
   "TinklaFollowDistance", 1.45,
   1.0,3.0,0.05));
   QPushButton *flash_btn = new QPushButton("Flash EPAS");
