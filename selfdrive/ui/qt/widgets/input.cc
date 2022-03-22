@@ -151,6 +151,16 @@ QString InputDialog::getText(const QString &prompt, QWidget *parent, const QStri
   return ret ? d.text() : QString();
 }
 
+QString InputDialog::getNumber(const QString &prompt, QWidget *parent, const QString &subtitle,
+                             bool secret, int minLength, const QString &defaultText) {
+  InputDialog d = InputDialog(prompt, parent, subtitle, secret);
+  d.line->setText(defaultText);
+  d.line->setInputMethodHints(Qt::ImhFormattedNumbersOnly);
+  d.setMinLength(minLength);
+  const int ret = d.exec();
+  return ret ? d.text() : QString();
+}
+
 QString InputDialog::text() {
   return line->text();
 }

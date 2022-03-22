@@ -28,6 +28,8 @@ public:
   explicit InputDialog(const QString &title, QWidget *parent, const QString &subtitle = "", bool secret = false);
   static QString getText(const QString &title, QWidget *parent, const QString &substitle = "",
                          bool secret = false, int minLength = -1, const QString &defaultText = "");
+  static QString getNumber(const QString &title, QWidget *parent, const QString &substitle = "",
+                         bool secret = false, int minLength = -1, const QString &defaultText = "");
   QString text();
   void setMessage(const QString &message, bool clearInputField = true);
   void setMinLength(int length);
