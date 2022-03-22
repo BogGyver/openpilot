@@ -13,9 +13,9 @@ def set_long_tune(tune, name):
   # Improved longitudinal tune
   if name == LongTunes.PEDAL:
     tune.kpBP = [0., 5., 35.]
-    tune.kpV = [0.50, 0.45, 0.4]
+    tune.kpV = [0.50, 0.45, 0.45]
     tune.kiBP = [0., 5., 35.]
-    tune.kiV = [0.01,0.01,0.01]
+    tune.kiV = [0.01,0.01,0.02]
 
 
   # Default longitudinal tune

@@ -6,10 +6,10 @@
 NumParamControl::NumParamControl(QString theLabel, QString theDescription, 
               QString theWindowTitle, QString theWindowInfo, QString theUom,
               QString theParam, float theDefaultValue,
-              float minVal, float maxVal, float stepVal) : ButtonControl(theLabel, "", theDescription) {
+              float minVal, float maxVal, float stepVal, QString icon) : ButtonControl(theLabel, "", theDescription) {
   param_label.setAlignment(Qt::AlignRight | Qt::AlignVCenter);
   param_label.setStyleSheet("color: #aaaaaa");
-  QPixmap pix("../assets/offroad/icon_settings.png");
+  QPixmap pix(icon);
   QLabel *icon_label = new QLabel();
   icon_label->setPixmap(pix.scaledToWidth(80, Qt::SmoothTransformation));
   icon_label->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));

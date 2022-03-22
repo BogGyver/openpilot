@@ -92,9 +92,8 @@ class CarState(CarStateBase):
     self.has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
     self.brakeUnavailable = True
     self.realBrakePressed = False
-
-    #IC integration
     self.userSpeedLimitOffsetMS = 0
+
 
     #pedal interceptor variables
     self.pedal_idx = self.prev_pedal_idx = 0
@@ -218,6 +217,7 @@ class CarState(CarStateBase):
     msu = cp.vl['UI_gpsVehicleSpeed']["UI_mapSpeedLimitUnits"]
     map_speed_uom_to_ms = CV.KPH_TO_MS if msu == 1 else CV.MPH_TO_MS
     map_speed_ms_to_uom = CV.MS_TO_KPH if msu == 1 else CV.MS_TO_MPH
+    
     speed_limit_type = int(cp.vl["UI_driverAssistMapData"]["UI_mapSpeedLimit"])
     rdSignMsg = cp.vl["UI_driverAssistRoadSign"]["UI_roadSign"]
     if rdSignMsg == 3: # ROAD_SIGN_SPEED_LIMIT

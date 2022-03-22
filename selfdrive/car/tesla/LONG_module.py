@@ -2,7 +2,7 @@ from selfdrive.car.tesla.values import CAR, CAN_CHASSIS, CAN_POWERTRAIN, CruiseS
 from selfdrive.car.tesla.ACC_module import ACCController
 from selfdrive.car.tesla.PCC_module import PCCController
 from selfdrive.config import Conversions as CV
-from selfdrive.car.modules.CFG_module import load_bool_param
+from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
 
 def _is_present(lead):
   return bool((not (lead is None)) and (lead.dRel > 0))
@@ -22,22 +22,31 @@ class LONGController:
         self.enablePedal = load_bool_param("TinklaEnablePedal",False)
         self.has_ibooster_ecu = False
         self.apply_brake = 0.0
+        self.speed_limit_offset_uom = 0
+        self.speed_limit_offset_ms = 0.0
+        self.adjustSpeedWithSpeedLimit = load_bool_param("TinklaAdjustAccWithSpeedLimit",True)
         if (CP.carFingerprint == CAR.PREAP_MODELS):
             self.ACC = ACCController(self)
             self.PCC = PCCController(self,tesla_can,pedalcan)
             self.speed_limit_ms = 0
             self.set_speed_limit_active = False
-            self.speed_limit_offset_ms = 0
+            self.speed_limit_offset_uom = load_float_param("TinklaSpeedLimitOffset",0.0)
 
     def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state):
         messages = []
         self.has_ibooster_ecu = CS.has_ibooster_ecu
 
         if frame % 100 == 0:
-            self.speed_limit_offset_ms = CS.userSpeedLimitOffsetMS
+            if self.CP.carFingerprint != CAR.PREAP_MODELS:
+                self.speed_limit_offset_ms = CS.userSpeedLimitOffsetMS
+            else:
+                if CS.speed_units == "KPH":
+                    self.speed_limit_offset_ms = self.speed_limit_offset_uom* CV.KPH_TO_MS
+                elif CS.speed_units == "MPH":
+                    self.speed_limit_offset_ms = self.speed_limit_offset_uom* CV.MPH_TO_MS
         if frame % 10 == 0:
             self.speed_limit_ms = CS.speed_limit_ms
-            self.set_speed_limit_active = True if self.speed_limit_ms > 0 else False
+            self.set_speed_limit_active = self.adjustSpeedWithSpeedLimit if self.speed_limit_ms > 0 else False
 
         #if not openpilot long control just exit
         if not self.CP.openpilotLongitudinalControl:
