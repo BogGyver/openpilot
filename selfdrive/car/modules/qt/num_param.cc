@@ -9,6 +9,11 @@ NumParamControl::NumParamControl(QString theLabel, QString theDescription,
               float minVal, float maxVal, float stepVal) : ButtonControl(theLabel, "", theDescription) {
   param_label.setAlignment(Qt::AlignRight | Qt::AlignVCenter);
   param_label.setStyleSheet("color: #aaaaaa");
+  QPixmap pix("../assets/offroad/icon_settings.png");
+  QLabel *icon_label = new QLabel();
+  icon_label->setPixmap(pix.scaledToWidth(80, Qt::SmoothTransformation));
+  icon_label->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
+  hlayout->addWidget(icon_label);
   hlayout->insertWidget(1, &param_label);
   param_name = theParam;
   default_value = theDefaultValue;
