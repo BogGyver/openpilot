@@ -348,8 +348,17 @@ if __name__ == "__main__":
   args = parser.parse_args()
 
   safetyParam = 0
+  if not load_bool_param("TinklaForceTeslaPreAP", False):
+    print("This software should only be used on preAP Tesla Model S!!!")
+    sys.exit(1)
   if load_bool_param("TinklaUseTeslaRadar",False):
       safetyParam = safetyParam | Panda.FLAG_TESLA_NEED_RADAR_EMULATION
+      if load_bool_param("TinklaTeslaRadarBehindNosecone",False):
+        safetyParam = safetyParam | Panda.FLAG_TESLA_RADAR_BEHIND_NOSECONE
+  else:
+    print("Use of Tesla Radar not enabled in toggles.")
+    sys.exit(1)
+
   if load_bool_param("TinklaHasIBooster",False):
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_IBOOSTER
 
