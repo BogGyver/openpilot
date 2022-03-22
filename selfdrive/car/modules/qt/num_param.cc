@@ -13,7 +13,7 @@ NumParamControl::NumParamControl(QString theLabel, QString theDescription,
   QLabel *icon_label = new QLabel();
   icon_label->setPixmap(pix.scaledToWidth(80, Qt::SmoothTransformation));
   icon_label->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
-  hlayout->addWidget(icon_label);
+  hlayout->insertWidget(0,icon_label);
   hlayout->insertWidget(1, &param_label);
   param_name = theParam;
   default_value = theDefaultValue;
