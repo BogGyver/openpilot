@@ -9,6 +9,8 @@ from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
 RADAR_MSGS_A = list(range(0x310, 0x36E, 3))
 RADAR_MSGS_B = list(range(0x311, 0x36F, 3))
 NUM_POINTS = len(RADAR_MSGS_A)
+BOSCH_MAX_DIST = 250.0  # max distance for radar
+OBJECT_MIN_PROBABILITY = 50.0
 
 def get_radar_can_parser(CP):
   # Status messages
@@ -38,7 +40,7 @@ def get_radar_can_parser(CP):
       ('Meas', msg_id_a),
       ('Tracked', msg_id_a),
       ('Index', msg_id_a),
-
+      ('ProbExist', msg_id_a)
       ('LatSpeed', msg_id_b),
       ('Index2', msg_id_b),
     ])
@@ -119,6 +121,14 @@ class RadarInterface(RadarInterfaceBase):
           del self.pts[i]
         continue
 
+      #BB Check if it's a valid point
+      if (msg_a["LongDist"] > BOSCH_MAX_DIST)
+          or (msg_a["LongDist"] <= 0)
+          or (msg_a["ProbExist"] < OBJECT_MIN_PROBABILITY):
+        if i in self.pts:
+          del self.pts[i]
+        continue
+
       # New track!
       if i not in self.pts:
         self.pts[i] = car.RadarData.RadarPoint.new_message()
@@ -127,7 +137,7 @@ class RadarInterface(RadarInterfaceBase):
 
       # Parse track data
       self.pts[i].dRel = msg_a['LongDist']
-      self.pts[i].yRel = msg_a['LatDist'] - self.radar_offset
+      self.pts[i].yRel = msg_a['LatDist'] + self.radar_offset
       self.pts[i].vRel = msg_a['LongSpeed']
       self.pts[i].aRel = msg_a['LongAccel']
       self.pts[i].yvRel = msg_b['LatSpeed']
