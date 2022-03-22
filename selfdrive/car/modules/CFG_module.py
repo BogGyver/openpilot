@@ -40,7 +40,7 @@ def load_float_param(param_name,param_def_value):
             for line in f:
                 value_saved = line
         #print("Reading Params ",param_name , "value", value_saved)
-        return line * 1.0
+        return value_saved * 1.0
     except IOError:
         print("Initializing "+param_name+" with value ",param_def_value*1.0)
         save_float_param(param_name,param_def_value * 1.0)
