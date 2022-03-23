@@ -8,6 +8,19 @@ source "$BASEDIR/launch_env.sh"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
+# Handle tinkla spinner deploy
+
+if [ -f "/system/media/.tinkla_splash" ]; then
+    echo "Tinkla splash exists."
+else 
+    echo "Tinkla splash not deployed yet"
+    mount -o rw,remount /system
+    cp /data/openpilot/selfdrive/car/tesla/tinkla/bootanimation.zip /system/media/
+    touch /system/media/.tinkla_splash
+    mount -o ro,remount /system
+    reboot
+fi
+
 function two_init {
 
   # set IO scheduler
