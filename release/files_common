@@ -191,6 +191,7 @@ selfdrive/car/modules/teslaEpasFlasher/*
 selfdrive/car/modules/radarFlasher/*
 selfdrive/car/tesla/speed_utils/*.py
 selfdrive/car/tesla/radar_tools/*
+selfdrive/car/tesla/tinkla/*
 
 selfdrive/car/modules/*.py
 
