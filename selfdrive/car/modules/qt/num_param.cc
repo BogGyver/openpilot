@@ -55,8 +55,9 @@ NumParamControl::NumParamControl(QString theLabel, QString theDescription,
 
 
 void NumParamControl::refresh() {
+  bool locked = params.getBool((param_name + "Lock").toStdString());
   value = tinkla_get_float_param(param_name.toStdString(),default_value);
   param_label.setText(QString::number(value)+uom);
   setText("Change");
-  setEnabled(true);
+  setEnabled(!locked);
 }

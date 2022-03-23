@@ -151,7 +151,7 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
       "Follow Distance:",
       "Enter time in seconds.",
       "s",
-      1.45,1.0,3.0,0.05,TINKLA_FLOAT
+      1.45,0.6,3.0,0.05,TINKLA_FLOAT
     },
     {"TinklaHasIcIntegration",
     "Use Tinkla Buddy",
