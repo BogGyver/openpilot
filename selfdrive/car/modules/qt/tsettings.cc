@@ -253,9 +253,15 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
     "../assets/offroad/icon_speed_limit.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
+    {"TinklaSpeedLimitUseRelative",
+    "Use relative offset",
+    "Use a relative offset (percentage of speed limit).",
+    "../assets/offroad/icon_speed_limit.png",
+    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+    },
     {"TinklaSpeedLimitOffset",
       "Speed Limit Offset", 
-      "The speed offset vs. the legal speed limit you want ACC to apply when automatically changing with speed limit (in your car's UOM) h.",
+      "The speed offset vs. the legal speed limit you want ACC to apply when automatically changing with speed limit (in your car's UOM or percentage if using relative offset).",
       "../assets/offroad/icon_speed_limit.png",
       "Speed Limit Offset:",
       "Enter offset in your car's UOM",

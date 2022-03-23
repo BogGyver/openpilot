@@ -36,17 +36,22 @@ class LONGController:
         messages = []
         self.has_ibooster_ecu = CS.has_ibooster_ecu
 
+        if frame % 10 == 0:
+            self.speed_limit_ms = CS.speed_limit_ms
+            self.set_speed_limit_active = self.adjustSpeedWithSpeedLimit if self.speed_limit_ms > 0 else False
+
         if frame % 100 == 0:
             if self.CP.carFingerprint != CAR.PREAP_MODELS:
                 self.speed_limit_offset_ms = CS.userSpeedLimitOffsetMS
             else:
-                if CS.speed_units == "KPH":
-                    self.speed_limit_offset_ms = self.speed_limit_offset_uom* CV.KPH_TO_MS
-                elif CS.speed_units == "MPH":
-                    self.speed_limit_offset_ms = self.speed_limit_offset_uom* CV.MPH_TO_MS
-        if frame % 10 == 0:
-            self.speed_limit_ms = CS.speed_limit_ms
-            self.set_speed_limit_active = self.adjustSpeedWithSpeedLimit if self.speed_limit_ms > 0 else False
+                if load_bool_param("TinklaSpeedLimitUseRelative",False):
+                    self.speed_limit_offset_ms = self.speed_limit_offset_uom * self.speed_limit_ms / 100.0
+                else:
+                    if CS.speed_units == "KPH":
+                        self.speed_limit_offset_ms = self.speed_limit_offset_uom* CV.KPH_TO_MS
+                    elif CS.speed_units == "MPH":
+                        self.speed_limit_offset_ms = self.speed_limit_offset_uom* CV.MPH_TO_MS
+        
 
         #if not openpilot long control just exit
         if not self.CP.openpilotLongitudinalControl:
