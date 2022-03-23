@@ -93,6 +93,8 @@ class CarInterface(CarInterfaceBase):
     # enabled radar emulation from carconfig
     if candidate == CAR.PREAP_MODELS and load_bool_param("TinklaUseTeslaRadar",False):
       safetyParam = safetyParam | Panda.FLAG_TESLA_NEED_RADAR_EMULATION
+      if load_bool_param("TinklaTeslaRadarBehindNosecone",False):
+        safetyParam = safetyParam | Panda.FLAG_TESLA_RADAR_BEHIND_NOSECONE
     # enabled HAO from carconfig
     if load_bool_param("TinklaHao",False):
       safetyParam = safetyParam | Panda.FLAG_TESLA_ENABLE_HAO

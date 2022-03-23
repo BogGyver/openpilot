@@ -15,16 +15,16 @@ _DT_MPC = _DT
 # TODO: these should end up in values.py at some point, probably variable by trim
 # Accel limits
 MAX_RADAR_DISTANCE = 120.0  # max distance to take in consideration radar reading
-MAX_PEDAL_VALUE = 75.0
+MAX_PEDAL_VALUE_AVG = 100
 MAX_PEDAL_REGEN_VALUE = 0.0
 MAX_BRAKE_VALUE = 1 #ibooster fully pressed BBTODO determine the exact value we need
 PEDAL_HYST_GAP = (
     1.0  # don't change pedal command for small oscilalitons within this value
 )
-# Cap the pedal to go from 0 to max in 6 seconds
-PEDAL_MAX_UP = MAX_PEDAL_VALUE * _DT / 6
+# Cap the pedal to go from 0 to max in 3 seconds
+PEDAL_MAX_UP = MAX_PEDAL_VALUE_AVG * _DT / 3
 # Cap the pedal to go from max to 0 in 0.4 seconds
-PEDAL_MAX_DOWN = MAX_PEDAL_VALUE * _DT / 0.4
+PEDAL_MAX_DOWN = MAX_PEDAL_VALUE_AVG * _DT / 0.4
 
 # BBTODO: move the vehicle variables; maybe make them speed variable
 TORQUE_LEVEL_ACC = 0.0
@@ -285,6 +285,9 @@ class PCCController:
         REGEN_DECEL = -0.5 #BB needs to be calculated based on regen available
         if CS.out.vEgo < 5 * CV.MPH_TO_MS:
             ZERO_ACCEL = 0
+        MAX_PEDAL_BP = [0., 5., 20., 30., 40]
+        MAX_PEDAL_V = [65. , 75., 85., 100., 120.]
+        MAX_PEDAL_VALUE = interp(CS.out.vEgo, MAX_PEDAL_BP, MAX_PEDAL_V)
         ACCEL_LOOKUP_BP = [REGEN_DECEL, 0., ACCEL_MAX]
         ACCEL_LOOKUP_V = [MAX_PEDAL_REGEN_VALUE, ZERO_ACCEL, MAX_PEDAL_VALUE]
 

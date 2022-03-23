@@ -40,7 +40,7 @@ git checkout --orphan $RELEASE_BRANCH origin/tesla_unity_beta
 
 
 VERSION=$(cat selfdrive/common/version.h | awk -F[\"-]  '{print $2}')
-TINKLAVERSION=$(cat selfdrive/common/tinkla_version.h | awk -F[\"-]  '{print $2}')
+TINKLAVERSION=$(cat selfdrive/common/tinkla_version.h | awk -F[\"]  '{print $2}')
 
 git commit -m "Tesla Unity v$TINKLAVERSION"
 

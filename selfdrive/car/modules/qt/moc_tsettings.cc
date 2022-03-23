@@ -90,6 +90,76 @@ int TinklaTogglesPanel::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     _id = ListWidget::qt_metacall(_c, _id, _a);
     return _id;
 }
+struct qt_meta_stringdata_TeslaPreApTogglesPanel_t {
+    QByteArrayData data[1];
+    char stringdata0[23];
+};
+#define QT_MOC_LITERAL(idx, ofs, len) \
+    Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
+    qptrdiff(offsetof(qt_meta_stringdata_TeslaPreApTogglesPanel_t, stringdata0) + ofs \
+        - idx * sizeof(QByteArrayData)) \
+    )
+static const qt_meta_stringdata_TeslaPreApTogglesPanel_t qt_meta_stringdata_TeslaPreApTogglesPanel = {
+    {
+QT_MOC_LITERAL(0, 0, 22) // "TeslaPreApTogglesPanel"
+
+    },
+    "TeslaPreApTogglesPanel"
+};
+#undef QT_MOC_LITERAL
+
+static const uint qt_meta_data_TeslaPreApTogglesPanel[] = {
+
+ // content:
+       8,       // revision
+       0,       // classname
+       0,    0, // classinfo
+       0,    0, // methods
+       0,    0, // properties
+       0,    0, // enums/sets
+       0,    0, // constructors
+       0,       // flags
+       0,       // signalCount
+
+       0        // eod
+};
+
+void TeslaPreApTogglesPanel::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
+{
+    Q_UNUSED(_o);
+    Q_UNUSED(_id);
+    Q_UNUSED(_c);
+    Q_UNUSED(_a);
+}
+
+QT_INIT_METAOBJECT const QMetaObject TeslaPreApTogglesPanel::staticMetaObject = { {
+    &ListWidget::staticMetaObject,
+    qt_meta_stringdata_TeslaPreApTogglesPanel.data,
+    qt_meta_data_TeslaPreApTogglesPanel,
+    qt_static_metacall,
+    nullptr,
+    nullptr
+} };
+
+
+const QMetaObject *TeslaPreApTogglesPanel::metaObject() const
+{
+    return QObject::d_ptr->metaObject ? QObject::d_ptr->dynamicMetaObject() : &staticMetaObject;
+}
+
+void *TeslaPreApTogglesPanel::qt_metacast(const char *_clname)
+{
+    if (!_clname) return nullptr;
+    if (!strcmp(_clname, qt_meta_stringdata_TeslaPreApTogglesPanel.stringdata0))
+        return static_cast<void*>(this);
+    return ListWidget::qt_metacast(_clname);
+}
+
+int TeslaPreApTogglesPanel::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
+{
+    _id = ListWidget::qt_metacall(_c, _id, _a);
+    return _id;
+}
 struct qt_meta_stringdata_TeslaTogglesPanel_t {
     QByteArrayData data[1];
     char stringdata0[18];
@@ -156,76 +226,6 @@ void *TeslaTogglesPanel::qt_metacast(const char *_clname)
 }
 
 int TeslaTogglesPanel::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
-{
-    _id = ListWidget::qt_metacall(_c, _id, _a);
-    return _id;
-}
-struct qt_meta_stringdata_ToyotaTogglesPanel_t {
-    QByteArrayData data[1];
-    char stringdata0[19];
-};
-#define QT_MOC_LITERAL(idx, ofs, len) \
-    Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
-    qptrdiff(offsetof(qt_meta_stringdata_ToyotaTogglesPanel_t, stringdata0) + ofs \
-        - idx * sizeof(QByteArrayData)) \
-    )
-static const qt_meta_stringdata_ToyotaTogglesPanel_t qt_meta_stringdata_ToyotaTogglesPanel = {
-    {
-QT_MOC_LITERAL(0, 0, 18) // "ToyotaTogglesPanel"
-
-    },
-    "ToyotaTogglesPanel"
-};
-#undef QT_MOC_LITERAL
-
-static const uint qt_meta_data_ToyotaTogglesPanel[] = {
-
- // content:
-       8,       // revision
-       0,       // classname
-       0,    0, // classinfo
-       0,    0, // methods
-       0,    0, // properties
-       0,    0, // enums/sets
-       0,    0, // constructors
-       0,       // flags
-       0,       // signalCount
-
-       0        // eod
-};
-
-void ToyotaTogglesPanel::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
-{
-    Q_UNUSED(_o);
-    Q_UNUSED(_id);
-    Q_UNUSED(_c);
-    Q_UNUSED(_a);
-}
-
-QT_INIT_METAOBJECT const QMetaObject ToyotaTogglesPanel::staticMetaObject = { {
-    &ListWidget::staticMetaObject,
-    qt_meta_stringdata_ToyotaTogglesPanel.data,
-    qt_meta_data_ToyotaTogglesPanel,
-    qt_static_metacall,
-    nullptr,
-    nullptr
-} };
-
-
-const QMetaObject *ToyotaTogglesPanel::metaObject() const
-{
-    return QObject::d_ptr->metaObject ? QObject::d_ptr->dynamicMetaObject() : &staticMetaObject;
-}
-
-void *ToyotaTogglesPanel::qt_metacast(const char *_clname)
-{
-    if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_meta_stringdata_ToyotaTogglesPanel.stringdata0))
-        return static_cast<void*>(this);
-    return ListWidget::qt_metacast(_clname);
-}
-
-int ToyotaTogglesPanel::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 {
     _id = ListWidget::qt_metacall(_c, _id, _a);
     return _id;

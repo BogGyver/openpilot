@@ -5,10 +5,16 @@
 
 NumParamControl::NumParamControl(QString theLabel, QString theDescription, 
               QString theWindowTitle, QString theWindowInfo, QString theUom,
-              QString theParam, float theDefaultValue) : ButtonControl(theLabel, "", theDescription) {
+              QString theParam, float theDefaultValue,
+              float minVal, float maxVal, float stepVal, QString icon) : ButtonControl(theLabel, "", theDescription) {
   param_label.setAlignment(Qt::AlignRight | Qt::AlignVCenter);
   param_label.setStyleSheet("color: #aaaaaa");
-  hlayout->insertWidget(1, &param_label);
+  QPixmap pix(icon);
+  QLabel *icon_label = new QLabel();
+  icon_label->setPixmap(pix.scaledToWidth(80, Qt::SmoothTransformation));
+  icon_label->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
+  hlayout->insertWidget(0,icon_label);
+  hlayout->insertWidget(2, &param_label);
   param_name = theParam;
   default_value = theDefaultValue;
   window_title = theWindowTitle;
@@ -16,6 +22,13 @@ NumParamControl::NumParamControl(QString theLabel, QString theDescription,
   description_txt = theDescription;
   label_txt = theLabel;
   uom = theUom;
+  min_val = minVal;
+  max_val = maxVal;
+  step_val = stepVal;
+  window_info = window_info + "\n" + 
+            "Min: " + QString::number(min_val)+
+            " | Max: " + QString::number(max_val) +
+            " | Step: " + QString::number(step_val);
 
   QObject::connect(this, &ButtonControl::clicked, [=]() {
     try {
@@ -24,6 +37,11 @@ NumParamControl::NumParamControl(QString theLabel, QString theDescription,
       if (txtValue != "") {
         QTextStream floatTextStream(&txtValue);
         floatTextStream >> value;
+        value = step_val * (int)(value/step_val);
+        if (value < min_val) 
+          value = min_val;
+        if (value > max_val)
+          value = max_val;
         tinkla_set_float_param(param_name.toStdString(),value);
       }
     } catch(std::exception e) {
