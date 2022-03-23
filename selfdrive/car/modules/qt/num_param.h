@@ -20,6 +20,8 @@ private:
   QString label_txt;
   QString uom;
 
+  Params params;
+
   float default_value;
   float value;
   float min_val;
