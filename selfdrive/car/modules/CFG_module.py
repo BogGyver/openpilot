@@ -1,5 +1,3 @@
-import configparser
-from common.basedir import BASEDIR
 
 #operate with params
 OP_PARAMS_PATH = "/data/params/"

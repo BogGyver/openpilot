@@ -9,9 +9,7 @@ import time
 import glob
 from typing import NoReturn
 
-from common.params import Params
 from common.file_helpers import mkdirs_exists_ok
-from selfdrive.hardware import TICI, HARDWARE
 from selfdrive.loggerd.config import ROOT
 import selfdrive.sentry as sentry
 from selfdrive.swaglog import cloudlog

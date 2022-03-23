@@ -8,7 +8,6 @@ from selfdrive.car.hyundai.values import CAR as HYUNDAI
 from selfdrive.car.nissan.values import CAR as NISSAN
 from selfdrive.car.mazda.values import CAR as MAZDA
 from selfdrive.car.subaru.values import CAR as SUBARU
-from selfdrive.car.tesla.values import CAR as TESLA
 from selfdrive.car.toyota.values import CAR as TOYOTA
 from selfdrive.car.volkswagen.values import CAR as VOLKSWAGEN
 from selfdrive.car.tesla.values import CAR as TESLA

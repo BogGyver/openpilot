@@ -29,19 +29,23 @@ def tesla_radar_security_access_algorithm(seeda, DEBUG=False):
     # k4 = 4 bits
     seed = int.from_bytes(seeda, byteorder="big")
     k4 = ((seed >> 5) & 8) | ((seed >> 0xB) & 4) | ((seed >> 0x18) & 1) | ((seed >> 1) & 2)
-    if DEBUG: print("k4=",hex(k4))
-    if DEBUG: print("seed&0x20000=",hex(seed&0x20000))
+    if DEBUG: 
+      print("k4=",hex(k4))
+    if DEBUG: 
+      print("seed&0x20000=",hex(seed&0x20000))
 
     # k32 = 32 bits
     if seed & 0x20000 == 0:
         k32 = (seed & ~(0xff << k4 & 0xFFFFFFFF)) << 0x20 - k4 & 0xFFFFFFFF | seed >> k4 & 0xFFFFFFFF
     else:
         k32 = (~(0xff << k4 & 0xFFFFFFFF) << 0x20 - k4 & seed & 0xFFFFFFFF) >> 0x20 - k4 & 0xFFFFFFFF | seed << k4 & 0xFFFFFFFF
-    if DEBUG: print("k32=",hex(k32))
+    if DEBUG: 
+      print("k32=",hex(k32))
 
     # k2 = 2 bits
     k2 = seed >> 4 & 2 | seed >> 0x1F
-    if DEBUG: print("k2=",hex(k2))
+    if DEBUG: 
+      print("k2=",hex(k2))
     if k2 == 0:
         return k32 | seed
     if k2 == 1:

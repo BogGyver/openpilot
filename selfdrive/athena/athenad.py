@@ -713,7 +713,6 @@ def main():
         cloudlog.exception("athenad.socket_timeout.exception")
       params.delete("LastAthenaPingTime")
     except Exception:
-      crash.capture_exception()
       cloudlog.exception("athenad.main.exception")
 
       conn_retries += 1

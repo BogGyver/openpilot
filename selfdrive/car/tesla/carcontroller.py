@@ -4,7 +4,7 @@ from selfdrive.car.tesla.HUD_module import HUDController
 from selfdrive.car.tesla.LONG_module import LONGController
 from selfdrive.car.modules.CFG_module import load_bool_param
 from opendbc.can.packer import CANPacker
-from selfdrive.car.tesla.values import DBC, CAR, CarControllerParams, CAN_RADAR, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CruiseButtons
+from selfdrive.car.tesla.values import DBC, CAR, CarControllerParams, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CruiseButtons
 import cereal.messaging as messaging
 from common.numpy_fast import clip, interp
 
