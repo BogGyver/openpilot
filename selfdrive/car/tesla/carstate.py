@@ -94,6 +94,12 @@ class CarState(CarStateBase):
     self.realBrakePressed = False
     self.userSpeedLimitOffsetMS = 0
 
+    #data to spam GTW_ESP1
+    self.gtw_esp1 = None
+    self.gtw_esp1_id = -1
+    self.gtw_esp1_last_sent_id = 0
+    self.prev_gtw_esp1_bw_req = 0
+    self.gtw_esp1_bw_req = 0
 
     #pedal interceptor variables
     self.pedal_idx = self.prev_pedal_idx = 0
@@ -290,6 +296,11 @@ class CarState(CarStateBase):
       
     #PREAP overrides at the last moment
     if self.CP.carFingerprint in [CAR.PREAP_MODELS]:
+      #Message needed for GTW_ESP1
+      gtw_esp1 = copy.copy(cp.vl["GTW_ESP1"])
+      if gtw_esp1 is not None:
+        self.gtw_esp1 = gtw_esp1
+        self.gtw_esp1_last_sent_id = self.gtw_esp1["GTW_ESP1Counter"]
       #Pedal Interceptor
       self.prev_pedal_interceptor_state = self.pedal_interceptor_state
       self.prev_pedal_idx = self.pedal_idx
@@ -426,6 +437,23 @@ class CarState(CarStateBase):
 
       checks += [
         #("RCM_status",10),
+      ]
+
+    if (CP.carFingerprint in [CAR.PREAP_MODELS]):
+      signals += [
+        ("GTW_ESP1Counter","GTW_ESP1",0),
+        ("GTW_hillStartAssistEnabled","GTW_ESP1",0),
+        ("GTW_brakeDiscWipeRequest","GTW_ESP1",0),
+        ("GTW_brakeFluidLow","GTW_ESP1",0),
+        ("GTW_pedalCalRxEnable","GTW_ESP1",0),
+        ("GTW_ambientTemperature","GTW_ESP1",0),
+        ("GTW_pedalCalTargetCurve","GTW_ESP1",0),
+        ("GTW_espModeSwitch","GTW_ESP1",0),
+        ("GTW_ESP1Checksum","GTW_ESP1",0),
+      ]
+
+      checks += [
+        ("GTW_ESP1",1),
       ]
 
     signals += [

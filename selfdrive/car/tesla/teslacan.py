@@ -267,6 +267,17 @@ class TeslaCAN:
     }
     return self.packer.make_can_msg("DAS_status2", bus, values)
 
+  def create_brake_wipe_request(self, gtw_esp1_vals, bw_req, bus, counter):
+    values = copy.copy(gtw_esp1_vals)
+    
+    values["GTW_brakeDiscWipeRequest"] = bw_req
+    values["GTW_ESP1Counter"] = counter
+    values["GTW_ESP1Checksum"] = 0
+    data = self.packer.make_can_msg("GTW_ESP1", bus, values)[2]
+    values["GTW_ESP1Checksum"] = self.checksum(0x208, data[:3])
+    return self.packer.make_can_msg("GTW_ESP1", bus, values)
+
+
   def create_action_request(self, msg_stw_actn_req, button_to_press, bus, counter):
     values = copy.copy(msg_stw_actn_req)
 
