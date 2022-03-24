@@ -838,7 +838,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
     ET.WARNING: Alert(
       "Pedal Cruise Disabled",
       "",
-      AlertStatus.normal, AlertSize.small,
+      AlertStatus.userPrompt, AlertSize.small,
       Priority.LOW, VisualAlert.steerRequired,AudibleAlert.disengage, 1.),
   },
 
@@ -870,5 +870,29 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
     ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("iBooster ECU Fault: Restart the Car"),
     ET.PERMANENT: NormalPermanentAlert("iBooster ECU Fault: Restart the car to engage"),
     ET.NO_ENTRY: NoEntryAlert("iBooster ECU Fault: Restart the Car"),
+  },
+
+  EventName.brakeWipeLow: {
+    ET.WARNING: Alert(
+      "Brake Wipe Low Requested",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none,AudibleAlert.none, 1.),
+  },
+
+  EventName.brakeWipeHigh: {
+    ET.WARNING: Alert(
+      "Brake Wipe High Requested",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none,AudibleAlert.none, 1.),
+  },
+
+  EventName.brakeWipeNotAvailable: {
+    ET.WARNING: Alert(
+      "Brake Wipe Not Available",
+      "",
+      AlertStatus.userPrompt, AlertSize.small,
+      Priority.LOW, VisualAlert.none,AudibleAlert.none, 1.),
   },
 }

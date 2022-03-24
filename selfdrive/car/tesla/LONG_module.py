@@ -3,6 +3,7 @@ from selfdrive.car.tesla.ACC_module import ACCController
 from selfdrive.car.tesla.PCC_module import PCCController
 from selfdrive.config import Conversions as CV
 from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
+from cereal import car
 
 def _is_present(lead):
   return bool((not (lead is None)) and (lead.dRel > 0))
@@ -164,8 +165,10 @@ class LONGController:
                     # GTW_ESP1 is at 10Hz and we will spam at 100Hz
                     if self.apply_brake >= 0.4:
                         CS.gtw_esp1_bw_req = 2 #hard wipe
+                        CS.longCtrlEvent = car.CarEvent.EventName.brakeWipeHigh
                     elif self.apply_brake > 0.05:
                         CS.gtw_esp1_bw_req = 1 #soft wipe
+                        CS.longCtrlEvent = car.CarEvent.EventName.brakeWipeLow
                     else:
                         CS.gtw_esp1_bw_req = 0 #no wipe
                     if CS.gtw_esp1_bw_req > 0:
@@ -173,6 +176,8 @@ class LONGController:
                            #first time BW request happens
                            CS.gtw_esp1_id = CS.gtw_esp1_last_sent_id
                         CS.gtw_esp1_id = (CS.gtw_esp1_id + 1) % 8
+                        if (CS.gtw_esp1 is None) and self.useBrakeWipe:
+                            CS.longCtrlEvent = car.CarEvent.EventName.brakeWipeNotAvailable
                         if (CS.gtw_esp1 is not None) and self.useBrakeWipe:
                             messages.insert(0, self.tesla_can.create_brake_wipe_request(
                                 gtw_esp1_vals=CS.gtw_esp1,
