@@ -186,6 +186,12 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     "../assets/offroad/icon_settings.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
+    {"TinklaUseBrakeWipe",
+    "Use Brake Wipe",
+    "Spams CAN bus with brake wipe request when needed to slow down. Alpha grade feature. Requires reboot.",
+    "../assets/offroad/icon_settings.png",
+    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+    },
     {"TinklaForceTeslaPreAP",
     "Force PreAP Tesla Model S ",
     "Forces the fingerprint to match a PreAP Tesla Model S. Requires reboot.",

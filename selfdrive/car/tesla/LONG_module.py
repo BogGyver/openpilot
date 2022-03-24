@@ -25,6 +25,7 @@ class LONGController:
         self.speed_limit_offset_uom = 0
         self.speed_limit_offset_ms = 0.0
         self.adjustSpeedWithSpeedLimit = load_bool_param("TinklaAdjustAccWithSpeedLimit",True)
+        self.useBrakeWipe = load_bool_param("TinklaUseBrakeWipe", False)
         if (CP.carFingerprint == CAR.PREAP_MODELS):
             self.ACC = ACCController(self)
             self.PCC = PCCController(self,tesla_can,pedalcan)
@@ -161,9 +162,9 @@ class LONGController:
                 else:
                     # let's try to use brake wipe to slow down the car
                     # GTW_ESP1 is at 10Hz and we will spam at 100Hz
-                    if self.apply_brake >= 0.3:
+                    if self.apply_brake >= 0.4:
                         CS.gtw_esp1_bw_req = 2 #hard wipe
-                    elif self.apply_brake >=0.1:
+                    elif self.apply_brake > 0.05:
                         CS.gtw_esp1_bw_req = 1 #soft wipe
                     else:
                         CS.gtw_esp1_bw_req = 0 #no wipe
@@ -172,7 +173,7 @@ class LONGController:
                            #first time BW request happens
                            CS.gtw_esp1_id = CS.gtw_esp1_last_sent_id
                         CS.gtw_esp1_id = (CS.gtw_esp1_id + 1) % 8
-                        if CS.gtw_esp1 is not None:
+                        if (CS.gtw_esp1 is not None) and self.useBrakeWipe:
                             messages.insert(0, self.tesla_can.create_brake_wipe_request(
                                 gtw_esp1_vals=CS.gtw_esp1,
                                 bw_req=CS.gtw_esp1_bw_req,
