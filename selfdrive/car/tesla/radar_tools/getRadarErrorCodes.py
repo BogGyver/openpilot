@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import cereal.messaging as messaging
-from selfdrive.car.tesla.radar_interface import RadarInterface
 from selfdrive.car import gen_empty_fingerprint
 from selfdrive.car.interfaces import CarInterfaceBase
 from opendbc.can.parser import CANParser
