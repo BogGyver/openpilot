@@ -161,9 +161,9 @@ class LONGController:
                 else:
                     # let's try to use brake wipe to slow down the car
                     # GTW_ESP1 is at 10Hz and we will spam at 100Hz
-                    if self.apply_brake >= 0.5:
+                    if self.apply_brake >= 0.3:
                         CS.gtw_esp1_bw_req = 2 #hard wipe
-                    elif self.apply_brake >=0.25:
+                    elif self.apply_brake >=0.1:
                         CS.gtw_esp1_bw_req = 1 #soft wipe
                     else:
                         CS.gtw_esp1_bw_req = 0 #no wipe
