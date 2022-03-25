@@ -25,14 +25,14 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
       },
     {"TinklaHsoNumbPeriod",
-      "HSO numb period", 
-      "The time, in seconds, to delay the reengagement of LKAS after HSO has been engaged by user by taking control of steering.", 
+      "HSO numb period",
+      "The time, in seconds, to delay the reengagement of LKAS after HSO has been engaged by user by taking control of steering.",
       "../assets/offroad/icon_settings.png",
-      "HSO numb period:", 
-      "Enter time in seconds.", 
+      "HSO numb period:",
+      "Enter time in seconds.",
       "s",
       1.5,0.5,3.0,0.5,TINKLA_FLOAT
-    }, 
+    },
     {"TinklaHao",
       "Enable HAO",
       "Enables Human Accelerator Override (HAO) module without disengaging OpenPilot.",
@@ -45,13 +45,13 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "../assets/offroad/icon_warning.png",
       "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
       },
-     
+
     {"TinklaAlcDelay",
-      "ALC delay", 
-      "The time, in seconds, that ALC will wait and keep the turn signal on and check blind spot monitoring (when available) before automatically starting the lange change.", 
+      "ALC delay",
+      "The time, in seconds, that ALC will wait and keep the turn signal on and check blind spot monitoring (when available) before automatically starting the lange change.",
       "../assets/offroad/icon_settings.png",
-      "ALC delay:", 
-      "Enter time in seconds.", 
+      "ALC delay:",
+      "Enter time in seconds.",
       "s",
       2.0,1.0,3.0,0.5,TINKLA_FLOAT
     },
@@ -79,6 +79,15 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "../assets/offroad/icon_settings.png",
       "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
       },
+    {"TinklaShutdownAfter",
+      "Shutdown after # of hours",
+      "Shutdown device after number of hours when car is off",
+      "../assets/offroad/icon_settings.png",
+      "# hours:",
+      "Enter # of hours to shutdown device after:",
+      "",
+      3.0,1.0,720.0,1.0,TINKLA_FLOAT
+    },
   };
   Params params;
   for (auto &[param, title, desc, icon, edit_title,edit_desc, edit_uom, val_default,val_min,val_max,val_step, field_type] : tinkla_toggles) {
@@ -97,7 +106,7 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
   };
   QPushButton *flash_btn = new QPushButton("Flash Panda");
   flash_btn->setObjectName("flash_btn");
-  
+
   QObject::connect(flash_btn, &QPushButton::clicked, [=](){
     QProcess::startDetached("/data/openpilot/panda/board/flashPanda");
   });
@@ -107,11 +116,11 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
     #flash_btn:pressed { background-color: #4a4a4a; }
   )");
   addItem(flash_btn);
-  
+
 }
 
 TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
-  
+
   std::vector<std::tuple<QString, QString, QString, QString, QString, QString, QString, float,float,float,float,int>> tinkla_toggles{
   // param, title, desc, icon
     {"TinklaPost1916Fix",
@@ -145,7 +154,7 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
     {"TinklaFollowDistance",
-      "Follow Distance", 
+      "Follow Distance",
       "The number of seconds based on current speed between you and the lead vehicle.",
       "../assets/offroad/icon_speed_limit.png",
       "Follow Distance:",
@@ -172,7 +181,7 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
     {"TinklaRadarOffset",
-      "Radar offset", 
+      "Radar offset",
       "The distance, in meters from center of car, the radar is offset.",
       "../assets/offroad/icon_settings.png",
       "Radar offset:",
@@ -217,21 +226,21 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
 
   QPushButton *flash_btn = new QPushButton("Flash EPAS");
   flash_btn->setObjectName("flash_btn");
-  
+
   QObject::connect(flash_btn, &QPushButton::clicked, [=](){
     QProcess::startDetached("/data/openpilot/selfdrive/car/modules/teslaEpasFlasher/flashTeslaEPAS");
   });
 
   QPushButton *flash_pedal_btn = new QPushButton("Flash Pedal");
   flash_pedal_btn->setObjectName("flash_pedal_btn");
-  
+
   QObject::connect(flash_pedal_btn, &QPushButton::clicked, [=](){
     QProcess::startDetached("/data/openpilot/panda/board/pedal/flashPedal");
   });
 
   QPushButton *vin_radar_btn = new QPushButton("Radar VIN Learn");
   vin_radar_btn->setObjectName("vin_radar_btn");
-  
+
   QObject::connect(vin_radar_btn, &QPushButton::clicked, [=](){
     QProcess::startDetached("/data/openpilot/selfdrive/car/modules/radarFlasher/flashTeslaRadar");
   });
@@ -266,7 +275,7 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
     {"TinklaSpeedLimitOffset",
-      "Speed Limit Offset", 
+      "Speed Limit Offset",
       "The speed offset vs. the legal speed limit you want ACC to apply when automatically changing with speed limit (in your car's UOM or percentage if using relative offset).",
       "../assets/offroad/icon_speed_limit.png",
       "Speed Limit Offset:",
