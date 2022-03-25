@@ -274,6 +274,12 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
       "",
       0.0,-5.0,20.0,1.0,TINKLA_FLOAT
     },
+    {"TinklaSpeedMadMax",
+    "Use MadMax Mode",
+    "Use faster accel limits.",
+    "../assets/offroad/icon_speed_limit.png",
+    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+    },
   };
   Params params;
   for (auto &[param, title, desc, icon, edit_title,edit_desc, edit_uom, val_default,val_min,val_max,val_step, field_type] : tinkla_toggles) {

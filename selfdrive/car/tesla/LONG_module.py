@@ -27,12 +27,14 @@ class LONGController:
         self.speed_limit_offset_ms = 0.0
         self.adjustSpeedWithSpeedLimit = load_bool_param("TinklaAdjustAccWithSpeedLimit",True)
         self.useBrakeWipe = load_bool_param("TinklaUseBrakeWipe", False)
+        self.madMax = False
         if (CP.carFingerprint == CAR.PREAP_MODELS):
             self.ACC = ACCController(self)
             self.PCC = PCCController(self,tesla_can,pedalcan)
             self.speed_limit_ms = 0
             self.set_speed_limit_active = False
             self.speed_limit_offset_uom = load_float_param("TinklaSpeedLimitOffset",0.0)
+            self.madMax = load_bool_param("TinklaSpeedMadMax",False)
 
     def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state):
         messages = []
@@ -163,10 +165,10 @@ class LONGController:
                 else:
                     # let's try to use brake wipe to slow down the car
                     # GTW_ESP1 is at 10Hz and we will spam at 100Hz
-                    if self.apply_brake >= 0.4:
+                    if self.apply_brake >= 0.1:
                         CS.gtw_esp1_bw_req = 2 #hard wipe
                         CS.longCtrlEvent = car.CarEvent.EventName.brakeWipeHigh
-                    elif self.apply_brake > 0.05:
+                    elif self.apply_brake > 0.0:
                         CS.gtw_esp1_bw_req = 1 #soft wipe
                         CS.longCtrlEvent = car.CarEvent.EventName.brakeWipeLow
                     else:

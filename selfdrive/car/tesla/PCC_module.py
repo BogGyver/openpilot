@@ -102,6 +102,10 @@ class PCCController:
         average_speed_over_x_suggestions = 6  # 0.3 seconds (20x a second)
         self.fleet_speed = FleetSpeed(average_speed_over_x_suggestions)
         self.pedalcan = pedalcan
+        self.madMax = False
+        if longcontroller.madMax:
+            self.madMax = True
+
 
     def update_stat(self, CS, frame):
         if not self.LongCtr.CP.openpilotLongitudinalControl:
@@ -287,6 +291,8 @@ class PCCController:
             ZERO_ACCEL = 0
         MAX_PEDAL_BP = [0., 5., 20., 30., 40]
         MAX_PEDAL_V = [65. , 75., 85., 100., 120.]
+        if self.madMax:
+            MAX_PEDAL_V = [65. , 85., 105., 120., 140.]
         MAX_PEDAL_VALUE = interp(CS.out.vEgo, MAX_PEDAL_BP, MAX_PEDAL_V)
         ACCEL_LOOKUP_BP = [REGEN_DECEL, 0., ACCEL_MAX]
         ACCEL_LOOKUP_V = [MAX_PEDAL_REGEN_VALUE, ZERO_ACCEL, MAX_PEDAL_VALUE]
