@@ -15,7 +15,7 @@ def set_long_tune(tune, name):
     tune.kpBP = [0., 5., 35.]
     tune.kpV = [0.50, 0.45, 0.45]
     tune.kiBP = [0., 5., 35.]
-    tune.kiV = [0.01,0.01,0.02]
+    tune.kiV = [0.01,0.01,0.03]
 
 
   # Default longitudinal tune
