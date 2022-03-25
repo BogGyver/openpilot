@@ -1,6 +1,5 @@
-from selfdrive.car.tesla.speed_utils.fleet_speed import FleetSpeed
 from common.numpy_fast import clip, interp
-from selfdrive.car.tesla.values import CruiseState, CruiseButtons
+from selfdrive.car.tesla.values import CruiseButtons
 from selfdrive.config import Conversions as CV
 import time
 from common.params import Params
@@ -99,8 +98,6 @@ class PCCController:
         self.lead_last_seen_time_ms = 0
         self.continuous_lead_sightings = 0
         self.params = Params()
-        average_speed_over_x_suggestions = 6  # 0.3 seconds (20x a second)
-        self.fleet_speed = FleetSpeed(average_speed_over_x_suggestions)
         self.pedalcan = pedalcan
         self.madMax = False
         if longcontroller.madMax:
@@ -111,7 +108,8 @@ class PCCController:
         if not self.LongCtr.CP.openpilotLongitudinalControl:
             return []
 
-        if not self.LongCtr.enablePedal:
+        if not CS.enablePedal:
+            self.pcc_available = False
             return []
 
         self._update_pedal_state(CS, frame)
@@ -129,7 +127,7 @@ class PCCController:
                     )
             return can_sends
 
-        prev_enable_pedal_cruise = self.enable_pedal_cruise
+        #prev_enable_pedal_cruise = self.enable_pedal_cruise
         # disable on brake
         if CS.realBrakePressed and self.enable_pedal_cruise:
             CS.longCtrlEvent = car.CarEvent.EventName.pccDisabled
@@ -150,10 +148,7 @@ class PCCController:
                 self.stalk_pull_time_ms - self.prev_stalk_pull_time_ms
                 < STALK_DOUBLE_PULL_MS
             )
-            ready = (
-                (CruiseState.is_off(CS.cruise_state))
-                or CS.enablePedal
-            )
+            ready = CS.enablePedal
             if ready and double_pull:
                 # A double pull enables ACC. updating the max ACC speed if necessary.
                 if not self.enable_pedal_cruise:
@@ -215,10 +210,6 @@ class PCCController:
             self.enable_pedal_cruise = False
             CS.longCtrlEvent = car.CarEvent.EventName.pccDisabled
 
-        # Notify if PCC was toggled
-        if prev_enable_pedal_cruise and not self.enable_pedal_cruise:
-            self.fleet_speed.reset_averager()
-
         # Update prev state after all other actions.
         self.prev_cruise_buttons = CS.cruise_buttons
         self.prev_cruise_state = CS.cruise_state
@@ -243,7 +234,7 @@ class PCCController:
         if not self.LongCtr.CP.openpilotLongitudinalControl:
             return 0.0, 0.0, -1, -1
 
-        if not self.LongCtr.enablePedal:
+        if not CS.enablePedal:
             return 0.0, 0.0, -1, -1
 
         idx = self.pedal_idx
@@ -271,8 +262,6 @@ class PCCController:
             self.speed_limit_kph = (speed_limit_ms + speed_limit_offset) * CV.MS_TO_KPH
             if int(self.prev_speed_limit_kph) != int(self.speed_limit_kph):
                 self.pedal_speed_kph = self.speed_limit_kph
-                # reset MovingAverage for fleet speed when speed limit changes
-                self.fleet_speed.reset_averager()
         else:  # reset internal speed limit, so double pull doesn't set higher speed than current (e.g. after leaving the highway)
             self.speed_limit_kph = 0.0
         self.pedal_idx = (self.pedal_idx + 1) % 16
@@ -302,7 +291,9 @@ class PCCController:
 
         enable_pedal = 1.0 if self.enable_pedal_cruise else 0.0
         tesla_pedal = int(round(interp(actuators.accel/2, ACCEL_LOOKUP_BP, ACCEL_LOOKUP_V)))
-        tesla_pedal = self.pedal_hysteresis(tesla_pedal, enable_pedal)
+        #only do pedal hysteresis when very close to speed set
+        if abs(CS.out.vEgo * CV.MS_TO_KPH - self.pedal_speed_kph) < 0.5:
+            tesla_pedal = self.pedal_hysteresis(tesla_pedal, enable_pedal)
         if CS.out.vEgo < 0.1 and actuators.accel < 0.01:
             #hold brake pressed at when standstill
             #BBTODO: show HOLD indicator in IC with integration
@@ -312,8 +303,6 @@ class PCCController:
 
         if CS.has_ibooster_ecu and CS.brakeUnavailable:
             CS.longCtrlEvent = car.CarEvent.EventName.iBoosterBrakeNotOk
-        #since they don't use the compute_gb anymore divide by 3
-        #tesla_pedal = tesla_pedal / 2.0
         tesla_pedal = clip(tesla_pedal, self.prev_tesla_pedal - PEDAL_MAX_DOWN, self.prev_tesla_pedal + PEDAL_MAX_UP)
         self.prev_tesla_brake = tesla_brake * enable_pedal
         self.torqueLevel_last = CS.torqueLevel
@@ -342,5 +331,5 @@ class PCCController:
         )
         #acc_disabled = CS.enablePedal or CruiseState.is_off(CS.cruise_state)
         # Mark pedal unavailable while traditional cruise is on.
-        self.pcc_available = pedal_ready and self.LongCtr.enablePedal
+        self.pcc_available = pedal_ready and CS.enablePedal
 

@@ -251,7 +251,11 @@ class CarStateBase(ABC):
     self.right_blinker_prev = False
 
     #start config section
-    self.enablePedal = load_bool_param("TinklaEnablePedal",False)
+    self.enablePedalHardware = load_bool_param("TinklaEnablePedal",False)
+    self.enablePedalOverCC = load_bool_param("TinklaEnablePedalOverCC",False)
+    self.enablePedal = False
+    self.enableACC = False
+    self.enableJustCC = False
     self.autoresumeAcc = load_bool_param("TinklaAutoResumeACC",False)
     self.enableHSO = load_bool_param("TinklaHso",True)
     self.enableHAO = load_bool_param("TinklaHao",False)

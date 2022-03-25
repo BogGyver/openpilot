@@ -858,6 +858,22 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
       Priority.LOW, VisualAlert.none,AudibleAlert.disengage, 1.),
   },
 
+  EventName.ccEnabled: {
+    ET.WARNING: Alert(
+      "Standard Cruise Enabled",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none,AudibleAlert.engage, 1.),
+  },
+
+  EventName.ccDisabled: {
+    ET.WARNING: Alert(
+      "Standard Cruise Disabled",
+      "",
+      AlertStatus.userPrompt, AlertSize.small,
+      Priority.LOW, VisualAlert.none,AudibleAlert.disengage, 1.),
+  },
+
   EventName.pccError: {
     ET.WARNING: Alert(
       "Pedal Interceptor Error",

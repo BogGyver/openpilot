@@ -120,15 +120,15 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     "../assets/offroad/icon_settings.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
-    {"TinklaAllowHumanLong",
-    "Control only LKA",
-    "Allows the user to perform longitudinal control via accel/brake without disengaging OP. Requires reboot.",
-    "../assets/offroad/icon_speed_limit.png",
-    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-    },
     {"TinklaEnablePedal",
     "Use pedal",
     "Enables the use of the Pedal Interceptor to control the speed of your pre-AutoPilot Tesla. Requires Pedal Interceptor hardware connected to CAN2. Requires reboot.",
+    "../assets/offroad/icon_speed_limit.png",
+    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+    },
+    {"TinklaEnablePedalOverCC",
+    "Use pedal over CC",
+    "Enables the use of the Pedal Interceptor to control the speed of your pre-AutoPilot Tesla even over CC. Requires Pedal Interceptor hardware connected to CAN2. Requires reboot.",
     "../assets/offroad/icon_speed_limit.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
