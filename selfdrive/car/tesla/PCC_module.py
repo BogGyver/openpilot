@@ -106,6 +106,7 @@ class PCCController:
 
     def update_stat(self, CS, frame):
         if not self.LongCtr.CP.openpilotLongitudinalControl:
+            self.pcc_available = False
             return []
 
         if not CS.enablePedal:

@@ -70,8 +70,8 @@ class LONGController:
                 self.ACC.enable_adaptive_cruise = False
             else:
                 # Update ACC module info.
-                self.ACC.update_stat(CS, True)
                 self.PCC.enable_pedal_cruise = False
+                self.ACC.update_stat(CS, True)
             # update CS.v_cruise_pcm based on module selected.
             speed_uom_kph = 1.0
             # cruise state: 0 unavailable, 1 available, 2 enabled, 3 hold

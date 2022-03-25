@@ -327,7 +327,7 @@ class CarState(CarStateBase):
             self.CP.openpilotLongitudinalControl
         )
         self.enableACC = (
-            not self.enablePedalHardware and 
+            not self.enablePedalHardware and
             CruiseState.is_enabled_or_standby(self.cruise_state) and
             self.CP.openpilotLongitudinalControl
         )
