@@ -102,9 +102,9 @@ class PCCController:
         average_speed_over_x_suggestions = 6  # 0.3 seconds (20x a second)
         self.fleet_speed = FleetSpeed(average_speed_over_x_suggestions)
         self.pedalcan = pedalcan
-        self.maxMax = False
-        if longcontroller.maxMax:
-            self.maxMax = True
+        self.madMax = False
+        if longcontroller.madMax:
+            self.madMax = True
 
 
     def update_stat(self, CS, frame):
