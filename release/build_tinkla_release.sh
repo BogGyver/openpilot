@@ -2,7 +2,8 @@
 set -e
 
 SOURCE_DIR=/data/openpilot_beta
-TARGET_DIR=/data/openpilot_release
+TARGET_DIR=/data/openpilot
+TARGET_TEMP=/data/openpilot_temp
 
 export GIT_COMMITTER_NAME="BogGyver"
 export GIT_COMMITTER_EMAIL="bogdan.butoi@gmail.com"
@@ -13,6 +14,7 @@ export GIT_SSH_COMMAND="ssh -i /data/gitkey"
 # set CLEAN to build outside of CI
 
 # Create folders
+mv $TARGET_DIR $TARGET_TEMP
 rm -rf $TARGET_DIR || true
 mkdir -p $TARGET_DIR
 cd $TARGET_DIR
@@ -106,3 +108,6 @@ git remote set-url origin git@github.com:boggyver/openpilot.git
 
 # Push to tesla_unity_release
 git push -f origin $RELEASE_BRANCH
+
+rm -rf $TARGET_DIR
+mv $TARGET_TEMP $TARGET_DIR
