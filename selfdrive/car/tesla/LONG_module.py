@@ -33,6 +33,7 @@ class LONGController:
             self.speed_limit_ms = 0
             self.set_speed_limit_active = False
             self.speed_limit_offset_uom = load_float_param("TinklaSpeedLimitOffset",0.0)
+            self.maxMax = load_bool_param("TinklaSpeedMadMax",False)
 
     def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state):
         messages = []
