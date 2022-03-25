@@ -22,7 +22,7 @@ def get_security_access_key(seed):
   key = 0xc541a9
 
   mask = struct.unpack('<I', seed.ljust(4, b'\x00'))[0] | 0x20000000
-  for i in range(32):
+  for _i in range(32):
     msb = key & 1 ^ mask & 1
     mask = mask >> 1
     key = key >> 1
@@ -30,7 +30,7 @@ def get_security_access_key(seed):
       key = (key | msb << 0x17) ^ 0x109028
 
   mask = 0x55f222f9
-  for i in range(32):
+  for _i in range(32):
     msb = key & 1 ^ mask & 1
     mask = mask >> 1
     key = key >> 1
@@ -127,7 +127,7 @@ def patch_firmware(fw, offset, restore=False):
   return fw
 
 def flash_bootloader(uds_client, bootloader_filename, start_addr):
-  print(f"read bootloader ...")
+  print("read bootloader ...")
   with open(bootloader_filename, "rb") as f:
     fw = f.read()
   fw_len = len(fw)

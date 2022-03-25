@@ -53,7 +53,7 @@ void update_received_time(CanMsgFwd addr_list[], int index) {
     if (index == -1) {
         return;
     }
-    uint32_t ts = TIM2->CNT;
+    uint32_t ts = microsecond_timer_get();
     addr_list[index].last_received_timestamp = ts;
 }
 
@@ -62,7 +62,7 @@ bool check_fwd_time_validity(CanMsgFwd addr_list[], int index) {
     if (index == -1) {
         return false;
     }
-    uint32_t ts = TIM2->CNT;
+    uint32_t ts = microsecond_timer_get();
     //check if we receied data since last forward, and the data was received in the correct timeframe
     bool time_is_valid = ((addr_list[index].last_received_timestamp - addr_list[index].last_fwd_timestamp> 0) &&
            (ts - addr_list[index].last_received_timestamp <= addr_list[index].expected_timestep));

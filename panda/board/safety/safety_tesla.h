@@ -187,6 +187,8 @@ const CanMsg TESLA_PREAP_TX_MSGS[] = {
     //pedal
     {0x551, 0, 6}, //GAS_INTERCEPTOR command can0
     {0x551, 2, 6}, //GAS_INTERCEPTOR command can2
+    //brake wipe request
+    {0x208, 0, 4}, //GTW_ESP1 spammed 
   };
 #define TESLA_PREAP_TX_LEN (sizeof(TESLA_PREAP_TX_MSGS) / sizeof(TESLA_PREAP_TX_MSGS[0]))
 
@@ -781,7 +783,7 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
   //looking for radar messages to see if we have a timeout
   if ((addr == 0x300) && (bus == tesla_radar_can)) 
   {
-    uint32_t ts = TIM2->CNT;
+    uint32_t ts = microsecond_timer_get();
     uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_last_radar_signal);
     if (tesla_radar_status == 1) {
       tesla_radar_status = 2;
@@ -798,7 +800,7 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
   //0x631 is sent by radar to initiate the sync
   if ((addr == 0x631) && (bus == tesla_radar_can))
   {
-    uint32_t ts = TIM2->CNT;
+    uint32_t ts = microsecond_timer_get();
     uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_last_radar_signal);
     if (tesla_radar_status == 0) {
       tesla_radar_status = 1;
@@ -819,7 +821,7 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
           //use GTW_status at 10Hz to generate the IC messages for nonAP cars
           teslaPreAp_send_IC_messages();
           //ALSO use this for radar timeout, this message is always on
-          uint32_t ts = TIM2->CNT;
+          uint32_t ts = microsecond_timer_get();
           uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_last_radar_signal);
           if ((ts_elapsed > TESLA_RADAR_TIMEOUT) && (tesla_radar_status > 0)) {
             tesla_radar_status = 0;
@@ -906,10 +908,10 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
                               (cruise_state == 7);    // PRE_CANCEL
         if (has_ap_hardware) {
           if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
-            time_cruise_engaged = TIM2->CNT;
+            time_cruise_engaged = microsecond_timer_get();
           }
           
-          if((time_cruise_engaged !=0) && (get_ts_elapsed(TIM2->CNT,time_cruise_engaged) >= TIME_TO_ENGAGE)) {
+          if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
             if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
               controls_allowed = 1;
             }
@@ -1145,7 +1147,7 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
 
   //check for disengagement
   if ((prev_controls_allowed != controls_allowed) && (controls_allowed == 0)) {
-    time_op_disengaged = TIM2->CNT;
+    time_op_disengaged = microsecond_timer_get();
   }
   prev_controls_allowed = controls_allowed;
 
@@ -1236,7 +1238,7 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
       //so make sure anything else is sent from 2 to 0
 
       //if disengage less than 3 seconds ago, 
-      if ((controls_allowed == 0) && (get_ts_elapsed(TIM2->CNT,time_op_disengaged) <= TIME_TO_HIDE_ERRORS)) {
+      if ((controls_allowed == 0) && (get_ts_elapsed(microsecond_timer_get(),time_op_disengaged) <= TIME_TO_HIDE_ERRORS)) {
         //make DAS_status2->DAS_activationFailureStatus 0
         if (addr ==0x389) {
           WORD_TO_BYTE_ARRAY(&to_fwd->data[0],(GET_BYTES_04(to_fwd) & 0xFFFF3FFF)); 

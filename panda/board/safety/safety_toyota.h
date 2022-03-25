@@ -267,11 +267,11 @@ static int toyota_tx_hook(CANPacket_t *to_send) {
       // only check 0x344 if TSS2. TSS1 will use 0xF2 with AEB gateway
       emergency_takeover = 1;
       controls_allowed = 1;
-      aeb_tim = TIM2->CNT;
+      aeb_tim = microsecond_timer_get();
     }
     // disable emergency takeover if AEB has not been sent in 250ms
     if (emergency_takeover){ 
-      uint32_t timestamp = TIM2->CNT;
+      uint32_t timestamp = microsecond_timer_get();
       if ((timestamp - aeb_tim) > TOYOTA_RT_INTERVAL){
         emergency_takeover = 0;
       }

@@ -8,7 +8,7 @@ echo "Starting the VIN learn process..."
 echo "  "
 cd /data/openpilot/selfdrive/car/modules/radarFlasher
 PYTHONPATH=/data/openpilot 
-./patch.py --vin-learn
+./patch_radar.py --vin-learn
 ret=$?
 if [ $ret -ne 0 ]; then
   echo "================================="
