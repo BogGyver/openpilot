@@ -1,6 +1,6 @@
 import copy
 from cereal import car
-from selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS, CAR, CruiseButtons
+from selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS, CAR, CruiseButtons, CruiseState
 from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
@@ -86,7 +86,7 @@ class CarState(CarStateBase):
     self.pcc_available = False
     self.torqueLevel = 0.0
     self.cruise_state = None
-    self.enableHumanLongControl = load_bool_param("TinklaAllowHumanLong", False)
+    self.enableHumanLongControl = load_bool_param("TinklaForceTeslaPreAP", False)
     self.enableICIntegration = load_bool_param("TinklaHasIcIntegration", False)
     self.pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
     self.has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
@@ -316,9 +316,27 @@ class CarState(CarStateBase):
           self.pedal_interceptor_value2 = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
           self.pedal_idx = cp_cam.vl["GAS_SENSOR"]["IDX"]
 
+      #preAP stuff
       if self.enableHumanLongControl:
+        self.enablePedal = (
+            self.enablePedalHardware and 
+            (
+                CruiseState.is_off(self.cruise_state) or 
+                self.enablePedalOverCC
+            ) and 
+            self.CP.openpilotLongitudinalControl
+        )
+        self.enableACC = (
+            not self.enablePedalHardware and 
+            CruiseState.is_enabled_or_standby(self.cruise_state) and
+            self.CP.openpilotLongitudinalControl
+        )
+        self.enableJustCC = not (
+            self.enableACC or
+            self.enablePedal
+        )
         if self.cruise_buttons == CruiseButtons.MAIN:
-          self.cruiseEnabled = True
+          self.cruiseEnabled = not self.enableJustCC
         if self.cruise_buttons == CruiseButtons.CANCEL:
           self.cruiseEnabled = False
           

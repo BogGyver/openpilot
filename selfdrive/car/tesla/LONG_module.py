@@ -20,7 +20,6 @@ class LONGController:
         self.tesla_can = tesla_can
         self.packer = packer
         self.pedalcan = pedalcan
-        self.enablePedal = load_bool_param("TinklaEnablePedal",False)
         self.has_ibooster_ecu = False
         self.apply_brake = 0.0
         self.speed_limit_offset_uom = 0
@@ -39,6 +38,7 @@ class LONGController:
     def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state):
         messages = []
         self.has_ibooster_ecu = CS.has_ibooster_ecu
+        #update options 
 
         if frame % 10 == 0:
             self.speed_limit_ms = CS.speed_limit_ms
@@ -167,10 +167,12 @@ class LONGController:
                     # GTW_ESP1 is at 10Hz and we will spam at 100Hz
                     if self.apply_brake >= 0.1:
                         CS.gtw_esp1_bw_req = 2 #hard wipe
-                        CS.longCtrlEvent = car.CarEvent.EventName.brakeWipeHigh
+                        if self.useBrakeWipe:
+                            CS.longCtrlEvent = car.CarEvent.EventName.brakeWipeHigh
                     elif self.apply_brake > 0.0:
                         CS.gtw_esp1_bw_req = 1 #soft wipe
-                        CS.longCtrlEvent = car.CarEvent.EventName.brakeWipeLow
+                        if self.useBrakeWipe:
+                            CS.longCtrlEvent = car.CarEvent.EventName.brakeWipeLow
                     else:
                         CS.gtw_esp1_bw_req = 0 #no wipe
                     if CS.gtw_esp1_bw_req > 0:
