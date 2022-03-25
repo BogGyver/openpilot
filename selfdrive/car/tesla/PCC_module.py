@@ -291,7 +291,7 @@ class PCCController:
             ZERO_ACCEL = 0
         MAX_PEDAL_BP = [0., 5., 20., 30., 40]
         MAX_PEDAL_V = [65. , 75., 85., 100., 120.]
-        if self.maxMax:
+        if self.madMax:
             MAX_PEDAL_V = [65. , 85., 105., 120., 140.]
         MAX_PEDAL_VALUE = interp(CS.out.vEgo, MAX_PEDAL_BP, MAX_PEDAL_V)
         ACCEL_LOOKUP_BP = [REGEN_DECEL, 0., ACCEL_MAX]
