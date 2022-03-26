@@ -102,6 +102,8 @@ class ACCController:
                     )
                     or
                     (
+                        CS.cruise_buttons == CruiseButtons.MAIN
+                        and 
                         CS.enableJustCC
                         and
                         not self.enable_adaptive_cruise
@@ -125,7 +127,7 @@ class ACCController:
             ):
                 #decide adaptive or not
                 if CS.cruise_buttons == CruiseButtons.MAIN:
-                    self.adaptive = not CS.enableJustCC
+                    self.adaptive = (not CS.enableJustCC)
                 else:
                     self.adaptive = False
                 # A double pull enables ACC. updating the max ACC speed if necessary.

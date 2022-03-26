@@ -859,6 +859,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
   },
 
   EventName.ccEnabled: {
+    ET.NO_ENTRY: NoEntryAlert("Standard Cruise Enabled"),
     ET.WARNING: Alert(
       "Standard Cruise Enabled",
       "",
@@ -867,6 +868,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
   },
 
   EventName.ccDisabled: {
+    ET.NO_ENTRY: NoEntryAlert("Standard Cruise Disabled"),
     ET.WARNING: Alert(
       "Standard Cruise Disabled",
       "",
