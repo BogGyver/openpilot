@@ -92,7 +92,7 @@ class ACCController:
             double_pull = curr_time_ms - self.last_cruise_stalk_pull_time < 750
             self.last_cruise_stalk_pull_time = curr_time_ms
             ready = (
-                 (
+                (
                     enabled
                     or
                     (
@@ -101,7 +101,11 @@ class ACCController:
                         not self.enable_adaptive_cruise
                     )
                     or
-                    CS.enableJustCC
+                    (
+                        CS.enableJustCC
+                        and
+                        not self.enable_adaptive_cruise
+                    )
                 )
                 and CruiseState.is_enabled_or_standby(CS.cruise_state)
                 and CS.out.vEgo > self.MIN_CRUISE_SPEED_MS

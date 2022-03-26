@@ -59,6 +59,7 @@ int prev_controls_allowed = 0;
 //pedal pressed (with Pedal)
 int pedalPressed = 0;
 int pedalCan = -1;
+int pedalEnabled = 0;
 
 //use for preAP IC integration
 int IC_send_counter = 0;
@@ -857,7 +858,7 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
               controls_allowed = 0;
             }
             //if using pedal, send a cancel immediately to cancel the CC
-            if ((pedalCan != -1) && (ap_lever_position > 1)) {
+            if ((pedalCan != -1) && (pedalEnabled == 1) && (ap_lever_position > 1)) {
               do_fake_stalk_cancel();
             }
           }
@@ -994,6 +995,10 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
 
   if(relay_malfunction) {
     tx = 0;
+  }
+
+  if (addr == 0x659) {
+    pedalEnabled = ((GET_BYTE(to_send, 5) >> 5) & 0x01);
   }
 
   //do not allow long control if not enabled

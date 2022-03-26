@@ -251,7 +251,7 @@ class HUDController:
                         CS.DAS_fusedSpeedLimit,
                         apply_angle,
                         1 if enabled else 0,
-                        0, #park_brake_request
+                        1 if CS.enablePedal else 0, #is pedal enabled
                         CAN_CHASSIS[self.CP.carFingerprint],
                     )
                 )
