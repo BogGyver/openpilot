@@ -209,12 +209,12 @@ class CarState(CarStateBase):
       self.cruiseEnabled = acc_enabled and not self.autopilot_enabled and not summon_or_autopark_enabled
       ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
       if self.speed_units == "KPH":
-        ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
+        ret.cruiseState.speed = cp.vl["DI_state"]["DI_cruiseSet"] * CV.KPH_TO_MS
       elif self.speed_units == "MPH":
-        ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.MPH_TO_MS
+        ret.cruiseState.speed = cp.vl["DI_state"]["DI_cruiseSet"] * CV.MPH_TO_MS
       ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
-      ret.cruiseState.standstill = False #(cruise_state == "STANDSTILL")
-      self.cruise_speed = ret.cruiseState.speed
+      ret.cruiseState.standstill = (cruise_state == "STANDSTILL")
+      self.cruise_speed = False #ret.cruiseState.speed
     else:
       ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
       ret.cruiseState.enabled = self.cruiseEnabled and (not ret.doorOpen) and (ret.gearShifter == car.CarState.GearShifter.drive) and (not ret.seatbeltUnlatched)
