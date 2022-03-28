@@ -47,6 +47,7 @@ class CarState(CarStateBase):
     self.rLine = 0
 
     self.acc_speed_kph = 0.
+    self.cruise_speed = 0.
 
     #IC integration
     self.DAS_gas_to_resume = 0
@@ -213,6 +214,7 @@ class CarState(CarStateBase):
         ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.MPH_TO_MS
       ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
       ret.cruiseState.standstill = False #(cruise_state == "STANDSTILL")
+      self.cruise_speed = ret.cruiseState.speed
     else:
       ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
       ret.cruiseState.enabled = self.cruiseEnabled and (not ret.doorOpen) and (ret.gearShifter == car.CarState.GearShifter.drive) and (not ret.seatbeltUnlatched)

@@ -204,7 +204,7 @@ class LONGController:
             CS.speed_control_enabled = 0
             if CS.speed_units == "MPH":
                 speed_uom_kph = CV.KPH_TO_MPH
-            CS.acc_speed_kph = CS.cruiseState.speed * CV.MS_TO_KPH
+            CS.acc_speed_kph = CS.cruise_speed * CV.MS_TO_KPH
             CS.v_cruise_pcm = CS.acc_speed_kph * speed_uom_kph
             CS.speed_control_enabled = 1
             CS.cc_state = 3 # was 2, we use HOLD to show it's OP for now
