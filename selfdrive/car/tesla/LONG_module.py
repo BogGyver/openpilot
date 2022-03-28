@@ -195,7 +195,20 @@ class LONGController:
         #AP ModelS with OP Long and enabled
         elif enabled and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
             #we use the same logic from planner here to get the speed
-
+            speed_uom_kph = 1.0
+            # cruise state: 0 unavailable, 1 available, 2 enabled, 3 hold
+            if CS.carNotInDrive:
+                CS.cc_state = 0
+            else:
+                CS.cc_state = 1
+            CS.speed_control_enabled = 0
+            if CS.speed_units == "MPH":
+                speed_uom_kph = CV.KPH_TO_MPH
+            CS.acc_speed_kph = CS.cruiseState.speed * CV.MS_TO_KPH
+            CS.v_cruise_pcm = CS.acc_speed_kph * speed_uom_kph
+            CS.speed_control_enabled = 1
+            CS.cc_state = 3 # was 2, we use HOLD to show it's OP for now
+            CS.adaptive_cruise = 1
             if radar_state is not None:
                 self.lead_1 = radar_state.radarState.leadOne
             if long_plan is not None:
@@ -222,6 +235,10 @@ class LONGController:
 
         #AP ModelS with OP Long and not enabled
         elif (not enabled) and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
+            if CS.carNotInDrive:
+                CS.cc_state = 0
+            else:
+                CS.cc_state = 1
             #send this values so we can enable at 0 km/h
             tesla_accel_limits = [-1.4000000000000004,1.8000000000000007]
             tesla_jerk_limits = [-0.46000000000000085,0.47600000000000003]
