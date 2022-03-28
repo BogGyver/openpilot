@@ -92,7 +92,7 @@ class ACCController:
             double_pull = curr_time_ms - self.last_cruise_stalk_pull_time < 750
             self.last_cruise_stalk_pull_time = curr_time_ms
             ready = (
-                 (
+                (
                     enabled
                     or
                     (
@@ -101,7 +101,13 @@ class ACCController:
                         not self.enable_adaptive_cruise
                     )
                     or
-                    CS.enableJustCC
+                    (
+                        CS.cruise_buttons == CruiseButtons.MAIN
+                        and 
+                        CS.enableJustCC
+                        and
+                        not self.enable_adaptive_cruise
+                    )
                 )
                 and CruiseState.is_enabled_or_standby(CS.cruise_state)
                 and CS.out.vEgo > self.MIN_CRUISE_SPEED_MS
@@ -121,7 +127,7 @@ class ACCController:
             ):
                 #decide adaptive or not
                 if CS.cruise_buttons == CruiseButtons.MAIN:
-                    self.adaptive = not CS.enableJustCC
+                    self.adaptive = (not CS.enableJustCC)
                 else:
                     self.adaptive = False
                 # A double pull enables ACC. updating the max ACC speed if necessary.
