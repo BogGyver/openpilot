@@ -212,9 +212,9 @@ class LONGController:
             if radar_state is not None:
                 self.lead_1 = radar_state.radarState.leadOne
             if long_plan is not None:
-                self.v_target = long_plan.longitudinalPlan.speeds[0] # to try vs vTarget
-                self.a_target = abs(long_plan.longitudinalPlan.accels[0]) # to try vs aTarget
-                self.j_target = abs(long_plan.longitudinalPlan.jerks[0])
+                self.v_target = long_plan.longitudinalPlan.speeds[-1] # 0 or -1 to try vs actual vs vTarget
+                self.a_target = abs(long_plan.longitudinalPlan.accels[-1]) #0 or -1 to try actual vs aTarget
+                self.j_target = abs(long_plan.longitudinalPlan.jerks[-1]) # -1 to try actual vs jTarget
             if self.v_target is None:
                 self.v_target = CS.out.vEgo
                 self.a_target = 1
@@ -234,7 +234,7 @@ class LONGController:
                 messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, True, True ,self.v_target, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
 
         #AP ModelS with OP Long and not enabled
-        elif (not enabled) and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
+        elif (not enabled) and (not CS.autopilot_enabled) and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
             if CS.carNotInDrive:
                 CS.cc_state = 0
             else:
