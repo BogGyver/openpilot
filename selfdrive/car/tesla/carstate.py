@@ -74,7 +74,7 @@ class CarState(CarStateBase):
     self.baseMapSpeedLimitMPS = 0
     self.fleet_speed_state = 0
 
-    
+    self.cruise_distance = 255
 
     self.speed_units = "MPH"
     self.tap_direction = 0
@@ -203,6 +203,12 @@ class CarState(CarStateBase):
         self.v_cruise_actual = self.v_cruise_actual * CV.MPH_TO_KPH
     self.prev_cruise_buttons = self.cruise_buttons
     self.cruise_buttons = cp.vl["STW_ACTN_RQ"]["SpdCtrlLvr_Stat"]
+    self.cruise_distance = cp.vl["STW_ACTN_RQ"]["DTR_Dist_Rq"]
+    if self.cruise_distance != 255:
+      # pos1=0, pos2=33, pos3=66, pos4=100, pos5=133, pos6=166, pos7=200, SNA=255
+      ret.follow_distance_s = int(self.cruise_distance/33) + 1
+    else:
+      ret.follow_distance_s = 255
     
     
     if (self.CP.carFingerprint != CAR.PREAP_MODELS):

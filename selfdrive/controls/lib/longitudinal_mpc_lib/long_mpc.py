@@ -60,6 +60,7 @@ def get_stopped_equivalence_factor(v_lead):
 
 def get_safe_obstacle_distance(v_ego):
   return (v_ego**2) / (DIST_FACTOR * COMFORT_BRAKE) + T_FOLLOW * v_ego + STOP_DISTANCE
+  
 
 def desired_follow_distance(v_ego, v_lead):
   return get_safe_obstacle_distance(v_ego) - get_stopped_equivalence_factor(v_lead)
@@ -197,6 +198,7 @@ class LongitudinalMpc:
     self.e2e = e2e
     self.reset()
     self.source = SOURCES[2]
+    self.follow_distance_s = 255
 
   def reset(self):
     self.solver = AcadosOcpSolverFast('long', N, EXPORT_DIR)
@@ -305,6 +307,9 @@ class LongitudinalMpc:
   def update(self, carstate, radarstate, v_cruise, prev_accel_constraint=False):
     v_ego = self.x0[1]
     a_ego = self.x0[2]
+    if carstate.follow_distance_s != 255:
+      global T_FOLLOW
+      T_FOLLOW = 0.7 + carstate.follow_distance_s * 0.1
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
 
     lead_xv_0 = self.process_lead(radarstate.leadOne)
