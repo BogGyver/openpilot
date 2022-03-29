@@ -198,7 +198,6 @@ class LongitudinalMpc:
     self.e2e = e2e
     self.reset()
     self.source = SOURCES[2]
-    self.follow_distance_s = 255
 
   def reset(self):
     self.solver = AcadosOcpSolverFast('long', N, EXPORT_DIR)
@@ -307,7 +306,7 @@ class LongitudinalMpc:
   def update(self, carstate, radarstate, v_cruise, prev_accel_constraint=False):
     v_ego = self.x0[1]
     a_ego = self.x0[2]
-    if carstate.follow_distance_s != 255:
+    if carstate.followDistanceS != 255:
       global T_FOLLOW
       T_FOLLOW = 0.7 + carstate.followDistanceS * 0.1
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
