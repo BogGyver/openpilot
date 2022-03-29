@@ -206,9 +206,9 @@ class CarState(CarStateBase):
     self.cruise_distance = cp.vl["STW_ACTN_RQ"]["DTR_Dist_Rq"]
     if self.cruise_distance != 255:
       # pos1=0, pos2=33, pos3=66, pos4=100, pos5=133, pos6=166, pos7=200, SNA=255
-      ret.follow_distance_s = int(self.cruise_distance/33) + 1
+      ret.followDistanceS = int(self.cruise_distance/33) + 1
     else:
-      ret.follow_distance_s = 255
+      ret.followDistanceS = 255
     
     
     if (self.CP.carFingerprint != CAR.PREAP_MODELS):

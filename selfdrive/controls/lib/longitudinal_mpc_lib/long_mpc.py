@@ -309,7 +309,7 @@ class LongitudinalMpc:
     a_ego = self.x0[2]
     if carstate.follow_distance_s != 255:
       global T_FOLLOW
-      T_FOLLOW = 0.7 + carstate.follow_distance_s * 0.1
+      T_FOLLOW = 0.7 + carstate.followDistanceS * 0.1
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
 
     lead_xv_0 = self.process_lead(radarstate.leadOne)
