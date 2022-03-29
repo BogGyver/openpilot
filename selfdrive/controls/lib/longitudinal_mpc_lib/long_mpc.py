@@ -51,8 +51,8 @@ T_IDXS = np.array(T_IDXS_LST)
 T_DIFFS = np.diff(T_IDXS, prepend=[0.])
 MIN_ACCEL = -4.5
 COMFORT_BRAKE = 2.5
-STOP_DISTANCE = 3.0 #base it if we have radar or just visual
-DIST_FACTOR = 3
+STOP_DISTANCE = 6.0 #base it if we have radar or just visual
+DIST_FACTOR = 2
 
 def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (DIST_FACTOR * COMFORT_BRAKE)
