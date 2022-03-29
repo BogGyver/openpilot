@@ -222,12 +222,13 @@ class LONGController:
 
             #following = False
             #TODO: see what works best for these
-            #tesla_accel_limits = [-2*self.a_target,self.a_target]
-            #tesla_jerk_limits = [-4*self.a_target,2*self.a_target]
+            #tesla_accel_limits = [-self.a_target,self.a_target]
+            #tesla_jerk_limits = [-self.j_target,self.j_target]
             #if _is_present(self.lead_1):
             #  following = self.lead_1.status and self.lead_1.dRel < 45.0 and self.lead_1.vLeadK > CS.out.vEgo and self.lead_1.aLeadK > 0.0
             target_accel = actuators.accel
             target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
+            target_speed = target_speed * CV.MS_TO_KPH
             max_accel = 0 if target_accel < 0 else target_accel
             min_accel = 0 if target_accel > 0 else target_accel
             tesla_accel_limits = [min_accel,max_accel]
