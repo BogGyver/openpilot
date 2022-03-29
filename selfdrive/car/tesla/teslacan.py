@@ -147,7 +147,7 @@ class TeslaCAN:
       if static_cruise and cruise_enabled:
         accState = 3
     values = {
-      "DAS_setSpeed" :  clip(speed*3.6,0,410), #kph
+      "DAS_setSpeed" :  clip(speed,0,200), #kph
       "DAS_accState" :  accState, # 4-ACC ON, 3-HOLD, 0-CANCEL
       "DAS_aebEvent" :  0, # 0 - AEB NOT ACTIVE
       "DAS_jerkMin" :  clip(jerk_limits[0],-7.67,0), #m/s^3 -8.67,0
@@ -171,7 +171,7 @@ class TeslaCAN:
       "DAS_locRequest" : locRequest, # 0-IDLE,1-FORWARD,2-REVERSE,3-HOLD,4-PARK
       "DAS_locJerkMin" : clip(jerk_limits[0],-7.67,0), #m/s^3 -8.67,0
       "DAS_locJerkMax" : clip(jerk_limits[1],0,7.67), #m/s^3 0,8.67
-      "DAS_locSpeed" : clip(speed*3.6,0,200), #kph
+      "DAS_locSpeed" : clip(speed,0,200), #kph
       "DAS_locAccelMin" : clip(accel_limits[0],-12,3.44), #m/s^2 -15,5.44
       "DAS_locAccelMax" : clip(accel_limits[1],-12,3.44), #m/s^2 -15,5.44
       "DAS_longControlCounter" : counter, #

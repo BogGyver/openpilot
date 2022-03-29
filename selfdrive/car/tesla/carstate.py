@@ -29,6 +29,10 @@ class CarState(CarStateBase):
     self.das_steeringControl_counter = -1
     self.das_status_counter = -1
     self.autopilot_enabled = False
+    self.cruiseEnabled = False
+    self.cruiseDelay = False
+    self.carNotInDrive = True
+    self.autopilot_was_enabled = False
 
     #to control hazard lighgts
     self.needs_hazard = False
@@ -70,9 +74,7 @@ class CarState(CarStateBase):
     self.baseMapSpeedLimitMPS = 0
     self.fleet_speed_state = 0
 
-    self.cruiseEnabled = False
-    self.cruiseDelay = False
-    self.carNotInDrive = True
+    
 
     self.speed_units = "MPH"
     self.tap_direction = 0
@@ -206,7 +208,12 @@ class CarState(CarStateBase):
     if (self.CP.carFingerprint != CAR.PREAP_MODELS):
       acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
       self.autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
-      self.cruiseEnabled = acc_enabled and not self.autopilot_enabled and not summon_or_autopark_enabled
+      cruiseEnabled = acc_enabled and not self.autopilot_enabled and not summon_or_autopark_enabled
+      if self.autopilot_enabled:
+        self.autopilot_was_enabled = True
+      if not(self.autopilot_enabled or cruiseEnabled):
+        self.autopilot_was_enabled = False
+      self.cruiseEnabled = cruiseEnabled and not self.autopilot_was_enabled
       ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
       if self.speed_units == "KPH":
         ret.cruiseState.speed = cp.vl["DI_state"]["DI_cruiseSet"] * CV.KPH_TO_MS
