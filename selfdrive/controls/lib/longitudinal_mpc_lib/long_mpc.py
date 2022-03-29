@@ -50,7 +50,6 @@ T_IDXS_LST = [index_function(idx, max_val=MAX_T, max_idx=N+1) for idx in range(N
 T_IDXS = np.array(T_IDXS_LST)
 T_DIFFS = np.diff(T_IDXS, prepend=[0.])
 MIN_ACCEL = -4.5
-T_FOLLOW = load_float_param("TinklaFollowDistance",1.45)
 COMFORT_BRAKE = 2.5
 STOP_DISTANCE = 3.0 #base it if we have radar or just visual
 DIST_FACTOR = 3
@@ -58,12 +57,12 @@ DIST_FACTOR = 3
 def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (DIST_FACTOR * COMFORT_BRAKE)
 
-def get_safe_obstacle_distance(v_ego):
+def get_safe_obstacle_distance(v_ego,T_FOLLOW):
   return (v_ego**2) / (DIST_FACTOR * COMFORT_BRAKE) + T_FOLLOW * v_ego + STOP_DISTANCE
   
 
-def desired_follow_distance(v_ego, v_lead):
-  return get_safe_obstacle_distance(v_ego) - get_stopped_equivalence_factor(v_lead)
+def desired_follow_distance(v_ego, v_lead,T_FOLLOW):
+  return get_safe_obstacle_distance(v_ego,T_FOLLOW) - get_stopped_equivalence_factor(v_lead)
 
 
 def gen_long_model():
@@ -100,7 +99,7 @@ def gen_long_model():
   return model
 
 
-def gen_long_mpc_solver():
+def gen_long_mpc_solver(T_FOLLOW):
   ocp = AcadosOcp()
   ocp.model = gen_long_model()
 
@@ -129,7 +128,7 @@ def gen_long_mpc_solver():
   ocp.cost.yref = np.zeros((COST_DIM, ))
   ocp.cost.yref_e = np.zeros((COST_E_DIM, ))
 
-  desired_dist_comfort = get_safe_obstacle_distance(v_ego)
+  desired_dist_comfort = get_safe_obstacle_distance(v_ego,T_FOLLOW)
 
   # The main cost in normal operation is how close you are to the "desired" distance
   # from an obstacle at every timestep. This obstacle can be a lead car
@@ -198,6 +197,7 @@ class LongitudinalMpc:
     self.e2e = e2e
     self.reset()
     self.source = SOURCES[2]
+    self.T_FOLLOW = load_float_param("TinklaFollowDistance",1.45)
 
   def reset(self):
     self.solver = AcadosOcpSolverFast('long', N, EXPORT_DIR)
@@ -307,8 +307,7 @@ class LongitudinalMpc:
     v_ego = self.x0[1]
     a_ego = self.x0[2]
     if carstate.followDistanceS != 255:
-      global T_FOLLOW
-      T_FOLLOW = 0.7 + carstate.followDistanceS * 0.1
+      self.T_FOLLOW = 0.7 + carstate.followDistanceS * 0.1
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
 
     lead_xv_0 = self.process_lead(radarstate.leadOne)
@@ -331,7 +330,7 @@ class LongitudinalMpc:
     v_cruise_clipped = np.clip(v_cruise * np.ones(N+1),
                                v_lower,
                                v_upper)
-    cruise_obstacle = np.cumsum(T_DIFFS * v_cruise_clipped) + get_safe_obstacle_distance(v_cruise_clipped)
+    cruise_obstacle = np.cumsum(T_DIFFS * v_cruise_clipped) + get_safe_obstacle_distance(v_cruise_clipped,self.T_FOLLOW)
 
     x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle, cruise_obstacle])
     self.source = SOURCES[np.argmin(x_obstacles[0])]
@@ -387,5 +386,5 @@ class LongitudinalMpc:
 
 
 if __name__ == "__main__":
-  ocp = gen_long_mpc_solver()
+  ocp = gen_long_mpc_solver(1.45)
   AcadosOcpSolver.generate(ocp, json_file=JSON_FILE, build=False)
