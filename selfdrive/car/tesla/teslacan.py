@@ -169,8 +169,8 @@ class TeslaCAN:
       "DAS_locMode" : 1, # 1- NORMAL
       "DAS_locState" : 0, # 0-HEALTHY
       "DAS_locRequest" : locRequest, # 0-IDLE,1-FORWARD,2-REVERSE,3-HOLD,4-PARK
-      "DAS_locJerkMin" : clip(jerk_limits[0],-7.67,0), #m/s^3 -8.67,0
-      "DAS_locJerkMax" : clip(jerk_limits[1],0,7.67), #m/s^3 0,8.67
+      "DAS_locJerkMin" : clip(jerk_limits[0],-8.67,0), #m/s^3 -8.67,0
+      "DAS_locJerkMax" : clip(jerk_limits[1],0,8.67), #m/s^3 0,8.67
       "DAS_locSpeed" : clip(speed,0,200), #kph
       "DAS_locAccelMin" : clip(accel_limits[0],-12,3.44), #m/s^2 -15,5.44
       "DAS_locAccelMax" : clip(accel_limits[1],-12,3.44), #m/s^2 -15,5.44
