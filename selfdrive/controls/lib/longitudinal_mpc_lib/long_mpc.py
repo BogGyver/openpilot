@@ -25,7 +25,7 @@ SOURCES = ['lead0', 'lead1', 'cruise']
 
 X_DIM = 3
 U_DIM = 1
-PARAM_DIM= 4
+PARAM_DIM= 5
 COST_E_DIM = 5
 COST_DIM = COST_E_DIM + 1
 CONSTR_DIM = 4
@@ -52,17 +52,18 @@ T_DIFFS = np.diff(T_IDXS, prepend=[0.])
 MIN_ACCEL = -4.5
 T_FOLLOW = load_float_param("TinklaFollowDistance",1.45)
 COMFORT_BRAKE = 2.5
-STOP_DISTANCE = 3.0 #base it if we have radar or just visual
-DIST_FACTOR = 3
+STOP_DISTANCE = 6.0 #base it if we have radar or just visual
+DIST_FACTOR = 2
 
 def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (DIST_FACTOR * COMFORT_BRAKE)
 
-def get_safe_obstacle_distance(v_ego):
-  return (v_ego**2) / (DIST_FACTOR * COMFORT_BRAKE) + T_FOLLOW * v_ego + STOP_DISTANCE
+def get_safe_obstacle_distance(v_ego,t_follow=T_FOLLOW):
+  return (v_ego**2) / (DIST_FACTOR * COMFORT_BRAKE) + t_follow * v_ego + STOP_DISTANCE
+  
 
-def desired_follow_distance(v_ego, v_lead):
-  return get_safe_obstacle_distance(v_ego) - get_stopped_equivalence_factor(v_lead)
+def desired_follow_distance(v_ego, v_lead,t_follow=T_FOLLOW):
+  return get_safe_obstacle_distance(v_ego,t_follow) - get_stopped_equivalence_factor(v_lead)
 
 
 def gen_long_model():
@@ -86,11 +87,12 @@ def gen_long_model():
   model.xdot = vertcat(x_ego_dot, v_ego_dot, a_ego_dot)
 
   # live parameters
+  t_follow = SX.sym('t_follow')
   a_min = SX.sym('a_min')
   a_max = SX.sym('a_max')
   x_obstacle = SX.sym('x_obstacle')
   prev_a = SX.sym('prev_a')
-  model.p = vertcat(a_min, a_max, x_obstacle, prev_a)
+  model.p = vertcat(a_min, a_max, x_obstacle, prev_a, t_follow)
 
   # dynamics model
   f_expl = vertcat(v_ego, a_ego, j_ego)
@@ -124,11 +126,12 @@ def gen_long_mpc_solver():
   a_min, a_max = ocp.model.p[0], ocp.model.p[1]
   x_obstacle = ocp.model.p[2]
   prev_a = ocp.model.p[3]
+  t_follow = ocp.model.p[4]
 
   ocp.cost.yref = np.zeros((COST_DIM, ))
   ocp.cost.yref_e = np.zeros((COST_E_DIM, ))
 
-  desired_dist_comfort = get_safe_obstacle_distance(v_ego)
+  desired_dist_comfort = get_safe_obstacle_distance(v_ego,t_follow)
 
   # The main cost in normal operation is how close you are to the "desired" distance
   # from an obstacle at every timestep. This obstacle can be a lead car
@@ -155,7 +158,7 @@ def gen_long_mpc_solver():
 
   x0 = np.zeros(X_DIM)
   ocp.constraints.x0 = x0
-  ocp.parameter_values = np.array([-1.2, 1.2, 0.0, 0.0])
+  ocp.parameter_values = np.array([-1.2, 1.2, 0.0, 0.0, T_FOLLOW])
 
   # We put all constraint cost weights to 0 and only set them at runtime
   cost_weights = np.zeros(CONSTR_DIM)
@@ -193,10 +196,11 @@ def gen_long_mpc_solver():
 
 
 class LongitudinalMpc:
-  def __init__(self, e2e=False):
+  def __init__(self, e2e=False, t_follow=T_FOLLOW):
     self.e2e = e2e
     self.reset()
     self.source = SOURCES[2]
+    self.t_follow = t_follow
 
   def reset(self):
     self.solver = AcadosOcpSolverFast('long', N, EXPORT_DIR)
@@ -305,6 +309,8 @@ class LongitudinalMpc:
   def update(self, carstate, radarstate, v_cruise, prev_accel_constraint=False):
     v_ego = self.x0[1]
     a_ego = self.x0[2]
+    if carstate.followDistanceS != 255:
+      self.t_follow = 0.7 + float(carstate.followDistanceS) * 0.1
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
 
     lead_xv_0 = self.process_lead(radarstate.leadOne)
@@ -327,7 +333,7 @@ class LongitudinalMpc:
     v_cruise_clipped = np.clip(v_cruise * np.ones(N+1),
                                v_lower,
                                v_upper)
-    cruise_obstacle = np.cumsum(T_DIFFS * v_cruise_clipped) + get_safe_obstacle_distance(v_cruise_clipped)
+    cruise_obstacle = np.cumsum(T_DIFFS * v_cruise_clipped) + get_safe_obstacle_distance(v_cruise_clipped,self.t_follow)
 
     x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle, cruise_obstacle])
     self.source = SOURCES[np.argmin(x_obstacles[0])]
@@ -336,7 +342,7 @@ class LongitudinalMpc:
       self.params[:,3] = np.copy(self.prev_a)
     else:
       self.params[:,3] = a_ego
-
+    self.params[:, 4] = self.t_follow
     self.run()
     if (np.any(lead_xv_0[:,0] - self.x_sol[:,0] < CRASH_DISTANCE) and
             radarstate.leadOne.modelProb > 0.9):

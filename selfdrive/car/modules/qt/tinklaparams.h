@@ -48,14 +48,14 @@ float tinkla_get_float_param(const std::string &tinkla_param, float default_valu
     ifstream ifile;
     ifile.open(tinkla_params_path + "/" + tinkla_param);
     if (!ifile) {
-      //no file assume false and create
+      //no file assume default_value and create
       ofstream ofile;
       ofile.open(tinkla_params_path + "/" + tinkla_param);
       if (ofile) {
         ofile << default_value;
         ofile.close();
       }
-      return false;
+      return default_value;
     } else {
       float value;
       ifile >> value;

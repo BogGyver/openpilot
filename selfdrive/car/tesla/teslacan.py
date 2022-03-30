@@ -91,32 +91,20 @@ class TeslaCAN:
     return self.packer.make_can_msg("DAS_bodyControls", bus, values)
 
 
-  def create_telemetry_road_info(self, lLineQualRaw, rLineQualRaw, alcaState, bus):
+  def create_telemetry_road_info(self,lLine,rLine,lLineQualRaw,rLineQualRaw, alcaState, bus):
     #alcaState -1 alca to left, 1 alca to right, 0 no alca now
-    rLineType = 7
-    rLineColor = 0
-    rLineQual = 0
-    if rLineQualRaw > 0.15:
+    rLineType = 1 if rLine == 1 else 7
+    rLineColor = 2 if rLine == 1 else 0
+    rLineQual = 3 if rLine == 1 else 0
+    if rLineQualRaw == 1:
       rLineType = 3
       rLineColor = 1
-      if rLineQualRaw > 0.75:
-        rLineQual = 3
-      elif rLineQualRaw > 0.5:
-        rLineQual = 2
-      else:
-        rLineQual = 1
-    lLineType = 7
-    lLineColor = 0
-    lLineQual = 0
-    if lLineQualRaw > 0.45:
+    lLineType = 1 if lLine == 1 else 7
+    lLineColor = 2 if lLine == 1 else 0
+    lLineQual = 3 if lLine == 1 else 0
+    if lLineQualRaw == 1:
       lLineType = 3
       lLineColor = 1
-      if lLineQualRaw > 0.75:
-        lLineQual = 3
-      elif lLineQualRaw > 0.5:
-        lLineQual = 2
-      else:
-        lLineQual = 1
     values = {
       "DAS_telemetryMultiplexer" : 0,
       "DAS_telLeftLaneType" : lLineType, #0-undecided, 1-solid, 2-road edge, 3-dashed 4-double 5-botts dots 6-barrier
@@ -125,8 +113,8 @@ class TeslaCAN:
       "DAS_telRightMarkerQuality" : rLineQual, # 0  LOWEST, 1 LOW, 2 MEDIUM, 3 HIGH
       "DAS_telLeftMarkerColor" : lLineColor, # 0 UNKNOWN, 1 WHITE, 2 YELLOW, 3 BLUE
       "DAS_telRightMarkerColor" : rLineColor, # 0 UNKNOWN, 1 WHITE, 2 YELLOW, 3 BLUE
-      "DAS_telLeftLaneCrossing" : 0 if alcaState != -1 else 1, #0 NOT CROSSING, 1 CROSSING
-      "DAS_telRightLaneCrossing" : 0 if alcaState != 1 else 1,#0 NOT CROSSING, 1 CROSSING
+      "DAS_telLeftLaneCrossing" : 0 if alcaState != 1 else 1, #0 NOT CROSSING, 1 CROSSING
+      "DAS_telRightLaneCrossing" : 0 if alcaState != 2 else 1,#0 NOT CROSSING, 1 CROSSING
     }
     return self.packer.make_can_msg("DAS_telemetry", bus, values)
 
@@ -147,13 +135,13 @@ class TeslaCAN:
       if static_cruise and cruise_enabled:
         accState = 3
     values = {
-      "DAS_setSpeed" :  clip(speed*3.6,0,410), #kph
+      "DAS_setSpeed" :  clip(speed,0,200), #kph
       "DAS_accState" :  accState, # 4-ACC ON, 3-HOLD, 0-CANCEL
       "DAS_aebEvent" :  0, # 0 - AEB NOT ACTIVE
-      "DAS_jerkMin" :  clip(jerk_limits[0],-7.67,0), #m/s^3 -8.67,0
-      "DAS_jerkMax" :  clip(jerk_limits[1],0,7.67), #m/s^3 0,8.67
-      "DAS_accelMin" : clip(accel_limits[0],-12,3.44), #m/s^2 -15,5.44
-      "DAS_accelMax" : clip(accel_limits[1],-12,3.44), #m/s^2 -15,5.44
+      "DAS_jerkMin" :  clip(jerk_limits[0],-8.,8.), #m/s^3 -8.67,0
+      "DAS_jerkMax" :  clip(jerk_limits[1],-8.,8.), #m/s^3 0,8.67
+      "DAS_accelMin" : clip(accel_limits[0],-12.,3.44), #m/s^2 -15,5.44
+      "DAS_accelMax" : clip(accel_limits[1],-12.,3.44), #m/s^2 -15,5.44
       "DAS_controlCounter": counter,
       "DAS_controlChecksum" : 0,
     }
@@ -169,9 +157,9 @@ class TeslaCAN:
       "DAS_locMode" : 1, # 1- NORMAL
       "DAS_locState" : 0, # 0-HEALTHY
       "DAS_locRequest" : locRequest, # 0-IDLE,1-FORWARD,2-REVERSE,3-HOLD,4-PARK
-      "DAS_locJerkMin" : clip(jerk_limits[0],-7.67,0), #m/s^3 -8.67,0
-      "DAS_locJerkMax" : clip(jerk_limits[1],0,7.67), #m/s^3 0,8.67
-      "DAS_locSpeed" : clip(speed*3.6,0,200), #kph
+      "DAS_locJerkMin" : clip(jerk_limits[0],-8.67,0), #m/s^3 -8.67,0
+      "DAS_locJerkMax" : clip(jerk_limits[1],0,8.67), #m/s^3 0,8.67
+      "DAS_locSpeed" : clip(speed,0,200), #kph
       "DAS_locAccelMin" : clip(accel_limits[0],-12,3.44), #m/s^2 -15,5.44
       "DAS_locAccelMax" : clip(accel_limits[1],-12,3.44), #m/s^2 -15,5.44
       "DAS_longControlCounter" : counter, #

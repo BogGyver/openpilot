@@ -7,8 +7,14 @@ from selfdrive.car.modules.CFG_module import load_bool_param
 from panda import Panda
 from selfdrive.car.tesla.tunes import LongTunes, set_long_tune
 from selfdrive.car.tesla.PCC_module import ACCEL_MIN, ACCEL_MAX
+from common.numpy_fast import interp
+
 
 ButtonType = car.CarState.ButtonEvent.Type
+
+ACCEL_LOOKUP_BP = [0.,5.,30.]
+ACCEL_MAX_V = [3.5,2.5,2.]
+ACCEL_MIN_V = [-3.5,-3.5,-3.5]
 
 class CarInterface(CarInterfaceBase):
   @staticmethod
@@ -18,7 +24,12 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
-    return ACCEL_MIN, ACCEL_MAX
+    if CP.carFingerprint == CAR.AP1_MODELS:
+      a_min = interp(current_speed,ACCEL_LOOKUP_BP,ACCEL_MIN_V)
+      a_max = interp(current_speed,ACCEL_LOOKUP_BP,ACCEL_MAX_V)
+      return a_min, a_max
+    else:
+      return ACCEL_MIN, ACCEL_MAX
 
   @staticmethod
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=None):

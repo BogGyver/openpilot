@@ -29,6 +29,10 @@ class CarState(CarStateBase):
     self.das_steeringControl_counter = -1
     self.das_status_counter = -1
     self.autopilot_enabled = False
+    self.cruiseEnabled = False
+    self.cruiseDelay = False
+    self.carNotInDrive = True
+    self.autopilot_was_enabled = False
 
     #to control hazard lighgts
     self.needs_hazard = False
@@ -47,6 +51,7 @@ class CarState(CarStateBase):
     self.rLine = 0
 
     self.acc_speed_kph = 0.
+    self.cruise_speed = 0.
 
     #IC integration
     self.DAS_gas_to_resume = 0
@@ -69,9 +74,7 @@ class CarState(CarStateBase):
     self.baseMapSpeedLimitMPS = 0
     self.fleet_speed_state = 0
 
-    self.cruiseEnabled = False
-    self.cruiseDelay = False
-    self.carNotInDrive = True
+    self.cruise_distance = 255
 
     self.speed_units = "MPH"
     self.tap_direction = 0
@@ -200,19 +203,31 @@ class CarState(CarStateBase):
         self.v_cruise_actual = self.v_cruise_actual * CV.MPH_TO_KPH
     self.prev_cruise_buttons = self.cruise_buttons
     self.cruise_buttons = cp.vl["STW_ACTN_RQ"]["SpdCtrlLvr_Stat"]
+    self.cruise_distance = cp.vl["STW_ACTN_RQ"]["DTR_Dist_Rq"]
+    if self.cruise_distance != 255:
+      # pos1=0, pos2=33, pos3=66, pos4=100, pos5=133, pos6=166, pos7=200, SNA=255
+      ret.followDistanceS = int(self.cruise_distance/33) + 1
+    else:
+      ret.followDistanceS = 255
     
     
     if (self.CP.carFingerprint != CAR.PREAP_MODELS):
       acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
       self.autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
-      self.cruiseEnabled = acc_enabled and not self.autopilot_enabled and not summon_or_autopark_enabled
+      cruiseEnabled = acc_enabled and not self.autopilot_enabled and not summon_or_autopark_enabled
+      if self.autopilot_enabled:
+        self.autopilot_was_enabled = True
+      if not(self.autopilot_enabled or cruiseEnabled):
+        self.autopilot_was_enabled = False
+      self.cruiseEnabled = cruiseEnabled and not self.autopilot_was_enabled
       ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
       if self.speed_units == "KPH":
-        ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.KPH_TO_MS
+        ret.cruiseState.speed = cp.vl["DI_state"]["DI_cruiseSet"] * CV.KPH_TO_MS
       elif self.speed_units == "MPH":
-        ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.MPH_TO_MS
+        ret.cruiseState.speed = cp.vl["DI_state"]["DI_cruiseSet"] * CV.MPH_TO_MS
       ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
-      ret.cruiseState.standstill = False #(cruise_state == "STANDSTILL")
+      ret.cruiseState.standstill = (cruise_state == "STANDSTILL")
+      self.cruise_speed = False #ret.cruiseState.speed
     else:
       ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
       ret.cruiseState.enabled = self.cruiseEnabled and (not ret.doorOpen) and (ret.gearShifter == car.CarState.GearShifter.drive) and (not ret.seatbeltUnlatched)

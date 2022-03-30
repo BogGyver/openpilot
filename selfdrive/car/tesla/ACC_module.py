@@ -178,11 +178,13 @@ class ACCController:
             self.user_has_braked = True
             self.last_brake_press_time = _current_time_millis()
             if not self.autoresume:
-                self.enable_adaptive_cruise = False
-                if self.adaptive:
-                    CS.longCtrlEvent = car.CarEvent.EventName.accDisabled
-                else:
-                    CS.longCtrlEvent = car.CarEvent.EventName.ccDisabled
+                if self.enable_adaptive_cruise:
+                    self.enable_adaptive_cruise = False
+                    if self.adaptive:
+                        CS.longCtrlEvent = car.CarEvent.EventName.accDisabled
+                    else:
+                        CS.longCtrlEvent = car.CarEvent.EventName.ccDisabled
+                
 
         if CS.out.vEgo < self.MIN_CRUISE_SPEED_MS:
             self.has_gone_below_min_speed = True
