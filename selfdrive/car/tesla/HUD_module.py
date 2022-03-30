@@ -161,6 +161,11 @@ class HUDController:
                 50, CS.curvC0, CS.curvC1, CS.curvC2, CS.curvC3, self.leftLaneQuality, self.rightLaneQuality,
                 CAN_CHASSIS[self.CP.carFingerprint], 1))
 
+            if self.CP.carFingerprint == CAR.PREAP_MODELS:
+                alcaState = CS.alca_direction if (CS.alca_pre_engage or CS.alca_engaged) and CS.alca_direction > 0 else 0
+                messages.append(self.tesla_can.create_telemetry_road_info(CS.lLine,CS.rLine,self.leftLaneQuality, self.rightLaneQuality, alcaState,
+                    CAN_CHASSIS[self.CP.carFingerprint]))
+
             if radar_state is not None:
                 leadsData = radar_state.radarState
                 if leadsData is not None:
@@ -192,7 +197,7 @@ class HUDController:
                     DAS_hands_on_state = 5
             #if manual steering overright we will flash the light at the top of IC
             if enabled and human_control:
-                DAS_hands_on_state = 5
+                DAS_hands_on_state = 3
             DAS_collision_warning =  1 if hud_alert == VisualAlert.fcw else 0
             #alcaState 1 if nothing, 8+direction if enabled
             DAS_alca_state = 8 + CS.alca_direction if (CS.alca_pre_engage or CS.alca_engaged) and CS.alca_direction > 0 else 1
