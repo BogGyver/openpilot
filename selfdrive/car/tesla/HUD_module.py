@@ -161,9 +161,9 @@ class HUDController:
                 50, CS.curvC0, CS.curvC1, CS.curvC2, CS.curvC3, self.leftLaneQuality, self.rightLaneQuality,
                 CAN_CHASSIS[self.CP.carFingerprint], 1))
 
-            if self.CP.carFingerprint == CAR.PREAP_MODELS:
-                alcaState = CS.alca_direction if (CS.alca_pre_engage or CS.alca_engaged) and CS.alca_direction > 0 else 0
-                messages.append(self.tesla_can.create_telemetry_road_info(CS.lLine,CS.rLine,self.leftLaneQuality, self.rightLaneQuality, alcaState,
+            #if self.CP.carFingerprint == CAR.PREAP_MODELS:
+            alcaState = CS.alca_direction if (CS.alca_pre_engage or CS.alca_engaged) and CS.alca_direction > 0 else 0
+            messages.append(self.tesla_can.create_telemetry_road_info(CS.lLine,CS.rLine,self.leftLaneQuality, self.rightLaneQuality, alcaState,
                     CAN_CHASSIS[self.CP.carFingerprint]))
 
             if radar_state is not None:
