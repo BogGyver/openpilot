@@ -28,8 +28,8 @@ class LONGController:
     def __init__(self,CP,packer, tesla_can, pedalcan):
         self.CP = CP
         self.v_target = None
-        self.a_target = None
-        self.j_target = None
+        self.a_target = 0.
+        self.j_target = 0.
         self.lead_1 = None
         self.long_control_counter = 1
         self.tesla_can = tesla_can
@@ -232,13 +232,13 @@ class LONGController:
                 self.j_target = abs(long_plan.longitudinalPlan.jerks[-1]) # -1 to try actual vs jTarget
             if self.v_target is None:
                 self.v_target = CS.out.vEgo
-                self.a_target = 1
-                self.j_target = 1
+                self.a_target = 0
+                self.j_target = 8
 
             #following = False
             #TODO: see what works best for these
-            #tesla_accel_limits = [-self.a_target,self.a_target]
-            #tesla_jerk_limits = [-self.j_target,self.j_target]
+            tesla_accel_limits = [-self.a_target,self.a_target]
+            tesla_jerk_limits = [-self.j_target,self.j_target]
             #if _is_present(self.lead_1):
             #  following = self.lead_1.status and self.lead_1.dRel < 45.0 and self.lead_1.vLeadK > CS.out.vEgo and self.lead_1.aLeadK > 0.0
             target_accel = actuators.accel 
@@ -248,8 +248,8 @@ class LONGController:
             target_speed = target_speed * CV.MS_TO_KPH
             max_accel = 0 if target_accel < 0 else target_accel
             min_accel = 0 if target_accel > 0 else target_accel
-            tesla_jerk_limits = [CarControllerParams.JERK_LIMIT_MIN,CarControllerParams.JERK_LIMIT_MAX]
-            tesla_accel_limits = [min_accel,max_accel]
+            #tesla_jerk_limits = [CarControllerParams.JERK_LIMIT_MIN,CarControllerParams.JERK_LIMIT_MAX]
+            #tesla_accel_limits = [min_accel,max_accel]
             if self.madMax:
                 tesla_jerk_limits = [min_accel/2,max_accel/2]
             #we now create the DAS_control for AP1 or DAS_longControl for AP2
