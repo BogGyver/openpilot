@@ -25,11 +25,7 @@ source $DIR/identity.sh
 
 echo "[-] Setting up repo T=$SECONDS"
 rm -rf $SOURCE_DIR
-mkdir -p $SOURCE_DIR
-git init
-git remote add origin git@github.com:boggyver/openpilot.git
-git fetch origin tesla_unity_beta
-git checkout tesla_unity_beta
+git clone git@github.com:boggyer/openpilot.git --depth=1 -b tesla_unity_beta $SOURCE_DIR
 
 rm -rf $BUILD_DIR
 mkdir -p $BUILD_DIR
@@ -129,5 +125,7 @@ git commit --amend -m "Tesla Unity v$TINKLAVERSION"
 
 echo "[-] pushing T=$SECONDS"
 git push -f origin $RELEASE_BRANCH
+rm -rf $BUILD_DIR
+rm -rf $SOURCE_DIR
 
 echo "[-] done T=$SECONDS"

@@ -6,7 +6,10 @@ TARGET_DIR=/data/openpilot
 SOURCE_DIR="$(git rev-parse --show-toplevel)"
 TINKLA_BETA_NUMBER="$1"
 
-#PUSH="tesla_unity_beta_test"
+cd $DIR
+git pull
+git submodule init
+git submodule update
 
 # set git identity
 source $DIR/identity.sh
@@ -70,5 +73,5 @@ git commit -a -m "Tesla Unity v$VERSION-Beta$TINKLA_BETA_NUMBER"
 echo "[-] Pushing to $PUSH T=$SECONDS"
 git remote set-url origin git@github.com:boggyver/openpilot.git
 git push -f origin tesla_unity_dev:tesla_unity_beta
-
+rm -rf $TARGET_DIR
 echo "[-] done T=$SECONDS"
