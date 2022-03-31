@@ -46,6 +46,8 @@ find . -maxdepth 1 -not -path './.git' -not -name '.' -not -name '..' -exec rm -
 
 # reset tree and get version
 cd $SOURCE_DIR
+git pull
+git submodule update
 git clean -xdf
 git checkout -- selfdrive/common/version.h
 git checkout -- selfdrive/common/tinkla_version.h
@@ -56,8 +58,6 @@ TINKLAVERSION=$(cat selfdrive/common/tinkla_version.h | awk -F[\"-]  '{print $2}
 # do the files copy
 echo "[-] copying files T=$SECONDS"
 cd $SOURCE_DIR
-git pull
-git submodule update
 cp -pR --parents $(cat $SOURCE_DIR/release/files_common) $TARGET_DIR/
 
 #update version files
