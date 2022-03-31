@@ -25,7 +25,7 @@ source $DIR/identity.sh
 
 echo "[-] Setting up repo T=$SECONDS"
 rm -rf $SOURCE_DIR
-git clone git@github.com:boggyer/openpilot.git --depth=1 -b tesla_unity_beta $SOURCE_DIR
+git clone git@github.com:boggyver/openpilot.git --depth=1 -b tesla_unity_beta $SOURCE_DIR
 
 rm -rf $BUILD_DIR
 mkdir -p $BUILD_DIR
