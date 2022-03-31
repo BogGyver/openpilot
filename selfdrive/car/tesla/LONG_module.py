@@ -256,7 +256,7 @@ class LONGController:
             if self.CP.carFingerprint == CAR.AP2_MODELS:
                 messages.append(self.tesla_can.create_ap2_long_control(target_speed, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
             if self.CP.carFingerprint == CAR.AP1_MODELS:
-                messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, False, enabled ,target_speed, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
+                messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, False, enabled ,self.v_target, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
 
         #AP ModelS with OP Long and not enabled
         elif (not enabled) and (not CS.autopilot_enabled) and (not CS.autopilot_was_enabled) and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
