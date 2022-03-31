@@ -7,9 +7,9 @@ from cereal import car
 from common.numpy_fast import interp
 
 ACCEL_MULTIPLIERS_BP =     [0.0, 5.0, 10.0, 30.0]
-ACCEL_MULT_SPEED_V  =      [2.0, 1.5,  1.2,  1.0]
-ACCEL_MULT_SPEED_DELTA_V = [1.0, 1.05, 1.1,  1.3]
-ACCEL_MULT_ACCEL_PERC_V  = [1.0, 1.0,  1.1,  1.3]
+ACCEL_MULT_SPEED_V  =      [1.5, 1.3,  1.2,  1.0]
+ACCEL_MULT_SPEED_DELTA_V = [1.0, 1.01, 1.05,  1.1]
+ACCEL_MULT_ACCEL_PERC_V  = [1.0, 1.0,  1.05,  1.1]
 
 def _is_present(lead):
   return bool((not (lead is None)) and (lead.dRel > 0))
