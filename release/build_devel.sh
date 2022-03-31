@@ -10,7 +10,7 @@ TINKLA_BETA_NUMBER="$1"
 
 # set git identity
 source $DIR/identity.sh
-
+rm -rf $TARGET_DIR
 echo "[-] Setting up repo T=$SECONDS"
 if [ ! -d "$TARGET_DIR" ]; then
   mkdir -p $TARGET_DIR

@@ -11,6 +11,12 @@ TINKLA_BETA_NUMBER="$1"
 
 SOURCE_DIR=/data/openpilot_dev
 TARGET_DIR=/data/openpilot
+TARGET_TEMP=/data/openpilot_temp
+
+# Create folders
+mv $TARGET_DIR $TARGET_TEMP
+rm -rf $TARGET_DIR || true
+mkdir -p $TARGET_DIR
 
 export GIT_COMMITTER_NAME="BogGyver"
 export GIT_COMMITTER_EMAIL="bogdan.butoi@gmail.com"
@@ -78,10 +84,14 @@ echo "[-] committing version $VERSION T=$SECONDS"
 git add -f .
 git status
 git commit -a -m "Tesla Unity v$VERSION-Beta$TINKLA_BETA_NUMBER"
-git push --set-upstream origin tesla_unity_beta
+git remote set-url origin git@github.com:boggyver/openpilot.git
+git push -f origin tesla_unity_dev:tesla_unity_beta
 
 cd $SOURCE_DIR
 git checkout selfdrive/common/version.h
 git checkout selfdrive/common/tinkla_version.h
+
+rm -rf $TARGET_DIR
+mv $TARGET_TEMP $TARGET_DIR
 
 echo "[-] done T=$SECONDS"
