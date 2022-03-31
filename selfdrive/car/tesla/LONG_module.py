@@ -14,13 +14,13 @@ ACCEL_MULT_ACCEL_PERC_V  = [1.0, 1.0,  1.05,  1.1]
 def _is_present(lead):
   return bool((not (lead is None)) and (lead.dRel > 0))
 
-def _get_accel_multiplier(speed,speed_target,accel,accel_target):
+def _get_accel_multiplier(speed,speed_target,accel):
     mult = 1.0
+    #only do it for positive acceleration
+    if accel <= 0:
+        return mult
     mult = mult * interp(speed,ACCEL_MULTIPLIERS_BP,ACCEL_MULT_SPEED_V)
     mult = mult * interp(abs(speed-speed_target),ACCEL_MULTIPLIERS_BP,ACCEL_MULT_SPEED_DELTA_V)
-    #how much we're expecting to change?
-    da_perc = 100. * abs(accel_target - accel)/abs(accel)
-    mult = mult * interp(da_perc,ACCEL_MULTIPLIERS_BP,ACCEL_MULT_ACCEL_PERC_V)
     return mult
 
 class LONGController: 
@@ -243,7 +243,7 @@ class LONGController:
             #  following = self.lead_1.status and self.lead_1.dRel < 45.0 and self.lead_1.vLeadK > CS.out.vEgo and self.lead_1.aLeadK > 0.0
             target_accel = actuators.accel 
             if self.madMax:
-                target_accel = target_accel * _get_accel_multiplier(CS.out.vEgo,self.v_target,actuators.accel,self.a_target)
+                target_accel = target_accel * _get_accel_multiplier(CS.out.vEgo,self.v_target,target_accel)
             target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
             target_speed = target_speed * CV.MS_TO_KPH
             max_accel = 0 if target_accel < 0 else target_accel
