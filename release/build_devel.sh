@@ -67,10 +67,8 @@ git add -f .
 git status
 git commit -a -m "Tesla Unity v$VERSION-Beta$TINKLA_BETA_NUMBER"
 
-if [ ! -z "$PUSH" ]; then
-  echo "[-] Pushing to $PUSH T=$SECONDS"
-  git remote set-url origin git@github.com:boggyver/openpilot.git
-  git push -f origin tesla_unity_dev:$PUSH
-fi
+echo "[-] Pushing to $PUSH T=$SECONDS"
+git remote set-url origin git@github.com:boggyver/openpilot.git
+git push -f origin tesla_unity_dev:tesla_unity_beta
 
 echo "[-] done T=$SECONDS"

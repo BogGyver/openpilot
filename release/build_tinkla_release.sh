@@ -11,7 +11,8 @@ export GIT_AUTHOR_NAME="BogGyver"
 export GIT_AUTHOR_EMAIL="bogdan.butoi@gmail.com"
 export GIT_SSH_COMMAND="ssh -i /data/gitkey"
 
-# set CLEAN to build outside of CI
+cd $SOURCE_DIR
+git pull
 
 # Create folders
 mv $TARGET_DIR $TARGET_TEMP
