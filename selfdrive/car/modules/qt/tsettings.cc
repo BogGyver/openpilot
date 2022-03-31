@@ -298,7 +298,6 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
     "../assets/offroad/icon_speed_limit.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
-    ,
     {"TinklaUseLongControlData",
     "Use LongControl data",
     "Uses LongControl data for accel/braking. When off it uses actuators",
