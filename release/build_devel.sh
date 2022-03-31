@@ -70,5 +70,5 @@ git commit -a -m "Tesla Unity v$VERSION-Beta$TINKLA_BETA_NUMBER"
 echo "[-] Pushing to $PUSH T=$SECONDS"
 git remote set-url origin git@github.com:boggyver/openpilot.git
 git push -f origin tesla_unity_dev:tesla_unity_beta
-
+rm -rf $TARGET_DIR
 echo "[-] done T=$SECONDS"
