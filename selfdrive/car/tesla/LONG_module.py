@@ -41,14 +41,14 @@ class LONGController:
         self.speed_limit_offset_ms = 0.0
         self.adjustSpeedWithSpeedLimit = load_bool_param("TinklaAdjustAccWithSpeedLimit",True)
         self.useBrakeWipe = load_bool_param("TinklaUseBrakeWipe", False)
-        self.madMax = False
+        self.madMax = load_bool_param("TinklaSpeedMadMax",False)
         if (CP.carFingerprint == CAR.PREAP_MODELS):
             self.ACC = ACCController(self)
             self.PCC = PCCController(self,tesla_can,pedalcan)
             self.speed_limit_ms = 0
             self.set_speed_limit_active = False
             self.speed_limit_offset_uom = load_float_param("TinklaSpeedLimitOffset",0.0)
-            self.madMax = load_bool_param("TinklaSpeedMadMax",False)
+            
 
     def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state):
         messages = []
@@ -241,13 +241,17 @@ class LONGController:
             #tesla_jerk_limits = [-self.j_target,self.j_target]
             #if _is_present(self.lead_1):
             #  following = self.lead_1.status and self.lead_1.dRel < 45.0 and self.lead_1.vLeadK > CS.out.vEgo and self.lead_1.aLeadK > 0.0
-            target_accel = actuators.accel #* _get_accel_multiplier(CS.out.vEgo,self.v_target,actuators.accel,self.a_target)
+            target_accel = actuators.accel 
+            if self.madMax:
+                target_accel = target_accel * _get_accel_multiplier(CS.out.vEgo,self.v_target,actuators.accel,self.a_target)
             target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
             target_speed = target_speed * CV.MS_TO_KPH
             max_accel = 0 if target_accel < 0 else target_accel
             min_accel = 0 if target_accel > 0 else target_accel
-            tesla_accel_limits = [min_accel,max_accel]
             tesla_jerk_limits = [CarControllerParams.JERK_LIMIT_MIN,CarControllerParams.JERK_LIMIT_MAX]
+            tesla_accel_limits = [min_accel,max_accel]
+            if self.madMax:
+                tesla_jerk_limits = [min_accel/2,max_accel/2]
             #we now create the DAS_control for AP1 or DAS_longControl for AP2
             if self.CP.carFingerprint == CAR.AP2_MODELS:
                 messages.append(self.tesla_can.create_ap2_long_control(target_speed, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
