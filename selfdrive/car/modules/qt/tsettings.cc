@@ -88,6 +88,15 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "",
       3.0,1.0,720.0,1.0,TINKLA_FLOAT
     },
+    {"TinklaHandsOnLevel",
+      "Hands on level",
+      "Level at which to detect hands on wheel. Higher number means more force needed.",
+      "../assets/offroad/icon_settings.png",
+      "HandsOn Level:",
+      "1-Light 2-Medium 3-HARD:",
+      "",
+      1.0,1.0,3.0,1.0,TINKLA_FLOAT
+    },
   };
   Params params;
   for (auto &[param, title, desc, icon, edit_title,edit_desc, edit_uom, val_default,val_min,val_max,val_step, field_type] : tinkla_toggles) {
@@ -286,6 +295,12 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
     {"TinklaSpeedMadMax",
     "Use MadMax Mode",
     "Use faster accel limits.",
+    "../assets/offroad/icon_speed_limit.png",
+    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+    },
+    {"TinklaUseLongControlData",
+    "Use LongControl data",
+    "Uses LongControl data for accel/braking. When off it uses actuators",
     "../assets/offroad/icon_speed_limit.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },

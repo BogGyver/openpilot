@@ -11,12 +11,10 @@ SOURCE_DIR="$(git rev-parse --show-toplevel)"
 
 if [ -f /TICI ]; then
   FILES_SRC="release/files_tici"
-  RELEASE_BRANCH=release3-staging
-  DASHCAM_BRANCH=dashcam3-staging
+  RELEASE_BRANCH=tesla_unity_releaseC3
 elif [ -f /EON ]; then
   FILES_SRC="release/files_eon"
-  RELEASE_BRANCH=release2-staging
-  DASHCAM_BRANCH=dashcam-staging
+  RELEASE_BRANCH=tesla_unity_releaseC2
 else
   exit 0
 fi
@@ -29,7 +27,7 @@ rm -rf $BUILD_DIR
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 git init
-git remote add origin git@github.com:commaai/openpilot.git
+git remote add origin git@github.com:boggyver/openpilot.git
 git fetch origin $RELEASE_BRANCH
 git checkout --orphan $RELEASE_BRANCH
 
@@ -44,18 +42,26 @@ cd $BUILD_DIR
 
 rm -f panda/board/obj/panda.bin.signed
 
-VERSION=$(cat selfdrive/common/version.h | awk -F[\"-]  '{print $2}')
-echo "#define COMMA_VERSION \"$VERSION-release\"" > selfdrive/common/version.h
+TINKLAVERSION=$(cat selfdrive/common/tinkla_version.h | awk -F[\"]  '{print $2}')
+echo "#define COMMA_VERSION \"$TINKLAVERSION\"" > $TARGET_DIR/selfdrive/common/version.h
 
-echo "[-] committing version $VERSION T=$SECONDS"
+
+echo "[-] committing version $TINKLAVERSION T=$SECONDS"
 git add -f .
-git commit -a -m "openpilot v$VERSION release"
+git commit -a -m "Tesla Unity v$TINKLAVERSION"
 git branch --set-upstream-to=origin/$RELEASE_BRANCH
 
 # Build panda firmware
 pushd panda/
-CERT=/data/pandaextra/certs/release RELEASE=1 scons -u .
-mv board/obj/panda.bin.signed /tmp/panda.bin.signed
+CERT=$TARGET_DIR/panda/certs/debug RELEASE=1 scons -u
+CERT=$TARGET_DIR/panda/certs/debug RELEASE=1 PEDAL=1 scons -u
+CERT=$TARGET_DIR/panda/certs/debug RELEASE=1 PEDAL=1 PEDAL_USB=1 scons -u
+mv obj/panda.bin.signed /tmp/panda.bin.signed
+mv obj/pedal.bin.signed /tmp/pedal.bin.signed
+mv obj/bootstub.panda.bin /tmp/bootstub.panda.bin 
+mv obj/bootstub.pedal.bin /tmp/bootstub.pedal.bin
+mv obj/bootstub.pedal_usb.bin /tmp/bootstub.pedal_usb.bin
+mv obj/pedal_usb.bin.signed /tmp/pedal_usb.bin.signed 
 popd
 
 # Build
@@ -83,7 +89,15 @@ rm models/supercombo.dlc
 
 # Move back signed panda fw
 mkdir -p panda/board/obj
-mv /tmp/panda.bin.signed panda/board/obj/panda.bin.signed
+# Move back signed panda fw
+cp -r $SOURCE_DIR/release/panda_files/board $TARGET_DIR/panda/
+mkdir -p $TARGET_DIR/panda/board/obj
+mv /tmp/panda.bin.signed $TARGET_DIR/panda/board/obj/panda.bin.signed
+mv /tmp/pedal.bin.signed $TARGET_DIR/panda/board/obj/pedal.bin.signed
+mv /tmp/bootstub.panda.bin $TARGET_DIR/panda/board/obj/bootstub.panda.bin
+mv /tmp/bootstub.pedal.bin $TARGET_DIR/panda/board/obj/bootstub.pedal.bin
+mv /tmp/bootstub.pedal_usb.bin $TARGET_DIR/panda/board/obj/bootstub.pedal_usb.bin
+mv /tmp/pedal_usb.bin.signed $TARGET_DIR/panda/board/obj/pedal_usb.bin.signed
 
 # Restore third_party
 git checkout third_party/
@@ -93,7 +107,7 @@ touch prebuilt
 
 # Add built files to git
 git add -f .
-git commit --amend -m "openpilot v$VERSION"
+git commit --amend -m "Tesla Unity v$TINKLAVERSION"
 
 # Run tests
 TEST_FILES="tools/"
@@ -108,11 +122,6 @@ rm -rf $TEST_FILES
 if [ ! -z "$PUSH" ]; then
   echo "[-] pushing T=$SECONDS"
   git push -f origin $RELEASE_BRANCH
-
-  # Create dashcam
-  git rm selfdrive/car/*/carcontroller.py
-  git commit -m "create dashcam release from release"
-  git push -f origin $RELEASE_BRANCH:$DASHCAM_BRANCH
 fi
 
 echo "[-] done T=$SECONDS"

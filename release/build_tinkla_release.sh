@@ -49,9 +49,8 @@ git commit -m "Tesla Unity v$TINKLAVERSION"
 cd $TARGET_DIR
 
 # Build stuff
-ln -sfn $TARGET_DIR /data/pythonpath
-export PYTHONPATH="$TARGET_DIR:$TARGET_DIR/pyextra"
-SCONS_CACHE=1 scons -j3
+export PYTHONPATH="$TARGET_DIR"
+scons -j$(nproc)
 
 # Build signed panda firmware
 pushd panda/board

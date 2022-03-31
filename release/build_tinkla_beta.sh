@@ -10,9 +10,7 @@ fi
 TINKLA_BETA_NUMBER="$1"
 
 SOURCE_DIR=/data/openpilot_dev
-TARGET_DIR=/data/openpilot_beta
-
-ln -sf $TARGET_DIR /data/pythonpath
+TARGET_DIR=/data/openpilot
 
 export GIT_COMMITTER_NAME="BogGyver"
 export GIT_COMMITTER_EMAIL="bogdan.butoi@gmail.com"
@@ -32,11 +30,13 @@ echo "[-] fetching public T=$SECONDS"
 cd $TARGET_DIR
 git prune || true
 git remote prune origin || true
+git fetch origin tesla_unity_dev
+git fetch origin tesla_unity_beta
 
-echo "[-] bringing devel in sync T=$SECONDS"
-#git checkout -f --track origin/tesla_unity_beta
+git checkout -f --track origin/tesla_unity_dev
+git reset --hard tesla_unity_dev
+git checkout tesla_unity_dev
 git reset --hard origin/tesla_unity_beta
-git checkout  tesla_unity_beta
 git clean -xdf
 
 
@@ -46,6 +46,8 @@ find . -maxdepth 1 -not -path './.git' -not -name '.' -not -name '..' -exec rm -
 
 # reset tree and get version
 cd $SOURCE_DIR
+git pull
+git submodule update
 git clean -xdf
 git checkout -- selfdrive/common/version.h
 git checkout -- selfdrive/common/tinkla_version.h
@@ -56,9 +58,8 @@ TINKLAVERSION=$(cat selfdrive/common/tinkla_version.h | awk -F[\"-]  '{print $2}
 # do the files copy
 echo "[-] copying files T=$SECONDS"
 cd $SOURCE_DIR
-git pull
-git submodule update
 cp -pR --parents $(cat $SOURCE_DIR/release/files_common) $TARGET_DIR/
+cp -pR --parents $(cat $SOURCE_DIR/release/files_tici) $TARGET_DIR/
 
 #update version files
 echo "#define COMMA_VERSION \"$VERSION-Beta$TINKLA_BETA_NUMBER\"" > $TARGET_DIR/selfdrive/common/version.h

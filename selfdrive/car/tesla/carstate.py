@@ -5,7 +5,7 @@ from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from selfdrive.config import Conversions as CV
-from selfdrive.car.modules.CFG_module import load_bool_param
+from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
 
 #tesla uses various tires, this is for now for the 245/45R19s or 245/35ZR21s and they are 27.8" diameter = 0.353m
 #TODOBB: sometimes tesla on the rear has 265/35ZR21 and they are 28.3" diameter 0.359m
@@ -93,6 +93,7 @@ class CarState(CarStateBase):
     self.enableICIntegration = load_bool_param("TinklaHasIcIntegration", False)
     self.pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
     self.has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
+    self.handsOnLimit = load_float_param("TinklaHandsOnLevel",1.0)
     self.brakeUnavailable = True
     self.realBrakePressed = False
     self.userSpeedLimitOffsetMS = 0
@@ -163,7 +164,7 @@ class CarState(CarStateBase):
 
     ret.steeringRateDeg = -cp.vl["STW_ANGLHP_STAT"]["StW_AnglHP_Spd"] # This is from a different angle sensor, and at different rate
     self.hands_on_level = cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
-    ret.steeringPressed = (self.hands_on_level > 0)
+    ret.steeringPressed = (self.hands_on_level >= self.handsOnLimit)
     ret.steerError = steer_status == "EAC_FAULT"
     ret.steerWarning = self.steer_warning != "EAC_ERROR_IDLE"
     self.torqueLevel = cp.vl["DI_torque1"]["DI_torqueMotor"]
