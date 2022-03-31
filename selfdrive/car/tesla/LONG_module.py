@@ -228,9 +228,9 @@ class LONGController:
             if radar_state is not None:
                 self.lead_1 = radar_state.radarState.leadOne
             if long_plan is not None:
-                self.v_target = long_plan.longitudinalPlan.speeds[-1] # 0 or -1 to try vs actual vs vTarget
-                self.a_target = long_plan.longitudinalPlan.accels[-1] #0 or -1 to try actual vs aTarget
-                self.j_target = long_plan.longitudinalPlan.jerks[-1] # 0 or  -1 to try actual vs jTarget
+                self.v_target = long_plan.longitudinalPlan.speeds[0] # 0 or -1 to try vs actual vs vTarget
+                self.a_target = long_plan.longitudinalPlan.accels[0] #0 or -1 to try actual vs aTarget
+                self.j_target = long_plan.longitudinalPlan.jerks[0] # 0 or  -1 to try actual vs jTarget
             if self.v_target is None:
                 self.v_target = CS.out.vEgo
                 self.a_target = 0
@@ -239,12 +239,12 @@ class LONGController:
             #following = False
             #TODO: see what works best for these
             target_accel = actuators.accel 
-            target_jerk = 0.
+            #target_jerk = 0.
             target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
             if self.useLongControlData:
                 target_accel = self.a_target
                 target_speed = self.v_target
-                target_jerk = self.j_target
+                #target_jerk = self.j_target
 
             max_accel = 0 if target_accel < 0 else target_accel
             min_accel = 0 if target_accel > 0 else target_accel
@@ -255,17 +255,17 @@ class LONGController:
             max_jerk = CarControllerParams.JERK_LIMIT_MAX
             min_jerk = CarControllerParams.JERK_LIMIT_MIN
 
-            if self.useLongControlData:
-                max_jerk = 0 if target_jerk < 0 else target_jerk
-                min_jerk = 0 if target_jerk > 0 else target_jerk
+            #if self.useLongControlData:
+            #    max_jerk = 0 if target_jerk < 0 else target_jerk
+            #    min_jerk = 0 if target_jerk > 0 else target_jerk
 
             tesla_jerk_limits = [min_jerk,max_jerk]
             tesla_accel_limits = [min_accel,max_accel]
 
             target_speed = target_speed * CV.MS_TO_KPH
             
-            if self.madMax and not self.useLongControlData:
-                tesla_jerk_limits = [min_accel/2,max_accel/2]
+            #if self.madMax and not self.useLongControlData:
+            #    tesla_jerk_limits = [min_accel/2,max_accel/2]
                 
             #we now create the DAS_control for AP1 or DAS_longControl for AP2
             if self.CP.carFingerprint == CAR.AP2_MODELS:
