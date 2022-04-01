@@ -7,16 +7,20 @@ echo "================================="
 echo "  "
 echo "Starting the recover process..."
 echo "  "
-scons -u
-ret=$?
-if [ $ret -ne 0 ]; then
-  echo "================================="
-  echo " COMPILE PROCESS FAILED"
-  echo "================================="
-  echo " Please check logs above for errors"
-  echo "  "
-  echo "An error occurred during flashing. Exiting..." >&2
-  exit 1
+if [ -f "/data/openpilot/prebuilt" ]; then
+  echo "Prebuilt code... just flashing..."
+else
+  scons -u
+  ret=$?
+  if [ $ret -ne 0 ]; then
+    echo "================================="
+    echo " COMPILE PROCESS FAILED"
+    echo "================================="
+    echo " Please check logs above for errors"
+    echo "  "
+    echo "An error occurred during flashing. Exiting..." >&2
+    exit 1
+  fi
 fi
 PYTHONPATH=.. python3 -c "from python import Panda; Panda().reset(enter_bootstub=True); Panda().reset(enter_bootloader=True)" || true
 ret=$?

@@ -25,7 +25,7 @@ source $DIR/identity.sh
 
 echo "[-] Setting up repo T=$SECONDS"
 rm -rf $SOURCE_DIR
-git clone git@github.com:boggyer/openpilot.git --depth=1 -b tesla_unity_beta $SOURCE_DIR
+git clone git@github.com:boggyver/openpilot.git --depth=1 -b tesla_unity_beta $SOURCE_DIR
 
 rm -rf $BUILD_DIR
 mkdir -p $BUILD_DIR
@@ -57,9 +57,9 @@ git branch --set-upstream-to=origin/$RELEASE_BRANCH
 
 # Build panda firmware
 pushd panda/
-CERT=$BUILD_DIR/panda/certs/debug RELEASE=1 scons -u
-CERT=$BUILD_DIR/panda/certs/debug RELEASE=1 PEDAL=1 scons -u
-CERT=$BUILD_DIR/panda/certs/debug RELEASE=1 PEDAL=1 PEDAL_USB=1 scons -u
+CERT=$BUILD_DIR/panda/certs/release scons -u
+CERT=$BUILD_DIR/panda/certs/release PEDAL=1 scons -u
+CERT=$BUILD_DIR/panda/certs/release PEDAL=1 PEDAL_USB=1 scons -u
 mv board/obj/panda.bin.signed /tmp/panda.bin.signed
 mv board/obj/pedal.bin.signed /tmp/pedal.bin.signed
 mv board/obj/bootstub.panda.bin /tmp/bootstub.panda.bin 
