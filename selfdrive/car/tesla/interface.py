@@ -41,7 +41,7 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
     if CP.carFingerprint == CAR.AP1_MODELS:
-      get_tesla_accel_limits(CP,current_speed)
+      return get_tesla_accel_limits(CP,current_speed)
     else:
       return ACCEL_MIN, ACCEL_MAX
 
