@@ -12,9 +12,25 @@ from common.numpy_fast import interp
 
 ButtonType = car.CarState.ButtonEvent.Type
 
-ACCEL_LOOKUP_BP = [0.,5.,30.]
-ACCEL_MAX_V = [3.5,2.5,2.]
-ACCEL_MIN_V = [-3.5,-3.5,-3.5]
+ACCEL_LOOKUP_BP =     [ 0.0,  7.5, 15.0, 25.0, 40.0]
+
+AP_ACCEL_MAX_V =     [ 2.5,  2.0,  1.5,  0.8,  0.8]
+AP_ACCEL_MIN_V =     [-3.5, -3.5, -3.5, -3.5, -3.5]
+
+PREAP_ACCEL_MAX_V =   [ 1.2,  1.2,  1.2,  0.8,  0.6]
+PREAP_ACCEL_MIN_V =   [-1.2, -1.2, -1.2, -1.2, -1.2] #(regen only... for iBooster we need to check these)
+
+#this function is called from longitudinal_planner only for limits
+def get_tesla_accel_limits(CP, current_speed):
+  a_min = 0.
+  a_max = 0.
+  if CP.carFingerprint == CAR.AP1_MODELS:
+    a_min = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MIN_V)
+    a_max = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MAX_V)
+  else:
+    a_min = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MIN_V)
+    a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MAX_V)
+  return a_min, a_max
 
 class CarInterface(CarInterfaceBase):
   @staticmethod
@@ -25,9 +41,7 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
     if CP.carFingerprint == CAR.AP1_MODELS:
-      a_min = interp(current_speed,ACCEL_LOOKUP_BP,ACCEL_MIN_V)
-      a_max = interp(current_speed,ACCEL_LOOKUP_BP,ACCEL_MAX_V)
-      return a_min, a_max
+      get_tesla_accel_limits(CP,current_speed)
     else:
       return ACCEL_MIN, ACCEL_MAX
 

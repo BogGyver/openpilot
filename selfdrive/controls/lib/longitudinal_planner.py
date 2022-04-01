@@ -13,27 +13,22 @@ from selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import LongitudinalMpc
 from selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDXS as T_IDXS_MPC
 from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, CONTROL_N
 from selfdrive.swaglog import cloudlog
-from selfdrive.car.tesla.values import CAR
+from selfdrive.car.tesla.interface import get_tesla_accel_limits
 
 LON_MPC_STEP = 0.2  # first step is 0.2s
 AWARENESS_DECEL = -0.2  # car smoothly decel at .2m/s^2 when user is distracted
-A_CRUISE_MIN = -1.2
-A_CRUISE_MIN_TMS = -2
-A_CRUISE_MAX_VALS = [1.2, 1.2, 0.8, 0.6]
-A_CRUISE_MAX_VALS_TMS = [2.0, 1.6, 1.2, 0.8, 0.6]
-A_CRUISE_MAX_BP = [0., 7.5, 15., 25., 40.]
+#THESE ARE NOT USED HERE, NEW FUNCTION IN TESLA INTERFACE
+#A_CRUISE_MIN = -1.2 
+#A_CRUISE_MAX_VALS = [1.2, 1.2, 0.8, 0.6]
+#A_CRUISE_MAX_BP = [0., 7.5, 15., 25., 40.]
 
 # Lookup table for turns
 _A_TOTAL_MAX_V = [1.7, 3.2]
 _A_TOTAL_MAX_BP = [20., 40.]
 
 
-def get_max_accel(v_ego):
-  return interp(v_ego, A_CRUISE_MAX_BP, A_CRUISE_MAX_VALS)
-
-def get_max_accel_TMS_AP1(v_ego):
-  return interp(v_ego, A_CRUISE_MAX_BP, A_CRUISE_MAX_VALS_TMS)
-
+def get_max_accel(CP,v_ego):
+  return get_tesla_accel_limits(CP,v_ego)  
 
 def limit_accel_in_turns(v_ego, angle_steers, a_target, CP):
   """
@@ -83,9 +78,7 @@ class Planner:
     # Prevent divergence, smooth in current v_ego
     self.v_desired_filter.x = max(0.0, self.v_desired_filter.update(v_ego))
 
-    accel_limits = [A_CRUISE_MIN, get_max_accel(v_ego)]
-    if self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP1_MODELX]:
-      accel_limits = [A_CRUISE_MIN_TMS, get_max_accel_TMS_AP1(v_ego)]
+    accel_limits = get_max_accel(self.CP,v_ego)
 
     accel_limits_turns = limit_accel_in_turns(v_ego, sm['carState'].steeringAngleDeg, accel_limits, self.CP)
     if force_slow_decel:
