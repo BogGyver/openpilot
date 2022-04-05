@@ -217,7 +217,6 @@ class LONGController:
                 CS.cc_state = 0
             else:
                 CS.cc_state = 1
-            CS.speed_control_enabled = 0
             if CS.speed_units == "MPH":
                 speed_uom_kph = CV.KPH_TO_MPH
             CS.acc_speed_kph = CS.cruise_speed * CV.MS_TO_KPH

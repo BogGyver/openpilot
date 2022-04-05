@@ -2,6 +2,7 @@ Unity Version 0.8.13-38 (2022-04-05)
 ========================
  * Always show OP data on IC for AP1/AP2
  * Toggle to switch the maps on the left side of the screen (Comma three)
+ * fix speed limit indicator when using pedal with Tinkla Buddy
 
 Unity Version 0.8.13-37 (2022-04-01)
 ========================
