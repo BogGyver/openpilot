@@ -318,13 +318,13 @@ class TeslaCAN:
             + (adaptive_cruise << 3)
             + hands_on_state
         ),
-        int((pcc_available << 5) + cc_state),
+        int((cc_state << 6) + (pcc_available << 5) + alca_state),
         int(
             acc_speed_limit + 0.5
         ),  # IC rounds current speed, so we need to round cruise speed the same way
         int(
-            (legal_speed_limit & 0x1F) + ((pedalEnabled << 5) & 0x20) + (0x01 << 6) #new extended cc_state
-        ),  # positions 7 and 6 not used yet
+            (legal_speed_limit & 0x1F) + ((pedalEnabled << 5) & 0x20)
+        ),  # positions 7 not used yet, 6 determines extended or not CC_state
         int(c_apply_steer & 0xFF),
         int((c_apply_steer >> 8) & 0xFF)
     ]

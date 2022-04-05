@@ -2,8 +2,10 @@
 
 #include <QPushButton>
 
+#pragma once
 #include "selfdrive/hardware/hw.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
+
 
 class NumParamControl : public ButtonControl {
   Q_OBJECT
