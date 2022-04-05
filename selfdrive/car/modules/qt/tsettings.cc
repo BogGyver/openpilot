@@ -79,6 +79,12 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "../assets/offroad/icon_settings.png",
       "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
       },
+    {"TinklaMapsOnLeft",
+      "Maps on left side",
+      "Shows the maps on the left side of the screen.",
+      "../assets/offroad/icon_settings.png",
+      "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+      },
     {"TinklaShutdownAfter",
       "Shutdown after # of hours",
       "Shutdown device after number of hours when car is off",

@@ -78,6 +78,7 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
 void OnroadWindow::offroadTransition(bool offroad) {
 #ifdef ENABLE_MAPS
   if (!offroad) {
+    bool onLeft = Params().tinkla_get_bool_param("TinklaMapsOnLeft");
     if (map == nullptr && (uiState()->prime_type || !MAPBOX_TOKEN.isEmpty())) {
       MapWindow * m = new MapWindow(get_mapbox_settings());
       map = m;
@@ -85,7 +86,11 @@ void OnroadWindow::offroadTransition(bool offroad) {
       QObject::connect(uiState(), &UIState::offroadTransition, m, &MapWindow::offroadTransition);
 
       m->setFixedWidth(topWidget(this)->width() / 2);
-      split->addWidget(m, 0, Qt::AlignRight);
+      if (onLeft) {
+        split->addWidget(m, 0, Qt::AlignLeft);
+      } else {
+        split->addWidget(m, 0, Qt::AlignRight);
+      }
 
       // Make map visible after adding to split
       m->offroadTransition(offroad);

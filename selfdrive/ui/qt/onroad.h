@@ -5,6 +5,8 @@
 
 #include "selfdrive/ui/qt/widgets/cameraview.h"
 #include "selfdrive/ui/ui.h"
+#include "selfdrive/common/params.h"
+
 
 
 // ***** onroad widgets *****
