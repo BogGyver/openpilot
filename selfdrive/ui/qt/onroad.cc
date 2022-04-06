@@ -87,7 +87,7 @@ void OnroadWindow::offroadTransition(bool offroad) {
 
       m->setFixedWidth(topWidget(this)->width() / 2);
       if (onLeft) {
-        split->addWidget(m, 0, Qt::AlignLeft);
+        split->insertWidget(0, m, 0, Qt::AlignLeft);
       } else {
         split->addWidget(m, 0, Qt::AlignRight);
       }
