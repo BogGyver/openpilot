@@ -152,7 +152,7 @@ class CarState(CarStateBase):
     ret.brake = 0
     if self.has_ibooster_ecu:
       self.realBrakePressed = bool(cp.vl["ECU_BrakeStatus"]['DriverBrakeApplied'])
-      ret.brakeLights = bool(cp.vl["ECU_BrakeStatus"]['BrakeApplied'])
+      #ret.brakeLights = bool(cp.vl["ECU_BrakeStatus"]['BrakeApplied'])
       self.brakeUnavailable = not bool(cp.vl["ECU_BrakeStatus"]['BrakeOK'])
     else:
       self.realBrakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
