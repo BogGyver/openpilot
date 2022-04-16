@@ -1,3 +1,7 @@
+Unity Version 0.8.13-39 (2022-04-16)
+========================
+ * Fix bug in iBooster ECU messaging
+
 Unity Version 0.8.13-38 (2022-04-05)
 ========================
  * Always show OP data on IC for AP1/AP2
