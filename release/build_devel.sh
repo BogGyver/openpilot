@@ -64,6 +64,7 @@ echo "#define TINKLA_VERSION \"$VERSION-$TINKLA_BETA_NUMBER\"" > $TARGET_DIR/sel
 # in the directory
 cd $TARGET_DIR
 rm -f panda/board/obj/panda.bin.signed
+rm -f panda/board/obj/ivs.bin.signed
 git clean -xdf
 
 #cleanup rednose
