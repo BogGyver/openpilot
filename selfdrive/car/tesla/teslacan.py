@@ -14,6 +14,7 @@ class TeslaCAN:
     self.packer = packer
     self.pt_packer = pt_packer
     self.crc = crcmod.mkCrcFun(0x11d, initCrc=0x00, rev=False, xorOut=0xff)
+    self.crc_ibst = crcmod.mkCrcFun(0x1d, initCrc=0xff, rev=False, xorOut=0xff)
 
   @staticmethod
   def checksum(msg_id, dat):
@@ -30,7 +31,7 @@ class TeslaCAN:
       "Brake_Counter" : raw_cnt % 16,
     }
     data = self.packer.make_can_msg("ECU_BrakeCommand", bus, values)[2]
-    values["Brake_Checksum"] = self.crc(data[:5])
+    values["Brake_Checksum"] = self.crc_ibst(data[1:])
     return self.packer.make_can_msg("ECU_BrakeCommand", bus, values)
 
   def create_lane_message(self, lWidth, rLine, lLine, laneRange, curvC0, curvC1, curvC2, curvC3, lLane2,rLane2,bus, counter):
