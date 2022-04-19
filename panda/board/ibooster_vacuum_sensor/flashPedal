@@ -1,0 +1,5 @@
+#! /bin/sh
+tmux kill-session -t comma
+cd /data/openpilot/panda/board/ibooster_vacuum_sensor
+cp /data/openpilot/selfdrive/ui/qt/flasher ./flasher
+exec ./flasher "Flash" flash_can.sh "-" flash_can.sh info.sh
