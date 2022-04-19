@@ -45,6 +45,7 @@ BU_:
 	APP
 	DAS
 	iBooster
+	IVS
 	XXX
 
 VAL_TABLE_ StW_AnglHP_Spd 16383 "SNA" ;
@@ -905,6 +906,19 @@ BO_ 1363 ECU_BrakeCommand: 6 EON
  SG_ BrakeMode : 12|2@1+ (1,0) [0|3] ""  iBooster
  SG_ Brake_Counter : 8|4@1+ (1,0) [0|15] ""  iBooster
  SG_ Brake_Checksum : 0|8@1+ (1,0) [0|255] ""  iBooster
+
+BO_ 1365 IVS_Command: 6 EON
+ SG_ IvsCounter : 8|4@1+ (1,0) [0|15] ""  IVS
+ SG_ IvsChecksum : 0|8@1+ (1,0) [0|255] ""  IVS
+
+BO_ 1366 IVS_Status: 6 IVS
+ SG_ SensorValue : 0|16@1+ (0.000076336,0) [0|5] "V" EON
+ SG_ CompressorSensor : 16|16@1+ (0.000076336,0) [0|5] "V" EON
+ SG_ BrakePressed : 32|1@1+ (1,0) [0|1] "" EON
+ SG_ CompressorOn : 33|1@1+ (1,0) [0|1] "" EON
+ SG_ IvsOK : 34|1@1+ (1,0) [0|1] "" EON
+ SG_ IvsCounter : 36|4@1+ (1,0) [0|15] "" EON
+ SG_ IvsChecksum : 40|8@1+ (1,0) [0|3] "" EON
 
 BO_ 861 IBST_dtcMatrix: 4 iBooster
  SG_ IBST_dtcIndex M : 0|8@1+ (1,0) [0|0] "" Vector__XXX

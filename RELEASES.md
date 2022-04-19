@@ -1,3 +1,10 @@
+Unity Version 0.8.13-40 (2022-04-19)
+========================
+ * Fix startup screen for C3
+ * Fix modem initialization for C3 (comma three: correctly set initial EPS bearer settings for AT&T sim cards)
+ * Fix logic for enabling OP on preAP MS
+ * Add C3 Tinkla Splash
+
 Unity Version 0.8.13-39 (2022-04-16)
 ========================
  * Fix bug in iBooster ECU messaging

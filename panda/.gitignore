@@ -20,3 +20,4 @@ nosetests.xml
 .sconsign.dblite
 board/flasher
 board/pedal/flasher
+board/ibooster_vacuum_sensor/flasher

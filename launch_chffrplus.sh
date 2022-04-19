@@ -8,18 +8,6 @@ source "$BASEDIR/launch_env.sh"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
-# Handle tinkla spinner deploy
-
-if [ -f "/system/media/.tinkla_splash" ]; then
-    echo "Tinkla splash exists."
-else 
-    echo "Tinkla splash not deployed yet"
-    mount -o rw,remount /system
-    cp /data/openpilot/selfdrive/car/tesla/tinkla/bootanimation.zip /system/media/
-    touch /system/media/.tinkla_splash
-    mount -o ro,remount /system
-    reboot
-fi
 
 function two_init {
 
@@ -109,6 +97,18 @@ function two_init {
     $NEOS_PY --swap-if-ready $MANIFEST
     $DIR/selfdrive/hardware/eon/updater $NEOS_PY $MANIFEST
   fi
+
+  # change splash
+  if [ -f "/system/media/.tinkla_splash" ]; then
+      echo "Tinkla splash exists."
+  else 
+      echo "Tinkla splash not deployed yet"
+      mount -o rw,remount /system
+      cp /data/openpilot/selfdrive/car/tesla/tinkla/bootanimation.zip /system/media/
+      touch /system/media/.tinkla_splash
+      mount -o ro,remount /system
+      reboot
+  fi
 }
 
 function tici_init {
@@ -138,6 +138,18 @@ function tici_init {
       sudo reboot
     fi
     $DIR/selfdrive/hardware/tici/updater $AGNOS_PY $MANIFEST
+  fi
+
+  # change splash
+  if [ -f "/usr/comma/.tinkla_splash" ]; then
+      echo "Tinkla splash exists."
+  else 
+      echo "Tinkla splash not deployed yet"
+      sudo mount -o rw,remount /
+      sudo cp /data/openpilot/selfdrive/car/tesla/tinkla/bg.jpg /usr/comma/bg.jpg
+      sudo touch /usr/comma/.tinkla_splash
+      sudo mount -o ro,remount /
+      sudo reboot
   fi
 }
 
