@@ -209,6 +209,11 @@ function launch {
   # write tmux scrollback to a file
   tmux capture-pane -pq -S-1000 > /tmp/launch_log
 
+  if [ -f /FLIP ]; then
+    export QT_QPA_EGLFS_ROTATION=180
+    export QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS="/dev/input/event1:rotate=90"
+  fi
+
   # start manager
   cd selfdrive/manager
   ./build.py && ./manager.py
