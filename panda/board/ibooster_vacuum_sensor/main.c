@@ -113,14 +113,15 @@ uint8_t ivs_checksum(uint8_t *dat, int len, int addr) {
 #define TRIGGER_MSG_FREQ 10U //10 Hz
 
 //avoid using floating points
-#define INCRESE_IVS_PER_SECOND 65535U * 2U / 50U //0.2V per sec
-#define DECREASE_IVS_PER_SECOND 65535U / 100U // 0.05V per sec
-#define DECREASE_IVS_PER_SECOND_WHEN_BRAKING 65535U / 50U //0.1V per sec
-#define MIN_IVS_VALUE  65535U * 17U / 50U  //1.7V
-#define MAX_IVS_VALUE  65535U * 26U / 50U  //2.6V
-#define MAX_IVS_VALUE_WHEN_BRAKING  65535U * 22U / 50U  //2.2V
+#define MAX_VALUE 1024U
+#define INCRESE_IVS_PER_SECOND MAX_VALUE * 2U / 50U //0.2V per sec
+#define DECREASE_IVS_PER_SECOND MAX_VALUE / 100U // 0.05V per sec
+#define DECREASE_IVS_PER_SECOND_WHEN_BRAKING MAX_VALUE / 50U //0.1V per sec
+#define MIN_IVS_VALUE  MAX_VALUE * 17U / 50U  //1.7V
+#define MAX_IVS_VALUE  MAX_VALUE * 26U / 50U  //2.6V
+#define MAX_IVS_VALUE_WHEN_BRAKING  MAX_VALUE * 22U / 50U  //2.2V
 
-#define COMPRESSOR_ON_THRESHOLD 50000U
+#define COMPRESSOR_ON_THRESHOLD 800U
 
 
 //values used for logic and CAN messages
