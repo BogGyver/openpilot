@@ -14,12 +14,12 @@ message = "ECU_BrakeStatus"
 
 def get_parser(CP):
   # Status messages
-  signals = []
+  new_signals = []
   checks = [('ECU_BrakeStatus', 1),]
   for signal in signals:
     tpl = (signal, message)
-    signals.append(tpl)
-  return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, CAN_CHASSIS[CP.carFingerprint])
+    new_signals.append(tpl)
+  return CANParser(DBC[CP.carFingerprint]['chassis'], new_signals, checks, CAN_CHASSIS[CP.carFingerprint])
   
 
 if __name__ == "__main__":
