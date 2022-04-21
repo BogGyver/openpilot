@@ -153,6 +153,56 @@ class HUDController:
             if (self.IC_integration_counter in [20,70]) or (self.IC_previous_enabled and not enabled):
                 messages.append(self.tesla_can.create_body_controls_message(
                 CS.alca_direction, 1 if CS.needs_hazard else 0 , CAN_CHASSIS[self.CP.carFingerprint], 1))
+
+            #send message for TB/Panda if preAP
+            if self.CP.carFingerprint == CAR.PREAP_MODELS:
+                speed_uom_kph = 1.0
+                if CS.speed_units == "MPH":
+                    speed_uom_kph = CV.KPH_TO_MPH
+                v_cruise_pcm = max(0.0, CS.out.vEgo * CV.MS_TO_KPH) * speed_uom_kph
+                if CS.cruiseEnabled:
+                    v_cruise_pcm = max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH) * speed_uom_kph
+                DAS_control_speed = v_cruise_pcm
+                if CS.carNotInDrive:
+                    DAS_control_speed = 350.0/3.6
+                if CS.enableICIntegration:
+                    messages.append(
+                        self.tesla_can.create_ap1_long_control(
+                            not CS.carNotInDrive, 
+                            not CS.adaptive_cruise,
+                            CS.cc_state > 1,
+                            DAS_control_speed,
+                            [-1.4000000000000004,1.8000000000000007],
+                            [-0.46000000000000085,0.47600000000000003],
+                            CAN_CHASSIS[self.CP.carFingerprint], 
+                            1
+                        )
+                    )
+
+                messages.append(
+                    self.tesla_can.create_fake_DAS_msg(
+                        CS.speed_control_enabled,
+                        CS.DAS_216_driverOverriding, 
+                        CS.DAS_206_apUnavailable,
+                        DAS_collision_warning,
+                        DAS_op_status, 
+                        max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH),#
+                        CS.tap_direction,
+                        DAS_collision_warning,
+                        CS.adaptive_cruise,
+                        DAS_hands_on_state,
+                        CS.cc_state,
+                        1 if CS.pcc_available else 0, 
+                        DAS_alca_state,
+                        v_cruise_pcm,
+                        CS.DAS_fusedSpeedLimit,
+                        apply_angle,
+                        1 if enabled else 0,
+                        1 if CS.enablePedal else 0, #is pedal enabled
+                        CAN_CHASSIS[self.CP.carFingerprint],
+                    )
+                )
+
             #if no ic integration we stop here
             if not CS.enableICIntegration:
                 return messages
@@ -229,51 +279,6 @@ class HUDController:
                     DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1))
             self.IC_previous_enabled = enabled
 
-            #send message for TB if preAP
-            if (self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter %10 == 0):
-                speed_uom_kph = 1.0
-                if CS.speed_units == "MPH":
-                    speed_uom_kph = CV.KPH_TO_MPH
-                v_cruise_pcm = max(0.0, CS.out.vEgo * CV.MS_TO_KPH) * speed_uom_kph
-                if CS.cruiseEnabled:
-                    v_cruise_pcm = max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH) * speed_uom_kph
-                DAS_control_speed = v_cruise_pcm
-                if CS.carNotInDrive:
-                    DAS_control_speed = 350.0/3.6
-                messages.append(
-                    self.tesla_can.create_ap1_long_control(
-                        not CS.carNotInDrive, 
-                        not CS.adaptive_cruise,
-                        CS.cc_state > 1,
-                        DAS_control_speed,
-                        [-1.4000000000000004,1.8000000000000007],
-                        [-0.46000000000000085,0.47600000000000003],
-                        CAN_CHASSIS[self.CP.carFingerprint], 
-                        1
-                    )
-                )
-                messages.append(
-                    self.tesla_can.create_fake_DAS_msg(
-                        CS.speed_control_enabled,
-                        CS.DAS_216_driverOverriding, 
-                        CS.DAS_206_apUnavailable,
-                        DAS_collision_warning,
-                        DAS_op_status, 
-                        max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH),#
-                        CS.tap_direction,
-                        DAS_collision_warning,
-                        CS.adaptive_cruise,
-                        DAS_hands_on_state,
-                        CS.cc_state,
-                        1 if CS.pcc_available else 0, 
-                        DAS_alca_state,
-                        v_cruise_pcm,
-                        CS.DAS_fusedSpeedLimit,
-                        apply_angle,
-                        1 if enabled else 0,
-                        1 if CS.enablePedal else 0, #is pedal enabled
-                        CAN_CHASSIS[self.CP.carFingerprint],
-                    )
-                )
+            
 
         return messages
