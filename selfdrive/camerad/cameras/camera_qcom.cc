@@ -171,7 +171,7 @@ static void camera_init(VisionIpcServer *v, CameraState *s, int camera_id, int c
 
   assert(camera_id < std::size(cameras_supported));
   s->ci = cameras_supported[camera_id];
-  if Params().tinkla_get_bool_param("TinklaFlipScreen") {
+  if (Params().tinkla_get_bool_param("TinklaFlipScreen")) {
     s->ci.bayer_flip = (s->ci.bayer_flip + 2) % 4;
   }
   assert(s->ci.frame_width != 0);
