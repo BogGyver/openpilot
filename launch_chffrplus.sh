@@ -209,7 +209,11 @@ function launch {
   # write tmux scrollback to a file
   tmux capture-pane -pq -S-1000 > /tmp/launch_log
 
-  if [ -f /FLIP ]; then
+  shouldFlip=0
+  if [ -f /data/params/TinklaFlipScreen ]; then
+    shouldFlip=$(cat /data/params/TinklaFlipScreen)
+  fi
+  if [ "$shouldFlip" = "1" ]; then
     export QT_QPA_EGLFS_ROTATION=180
     export QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS="/dev/input/event1:rotate=90"
   fi

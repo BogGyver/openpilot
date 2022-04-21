@@ -85,6 +85,12 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "../assets/offroad/icon_settings.png",
       "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
       },
+    {"TinklaFlipScreen",
+      "Flip screen (for RHD)",
+      "Flips the screen for people driving on the wrong side of the road. Changes to C2 hardware are needed. C2 only.",
+      "../assets/offroad/icon_settings.png",
+      "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+      },
     {"TinklaShutdownAfter",
       "Shutdown after # of hours",
       "Shutdown device after number of hours when car is off",
