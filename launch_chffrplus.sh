@@ -209,6 +209,16 @@ function launch {
   # write tmux scrollback to a file
   tmux capture-pane -pq -S-1000 > /tmp/launch_log
 
+  shouldFlip=0
+  if [ -f /data/params/TinklaFlipScreen ]; then
+    shouldFlip=$(cat /data/params/TinklaFlipScreen)
+  fi
+  if [ "$shouldFlip" = "1" ]; then
+    LD_LIBRARY_PATH="" content insert --uri content://settings/system --bind name:s:user_rotation --bind value:i:3
+    export QT_QPA_EGLFS_ROTATION=180
+    export QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS="/dev/input/event1:rotate=90"
+  fi
+
   # start manager
   cd selfdrive/manager
   ./build.py && ./manager.py
