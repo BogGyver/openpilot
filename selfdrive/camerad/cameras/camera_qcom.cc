@@ -328,8 +328,8 @@ static void do_autoexposure(CameraState *s, float grey_frac) {
 }
 
 static void sensors_init(MultiCameraState *s) {
-  int front_cam_angle = 270;
-  int back_cam_angle = 90;
+  uint16_t front_cam_angle = 270;
+  uint16_t back_cam_angle = 90;
 
   if (Params().tinkla_get_bool_param("TinklaFlipScreen")) {
     front_cam_angle = 90;
