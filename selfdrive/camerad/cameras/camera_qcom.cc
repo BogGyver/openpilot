@@ -328,13 +328,6 @@ static void do_autoexposure(CameraState *s, float grey_frac) {
 }
 
 static void sensors_init(MultiCameraState *s) {
-  uint16_t front_cam_angle = 270;
-  uint16_t back_cam_angle = 90;
-
-  if (Params().tinkla_get_bool_param("TinklaFlipScreen")) {
-    front_cam_angle = 90;
-    back_cam_angle = 270;
-  }
 
   msm_camera_sensor_slave_info slave_infos[2] = {
   (msm_camera_sensor_slave_info){ // road camera
@@ -370,7 +363,7 @@ static void sensors_init(MultiCameraState *s) {
       .size_down = 6,
     },
     .is_init_params_valid = 0,
-    .sensor_init_params = {.modes_supported = 1, .position = BACK_CAMERA_B, .sensor_mount_angle = back_cam_angle},
+    .sensor_init_params = {.modes_supported = 1, .position = BACK_CAMERA_B, .sensor_mount_angle = 90},
     .output_format = MSM_SENSOR_BAYER,
   },
   (msm_camera_sensor_slave_info){ // driver camera
@@ -404,7 +397,7 @@ static void sensors_init(MultiCameraState *s) {
       .size_down = 5,
     },
     .is_init_params_valid = 0,
-    .sensor_init_params = {.modes_supported = 1, .position = FRONT_CAMERA_B, .sensor_mount_angle = front_cam_angle},
+    .sensor_init_params = {.modes_supported = 1, .position = FRONT_CAMERA_B, .sensor_mount_angle = 270},
     .output_format = MSM_SENSOR_BAYER,
   }};
 

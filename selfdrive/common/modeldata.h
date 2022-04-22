@@ -3,6 +3,7 @@
 #include <array>
 #include "selfdrive/common/mat.h"
 #include "selfdrive/hardware/hw.h"
+#include "selfdrive/common/params.h"
 
 const int  TRAJECTORY_SIZE = 33;
 const int LAT_MPC_N = 16;
@@ -47,9 +48,13 @@ const mat3 ecam_intrinsic_matrix = (mat3){{620.0, 0.0, 1928.0 / 2,
 
 static inline mat3 get_model_yuv_transform(bool bayer = true) {
   float db_s = Hardware::EON() ? 0.5 : 1.0; // debayering does a 2x downscale on EON
+  float rotate = 1.0;
+  if (Params().tinkla_get_bool_param("TinklaFlipScreen")) {
+    rotate = -1.0;
+  }
   const mat3 transform = (mat3){{
-    1.0, 0.0, 0.0,
-    0.0, 1.0, 0.0,
+    rotate, 0.0, 0.0,
+    0.0, rotate, 0.0,
     0.0, 0.0, 1.0
   }};
   return bayer ? transform_scale_buffer(transform, db_s) : transform;
