@@ -1,4 +1,4 @@
-Unity Version 0.8.13-42 (2022-04-21)
+Unity Version 0.8.13-43 (2022-04-21)
 ========================
  * Fix Pedal over CC issues when MCU2 or no Tinkla Buddy
  * Add firmware for Vacuum Sensor board
