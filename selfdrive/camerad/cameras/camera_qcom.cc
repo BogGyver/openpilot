@@ -171,9 +171,7 @@ static void camera_init(VisionIpcServer *v, CameraState *s, int camera_id, int c
 
   assert(camera_id < std::size(cameras_supported));
   s->ci = cameras_supported[camera_id];
-  if (Params().tinkla_get_bool_param("TinklaFlipScreen")) {
-    s->ci.bayer_flip = (s->ci.bayer_flip + 2) % 4;
-  }
+  
   assert(s->ci.frame_width != 0);
 
   s->pixel_clock = pixel_clock;
@@ -330,6 +328,14 @@ static void do_autoexposure(CameraState *s, float grey_frac) {
 }
 
 static void sensors_init(MultiCameraState *s) {
+  int front_cam_angle = 270;
+  int back_cam_angle = 90;
+
+  if (Params().tinkla_get_bool_param("TinklaFlipScreen")) {
+    front_cam_angle = 90;
+    back_cam_angle = 270;
+  }
+
   msm_camera_sensor_slave_info slave_infos[2] = {
   (msm_camera_sensor_slave_info){ // road camera
     .sensor_name = "imx298",
@@ -364,7 +370,7 @@ static void sensors_init(MultiCameraState *s) {
       .size_down = 6,
     },
     .is_init_params_valid = 0,
-    .sensor_init_params = {.modes_supported = 1, .position = BACK_CAMERA_B, .sensor_mount_angle = 90},
+    .sensor_init_params = {.modes_supported = 1, .position = BACK_CAMERA_B, .sensor_mount_angle = back_cam_angle},
     .output_format = MSM_SENSOR_BAYER,
   },
   (msm_camera_sensor_slave_info){ // driver camera
@@ -398,7 +404,7 @@ static void sensors_init(MultiCameraState *s) {
       .size_down = 5,
     },
     .is_init_params_valid = 0,
-    .sensor_init_params = {.modes_supported = 1, .position = FRONT_CAMERA_B, .sensor_mount_angle = 270},
+    .sensor_init_params = {.modes_supported = 1, .position = FRONT_CAMERA_B, .sensor_mount_angle = front_cam_angle},
     .output_format = MSM_SENSOR_BAYER,
   }};
 
