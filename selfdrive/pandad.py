@@ -77,7 +77,7 @@ def update_panda():
 
 def main(gctx=None):
   #BB stop autoflashing of panda on reboot
-  #update_panda()
+  update_panda()
 
   os.chdir("boardd")
   os.execvp("./boardd", ["./boardd"])

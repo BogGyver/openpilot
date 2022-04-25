@@ -2,39 +2,39 @@
 #include "safety_declarations.h"
 // Include the actual safety policies.
 #include "safety/safety_defaults.h"
-#include "safety/safety_honda.h"
-#include "safety/safety_toyota.h"
-#include "safety/safety_toyota_ipas.h"
+//#include "safety/safety_honda.h"
+//#include "safety/safety_toyota.h"
+//#include "safety/safety_toyota_ipas.h"
 #include "safety/safety_tesla.h"
-#include "safety/safety_gm_ascm.h"
-#include "safety/safety_gm.h"
-#include "safety/safety_ford.h"
-#include "safety/safety_cadillac.h"
-#include "safety/safety_hyundai.h"
-#include "safety/safety_chrysler.h"
-#include "safety/safety_subaru.h"
-#include "safety/safety_mazda.h"
-#include "safety/safety_volkswagen.h"
+//#include "safety/safety_gm_ascm.h"
+//#include "safety/safety_gm.h"
+//#include "safety/safety_ford.h"
+//#include "safety/safety_cadillac.h"
+//#include "safety/safety_hyundai.h"
+//#include "safety/safety_chrysler.h"
+//#include "safety/safety_subaru.h"
+//#include "safety/safety_mazda.h"
+//#include "safety/safety_volkswagen.h"
 #include "safety/safety_elm327.h"
 
 // from cereal.car.CarParams.SafetyModel
 #define SAFETY_NOOUTPUT 0U
-#define SAFETY_HONDA 1U
-#define SAFETY_TOYOTA 2U
+//#define SAFETY_HONDA 1U
+//#define SAFETY_TOYOTA 2U
 #define SAFETY_ELM327 3U
-#define SAFETY_GM 4U
-#define SAFETY_HONDA_BOSCH 5U
-#define SAFETY_FORD 6U
-#define SAFETY_CADILLAC 7U
-#define SAFETY_HYUNDAI 8U
-#define SAFETY_CHRYSLER 9U
+//#define SAFETY_GM 4U
+//#define SAFETY_HONDA_BOSCH 5U
+//#define SAFETY_FORD 6U
+//#define SAFETY_CADILLAC 7U
+//#define SAFETY_HYUNDAI 8U
+//#define SAFETY_CHRYSLER 9U
 #define SAFETY_TESLA 10U
-#define SAFETY_SUBARU 11U
-#define SAFETY_MAZDA 13U
-#define SAFETY_VOLKSWAGEN 15U
-#define SAFETY_TOYOTA_IPAS 16U
+//#define SAFETY_SUBARU 11U
+//#define SAFETY_MAZDA 13U
+//#define SAFETY_VOLKSWAGEN 15U
+//#define SAFETY_TOYOTA_IPAS 16U
 #define SAFETY_ALLOUTPUT 17U
-#define SAFETY_GM_ASCM 18U
+//#define SAFETY_GM_ASCM 18U
 
 uint16_t current_safety_mode = SAFETY_NOOUTPUT;
 const safety_hooks *current_hooks = &nooutput_hooks;
@@ -62,22 +62,22 @@ typedef struct {
 
 const safety_hook_config safety_hook_registry[] = {
   {SAFETY_NOOUTPUT, &nooutput_hooks},
-  {SAFETY_HONDA, &honda_hooks},
-  {SAFETY_TOYOTA, &toyota_hooks},
+  //{SAFETY_HONDA, &honda_hooks},
+  //{SAFETY_TOYOTA, &toyota_hooks},
   {SAFETY_ELM327, &elm327_hooks},
-  {SAFETY_GM, &gm_hooks},
-  {SAFETY_HONDA_BOSCH, &honda_bosch_hooks},
-  {SAFETY_FORD, &ford_hooks},
-  {SAFETY_CADILLAC, &cadillac_hooks},
-  {SAFETY_HYUNDAI, &hyundai_hooks},
-  {SAFETY_CHRYSLER, &chrysler_hooks},
+  //{SAFETY_GM, &gm_hooks},
+  //{SAFETY_HONDA_BOSCH, &honda_bosch_hooks},
+  //{SAFETY_FORD, &ford_hooks},
+  //{SAFETY_CADILLAC, &cadillac_hooks},
+  //{SAFETY_HYUNDAI, &hyundai_hooks},
+  //{SAFETY_CHRYSLER, &chrysler_hooks},
   {SAFETY_TESLA, &tesla_hooks},
-  {SAFETY_SUBARU, &subaru_hooks},
-  {SAFETY_MAZDA, &mazda_hooks},
-  {SAFETY_VOLKSWAGEN, &volkswagen_hooks},
-  {SAFETY_TOYOTA_IPAS, &toyota_ipas_hooks},
+  //{SAFETY_SUBARU, &subaru_hooks},
+  //{SAFETY_MAZDA, &mazda_hooks},
+  //{SAFETY_VOLKSWAGEN, &volkswagen_hooks},
+  //{SAFETY_TOYOTA_IPAS, &toyota_ipas_hooks},
   {SAFETY_ALLOUTPUT, &alloutput_hooks},
-  {SAFETY_GM_ASCM, &gm_ascm_hooks},
+  //{SAFETY_GM_ASCM, &gm_ascm_hooks},
 };
 int current_safety = -1;
 
