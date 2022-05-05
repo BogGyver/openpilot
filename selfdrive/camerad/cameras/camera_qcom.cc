@@ -171,9 +171,7 @@ static void camera_init(VisionIpcServer *v, CameraState *s, int camera_id, int c
 
   assert(camera_id < std::size(cameras_supported));
   s->ci = cameras_supported[camera_id];
-  if (Params().tinkla_get_bool_param("TinklaFlipScreen")) {
-    s->ci.bayer_flip = (s->ci.bayer_flip + 2) % 4;
-  }
+  
   assert(s->ci.frame_width != 0);
 
   s->pixel_clock = pixel_clock;
@@ -330,6 +328,7 @@ static void do_autoexposure(CameraState *s, float grey_frac) {
 }
 
 static void sensors_init(MultiCameraState *s) {
+
   msm_camera_sensor_slave_info slave_infos[2] = {
   (msm_camera_sensor_slave_info){ // road camera
     .sensor_name = "imx298",

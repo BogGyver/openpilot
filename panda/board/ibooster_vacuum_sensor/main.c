@@ -115,15 +115,15 @@ uint8_t ivs_checksum(uint8_t *dat, int len, int addr) {
 //avoid using floating points
 #define MAX_VALUE 3117U
 #define INCRESE_IVS_PER_SECOND MAX_VALUE * 2U / 50U //0.2V per sec
-#define DECREASE_IVS_PER_SECOND MAX_VALUE / 500U // 0.01V per sec
+#define DECREASE_IVS_PER_SECOND MAX_VALUE * 1U / 1000U // 0.005V per sec
 #define DECREASE_IVS_PER_BRAKING_EVENT MAX_VALUE * 2U / 50U //0.2V per event
 
-#define DECREASE_IVS_PER_SECOND_WHEN_BRAKING MAX_VALUE / 50U //0.1V per sec
+#define DECREASE_IVS_PER_SECOND_WHEN_BRAKING MAX_VALUE / 500U //0.1V per sec
 #define MIN_IVS_VALUE  MAX_VALUE * 17U / 50U  //1.7V
-#define MAX_IVS_VALUE  MAX_VALUE * 26U / 50U  //2.6V
+#define MAX_IVS_VALUE  MAX_VALUE * 46U / 50U  //4.6V
 //#define MAX_IVS_VALUE_WHEN_BRAKING  MAX_VALUE * 22U / 50U  //2.2V
 
-#define COMPRESSOR_ON_THRESHOLD 800U
+#define COMPRESSOR_ON_THRESHOLD 1800U
 
 
 //values used for logic and CAN messages
@@ -135,6 +135,9 @@ uint8_t ivs_ok = 1;
 uint32_t vacuum_pump_state = 0;
 unsigned int ivs_idx = 0;
 int led_value = 0;
+bool got_can = false;
+int irq_counter = 0;
+int decrease_pressure_counter = 0;
 
 void CAN1_TX_IRQ_Handler(void) {
   // clear interrupt
@@ -154,6 +157,30 @@ uint32_t current_index = 0;
 #define FAULT_INVALID 6U
 uint8_t state = NO_FAULT;
 const uint8_t crc_poly = 0xD5U;  // standard crc8
+
+void emulate_sensor(void) {
+  if (compressor_on == 1) {
+    ivs_sensor_value += (INCRESE_IVS_PER_SECOND / TRIGGER_MSG_FREQ);
+  }
+  //if brake is on decrease by the brake pressed
+  if (brake_pressed == 1) {
+    if (prev_brake_pressed == 0) {
+      ivs_sensor_value -= DECREASE_IVS_PER_BRAKING_EVENT; //decrease 0.x V per braking
+    }
+    ivs_sensor_value -= (DECREASE_IVS_PER_SECOND_WHEN_BRAKING / TRIGGER_MSG_FREQ);
+  } else {
+    if (decrease_pressure_counter == 0) {
+      ivs_sensor_value -= (DECREASE_IVS_PER_SECOND / TRIGGER_MSG_FREQ);
+    }
+  }
+  decrease_pressure_counter = (decrease_pressure_counter + 1) % 10;
+  if (ivs_sensor_value < MIN_IVS_VALUE) {
+    ivs_sensor_value = MIN_IVS_VALUE;
+  }
+  if (ivs_sensor_value > MAX_IVS_VALUE) {
+    ivs_sensor_value = MAX_IVS_VALUE;
+  }
+}
 
 void CAN1_RX0_IRQ_Handler(void) {
   while ((CAN->RF0R & CAN_RF0R_FMP0) != 0) {
@@ -186,30 +213,8 @@ void CAN1_RX0_IRQ_Handler(void) {
       }
     }
     if (address == TRIGGER_MSG_ID) {//trigger message, let's do the logic
-      //if compressor is on add the compressor increase
-      if (compressor_on == 1) {
-        ivs_sensor_value += (INCRESE_IVS_PER_SECOND / TRIGGER_MSG_FREQ);
-      }
-      //if brake is on decrease by the brake pressed
-      if (brake_pressed == 1) {
-        if  (prev_brake_pressed == 0) {
-          ivs_sensor_value -= DECREASE_IVS_PER_BRAKING_EVENT; //decrease 0.x V per braking
-        }
-        /*
-        ivs_sensor_value -= (DECREASE_IVS_PER_SECOND_WHEN_BRAKING / TRIGGER_MSG_FREQ);
-        if (ivs_sensor_value > MAX_IVS_VALUE_WHEN_BRAKING) {
-          ivs_sensor_value = MAX_IVS_VALUE_WHEN_BRAKING;
-        }
-        */
-      } else {
-        ivs_sensor_value -= (DECREASE_IVS_PER_SECOND / TRIGGER_MSG_FREQ);
-        if (ivs_sensor_value > MAX_IVS_VALUE) {
-          ivs_sensor_value = MAX_IVS_VALUE;
-        }
-      }
-      if (ivs_sensor_value < MIN_IVS_VALUE) {
-        ivs_sensor_value = MIN_IVS_VALUE;
-      }
+      got_can = true;
+      emulate_sensor();
     }
     // next
     CAN->RF0R |= CAN_RF0R_RFOM0;
@@ -255,8 +260,14 @@ void TIM3_IRQ_Handler(void) {
 
   // blink the LED
   current_board->set_led(LED_GREEN, led_value);
-  led_value = !led_value;
 
+  if (irq_counter == 0) {
+    led_value = !led_value;
+    if (!got_can) {
+      emulate_sensor();
+    }
+  }
+  irq_counter = (irq_counter + 1) % 3;
   TIM3->SR = 0;
 }
 

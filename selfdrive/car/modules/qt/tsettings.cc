@@ -266,8 +266,8 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     QProcess::startDetached("/data/openpilot/selfdrive/car/modules/radarFlasher/flashTeslaRadar");
   });
 
-  QPushButton *ivs_flash_btn = new QPushButton("Flash Vacuum Sens");
-  vin_radar_btn->setObjectName("ivs_flash_btn");
+  QPushButton *ivs_flash_btn = new QPushButton("Flash Vacuum Sensor");
+  ivs_flash_btn->setObjectName("ivs_flash_btn");
 
   QObject::connect(ivs_flash_btn, &QPushButton::clicked, [=](){
     QProcess::startDetached("/data/openpilot/panda/board/ibooster_vacuum_sensor/flashIvs");

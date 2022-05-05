@@ -13,8 +13,8 @@ class TeslaCAN:
     self.can_define = CANDefine(dbc_name)
     self.packer = packer
     self.pt_packer = pt_packer
-    self.crc = crcmod.mkCrcFun(0x11d, initCrc=0x00, rev=False, xorOut=0xff) #CRC SAE J1850 0 start
-    self.crc_ibst = crcmod.mkCrcFun(0x11d, initCrc=0xff, rev=False, xorOut=0xff) #CRC SAE J1850 FF start
+    #Calculate CRC8 using 1D poly, FF start, FF end"
+    self.crc = crcmod.mkCrcFun(0x11d, initCrc=0x00, rev=False, xorOut=0xff) 
 
   @staticmethod
   def checksum(msg_id, dat):
@@ -31,7 +31,7 @@ class TeslaCAN:
       "Brake_Counter" : raw_cnt % 16,
     }
     data = self.packer.make_can_msg("ECU_BrakeCommand", bus, values)[2]
-    values["Brake_Checksum"] = self.crc_ibst(data[1:])
+    values["Brake_Checksum"] = self.crc(data[1:])
     return self.packer.make_can_msg("ECU_BrakeCommand", bus, values)
 
   def create_lane_message(self, lWidth, rLine, lLine, laneRange, curvC0, curvC1, curvC2, curvC3, lLane2,rLane2,bus, counter):

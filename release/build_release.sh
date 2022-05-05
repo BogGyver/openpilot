@@ -135,7 +135,7 @@ git commit --amend -m "Tesla Unity v$TINKLAVERSION"
 
 echo "[-] pushing T=$SECONDS"
 git push -f origin $RELEASE_BRANCH
-#rm -rf $BUILD_DIR
-#rm -rf $SOURCE_DIR
+rm -rf $BUILD_DIR
+rm -rf $SOURCE_DIR
 
 echo "[-] done T=$SECONDS"

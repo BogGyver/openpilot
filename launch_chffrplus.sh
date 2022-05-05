@@ -214,7 +214,6 @@ function launch {
     shouldFlip=$(cat /data/params/TinklaFlipScreen)
   fi
   if [ "$shouldFlip" = "1" ]; then
-    LD_LIBRARY_PATH="" content insert --uri content://settings/system --bind name:s:user_rotation --bind value:i:3
     export QT_QPA_EGLFS_ROTATION=180
     export QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS="/dev/input/event1:rotate=90"
   fi
