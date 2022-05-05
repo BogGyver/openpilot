@@ -1,3 +1,8 @@
+Unity Version 0.8.13-44 (2022-05-04)
+========================
+ * Update firmware for Vacuum Sensor board
+ * Fix CRC for iBooster
+
 Unity Version 0.8.13-43 (2022-04-21)
 ========================
  * Fix Pedal over CC issues when MCU2 or no Tinkla Buddy
