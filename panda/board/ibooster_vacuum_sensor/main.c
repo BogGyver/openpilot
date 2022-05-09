@@ -114,14 +114,18 @@ uint8_t ivs_checksum(uint8_t *dat, int len, int addr) {
 
 //avoid using floating points
 #define MAX_VALUE 3117U
+
 #define INCRESE_IVS_PER_SECOND MAX_VALUE * 2U / 50U //0.2V per sec
 #define DECREASE_IVS_PER_SECOND MAX_VALUE * 1U / 1000U // 0.005V per sec
 #define DECREASE_IVS_PER_BRAKING_EVENT MAX_VALUE * 2U / 50U //0.2V per event
 
+#define ORIGINAL_VALUE_AFTER_BRAKE  MAX_VALUE * 16U / 50U //1.6V
+#define ORIGINAL_VALUE_START_BRAKE  MAX_VALUE * 20U / 50U //2.0V
+
 #define DECREASE_IVS_PER_SECOND_WHEN_BRAKING MAX_VALUE / 500U //0.1V per sec
-#define MIN_IVS_VALUE  MAX_VALUE * 17U / 50U  //1.7V
-#define MAX_IVS_VALUE  MAX_VALUE * 46U / 50U  //4.6V
-//#define MAX_IVS_VALUE_WHEN_BRAKING  MAX_VALUE * 22U / 50U  //2.2V
+#define MIN_IVS_VALUE  MAX_VALUE * 17U / 50U  //1.6V
+#define MAX_IVS_VALUE  MAX_VALUE * 25U / 50U  //4.6V
+#define DO_SLOW_LEAK 0
 
 #define COMPRESSOR_ON_THRESHOLD 1800U
 
@@ -137,7 +141,6 @@ unsigned int ivs_idx = 0;
 int led_value = 0;
 bool got_can = false;
 int irq_counter = 0;
-int decrease_pressure_counter = 0;
 
 void CAN1_TX_IRQ_Handler(void) {
   // clear interrupt
@@ -164,22 +167,29 @@ void emulate_sensor(void) {
   }
   //if brake is on decrease by the brake pressed
   if (brake_pressed == 1) {
+    //check for brake pressed event
     if (prev_brake_pressed == 0) {
-      ivs_sensor_value -= DECREASE_IVS_PER_BRAKING_EVENT; //decrease 0.x V per braking
+      ivs_sensor_value = ORIGINAL_VALUE_START_BRAKE;
     }
-    ivs_sensor_value -= (DECREASE_IVS_PER_SECOND_WHEN_BRAKING / TRIGGER_MSG_FREQ);
+    if (DO_SLOW_LEAK == 1) {
+      ivs_sensor_value -= (DECREASE_IVS_PER_SECOND_WHEN_BRAKING / TRIGGER_MSG_FREQ);
+    }
   } else {
-    if (decrease_pressure_counter == 0) {
+    //check for brake release event
+    if (prev_brake_pressed == 1) {
+      ivs_sensor_value = ORIGINAL_VALUE_AFTER_BRAKE;
+    }
+    if (DO_SLOW_LEAK == 1) {
       ivs_sensor_value -= (DECREASE_IVS_PER_SECOND / TRIGGER_MSG_FREQ);
     }
   }
-  decrease_pressure_counter = (decrease_pressure_counter + 1) % 10;
   if (ivs_sensor_value < MIN_IVS_VALUE) {
     ivs_sensor_value = MIN_IVS_VALUE;
   }
   if (ivs_sensor_value > MAX_IVS_VALUE) {
     ivs_sensor_value = MAX_IVS_VALUE;
   }
+  prev_brake_pressed = brake_pressed;
 }
 
 void CAN1_RX0_IRQ_Handler(void) {
@@ -205,7 +215,6 @@ void CAN1_RX0_IRQ_Handler(void) {
       // normal packet, for now do nothing
     }
     if (address == 0x20A) { //brake message, might use ibooster msg later
-      prev_brake_pressed = brake_pressed;
       if ((GET_MAILBOX_BYTE(&CAN->sFIFOMailBox[0],0) & 0x0C) >> 2 != 1) {
         brake_pressed = 1;
       } else {

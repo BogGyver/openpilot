@@ -188,8 +188,14 @@ const CanMsg TESLA_PREAP_TX_MSGS[] = {
     //pedal
     {0x551, 0, 6}, //GAS_INTERCEPTOR command can0
     {0x551, 2, 6}, //GAS_INTERCEPTOR command can2
+    {0x200, 0, 6}, //old code for pedal
+    {0x200, 2, 6}, //old code for pedal can2
     //brake wipe request
     {0x208, 0, 4}, //GTW_ESP1 spammed 
+    //iBooster command
+    {0x553, 0, 6}, //Brake command for iBooster
+    //ibooster vacuum switch
+    {0x555, 0, 6}, //iBooster vacuum switch fake code
   };
 #define TESLA_PREAP_TX_LEN (sizeof(TESLA_PREAP_TX_MSGS) / sizeof(TESLA_PREAP_TX_MSGS[0]))
 
