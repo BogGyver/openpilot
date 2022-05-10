@@ -298,10 +298,12 @@ class PCCController:
         if CS.out.vEgo < 0.1 and actuators.accel < 0.01:
             #hold brake pressed at when standstill
             #BBTODO: show HOLD indicator in IC with integration
-            tesla_brake = 0.26
+            tesla_brake = 0.46
         else:
             tesla_brake = interp(actuators.accel, BRAKE_LOOKUP_BP, BRAKE_LOOKUP_V)
-
+        # if gas pedal pressed, brake should be zero
+        if CS.out.gas > 0:
+            tesla_brake = 0
         if CS.has_ibooster_ecu and CS.brakeUnavailable:
             CS.longCtrlEvent = car.CarEvent.EventName.iBoosterBrakeNotOk
         tesla_pedal = clip(tesla_pedal, self.prev_tesla_pedal - PEDAL_MAX_DOWN, self.prev_tesla_pedal + PEDAL_MAX_UP)

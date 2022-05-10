@@ -1,3 +1,8 @@
+Unity Version 0.8.13-46 (2022-05-10)
+========================
+ * Do not send iBooster brake command when accelerator pedal is pressed
+ * Increase brake hold value 
+
 Unity Version 0.8.13-45 (2022-05-09s)
 ========================
  * Update firmware for Vacuum Sensor board with brake release condition
