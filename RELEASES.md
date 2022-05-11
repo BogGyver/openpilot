@@ -1,3 +1,7 @@
+Unity Version 0.8.13-47 (2022-05-11)
+========================
+ * Do not send iBooster brake command when real accelerator pedal is pressed
+
 Unity Version 0.8.13-46 (2022-05-10)
 ========================
  * Do not send iBooster brake command when accelerator pedal is pressed
