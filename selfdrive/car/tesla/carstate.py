@@ -113,6 +113,7 @@ class CarState(CarStateBase):
     self.pedal_interceptor_value = 0.0
     self.pedal_interceptor_value2 = 0.0
     self.teslaModel = "S"
+    self.realPedalValue = 0.0
 
   def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
     if speed_limit_uom > 0:
@@ -142,6 +143,7 @@ class CarState(CarStateBase):
 
     # Gas pedal
     ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
+    self.realPedalValue = ret.gas
     ret.gasPressed = (ret.gas > 0) 
     if self.enableHAO:
       self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
