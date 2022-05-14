@@ -142,6 +142,7 @@ class CarState(CarStateBase):
     )
 
     # Gas pedal
+    #BBTODO: in latest versions of code Tesla does not populate this field
     ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
     self.realPedalValue = ret.gas
     ret.gasPressed = (ret.gas > 0) 
