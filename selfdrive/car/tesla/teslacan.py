@@ -24,6 +24,7 @@ class TeslaCAN:
     return ret & 0xFF
 
   def create_ibst_command(self, enabled, brake, raw_cnt, bus):
+    brake = clip(brake,0,1)
     values = {
       "BrakePositionCommand" : brake * 20,
       "BrakeRelativeCommand": 0,
