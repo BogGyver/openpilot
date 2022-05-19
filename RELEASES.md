@@ -1,3 +1,9 @@
+Unity Version 0.8.13-48 (2022-05-18)
+========================
+ * Limit iBooster travel to a max of 15mm (90psi on my car)
+ * Set Hold values for iBooster to 6.5mm (14psi)
+ * Change lane poly calculation logic for IC integrtion
+
 Unity Version 0.8.13-47 (2022-05-11)
 ========================
  * Do not send iBooster brake command when real accelerator pedal is pressed

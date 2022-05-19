@@ -9,6 +9,16 @@ IC_LANE_SCALE = 0.5
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
 
+def compute_path_pinv(l=50):
+    deg = 3
+    x = np.arange(l*1.0)
+    X = np.vstack(tuple(x**n for n in range(deg, -1, -1))).T
+    pinv = np.linalg.pinv(X)
+    return pinv 
+
+def model_polyfit(points, path_pinv):
+  return np.dot(path_pinv, [float(x) for x in points])
+
 class HUDController: 
 
     def __init__(self, CP, packer, tesla_can):
@@ -21,7 +31,8 @@ class HUDController:
         self.IC_previous_enabled = False
         self.leftLaneQuality = 0
         self.rightLaneQuality = 0
-        
+        self._path_pinv = compute_path_pinv()
+
 
     # to show lead car on IC
     def showLeadCarOnICCanMessage(self, leadsData, curv0):
@@ -78,11 +89,25 @@ class HUDController:
         messages = []
 
         if lat_plan is not None:
-            #let's get the path points and compute poly coef
-            pts = np.array(lat_plan.lateralPlan.dPathPoints)
-            x = np.arange(0, len(pts))
+            CS.laneWidth = lat_plan.lateralPlan.laneWidth
+            
+        if model_data is not None:
+            self.leftLaneQuality = 1 if model_data.modelV2.laneLineProbs[0] > 0.25 else 0
+            self.rightLaneQuality = 1 if model_data.modelV2.laneLineProbs[3] > 0.25 else 0
+            #let's get the line points and compute poly coef
+            yl = np.array(model_data.modelV2.laneLines[1].y)
+            xl = np.array(model_data.modelV2.laneLines[1].x)
+            yr = np.array(model_data.modelV2.laneLines[2].y)
+            xr = np.array(model_data.modelV2.laneLines[2].x)
             order = 3
-            coefs = np.polyfit(x, pts, order)
+            coefs_l = np.polyfit(xl, yl, order)
+            coefs_r = np.polyfit(xr, yr, order)
+            lp = model_data.modelV2.laneLineProbs[1]
+            rp = model_data.modelV2.laneLineProbs[2]
+            if (lp + rp) > 0:
+                coefs = (coefs_l * lp + coefs_r * rp)/(lp + rp)
+            else:
+                coefs = (coefs_l + coefs_r)/2
             # IC shows the path 2x scaled
             f = IC_LANE_SCALE
             suppress_x_coord = True
@@ -92,20 +117,8 @@ class HUDController:
             CS.curvC1 = -clip(coefs[2] * f * (0 if suppress_x_coord else 1), -0.2, 0.2)  
             CS.curvC2 = -clip(coefs[1] * f2, -0.0025, 0.0025)
             CS.curvC3 = -clip(coefs[0] * f3, -0.00003, 0.00003)  
-            CS.laneWidth = lat_plan.lateralPlan.laneWidth
-            CS.lProb = lat_plan.lateralPlan.lProb
-            CS.rProb = lat_plan.lateralPlan.rProb
-            if CS.lProb > 0.45:
-                CS.lLine = 1
-            else:
-                CS.lLine = 0
-            if CS.rProb > 0.45:
-                CS.rLine = 1
-            else:
-                CS.rLine = 0
-        if model_data is not None:
-            self.leftLaneQuality = 1 if model_data.modelV2.laneLineProbs[0] > 0.25 else 0
-            self.rightLaneQuality = 1 if model_data.modelV2.laneLineProbs[3] > 0.25 else 0
+            CS.lProb = 1 if lp > 0.45 else 0
+            CS.rProb = 1 if rp > 0.45 else 0
 
         #send messages for IC intergration
         #CS.DAS_206_apUnavailable = 1 if enabled and human_control else 0

@@ -175,7 +175,7 @@ class LONGController:
                 if self.has_ibooster_ecu:
                     messages.append(
                         self.tesla_can.create_ibst_command(
-                            enabled, self.apply_brake, frame, CAN_CHASSIS[self.CP.carFingerprint]
+                            enabled, 15 * self.apply_brake, frame, CAN_CHASSIS[self.CP.carFingerprint]
                         )
                     )
                 else:
