@@ -206,6 +206,23 @@ BO_ 309 ESP_135h: 5 ESP
  SG_ ESP_tcLampFlash : 5|1@0+ (1,0) [-1|2] ""  NEO
  SG_ ESP_tcOffLamp : 15|1@0+ (1,0) [0|1] ""  NEO
 
+BO_ 325 ESP_145h: 8 ESP
+ SG_ ESP_longitudinalAccel : 0|10@1+ (0.05,-25.6) [-25.6|25.55] "m/s^2" NEO
+ SG_ ESP_stabilityControlSts2 : 10|3@1+ (1,0) [0|0] "" NEO
+ SG_ ESP_brakeMasterCylPressQF : 13|1@1+ (1,0) [0|1] "" NEO
+ SG_ ESP_absBrakeEvent2 : 14|2@1+ (1,0) [0|0] "" NEO
+ SG_ ESP_lateralAccel : 16|10@1+ (0.05,-25.6) [-25.6|25.55] "m/s^2" NEO
+ SG_ ESP_btcTargetState : 26|2@1+ (1,0) [0|0] "" NEO
+ SG_ ESP_ptcTargetState : 28|2@1+ (1,0) [0|0] "" NEO
+ SG_ ESP_vehicleStandstillSts : 30|2@1+ (1,0) [0|0] "" NEO
+ SG_ ESP_brakeMasterCylPress : 32|10@1+ (0.25,-42.5) [-42.5|213.25] "bar" NEO
+ SG_ ESP_wheelSpeedsQF : 42|1@1+ (1,0) [0|1] "" NEO
+ SG_ ESP_espModeActive : 44|4@1+ (1,0) [0|15] "" NEO
+ SG_ ESP_lateralAccelQF : 48|2@1+ (1,0) [0|3] "" NEO
+ SG_ ESP_longitudinalAccelQF : 50|2@1+ (1,0) [0|3] "" NEO
+ SG_ ESP_145hCounter : 52|4@1+ (1,0) [0|0] "" NEO
+ SG_ ESP_145hChecksum : 56|8@1+ (1,0) [0|0] "" NEO
+
 BO_ 341 ESP_B: 8 ESP
  SG_ ESP_BChecksum : 39|8@0+ (1,0) [0|255] ""  NEO,EPAS
  SG_ ESP_BCounter : 62|4@0+ (1,0) [1|15] ""  NEO,EPAS

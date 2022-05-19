@@ -109,8 +109,8 @@ uint8_t ivs_checksum(uint8_t *dat, int len, int addr) {
 #define CAN_IVS_SIZE 6
 #define COUNTER_CYCLE 0xFU
 
-#define TRIGGER_MSG_ID 0x318U //GTW_carState
-#define TRIGGER_MSG_FREQ 10U //10 Hz
+#define TRIGGER_MSG_ID 0x145 //ESP_145h
+#define TRIGGER_MSG_FREQ 20U //20 Hz
 
 //avoid using floating points
 #define MAX_VALUE 3117U

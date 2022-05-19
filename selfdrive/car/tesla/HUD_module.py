@@ -9,6 +9,16 @@ IC_LANE_SCALE = 0.5
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
 
+def compute_path_pinv(l=50):
+    deg = 3
+    x = np.arange(l*1.0)
+    X = np.vstack(tuple(x**n for n in range(deg, -1, -1))).T
+    pinv = np.linalg.pinv(X)
+    return pinv 
+
+def model_polyfit(points, path_pinv):
+  return np.dot(path_pinv, [float(x) for x in points])
+
 class HUDController: 
 
     def __init__(self, CP, packer, tesla_can):
@@ -21,7 +31,9 @@ class HUDController:
         self.IC_previous_enabled = False
         self.leftLaneQuality = 0
         self.rightLaneQuality = 0
-        
+        self._path_pinv = compute_path_pinv()
+        self.leadsData = None
+
 
     # to show lead car on IC
     def showLeadCarOnICCanMessage(self, leadsData, curv0):
@@ -68,6 +80,14 @@ class HUDController:
                 CAN_CHASSIS[self.CP.carFingerprint],
             )
 
+    def get_path_length_idx(self, y, distance):
+        i = 0
+        for val in y:
+            if val < distance:
+                i = i + 1
+        return i
+
+
     def update(self, enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart,human_control,radar_state,lat_plan,apply_angle,model_data):
         # TODO: additional lanes to show on IC
@@ -78,34 +98,36 @@ class HUDController:
         messages = []
 
         if lat_plan is not None:
-            #let's get the path points and compute poly coef
-            pts = np.array(lat_plan.lateralPlan.dPathPoints)
-            x = np.arange(0, len(pts))
-            order = 3
-            coefs = np.polyfit(x, pts, order)
-            # IC shows the path 2x scaled
-            f = IC_LANE_SCALE
-            suppress_x_coord = True
-            f2 = f * f
-            f3 = f2 * f
-            CS.curvC0 = -clip(coefs[3], -3.5, 3.5)
-            CS.curvC1 = -clip(coefs[2] * f * (0 if suppress_x_coord else 1), -0.2, 0.2)  
-            CS.curvC2 = -clip(coefs[1] * f2, -0.0025, 0.0025)
-            CS.curvC3 = -clip(coefs[0] * f3, -0.00003, 0.00003)  
             CS.laneWidth = lat_plan.lateralPlan.laneWidth
             CS.lProb = lat_plan.lateralPlan.lProb
             CS.rProb = lat_plan.lateralPlan.rProb
-            if CS.lProb > 0.45:
-                CS.lLine = 1
-            else:
-                CS.lLine = 0
-            if CS.rProb > 0.45:
-                CS.rLine = 1
-            else:
-                CS.rLine = 0
+            CS.lLine = 1 if CS.lProb > 0.45 else 0
+            CS.rLine = 1 if CS.rProb > 0.45 else 0
+            
         if model_data is not None:
             self.leftLaneQuality = 1 if model_data.modelV2.laneLineProbs[0] > 0.25 else 0
             self.rightLaneQuality = 1 if model_data.modelV2.laneLineProbs[3] > 0.25 else 0
+            #let's get the position points and compute poly coef
+            y = np.array(model_data.modelV2.position.y)
+            x = np.array(model_data.modelV2.position.x)
+            max_distance = 100.0
+            if self.leadsData is not None:
+                if self.leadsData.leadOne.status:
+                    lead_d = self.leadsData.leadOne.dRel * 2.0
+                    max_distance = max(0,min(lead_d, max_distance))
+            max_idx = self.get_path_length_idx(y, max_distance)
+            order = 3
+            coefs = np.polyfit(x[:max_idx], y[:max_idx], order)
+            # IC shows the path 2x scaled
+            f = 1/IC_LANE_SCALE
+            suppress_x_coord = True
+            f2 = f * f
+            f3 = f2 * f
+            CS.curvC0 = clip(coefs[3], -3.5, 3.5)
+            #CS.curvC0 = 0.0 #always center
+            CS.curvC1 = clip(coefs[2] * f * (0 if suppress_x_coord else 1), -0.2, 0.2)  
+            CS.curvC2 = clip(coefs[1] * f2, -0.0025, 0.0025)
+            CS.curvC3 = clip(coefs[0] * f3, -0.00003, 0.00003)  
 
         #send messages for IC intergration
         #CS.DAS_206_apUnavailable = 1 if enabled and human_control else 0
@@ -166,11 +188,11 @@ class HUDController:
                     CAN_CHASSIS[self.CP.carFingerprint]))
 
             if radar_state is not None:
-                leadsData = radar_state.radarState
-                if leadsData is not None:
+                self.leadsData = radar_state.radarState
+                if self.leadsData is not None:
                     #pass
                     if CS.enableICIntegration:
-                        messages.append(self.showLeadCarOnICCanMessage(leadsData=leadsData,curv0=CS.curvC0))
+                        messages.append(self.showLeadCarOnICCanMessage(leadsData=self.leadsData,curv0=CS.curvC0))
             
             # send DAS_warningMatrix0 at 1Hz
             if (self.IC_integration_counter == 10) or (self.IC_previous_enabled and not enabled):

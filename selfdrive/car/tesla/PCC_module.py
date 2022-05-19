@@ -287,7 +287,9 @@ class PCCController:
         ACCEL_LOOKUP_BP = [REGEN_DECEL, 0., ACCEL_MAX]
         ACCEL_LOOKUP_V = [MAX_PEDAL_REGEN_VALUE, ZERO_ACCEL, MAX_PEDAL_VALUE]
 
-        BRAKE_LOOKUP_BP = [ACCEL_MIN, REGEN_DECEL]
+        #BRAKE_LOOKUP_BP = [ACCEL_MIN, REGEN_DECEL]
+        #we can't use above until we decide how to handle regen
+        BRAKE_LOOKUP_BP = [ACCEL_MIN, 0]
         BRAKE_LOOKUP_V = [MAX_BRAKE_VALUE, 0.]
 
         enable_pedal = 1.0 if self.enable_pedal_cruise else 0.0
@@ -298,11 +300,13 @@ class PCCController:
         if CS.out.vEgo < 0.1 and actuators.accel < 0.01:
             #hold brake pressed at when standstill
             #BBTODO: show HOLD indicator in IC with integration
-            tesla_brake = 0.46
+            # for about 14psi to hold a car even on slopes 
+            # we need roughty 6.5 mm / 15 = 
+            tesla_brake = 0.43
         else:
             tesla_brake = interp(actuators.accel, BRAKE_LOOKUP_BP, BRAKE_LOOKUP_V)
-        # if gas pedal pressed, brake should be zero
-        if CS.realPedalValue > 0:
+        # if gas pedal pressed, brake should be zero (we alwasys have pedal with ibooster)
+        if CS.pedal_interceptor_value > 5:
             tesla_brake = 0
         if CS.has_ibooster_ecu and CS.brakeUnavailable:
             CS.longCtrlEvent = car.CarEvent.EventName.iBoosterBrakeNotOk
