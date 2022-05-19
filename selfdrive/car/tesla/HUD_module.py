@@ -99,8 +99,10 @@ class HUDController:
 
         if lat_plan is not None:
             CS.laneWidth = lat_plan.lateralPlan.laneWidth
-            CS.lProb = 1 if lat_plan.lateralPlan.lProb > 0.45 else 0
-            CS.rProb = 1 if lat_plan.lateralPlan.rProb > 0.45 else 0
+            CS.lProb = lat_plan.lateralPlan.lProb
+            CS.rProb = lat_plan.lateralPlan.rProb
+            CS.lLine = 1 if CS.lProb > 0.45 else 0
+            CS.rLine = 1 if CS.rProb > 0.45 else 0
             
         if model_data is not None:
             self.leftLaneQuality = 1 if model_data.modelV2.laneLineProbs[0] > 0.25 else 0
@@ -121,13 +123,11 @@ class HUDController:
             suppress_x_coord = True
             f2 = f * f
             f3 = f2 * f
-            #CS.curvC0 = clip(coefs[3], -3.5, 3.5)
-            CS.curvC0 = 0.0
+            CS.curvC0 = clip(coefs[3], -3.5, 3.5)
+            #CS.curvC0 = 0.0 #always center
             CS.curvC1 = clip(coefs[2] * f * (0 if suppress_x_coord else 1), -0.2, 0.2)  
             CS.curvC2 = clip(coefs[1] * f2, -0.0025, 0.0025)
             CS.curvC3 = clip(coefs[0] * f3, -0.00003, 0.00003)  
-            #CS.lProb = 1 if model_data.modelV2.laneLineProbs[1] > 0.45 else 0
-            #CS.rProb = 1 if model_data.modelV2.laneLineProbs[2] > 0.45 else 0
 
         #send messages for IC intergration
         #CS.DAS_206_apUnavailable = 1 if enabled and human_control else 0
