@@ -115,14 +115,15 @@ class HUDController:
             order = 3
             coefs = np.polyfit(x[:max_idx], y[:max_idx], order)
             # IC shows the path 2x scaled
-            f = IC_LANE_SCALE
+            f = 1/IC_LANE_SCALE
             suppress_x_coord = True
             f2 = f * f
             f3 = f2 * f
-            CS.curvC0 = -clip(coefs[3], -3.5, 3.5)
-            CS.curvC1 = -clip(coefs[2] * f * (0 if suppress_x_coord else 1), -0.2, 0.2)  
-            CS.curvC2 = -clip(coefs[1] * f2, -0.0025, 0.0025)
-            CS.curvC3 = -clip(coefs[0] * f3, -0.00003, 0.00003)  
+            #CS.curvC0 = clip(coefs[3], -3.5, 3.5)
+            CS.curvC0 = 0.0
+            CS.curvC1 = clip(coefs[2] * f * (0 if suppress_x_coord else 1), -0.2, 0.2)  
+            CS.curvC2 = clip(coefs[1] * f2, -0.0025, 0.0025)
+            CS.curvC3 = clip(coefs[0] * f3, -0.00003, 0.00003)  
             CS.lProb = 1 if model_data.modelV2.laneLineProbs[1] > 0.45 else 0
             CS.rProb = 1 if model_data.modelV2.laneLineProbs[2] > 0.45 else 0
 
