@@ -1,4 +1,8 @@
-Unity Version 0.8.13-48 (2022-05-18)
+Unity Version 0.8.13-49 (2022-05-30)
+========================
+ * Fix CAN-flashing code
+ 
+ Unity Version 0.8.13-48 (2022-05-18)
 ========================
  * Limit iBooster travel to a max of 15mm (90psi on my car)
  * Set Hold values for iBooster to 6.5mm (14psi)
