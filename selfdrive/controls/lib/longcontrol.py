@@ -2,6 +2,7 @@ from cereal import car
 from common.numpy_fast import clip, interp
 from common.realtime import DT_CTRL
 from selfdrive.controls.lib.pid import PIController
+from selfdrive.controls.lib.pid_real import  PIDController
 from selfdrive.controls.lib.drive_helpers import CONTROL_N
 from selfdrive.modeld.constants import T_IDXS
 import json
@@ -135,7 +136,7 @@ class LongControl():
                                                        v_target_future, CS.brakePressed,
                                                        CS.cruiseState.standstill)
                                                       
-    if (self.long_control_state == LongControlState.off or self.long_control_state == LongCtrlState.stopping) and prev_long_control_state == LongControlState.pid:
+    if (self.long_control_state == LongCtrlState.off or self.long_control_state == LongCtrlState.stopping) and prev_long_control_state == LongCtrlState.pid:
       #save pid state on disengage
       if self.USE_REAL_PID:
         self.save_pid()
