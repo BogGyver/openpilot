@@ -1,3 +1,9 @@
+Unity Version 0.8.13-50 (2022-07-05)
+========================
+ * New PID for pedal, including way to save state
+ * Toggle for Model S Performance for pedal
+ * Pedal profile for MS Performance
+
 Unity Version 0.8.13-49 (2022-05-30)
 ========================
  * Fix CAN-flashing code
