@@ -115,6 +115,12 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "",
       1.0,1.0,3.0,1.0,TINKLA_FLOAT
     },
+    {"TinklaDevUnit",
+      "Tinkla Development Unit",
+      "For use by developers only.",
+      "../assets/offroad/icon_settings.png",
+      "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+      },
   };
   Params params;
   for (auto &[param, title, desc, icon, edit_title,edit_desc, edit_uom, val_default,val_min,val_max,val_step, field_type] : tinkla_toggles) {

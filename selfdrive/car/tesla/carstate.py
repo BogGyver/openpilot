@@ -99,6 +99,7 @@ class CarState(CarStateBase):
     self.brakeUnavailable = True
     self.realBrakePressed = False
     self.userSpeedLimitOffsetMS = 0
+    self.dev_unit = load_bool_param("TinklaDevUnit",False)
 
     #data to spam GTW_ESP1
     self.gtw_esp1 = None
@@ -276,6 +277,11 @@ class CarState(CarStateBase):
         buttonEvents.append(event)
       self.button_states[button.event_type] = state 
     ret.buttonEvents = buttonEvents
+    if self.dev_unit:
+      event = car.CarState.ButtonEvent.new_message()
+      event.type = 0 #unknown
+      event.pressed = True
+      ret.buttonEvents.append(event)
 
     # Doors
     ret.doorOpen = any([(self.can_define.dv["GTW_carState"][door].get(int(cp.vl["GTW_carState"][door]), "OPEN") == "OPEN") for door in DOORS])
