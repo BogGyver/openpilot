@@ -88,12 +88,24 @@ CAN_POWERTRAIN = {
   CAR.AP1_MODELX: 4, 
 }
 
+USE_REAL_PID = {
+  CAR.AP2_MODELS: False,
+  CAR.AP1_MODELS: False,
+  CAR.PREAP_MODELS: True, 
+  CAR.AP1_MODELX: False, 
+}
+
 CAN_AP_POWERTRAIN = {
   CAR.AP2_MODELS: 6,
   CAR.AP1_MODELS: 2,
   CAR.PREAP_MODELS: -1, 
   CAR.AP1_MODELX: 6, 
 }
+
+#for real PID
+kdBp = [0, 5., 22.,35.]
+kdV = [0.02, 0.02, 0.022, 0.025]
+V_PID_FILE = "/data/params/pidParams"
 
 class CANBUS:
   # Lateral harness

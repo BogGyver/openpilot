@@ -61,6 +61,12 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "../assets/offroad/icon_warning.png",
       "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
       },
+    {"TinklaHasPerfMotor",
+      "Is Tesla Performance",
+      "Enable if your Tesla has the Performance motors",
+      "../assets/offroad/icon_warning.png",
+      "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+      },
     {"TinklaTurnScreenOff",
       "Turn screen off while engaged",
       "Keeps device screen off even when engaged. It wakes the screen any time a message is shown.",

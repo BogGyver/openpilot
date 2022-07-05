@@ -113,6 +113,7 @@ class CarState(CarStateBase):
     self.pedal_interceptor_value = 0.0
     self.pedal_interceptor_value2 = 0.0
     self.teslaModel = "S"
+    self.teslaModelDetected = 0
     self.realPedalValue = 0.0
 
   def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
@@ -215,7 +216,6 @@ class CarState(CarStateBase):
       ret.followDistanceS = int(self.cruise_distance/33) + 1
     else:
       ret.followDistanceS = 255
-    
     
     if (self.CP.carFingerprint != CAR.PREAP_MODELS):
       acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
@@ -395,6 +395,7 @@ class CarState(CarStateBase):
       ("DOOR_STATE_RR", "GTW_carState", 1),
       ("DOOR_STATE_FrontTrunk", "GTW_carState", 1),
       ("BOOT_STATE", "GTW_carState", 1),
+      ("GTW_performanceConfig","GTW_carConfig", 1),
       ("BC_indicatorLStatus", "GTW_carState", 1),
       ("BC_indicatorRStatus", "GTW_carState", 1),
       # info for speed limit
