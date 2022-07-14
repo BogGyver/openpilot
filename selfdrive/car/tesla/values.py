@@ -91,7 +91,7 @@ CAN_POWERTRAIN = {
 USE_REAL_PID = {
   CAR.AP2_MODELS: False,
   CAR.AP1_MODELS: False,
-  CAR.PREAP_MODELS: True, 
+  CAR.PREAP_MODELS: False, 
   CAR.AP1_MODELX: False, 
 }
 
