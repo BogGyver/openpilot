@@ -169,8 +169,6 @@ class DriverStatus():
       self.active_monitoring_mode = False
 
   def _is_driver_distracted(self, pose, blink):
-    if self.dev_unit:
-      return DistractedType.NOT_DISTRACTED
     if not self.pose_calibrated:
       pitch_error = pose.pitch - self.settings._PITCH_NATURAL_OFFSET
       yaw_error = pose.yaw - self.settings._YAW_NATURAL_OFFSET
@@ -245,7 +243,7 @@ class DriverStatus():
       self.hi_stds = 0
 
   def update(self, events, driver_engaged, ctrl_active, standstill):
-    if (driver_engaged and self.awareness > 0) or not ctrl_active:
+    if (driver_engaged and self.awareness > 0) or not ctrl_active or self.dev_unit:
       # reset only when on disengagement if red reached
       self.awareness = 1.
       self.awareness_active = 1.
