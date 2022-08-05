@@ -56,6 +56,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/offroad/icon_metric.png",
     },
     {
+      "DisableUpdates",
+      "Disable Automatic Updates",
+      "Prevents updates to override local changes.",
+      "../assets/offroad/icon_warning.png",
+    },
+    {
       "RecordFront",
       "Record and Upload Driver Camera",
       "Upload data from the driver facing camera and help improve the driver monitoring algorithm.",

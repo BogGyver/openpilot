@@ -103,6 +103,8 @@ class LongControl():
     """Update longitudinal control. This updates the state machine and runs a PID loop"""
     # Interp control trajectory
     # TODO estimate car specific lag, use .15s for now
+    if CS.longCtrlEvent == car.CarEvent.EventName.pccEnabled:
+      self.pid.reset()
     speeds = long_plan.speeds
     if len(speeds) == CONTROL_N:
       v_target_lower = interp(CP.longitudinalActuatorDelayLowerBound, T_IDXS[:CONTROL_N], speeds)

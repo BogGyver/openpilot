@@ -186,7 +186,7 @@ class CarState(CarStateBase):
     #elif speed_units == "MPH":
     #  ret.cruiseState.speed = cp.vl["DI_state"]["DI_digitalSpeed"] * CV.MPH_TO_MS
     #ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
-    #et.cruiseState.standstill = False # This needs to be false, since we can resume from stop without sending anything special
+    #ret.cruiseState.standstill = False # This needs to be false, since we can resume from stop without sending anything special
 
 
     autopilot_status = None
@@ -233,13 +233,15 @@ class CarState(CarStateBase):
       elif self.speed_units == "MPH":
         ret.cruiseState.speed = cp.vl["DI_state"]["DI_cruiseSet"] * CV.MPH_TO_MS
       ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
-      ret.cruiseState.standstill = (cruise_state == "STANDSTILL")
+      #ret.cruiseState.standstill = (cruise_state == "STANDSTILL")
+      #ret.cruiseState.standstill = False # This needs to be false, since we can resume from stop without sending anything special
+      ret.cruiseState.standstill = ret.standstill
       self.cruise_speed = False #ret.cruiseState.speed
     else:
       ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
       ret.cruiseState.enabled = self.cruiseEnabled and (not ret.doorOpen) and (ret.gearShifter == car.CarState.GearShifter.drive) and (not ret.seatbeltUnlatched)
       ret.cruiseState.available = True
-      ret.cruiseState.standstill = False
+      ret.cruiseState.standstill = ret.standstill
 
     #speed limit
     msu = cp.vl['UI_gpsVehicleSpeed']["UI_mapSpeedLimitUnits"]
@@ -270,18 +272,18 @@ class CarState(CarStateBase):
     buttonEvents = []
     for button in BUTTONS:
       state = (cp.vl[button.can_addr][button.can_msg] in button.values)
-      if self.button_states[button.event_type] != state:
+      if self.button_states[button.event_type] != state and button.event_type != car.CarState.ButtonEvent.Type.altButton1:
         event = car.CarState.ButtonEvent.new_message()
         event.type = button.event_type
         event.pressed = state
         buttonEvents.append(event)
       self.button_states[button.event_type] = state 
-    ret.buttonEvents = buttonEvents
     if self.dev_unit:
       event = car.CarState.ButtonEvent.new_message()
-      event.type = 0 #unknown
+      event.type = car.CarState.ButtonEvent.Type.altButton1 #unknown
       event.pressed = True
-      ret.buttonEvents.append(event)
+      buttonEvents.append(event)
+    ret.buttonEvents = buttonEvents
 
     # Doors
     ret.doorOpen = any([(self.can_define.dv["GTW_carState"][door].get(int(cp.vl["GTW_carState"][door]), "OPEN") == "OPEN") for door in DOORS])
