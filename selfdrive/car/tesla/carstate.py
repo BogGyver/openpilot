@@ -281,8 +281,8 @@ class CarState(CarStateBase):
         buttonEvents.append(event)
       self.button_states[button.event_type] = state 
     if self.dev_unit:
-      dev_unit_counter = (dev_unit_counter + 1) % 100
-      if dev_unit_counter == 0:
+      self.dev_unit_counter = (self.dev_unit_counter + 1) % 100
+      if self.dev_unit_counter == 0:
         ret.steeringPressed = True
     ret.buttonEvents = buttonEvents
 
