@@ -117,6 +117,9 @@ class CarState(CarStateBase):
     self.teslaModelDetected = 0
     self.realPedalValue = 0.0
 
+    #dev unit
+    self.dev_unit_counter = 0
+
   def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
     if speed_limit_uom > 0:
       if speed_limit_type == 0x1E: # Autobahn with no speed limit
@@ -234,8 +237,7 @@ class CarState(CarStateBase):
         ret.cruiseState.speed = cp.vl["DI_state"]["DI_cruiseSet"] * CV.MPH_TO_MS
       ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
       #ret.cruiseState.standstill = (cruise_state == "STANDSTILL")
-      #ret.cruiseState.standstill = False # This needs to be false, since we can resume from stop without sending anything special
-      ret.cruiseState.standstill = ret.standstill
+      ret.cruiseState.standstill = False # This needs to be false, since we can resume from stop without sending anything special
       self.cruise_speed = False #ret.cruiseState.speed
     else:
       ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
@@ -279,10 +281,9 @@ class CarState(CarStateBase):
         buttonEvents.append(event)
       self.button_states[button.event_type] = state 
     if self.dev_unit:
-      event = car.CarState.ButtonEvent.new_message()
-      event.type = car.CarState.ButtonEvent.Type.altButton1 #unknown
-      event.pressed = True
-      buttonEvents.append(event)
+      dev_unit_counter = (dev_unit_counter + 1) % 100
+      if dev_unit_counter == 0:
+        ret.steeringPressed = True
     ret.buttonEvents = buttonEvents
 
     # Doors
