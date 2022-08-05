@@ -1,4 +1,8 @@
-Unity Version 0.8.13-52 (2022-08-05)
+Unity Version 0.8.13-53 (2022-08-05)
+========================
+ * iBooster ECU fixes
+ 
+ Unity Version 0.8.13-52 (2022-08-05)
 ========================
  * Reset Pedal PID on engagement
  * Toggle for Model S Performance for pedal (bug fix)

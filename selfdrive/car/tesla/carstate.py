@@ -366,7 +366,10 @@ class CarState(CarStateBase):
         ret.cruiseState.enabled = self.cruiseEnabled and (not ret.doorOpen) and (ret.gearShifter == car.CarState.GearShifter.drive) and (not ret.seatbeltUnlatched)
         self.cruiseEnabled = ret.cruiseState.enabled
         ret.cruiseState.available = True
-        ret.cruiseState.standstill = ret.standstill
+        if self.has_ibooster_ecu:
+          ret.cruiseState.standstill = False #needed to start from stop
+        else:
+          ret.cruiseState.standstill = ret.standstill
         ret.brakePressed = False
         ret.gasPressed = False
         self.DAS_216_driverOverriding = False
@@ -522,7 +525,7 @@ class CarState(CarStateBase):
       ]
 
       checks += [
-        ("ECU_BrakeStatus", 80)
+        ("ECU_BrakeStatus", 40)
       ]
 
     if enablePedal and pedalcanzero:

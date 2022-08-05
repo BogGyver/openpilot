@@ -149,7 +149,7 @@ class LONGController:
             if self.PCC.pcc_available and frame % 5 == 0:  # pedal processed at 20Hz
                 v_target = 0
                 if long_plan is not None:
-                    v_target = long_plan.longitudinalPlan.speeds[0]
+                    v_target = long_plan.longitudinalPlan.speeds[-1] #was 0
                 self.apply_brake = 0.0
                 apply_accel, self.apply_brake, accel_needed, accel_idx = self.PCC.update_pdl(
                     enabled,
