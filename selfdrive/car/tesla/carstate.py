@@ -366,6 +366,7 @@ class CarState(CarStateBase):
         )) and CruiseState.is_enabled_or_standby(self.cruise_state) 
         if self.cruise_buttons == CruiseButtons.MAIN:
           self.cruiseEnabled = not self.enableJustCC
+          ret.gasPressed = True #will reset the PID for pedal
         if self.cruise_buttons == CruiseButtons.CANCEL:
           self.cruiseEnabled = False
           
