@@ -6,6 +6,7 @@ from common.realtime import DT_DMON
 from selfdrive.hardware import TICI
 from common.filter_simple import FirstOrderFilter
 from common.stat_live import RunningStatFilter
+from selfdrive.car.modules.CFG_module import load_bool_param
 
 EventName = car.CarEvent.EventName
 
@@ -135,6 +136,7 @@ class DriverStatus():
     self.threshold_prompt = self.settings._DISTRACTED_PROMPT_TIME_TILL_TERMINAL / self.settings._DISTRACTED_TIME
 
     self._set_timers(active_monitoring=True)
+    self.dev_unit = load_bool_param("TinklaDevUnit",False)
 
   def _set_timers(self, active_monitoring):
     if self.active_monitoring_mode and self.awareness <= self.threshold_prompt:
@@ -241,7 +243,7 @@ class DriverStatus():
       self.hi_stds = 0
 
   def update(self, events, driver_engaged, ctrl_active, standstill):
-    if (driver_engaged and self.awareness > 0) or not ctrl_active:
+    if (driver_engaged and self.awareness > 0) or not ctrl_active or self.dev_unit:
       # reset only when on disengagement if red reached
       self.awareness = 1.
       self.awareness_active = 1.

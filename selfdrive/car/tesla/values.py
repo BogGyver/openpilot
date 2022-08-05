@@ -91,8 +91,8 @@ CAN_POWERTRAIN = {
 USE_REAL_PID = {
   CAR.AP2_MODELS: False,
   CAR.AP1_MODELS: False,
-  CAR.PREAP_MODELS: False, 
-  CAR.AP1_MODELX: False, 
+  CAR.PREAP_MODELS: False,
+  CAR.AP1_MODELX: False,
 }
 
 CAN_AP_POWERTRAIN = {
@@ -137,6 +137,7 @@ BUTTONS = [
   Button(car.CarState.ButtonEvent.Type.decelCruise, "STW_ACTN_RQ", "SpdCtrlLvr_Stat", [8, 32]),
   Button(car.CarState.ButtonEvent.Type.cancel, "STW_ACTN_RQ", "SpdCtrlLvr_Stat", [1]),
   Button(car.CarState.ButtonEvent.Type.resumeCruise, "STW_ACTN_RQ", "SpdCtrlLvr_Stat", [2]),
+  Button(car.CarState.ButtonEvent.Type.altButton1, "STW_ACTN_RQ", "StW_Sw05_Psd", [1]), # menu button on STW
 ]
 
 class CarControllerParams:

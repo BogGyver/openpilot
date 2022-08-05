@@ -1,3 +1,12 @@
+Unity Version 0.8.13-52 (2022-08-05)
+========================
+ * Reset Pedal PID on engagement
+ * Toggle for Model S Performance for pedal (bug fix)
+ * Pedal profile for MS Performance (bug fix)
+ * Toggle to prevent auto updates
+ * Toggle for dev unit (bug fix)
+ * Autoresume speed from stand still
+
 Unity Version 0.8.13-51 (2022-07-05)
 ========================
  * New PID for pedal, including way to save state
