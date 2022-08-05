@@ -99,7 +99,6 @@ class CarState(CarStateBase):
     self.brakeUnavailable = True
     self.realBrakePressed = False
     self.userSpeedLimitOffsetMS = 0
-    self.dev_unit = load_bool_param("TinklaDevUnit",False)
 
     #data to spam GTW_ESP1
     self.gtw_esp1 = None
@@ -116,9 +115,6 @@ class CarState(CarStateBase):
     self.teslaModel = "S"
     self.teslaModelDetected = 0
     self.realPedalValue = 0.0
-
-    #dev unit
-    self.dev_unit_counter = 0
 
   def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
     if speed_limit_uom > 0:
@@ -280,10 +276,6 @@ class CarState(CarStateBase):
         event.pressed = state
         buttonEvents.append(event)
       self.button_states[button.event_type] = state 
-    if self.dev_unit:
-      self.dev_unit_counter = (self.dev_unit_counter + 1) % 100
-      if self.dev_unit_counter == 0:
-        ret.steeringPressed = True
     ret.buttonEvents = buttonEvents
 
     # Doors
