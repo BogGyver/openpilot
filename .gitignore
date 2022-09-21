@@ -58,6 +58,7 @@ selfdrive/camerad/camerad
 selfdrive/camerad/test/ae_gray_test
 selfdrive/modeld/_modeld
 selfdrive/modeld/_dmonitoringmodeld
+selfdrive/car/modules/qt/moc_*.*
 /src/
 
 one

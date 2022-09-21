@@ -10,9 +10,11 @@
 #include "tcontrols.hpp"
 
 #include "num_param.h"
+#include "str_param.h"
 
 #define TINKLA_TOGGLE 1
 #define TINKLA_FLOAT 2
+#define TINKLA_STRING 3
 
 TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
 
@@ -136,6 +138,9 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
     if (field_type == TINKLA_FLOAT) {
       addItem(new NumParamControl(title, desc, edit_title,edit_desc, edit_uom, param,val_default,val_min,val_max,val_step, icon));
     }
+    if (field_type == TINKLA_STRING) {
+      addItem(new StrParamControl(title, desc, edit_title,edit_desc, param, QString::fromStdString(""), icon));
+    }
   };
   QPushButton *flash_btn = new QPushButton("Flash Panda");
   flash_btn->setObjectName("flash_btn");
@@ -255,6 +260,9 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     if (field_type == TINKLA_FLOAT) {
       addItem(new NumParamControl(title, desc, edit_title,edit_desc, edit_uom, param,val_default,val_min,val_max,val_step, icon));
     }
+    if (field_type == TINKLA_STRING) {
+      addItem(new StrParamControl(title, desc, edit_title,edit_desc, param, QString::fromStdString(""), icon));
+    }
   };
 
   QPushButton *flash_btn = new QPushButton("Flash EPAS");
@@ -344,6 +352,15 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
     "../assets/offroad/icon_settings.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
+    {"TinklaAPForceFingerprint",
+      "Force Tesla AP Fingerprint",
+      "Forces fingerprint for a specific model of Tesla with AutoPilot. This should not be used for preAP Tesla Model S.",
+      "../assets/offroad/icon_settings.png",
+      "Fingerprint:",
+      "Enter a valid fingerprint name. Check WiKi for values.",
+      "",
+      0.0,0.0,0.0,0.0,TINKLA_STRING
+    },
   };
   Params params;
   for (auto &[param, title, desc, icon, edit_title,edit_desc, edit_uom, val_default,val_min,val_max,val_step, field_type] : tinkla_toggles) {
@@ -358,6 +375,9 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
     }
     if (field_type == TINKLA_FLOAT) {
       addItem(new NumParamControl(title, desc, edit_title,edit_desc, edit_uom, param,val_default,val_min,val_max,val_step, icon));
+    }
+    if (field_type == TINKLA_STRING) {
+      addItem(new StrParamControl(title, desc, edit_title,edit_desc, param, QString::fromStdString(""), icon));
     }
   };
 }

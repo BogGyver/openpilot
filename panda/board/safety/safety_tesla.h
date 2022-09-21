@@ -1054,7 +1054,7 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
       int lowest_desired_angle = desired_angle_last - ((desired_angle_last >= 0) ? delta_angle_down : delta_angle_up);
 
       // Check for violation;
-      violation |= max_limit_check(desired_angle, highest_desired_angle, lowest_desired_angle);
+      //violation |= max_limit_check(desired_angle, highest_desired_angle, lowest_desired_angle);
     }
     
     desired_angle_last = desired_angle;

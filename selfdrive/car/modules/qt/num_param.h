@@ -2,7 +2,6 @@
 
 #include <QPushButton>
 
-#pragma once
 #include "selfdrive/hardware/hw.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 
