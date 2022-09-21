@@ -1041,7 +1041,7 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
     int steer_control_type = GET_BYTE(to_send, 2) >> 6;
     bool steer_control_enabled = (steer_control_type != 0) &&  // NONE
                                  (steer_control_type != 3);    // DISABLED
-
+    /*
     // Rate limit while steering
     if(controls_allowed && steer_control_enabled) {
       // Add 1 to not false trigger the violation
@@ -1054,8 +1054,9 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
       int lowest_desired_angle = desired_angle_last - ((desired_angle_last >= 0) ? delta_angle_down : delta_angle_up);
 
       // Check for violation;
-      //violation |= max_limit_check(desired_angle, highest_desired_angle, lowest_desired_angle);
+      violation |= max_limit_check(desired_angle, highest_desired_angle, lowest_desired_angle);
     }
+    */
     
     desired_angle_last = desired_angle;
 
