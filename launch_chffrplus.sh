@@ -9,6 +9,13 @@ source "$BASEDIR/launch_env.sh"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 
+#see if we need to launch with fixed fingerprint
+ffp=`cat /data/params/TinklaAPForceFingerprint`
+if [ ! -z "$ffp" ]; then
+  export FINGERPRINT="$ffp"
+fi
+
+
 function two_init {
 
   # set IO scheduler

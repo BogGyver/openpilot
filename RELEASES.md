@@ -1,3 +1,8 @@
+Unity Version 0.8.13-54 (2022-09-19)
+========================
+ * Add capabilities for Str params
+ * Implement fixed fingerprint option to avoid fingerprinting issues
+
 Unity Version 0.8.13-53 (2022-08-05)
 ========================
  * iBooster ECU fixes
