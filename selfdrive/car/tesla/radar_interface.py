@@ -92,9 +92,9 @@ class RadarInterface(RadarInterfaceBase):
           (
             sgu_info['RADC_SGUFail'] 
             and 
-            (self.fingerprint != CAR.PREAP_MODELS
-            or 
-            self.ignoreRadarSGUError)
+            self.fingerprint != CAR.PREAP_MODELS
+            and 
+            not (self.ignoreRadarSGUError)
           ) 
           or 
           (
