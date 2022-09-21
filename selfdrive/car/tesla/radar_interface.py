@@ -65,6 +65,8 @@ class RadarInterface(RadarInterfaceBase):
       self.rcp = get_radar_can_parser(CP)
     self.behindNoseCone = load_bool_param("TinklaTeslaRadarBehindNosecone",False)
     self.radar_offset = load_float_param("TinklaRadarOffset",0.0)
+    self.ignoreRadarSGUError = load_bool_param("TinklaTeslaRadarIgnoreSGUError",False)
+
 
   def update(self, can_strings):
     if self.rcp is None or self.radar_off_can:
@@ -91,6 +93,8 @@ class RadarInterface(RadarInterfaceBase):
             sgu_info['RADC_SGUFail'] 
             and 
             self.fingerprint != CAR.PREAP_MODELS
+            and 
+            not (self.ignoreRadarSGUError)
           ) 
           or 
           (

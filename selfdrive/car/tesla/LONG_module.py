@@ -149,7 +149,7 @@ class LONGController:
             if self.PCC.pcc_available and frame % 5 == 0:  # pedal processed at 20Hz
                 v_target = 0
                 if long_plan is not None:
-                    v_target = long_plan.longitudinalPlan.speeds[0]
+                    v_target = long_plan.longitudinalPlan.speeds[-1] #was 0
                 self.apply_brake = 0.0
                 apply_accel, self.apply_brake, accel_needed, accel_idx = self.PCC.update_pdl(
                     enabled,
@@ -240,10 +240,16 @@ class LONGController:
             target_accel = actuators.accel 
             #target_jerk = 0.
             target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
-            if self.useLongControlData:
-                target_accel = self.a_target
-                target_speed = self.v_target
+            #TODO FIX THIS
+            #if self.useLongControlData:
+                #target_accel = self.a_target
+                #target_speed = self.v_target
                 #target_jerk = self.j_target
+
+            #if accel pedal pressed send 0 for target_accel
+            if CS.realPedalValue > 0 and CS.enableHAO:
+                target_accel = 0.
+
 
             max_accel = 0 if target_accel < 0 else target_accel
             min_accel = 0 if target_accel > 0 else target_accel

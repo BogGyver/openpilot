@@ -2,7 +2,7 @@ void can_send(CANPacket_t *to_push, uint8_t bus_number, bool skip_tx_hook);
 
 const struct lookup_t TESLA_LOOKUP_ANGLE_RATE_UP = {
     {2., 7., 17.},
-    {5., .8, .25}};
+    {8., .8, .25}};
 
 const struct lookup_t TESLA_LOOKUP_ANGLE_RATE_DOWN = {
     {2., 7., 17.},
