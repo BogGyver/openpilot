@@ -10,7 +10,7 @@
 #include "tcontrols.hpp"
 
 #include "num_param.h"
-#include "strh_param.h"
+#include "str_param.h"
 
 #define TINKLA_TOGGLE 1
 #define TINKLA_FLOAT 2
@@ -351,15 +351,6 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
     "Ignore Tesla Radar errors about calibration. ",
     "../assets/offroad/icon_settings.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-    },
-    {"TinklaAPForceFingerprint",
-      "Force Tesla AP Fingerprint",
-      "Forces fingerprint for a specific model of Tesla with AutoPilot. This should not be used for preAP Tesla Model S.",
-      "../assets/offroad/icon_settings.png",
-      "Fingerprint:",
-      "Enter a valid fingerprint name. Check WiKi for values.",
-      "",
-      "",TINKLA_STRING
     },
     {"TinklaAPForceFingerprint",
       "Force Tesla AP Fingerprint",

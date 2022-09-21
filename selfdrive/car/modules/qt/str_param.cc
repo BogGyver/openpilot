@@ -4,8 +4,9 @@
 #include "selfdrive/car/modules/qt/tinklaparams.h"
 
 
+
 StrParamControl::StrParamControl(QString theLabel, QString theDescription, 
-              QString theWindowTitle, QString theWindowInfo, QString theUom,
+              QString theWindowTitle, QString theWindowInfo,
               QString theParam, QString theDefaultValue,
               QString icon) : ButtonControl(theLabel, "", theDescription) {
   param_label.setAlignment(Qt::AlignRight | Qt::AlignVCenter);
@@ -27,7 +28,7 @@ StrParamControl::StrParamControl(QString theLabel, QString theDescription,
     try {
       QString txtValue = InputDialog::getNumber(window_title, this,
                   window_info, false, 1, value);
-      tinkla_set_str_param(param_name.toStdString(),txtValue.toStdString);
+      tinkla_set_str_param(param_name.toStdString(),txtValue.toStdString());
     } catch(std::exception e) {
       //restore to last value
     }
@@ -40,7 +41,7 @@ StrParamControl::StrParamControl(QString theLabel, QString theDescription,
 
 void StrParamControl::refresh() {
   bool locked = params.getBool((param_name + "Lock").toStdString());
-  value = QString::fromStdString(tinkla_get_str_param(param_name.toStdString(),default_value));
+  value = QString::fromStdString(tinkla_get_str_param(param_name.toStdString(),default_value.toStdString()));
   param_label.setText(value);
   setText("Change");
   setEnabled(!locked);
