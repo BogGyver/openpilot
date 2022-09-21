@@ -240,10 +240,16 @@ class LONGController:
             target_accel = actuators.accel 
             #target_jerk = 0.
             target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
-            if self.useLongControlData:
-                target_accel = self.a_target
-                target_speed = self.v_target
+            #TODO FIX THIS
+            #if self.useLongControlData:
+                #target_accel = self.a_target
+                #target_speed = self.v_target
                 #target_jerk = self.j_target
+
+            #if accel pedal pressed send 0 for target_accel
+            if CS.realPedalValue > 0 and CS.enableHAO:
+                target_accel = 0.
+
 
             max_accel = 0 if target_accel < 0 else target_accel
             min_accel = 0 if target_accel > 0 else target_accel

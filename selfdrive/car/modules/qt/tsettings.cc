@@ -338,6 +338,12 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
     "../assets/offroad/icon_speed_limit.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
+    {"TinklaTeslaRadarIgnoreSGUError",
+    "Ignore Radar Errors",
+    "Ignore Tesla Radar errors about calibration. ",
+    "../assets/offroad/icon_settings.png",
+    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+    },
   };
   Params params;
   for (auto &[param, title, desc, icon, edit_title,edit_desc, edit_uom, val_default,val_min,val_max,val_step, field_type] : tinkla_toggles) {
