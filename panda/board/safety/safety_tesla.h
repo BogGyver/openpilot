@@ -873,7 +873,8 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
         if (addr == 0x214) {
           //has ibooser or otherwise we don't get EPB_epasControl
           if (has_ap_hardware) {
-            epas_inhibited = (GET_BYTES_04(to_push) & 0x07) == 0;
+            //disable and just read status from epas not from EPB
+            //epas_inhibited = (GET_BYTES_04(to_push) & 0x07) == 0;
           }
         }
 
@@ -1041,7 +1042,7 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
     int steer_control_type = GET_BYTE(to_send, 2) >> 6;
     bool steer_control_enabled = (steer_control_type != 0) &&  // NONE
                                  (steer_control_type != 3);    // DISABLED
-    /*
+    
     // Rate limit while steering
     if(controls_allowed && steer_control_enabled) {
       // Add 1 to not false trigger the violation
@@ -1056,7 +1057,6 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
       // Check for violation;
       violation |= max_limit_check(desired_angle, highest_desired_angle, lowest_desired_angle);
     }
-    */
     
     desired_angle_last = desired_angle;
 

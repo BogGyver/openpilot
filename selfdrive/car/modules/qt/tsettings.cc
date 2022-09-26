@@ -361,6 +361,18 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
       "",
       0.0,0.0,0.0,0.0,TINKLA_STRING
     },
+    {"TinklaDisableStartStopSounds",
+    "Disable Main Sounds",
+    "Disables the device from playing the Engagement and Disengagement sounds. To be used when the car will generate these sounds by itself. Prompt and Warning sounds will still be played.",
+    "../assets/offroad/icon_settings.png",
+    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+    },
+    {"TinklaDisablePromptSounds",
+    "Disable Prompt Sounds",
+    "Disables the device from playing the Prompt sounds. To be used when the car will generate these sounds by itself.  Engagement/Disengagement and Warning sounds will still be played.",
+    "../assets/offroad/icon_settings.png",
+    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+    },
   };
   Params params;
   for (auto &[param, title, desc, icon, edit_title,edit_desc, edit_uom, val_default,val_min,val_max,val_step, field_type] : tinkla_toggles) {

@@ -5,6 +5,7 @@
 #include "selfdrive/hardware/hw.h"
 #include "selfdrive/ui/ui.h"
 
+
 const std::tuple<AudibleAlert, QString, int> sound_list[] = {
   // AudibleAlert, file name, loop count
   {AudibleAlert::ENGAGE, "engage.wav", 0},
@@ -31,4 +32,6 @@ protected:
   QMap<AudibleAlert, QPair<QSoundEffect *, int>> sounds;
   SubMaster sm;
   uint64_t started_frame;
+  bool disable_start_stop_sounds;
+  bool disable_prompt_sounds;
 };

@@ -8,6 +8,7 @@
 
 #include "cereal/messaging/messaging.h"
 #include "selfdrive/common/util.h"
+#include "selfdrive/common/params.h"
 
 // TODO: detect when we can't play sounds
 // TODO: detect when we can't display the UI
@@ -24,6 +25,8 @@ Sound::Sound(QObject *parent) : sm({"carState", "controlsState", "deviceState"})
     s->setSource(QUrl::fromLocalFile("../../assets/sounds/" + fn));
     sounds[alert] = {s, loops};
   }
+  disable_start_stop_sounds = Params().tinkla_get_bool_param("TinklaDisableStartStopSounds");
+  disable_prompt_sounds = Params().tinkla_get_bool_param("TinklaDisablePromptSounds");
 
   QTimer *timer = new QTimer(this);
   QObject::connect(timer, &QTimer::timeout, this, &Sound::update);
@@ -37,6 +40,8 @@ void Sound::update() {
   const bool started = sm["deviceState"].getDeviceState().getStarted();
   if (started && !started_prev) {
     started_frame = sm.frame;
+    disable_start_stop_sounds = Params().tinkla_get_bool_param("TinklaDisableStartStopSounds");
+    disable_prompt_sounds = Params().tinkla_get_bool_param("TinklaDisablePromptSounds");
   }
 
   // no sounds while offroad
@@ -73,6 +78,12 @@ void Sound::setAlert(const Alert &alert) {
 
     // play sound
     if (alert.sound != AudibleAlert::NONE) {
+      if ((disable_start_stop_sounds) && ((alert.sound == AudibleAlert::ENGAGE) || (alert.sound == AudibleAlert::DISENGAGE) || (alert.sound == AudibleAlert::REFUSE))) {
+        return;
+      }
+      if ((disable_prompt_sounds) && ((alert.sound == AudibleAlert::PROMPT) || (alert.sound == AudibleAlert::PROMPT_REPEAT) || (alert.sound == AudibleAlert::PROMPT_DISTRACTED))) {
+        return;
+      }
       auto &[s, loops] = sounds[alert.sound];
       s->setLoopCount(loops);
       s->play();
