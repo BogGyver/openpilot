@@ -121,10 +121,10 @@ class TeslaCAN:
     }
     return self.packer.make_can_msg("DAS_telemetry", bus, values)
 
-  def create_steering_control(self, angle, enabled, bus, counter):
+  def create_steering_control(self, angle, enabled, ldw, bus, counter):
     values = {
       "DAS_steeringAngleRequest": -angle,
-      "DAS_steeringHapticRequest": 0,
+      "DAS_steeringHapticRequest": ldw,
       "DAS_steeringControlType": 1 if enabled else 0, #0-NONE, 1-ANGLE, 2-LKA, 3-Emergency LKA
       "DAS_steeringControlCounter": counter,
       "DAS_steeringControlChecksum": 0,
