@@ -168,6 +168,63 @@ class HUDController:
             CS.stopLightWarning = 0
             CS.DAS_canErrors = 0
             CS.DAS_notInDrive = 0
+        
+        #all logic
+        alcaState = CS.alca_direction if (CS.alca_pre_engage or CS.alca_engaged) and CS.alca_direction > 0 else 0
+        DAS_ldwStatus = 1 if left_lane_depart or right_lane_depart else 0
+        DAS_hands_on_state = 2
+        #steering required is also used by ALCA
+        if (hud_alert == VisualAlert.steerRequired) and not (CS.alca_engaged or CS.alca_pre_engage):
+            if audible_alert == AudibleAlert.none:
+                DAS_hands_on_state = 3
+            else:
+                DAS_hands_on_state = 5
+        #if manual steering overright we will flash the light at the top of IC
+        if enabled and human_control:
+            DAS_hands_on_state = 3
+        DAS_collision_warning =  1 if hud_alert == VisualAlert.fcw else 0
+        #alcaState
+        #10 "ALC_IN_PROGRESS_R" 
+        #9 "ALC_IN_PROGRESS_L" 
+        #8 "ALC_AVAILABLE_BOTH" 
+        #7 "ALC_AVAILABLE_ONLY_R" 
+        #6 "ALC_AVAILABLE_ONLY_L"
+        #1 "ALC_UNAVAILABLE_NO_LANES"
+        DAS_alca_state = 1
+        if (CS.alca_pre_engage or CS.alca_engaged) and CS.alca_direction > 0:
+            DAS_alca_state = 8 + CS.alca_direction 
+        else:
+            if self.leftLaneQuality == 1 and self.rightLaneQuality == 1:
+                DAS_alca_state = 8
+            elif self.leftLaneQuality == 1:
+                DAS_alca_state = 6
+            elif self.rightLaneQuality == 1:
+                DAS_alca_state = 7
+        #ap status 0-Disabled 1-Unavailable 2-Available 3-Active_nominal, 
+        #          4-active_restricted 5-active_nav 8-aborting 9-aborted
+        #          14-fault  15-SNA
+        DAS_op_status = 5 if enabled else 2
+
+        #preAP stuff
+        speed_uom_kph = 1.0
+        if CS.speed_units == "MPH":
+            speed_uom_kph = CV.KPH_TO_MPH
+        v_cruise_pcm = max(0.0, CS.out.vEgo * CV.MS_TO_KPH) * speed_uom_kph
+        if CS.cruiseEnabled:
+            v_cruise_pcm = max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH) * speed_uom_kph
+        DAS_control_speed = v_cruise_pcm
+        if CS.carNotInDrive:
+            DAS_control_speed = 350.0/3.6
+
+        # send DAS_status and DAS_status2 at 2Hz
+        if (self.IC_integration_counter %20 == 0) or (self.IC_previous_enabled and not enabled ):
+            if CS.enableICIntegration:
+                messages.append(self.tesla_can.create_das_status(DAS_op_status, DAS_collision_warning,
+                    DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
+                    CS.out.leftBlindspot, CS.out.rightBlindspot,
+                    CS.DAS_fusedSpeedLimit, CS.fleet_speed_state, CAN_CHASSIS[self.CP.carFingerprint], 1))
+                messages.append(self.tesla_can.create_das_status2(CS.out.cruiseState.speed * CV.MS_TO_MPH, 
+                    DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1))
 
         if (enabled or self.IC_previous_enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
 
@@ -181,8 +238,6 @@ class HUDController:
                     50, CS.curvC0, CS.curvC1, CS.curvC2, CS.curvC3, self.leftLaneQuality, self.rightLaneQuality,
                     CAN_CHASSIS[self.CP.carFingerprint], 1))
 
-            #if self.CP.carFingerprint == CAR.PREAP_MODELS:
-            alcaState = CS.alca_direction if (CS.alca_pre_engage or CS.alca_engaged) and CS.alca_direction > 0 else 0
             if CS.enableICIntegration:
                 messages.append(self.tesla_can.create_telemetry_road_info(CS.lLine,CS.rLine,self.leftLaneQuality, self.rightLaneQuality, alcaState,
                     CAN_CHASSIS[self.CP.carFingerprint]))
@@ -211,61 +266,11 @@ class HUDController:
                         CS.DAS_219_lcTempUnavailableSpeed, CS.DAS_220_lcTempUnavailableRoad, CS.DAS_221_lcAborting, CS.DAS_222_accCameraBlind,
                         CS.DAS_208_rackDetected, CS.DAS_216_driverOverriding, CS.stopSignWarning, CS.stopLightWarning, CAN_CHASSIS[self.CP.carFingerprint]))
             
-            # send DAS_status and DAS_status2 at 2Hz
-            DAS_ldwStatus = 1 if left_lane_depart or right_lane_depart else 0
-            DAS_hands_on_state = 2
-            #steering required is also used by ALCA
-            if (hud_alert == VisualAlert.steerRequired) and not (CS.alca_engaged or CS.alca_pre_engage):
-                if audible_alert == AudibleAlert.none:
-                    DAS_hands_on_state = 3
-                else:
-                    DAS_hands_on_state = 5
-            #if manual steering overright we will flash the light at the top of IC
-            if enabled and human_control:
-                DAS_hands_on_state = 3
-            DAS_collision_warning =  1 if hud_alert == VisualAlert.fcw else 0
-            #alcaState
-            #10 "ALC_IN_PROGRESS_R" 
-            #9 "ALC_IN_PROGRESS_L" 
-            #8 "ALC_AVAILABLE_BOTH" 
-            #7 "ALC_AVAILABLE_ONLY_R" 
-            #6 "ALC_AVAILABLE_ONLY_L"
-            #1 "ALC_UNAVAILABLE_NO_LANES"
-            DAS_alca_state = 1
-            if (CS.alca_pre_engage or CS.alca_engaged) and CS.alca_direction > 0:
-                DAS_alca_state = 8 + CS.alca_direction 
-            else:
-                if self.leftLaneQuality == 1 and self.rightLaneQuality == 1:
-                    DAS_alca_state = 8
-                elif self.leftLaneQuality == 1:
-                    DAS_alca_state = 6
-                elif self.rightLaneQuality == 1:
-                    DAS_alca_state = 7
-            #ap status 0-Disabled 1-Unavailable 2-Available 3-Active_nominal, 
-            #          4-active_restricted 5-active_nav 8-aborting 9-aborted
-            #          14-fault  15-SNA
-            DAS_op_status = 5 if enabled else 2
-            if (self.IC_integration_counter %20 == 0) or (self.IC_previous_enabled and not enabled ):
-                if CS.enableICIntegration:
-                    messages.append(self.tesla_can.create_das_status(DAS_op_status, DAS_collision_warning,
-                        DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
-                        CS.out.leftBlindspot, CS.out.rightBlindspot,
-                        CS.DAS_fusedSpeedLimit, CS.fleet_speed_state, CAN_CHASSIS[self.CP.carFingerprint], 1))
-                    messages.append(self.tesla_can.create_das_status2(CS.out.cruiseState.speed * CV.MS_TO_MPH, 
-                        DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1))
-            self.IC_previous_enabled = enabled
+
+            
 
             #send message for TB/Panda if preAP
             if self.CP.carFingerprint == CAR.PREAP_MODELS:
-                speed_uom_kph = 1.0
-                if CS.speed_units == "MPH":
-                    speed_uom_kph = CV.KPH_TO_MPH
-                v_cruise_pcm = max(0.0, CS.out.vEgo * CV.MS_TO_KPH) * speed_uom_kph
-                if CS.cruiseEnabled:
-                    v_cruise_pcm = max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH) * speed_uom_kph
-                DAS_control_speed = v_cruise_pcm
-                if CS.carNotInDrive:
-                    DAS_control_speed = 350.0/3.6
                 if CS.enableICIntegration:
                     messages.append(
                         self.tesla_can.create_ap1_long_control(
@@ -304,4 +309,5 @@ class HUDController:
                     )
                 )
 
+        self.IC_previous_enabled = enabled
         return messages
