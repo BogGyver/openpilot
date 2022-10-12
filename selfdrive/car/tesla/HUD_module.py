@@ -99,7 +99,7 @@ class HUDController:
         messages = []
 
         if controls_state is not None:
-            self.engageable = controls_state.engageable
+            self.engageable = controls_state.controlsState.engageable
 
         if lat_plan is not None:
             CS.laneWidth = lat_plan.lateralPlan.laneWidth
@@ -208,7 +208,7 @@ class HUDController:
         #          4-active_restricted 5-active_nav 8-aborting 9-aborted
         #          14-fault  15-SNA
         DAS_op_status = 5 if enabled else 2
-        if not self.controlsState.engageable:
+        if not self.engageable:
             DAS_op_status = 1
 
         #preAP stuff
