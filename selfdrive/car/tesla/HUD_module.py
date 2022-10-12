@@ -33,6 +33,7 @@ class HUDController:
         self.rightLaneQuality = 0
         self._path_pinv = compute_path_pinv()
         self.leadsData = None
+        self.engageable = False
 
 
     # to show lead car on IC
@@ -88,7 +89,7 @@ class HUDController:
         return i
 
 
-    def update(self, engageable, enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
+    def update(self, controls_state, enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart,human_control,radar_state,lat_plan,apply_angle,model_data):
         # TODO: additional lanes to show on IC
         self.IC_integration_counter = ((self.IC_integration_counter + 2) % 100)
@@ -96,6 +97,9 @@ class HUDController:
         if self.IC_integration_warning_counter > 0:
             self.IC_integration_warning_counter = self.IC_integration_warning_counter - 1
         messages = []
+
+        if controls_state is not None:
+            self.engageable = controls_state.engageable
 
         if lat_plan is not None:
             CS.laneWidth = lat_plan.lateralPlan.laneWidth
@@ -204,7 +208,7 @@ class HUDController:
         #          4-active_restricted 5-active_nav 8-aborting 9-aborted
         #          14-fault  15-SNA
         DAS_op_status = 5 if enabled else 2
-        if not engageable:
+        if not self.engageable:
             DAS_op_status = 1
 
         #preAP stuff
