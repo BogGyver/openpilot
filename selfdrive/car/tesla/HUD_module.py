@@ -99,7 +99,7 @@ class HUDController:
         messages = []
 
         if controls_state is not None:
-            self.engageable = controls_state.controlsState.engageable
+            self.engageable = controls_state.controlsState. engageable
 
         if lat_plan is not None:
             CS.laneWidth = lat_plan.lateralPlan.laneWidth
@@ -221,6 +221,9 @@ class HUDController:
         DAS_control_speed = v_cruise_pcm
         if CS.carNotInDrive:
             DAS_control_speed = 350.0/3.6
+        cruise_speed = CS.out.cruiseState.speed * CV.MS_TO_MPH
+        if self.engageable and (not enabled) and cruise_speed == 0:
+            cruise_speed = 10
 
         # send DAS_status and DAS_status2 at 2Hz
         if (self.IC_integration_counter %20 == 0) or (self.IC_previous_enabled and not enabled ):
@@ -229,7 +232,7 @@ class HUDController:
                     DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
                     CS.out.leftBlindspot, CS.out.rightBlindspot,
                     CS.DAS_fusedSpeedLimit, CS.fleet_speed_state, CAN_CHASSIS[self.CP.carFingerprint], 1))
-                messages.append(self.tesla_can.create_das_status2(CS.out.cruiseState.speed * CV.MS_TO_MPH, 
+                messages.append(self.tesla_can.create_das_status2(cruise_speed, 
                     DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1))
 
         if (enabled or self.IC_previous_enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
