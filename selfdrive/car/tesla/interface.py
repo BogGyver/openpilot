@@ -113,6 +113,7 @@ class CarInterface(CarInterfaceBase):
         set_long_tune(ret.longitudinalTuning, LongTunes.ACC)
     else:
       raise ValueError(f"Unsupported car: {candidate}")
+    ret.minEnableSpeed = -1. 
     # enable IC integration - always enabled
     # enable body controls - always enabled
     # enabled radar emulation from carconfig
@@ -154,6 +155,7 @@ class CarInterface(CarInterfaceBase):
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam)]
     else:
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam)]
+    ret.pcmCruise = not ret.openpilotLongitudinalControl
     return ret
 
   def update(self, c, can_strings):
