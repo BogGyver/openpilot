@@ -6,7 +6,7 @@ from common.params import Params
 from cereal import car
 
 ACCEL_MAX = 0.6  #0.6m/s2 * 36 = ~ 0 -> 50mph in 6 seconds
-ACCEL_MIN = -3.5
+ACCEL_MIN = -4.5 #changed from -3.5 to -4.5 to see if we get better braking with iBooster
 
 _DT = 0.05  # 20Hz in our case, since we don't want to process more than once the same radarState message
 _DT_MPC = _DT
