@@ -88,7 +88,7 @@ class HUDController:
         return i
 
 
-    def update(self, enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
+    def update(self, engageable, enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart,human_control,radar_state,lat_plan,apply_angle,model_data):
         # TODO: additional lanes to show on IC
         self.IC_integration_counter = ((self.IC_integration_counter + 2) % 100)
@@ -204,6 +204,8 @@ class HUDController:
         #          4-active_restricted 5-active_nav 8-aborting 9-aborted
         #          14-fault  15-SNA
         DAS_op_status = 5 if enabled else 2
+        if not engageable:
+            DAS_op_status = 1
 
         #preAP stuff
         speed_uom_kph = 1.0
@@ -265,9 +267,6 @@ class HUDController:
                     messages.append(self.tesla_can.create_das_warningMatrix3 (CS.DAS_gas_to_resume, CS.DAS_211_accNoSeatBelt, CS.DAS_202_noisyEnvironment, CS.DAS_206_apUnavailable, CS.DAS_207_lkasUnavailable,
                         CS.DAS_219_lcTempUnavailableSpeed, CS.DAS_220_lcTempUnavailableRoad, CS.DAS_221_lcAborting, CS.DAS_222_accCameraBlind,
                         CS.DAS_208_rackDetected, CS.DAS_216_driverOverriding, CS.stopSignWarning, CS.stopLightWarning, CAN_CHASSIS[self.CP.carFingerprint]))
-            
-
-            
 
             #send message for TB/Panda if preAP
             if self.CP.carFingerprint == CAR.PREAP_MODELS:
