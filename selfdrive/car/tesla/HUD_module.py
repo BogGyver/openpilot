@@ -208,7 +208,7 @@ class HUDController:
         #          4-active_restricted 5-active_nav 8-aborting 9-aborted
         #          14-fault  15-SNA
         DAS_op_status = 5 if enabled else 2
-        if not self.engageable:
+        if not self.controlsState.engageable:
             DAS_op_status = 1
 
         #preAP stuff
