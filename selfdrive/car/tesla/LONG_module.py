@@ -5,6 +5,7 @@ from selfdrive.config import Conversions as CV
 from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
 from cereal import car
 from common.numpy_fast import interp
+from selfdrive.car.tesla.speed_utils.fleet_speed import FleetSpeed
 
 ACCEL_MULTIPLIERS_BP =     [0.0, 5.0, 10.0, 30.0]
 ACCEL_MULT_SPEED_V  =      [1.5, 1.3,  1.2,  1.0]
@@ -43,6 +44,11 @@ class LONGController:
         self.useBrakeWipe = load_bool_param("TinklaUseBrakeWipe", False)
         self.madMax = load_bool_param("TinklaSpeedMadMax",False)
         self.useLongControlData = load_bool_param("TinklaUseLongControlData",False)
+        average_speed_over_x_suggestions = 6  # 0.3 seconds (20x a second)
+        self.fleet_speed = FleetSpeed(average_speed_over_x_suggestions)
+        self.prev_enabled = False
+        self.speed_limit_ms = 0.
+        self.prev_speed_limit_ms = 0.
         if (CP.carFingerprint == CAR.PREAP_MODELS):
             self.ACC = ACCController(self)
             self.PCC = PCCController(self,tesla_can,pedalcan)
@@ -56,8 +62,14 @@ class LONGController:
         self.has_ibooster_ecu = CS.has_ibooster_ecu
         #update options 
 
+        if enabled and not self.prev_enabled:
+            self.fleet_speed.reset_averager()
+        self.prev_enabled = enabled
+
         if frame % 10 == 0:
             self.speed_limit_ms = CS.speed_limit_ms
+            if self.speed_limit_ms != self.prev_speed_limit_ms:
+                self.fleet_speed.reset_averager() #reset fleet averager on speed limit changes
             self.set_speed_limit_active = self.adjustSpeedWithSpeedLimit if self.speed_limit_ms > 0 else False
 
         if frame % 100 == 0:
@@ -147,16 +159,16 @@ class LONGController:
                          counter=stlk_counter))
             apply_accel = 0.0
             if self.PCC.pcc_available and frame % 5 == 0:  # pedal processed at 20Hz
-                v_target = 0
+                self.v_target = 0
                 if long_plan is not None:
-                    v_target = long_plan.longitudinalPlan.speeds[-1] #was 0
+                    self.v_target = long_plan.longitudinalPlan.speeds[-1] #was 0
                 self.apply_brake = 0.0
                 apply_accel, self.apply_brake, accel_needed, accel_idx = self.PCC.update_pdl(
                     enabled,
                     CS,
                     frame,
                     actuators,
-                    v_target,
+                    self.v_target,
                     pcm_override,
                     self.speed_limit_ms,
                     self.set_speed_limit_active,
@@ -227,9 +239,9 @@ class LONGController:
             if radar_state is not None:
                 self.lead_1 = radar_state.radarState.leadOne
             if long_plan is not None:
-                self.v_target = long_plan.longitudinalPlan.speeds[0] # 0 or -1 to try vs actual vs vTarget
-                self.a_target = long_plan.longitudinalPlan.accels[0] #0 or -1 to try actual vs aTarget
-                self.j_target = long_plan.longitudinalPlan.jerks[0] # 0 or  -1 to try actual vs jTarget
+                self.v_target = long_plan.longitudinalPlan.speeds[-1] # 0 or -1 to try vs actual vs vTarget
+                self.a_target = long_plan.longitudinalPlan.accels[-1] #0 or -1 to try actual vs aTarget
+                self.j_target = long_plan.longitudinalPlan.jerks[-1] # 0 or  -1 to try actual vs jTarget
             if self.v_target is None:
                 self.v_target = CS.out.vEgo
                 self.a_target = 0
@@ -240,17 +252,17 @@ class LONGController:
             target_accel = actuators.accel 
             #target_jerk = 0.
             target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
-            #TODO FIX THIS
-            #if self.useLongControlData:
-                #target_accel = self.a_target
-                #target_speed = self.v_target
-                #target_jerk = self.j_target
 
             #if accel pedal pressed send 0 for target_accel
             if CS.realPedalValue > 0 and CS.enableHAO:
                 target_accel = 0.
 
-
+            if self.useLongControlData:
+                fleet_speed = self.fleet_speed.adjust(
+                        CS, CS.out.cruiseState.speed, frame
+                    )
+                target_speed = min(target_speed,fleet_speed,CS.out.cruiseState.speed)
+            
             max_accel = 0 if target_accel < 0 else target_accel
             min_accel = 0 if target_accel > 0 else target_accel
 
@@ -260,14 +272,11 @@ class LONGController:
             max_jerk = CarControllerParams.JERK_LIMIT_MAX
             min_jerk = CarControllerParams.JERK_LIMIT_MIN
 
-            #if self.useLongControlData:
-
             tesla_jerk_limits = [min_jerk,max_jerk]
             tesla_accel_limits = [min_accel,max_accel]
 
             target_speed = target_speed * CV.MS_TO_KPH
             
-                
             #we now create the DAS_control for AP1 or DAS_longControl for AP2
             if self.CP.carFingerprint == CAR.AP2_MODELS:
                 messages.append(self.tesla_can.create_ap2_long_control(target_speed, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))

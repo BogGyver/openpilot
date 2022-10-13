@@ -23,7 +23,7 @@ AWARENESS_DECEL = -0.2  # car smoothly decel at .2m/s^2 when user is distracted
 #A_CRUISE_MAX_BP = [0., 7.5, 15., 25., 40.]
 
 # Lookup table for turns
-_A_TOTAL_MAX_V = [1.7, 3.2]
+_A_TOTAL_MAX_V = [2.2, 4.15]
 _A_TOTAL_MAX_BP = [20., 40.]
 
 
@@ -57,6 +57,17 @@ class Planner:
     self.a_desired_trajectory = np.zeros(CONTROL_N)
     self.j_desired_trajectory = np.zeros(CONTROL_N)
 
+    #used for slow down in turns
+    self.leadsData = None
+    self.path_x = np.arange(192)
+
+  def get_path_length_idx(self, y, distance):
+    i = 0
+    for val in y:
+        if val < distance:
+            i = i + 1
+    return i
+
   def update(self, sm):
     v_ego = sm['carState'].vEgo
     a_ego = sm['carState'].aEgo
@@ -67,6 +78,41 @@ class Planner:
 
     long_control_state = sm['controlsState'].longControlState
     force_slow_decel = sm['controlsState'].forceDecel
+
+    if sm['radarState'] is not None:
+      self.leadsData = sm['radarState']
+
+    if sm['modelV2'] is not None:
+      #TODO: Use probability to decide if the speed limit should be valid
+      #leftLaneQuality = 1 if sm['modelV2'].laneLineProbs[0] > 0.25 else 0
+      #rightLaneQuality = 1 if sm['modelV2'].laneLineProbs[3] > 0.25 else 0
+      #let's get the position points and compute poly coef
+      y = np.array(sm['modelV2'].position.y)
+      x = np.array(sm['modelV2'].position.x)
+      max_distance = 100.0
+      if self.leadsData is not None:
+          if self.leadsData.leadOne.status:
+              lead_d = self.leadsData.leadOne.dRel * 2.0
+              max_distance = max(0,min(lead_d, max_distance))
+      max_idx = self.get_path_length_idx(y, max_distance)
+      order = 3
+      coefs = np.polyfit(x[:max_idx], y[:max_idx], order)
+      # Curvature of polynomial https://en.wikipedia.org/wiki/Curvature#Curvature_of_the_graph_of_a_function
+      # y = a x^3 + b x^2 + c x + d, y' = 3 a x^2 + 2 b x + c, y'' = 6 a x + 2 b
+      # k = y'' / (1 + y'^2)^1.5
+      # TODO: compute max speed without using a list of points and without numpy
+      y_p = 3 * coefs[0] * self.path_x ** 2 + 2 * coefs[1] * self.path_x + coefs[2]
+      y_pp = 6 * coefs[0] * self.path_x + 2 * coefs[1]
+      curv = y_pp / (1. + y_p ** 2) ** 1.5
+
+      a_y_max = 3.1 - v_ego * 0.032
+      v_curvature = np.sqrt(a_y_max / np.clip(np.abs(curv), 1e-4, None))
+      model_speed = np.min(v_curvature)
+      model_speed = max(20.0 * CV.MPH_TO_MS, model_speed)  # Don't slow down below 20mph
+    else:
+      model_speed = 255.  # (MAX_SPEED)
+
+    v_ego = min(v_ego,model_speed)
 
     prev_accel_constraint = True
     if long_control_state == LongCtrlState.off or sm['carState'].gasPressed:

@@ -81,6 +81,20 @@ class CarState(CarStateBase):
 
     self.op_lkas_enabled = False
 
+    #map based speeds
+    self.meanFleetSplineSpeedMPS = 0.0
+    self.UI_splineID = 0
+    self.meanFleetSplineAccelMPS2 = 0.0
+    self.medianFleetSpeedMPS = 0.0
+    self.topQrtlFleetSplineSpeedMPS = 0.0
+    self.splineLocConfidence = 0
+    self.baseMapSpeedLimitMPS = 0.0
+    self.bottomQrtlFleetSpeedMPS = 0.0
+    self.rampType = 0
+    self.mapBasedSuggestedSpeed = 0.0
+    self.splineBasedSuggestedSpeed = 0.0
+    self.map_suggested_speed = 0.0
+
     #preAP long
     self.speed_control_enabled = 0
     self.cc_state = 1
@@ -125,6 +139,38 @@ class CarState(CarStateBase):
       if speed_limit_type == 0x1F: # SNA (parking lot, no public road, etc.)
         return 0 # no sign or show 35 for debug
       return 5 # show 5 kph/mph for unknown limit where we should have one
+
+  def compute_speed(self):
+        # if one of them is zero, select max of the two
+        if self.meanFleetSplineSpeedMPS == 0 or self.medianFleetSpeedMPS == 0:
+            self.splineBasedSuggestedSpeed = max(
+                self.meanFleetSplineSpeedMPS, self.medianFleetSpeedMPS
+            )
+        else:
+            self.splineBasedSuggestedSpeed = (
+                self.splineLocConfidence * self.meanFleetSplineSpeedMPS
+                + (100 - self.splineLocConfidence) * self.medianFleetSpeedMPS
+            ) / 100.0
+        # if confidence over 60%, then weight between bottom speed and top speed
+        # if less than 40% then use map data
+        if self.splineLocConfidence > 60:
+            self.mapBasedSuggestedSpeed = (
+                self.splineLocConfidence * self.meanFleetSplineSpeedMPS
+                + (100 - self.splineLocConfidence) * self.bottomQrtlFleetSpeedMPS
+            ) / 100.0
+        else:
+            self.mapBasedSuggestedSpeed = self.speed_limit_ms
+        if self.rampType > 0:
+            # we are on a ramp, use the spline info if available
+            if self.splineBasedSuggestedSpeed > 0:
+                self.map_suggested_speed = self.splineBasedSuggestedSpeed
+            else:
+                self.map_suggested_speed = self.mapBasedSuggestedSpeed
+        else:
+            # we are on a normal road, use max of the two
+            self.map_suggested_speed = max(
+                self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed
+            )
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -255,6 +301,25 @@ class CarState(CarStateBase):
       self.baseMapSpeedLimitMPS = cp.vl["UI_driverAssistRoadSign"]["UI_baseMapSpeedLimitMPS"]
       # we round the speed limit in the map's units of measurement to fix noisy data (there are no signs with a limit of 79.2 kph)
       self.baseMapSpeedLimitMPS = int(self.baseMapSpeedLimitMPS * map_speed_ms_to_uom + 0.99) / map_speed_ms_to_uom
+    if rdSignMsg == 4:  # ROAD_SIGN_SPEED_SPLINE
+        self.meanFleetSplineSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_meanFleetSplineSpeedMPS"]
+        self.meanFleetSplineAccelMPS2 = cp.vl["UI_driverAssistRoadSign"]["UI_meanFleetSplineAccelMPS2"]
+        self.medianFleetSpeedMPS = cp.vl["UI_driverAssistRoadSign"]["UI_medianFleetSpeedMPS"]
+        self.splineLocConfidence = cp.vl["UI_driverAssistRoadSign"]["UI_splineLocConfidence"]
+        self.UI_splineID = cp.vl["UI_driverAssistRoadSign"]["UI_splineID"]
+        self.rampType = cp.vl["UI_driverAssistRoadSign"]["UI_rampType"]
+    if self.rampType > 0:
+        # we are on a ramp, use the spline info if available
+        if self.splineBasedSuggestedSpeed > 0:
+            self.map_suggested_speed = self.splineBasedSuggestedSpeed
+        else:
+            self.map_suggested_speed = self.mapBasedSuggestedSpeed
+    else:
+        # we are on a normal road, use max of the two
+        self.map_suggested_speed = max(
+            self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed
+        )
+    self.compute_speed()
     if self.CP.carFingerprint != CAR.PREAP_MODELS and self.baseMapSpeedLimitMPS > 0 and (speed_limit_type != 0x1F or self.baseMapSpeedLimitMPS >= 5.56):
       self.speed_limit_ms = self.baseMapSpeedLimitMPS # this one is earlier than the actual sign but can also be unreliable, so we ignore it on SNA at higher speeds
     else:
@@ -264,6 +329,7 @@ class CarState(CarStateBase):
       self.fleet_speed_state = 2
     else:
       self.fleet_speed_state = 0
+    #Map based data
     # Gear
     ret.gearShifter = GEAR_MAP[self.can_define.dv["DI_torque2"]["DI_gear"].get(int(cp.vl["DI_torque2"]["DI_gear"]), "DI_GEAR_INVALID")]
     self.DAS_notInDrive = 0 if ret.gearShifter == car.CarState.GearShifter.drive else 1

@@ -15,7 +15,7 @@ _DT_MPC = _DT
 # Accel limits
 MAX_RADAR_DISTANCE = 120.0  # max distance to take in consideration radar reading
 MAX_PEDAL_VALUE_AVG = 100
-MAX_PEDAL_REGEN_VALUE = 0.0
+MAX_PEDAL_REGEN_VALUE = -22.1
 MAX_BRAKE_VALUE = 1 #ibooster fully pressed BBTODO determine the exact value we need
 PEDAL_HYST_GAP = (
     1.0  # don't change pedal command for small oscilalitons within this value
