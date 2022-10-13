@@ -94,6 +94,7 @@ class CarState(CarStateBase):
     self.mapBasedSuggestedSpeed = 0.0
     self.splineBasedSuggestedSpeed = 0.0
     self.map_suggested_speed = 0.0
+    self.speed_limit_ms = 0.0
 
     #preAP long
     self.speed_control_enabled = 0
