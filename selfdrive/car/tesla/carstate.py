@@ -109,6 +109,7 @@ class CarState(CarStateBase):
     self.pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
     self.has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
     self.handsOnLimit = load_float_param("TinklaHandsOnLevel",1.0)
+    self.mapAwareSpeed = load_bool_param("TinklaUseLongControlData", False)
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
       self.enableICIntegration = True
     self.brakeUnavailable = True
