@@ -193,7 +193,7 @@ static void update_state(UIState *s) {
 }
 
 void ui_update_params(UIState *s) {
-  const uint64_t frame = s->sm->frame;
+  //const uint64_t frame = s->sm->frame;
   s->scene.is_metric = Params().getBool("IsMetric");
   s->should_turn_screen_off = Params().tinkla_get_bool_param("TinklaTurnScreenOff");
 }
