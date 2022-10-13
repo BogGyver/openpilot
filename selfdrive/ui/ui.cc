@@ -302,17 +302,18 @@ void Device::updateBrightness(const UIState &s) {
     // Scale back to 10% to 100%
     clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
 
-    if (awake && s.should_turn_screen_off) {
-      clipped_brightness = (s.alert_active || (interactive_timeout > 0)) ? clipped_brightness : 0;
-    }
-
   }
 
   int brightness = brightness_filter.update(clipped_brightness);
 
-  if ((!awake) || ((!(s.alert_active && s.scene.ignition)) && s.should_turn_screen_off && (interactive_timeout == 0))) {
+  if (s.should_turn_screen_off) {
+      brightness = (s.alert_active || (interactive_timeout > 0)) ? brightness : 0;
+  }
+
+  if (!awake) {
     brightness = 0;
   }
+
 
   if (brightness != last_brightness) { 
     if (!brightness_future.isRunning()) {
@@ -347,7 +348,7 @@ void Device::updateWakefulness(const UIState &s) {
 
   bool should_be_awake = s.scene.ignition;
   if (s.should_turn_screen_off && should_be_awake) {
-    should_be_awake = (s.alert_active && should_be_awake);
+    should_be_awake = s.alert_active;
   }
   
   setAwake(should_be_awake || interactive_timeout > 0);
