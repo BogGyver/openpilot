@@ -196,7 +196,7 @@ void ui_update_params(UIState *s) {
   const uint64_t frame = s->sm->frame;
   s->scene.is_metric = Params().getBool("IsMetric");
   if (frame % (6*UI_FREQ) == 0) {
-    s->should_turn_screen_off = ((!Params().tinkla_get_bool_param("TinklaDebugMode")) && Params().tinkla_get_bool_param("TinklaTurnScreenOff"));
+    s->should_turn_screen_off = ((!Params().tinkla_get_bool_param("TinklaTurnScreenOff")) && Params().tinkla_get_bool_param("TinklaTurnScreenOff"));
   }
 }
 

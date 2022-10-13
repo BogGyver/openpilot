@@ -479,6 +479,12 @@ class CarState(CarStateBase):
       ("UI_mapSpeedLimit","UI_driverAssistMapData",0),
       ("UI_roadSign","UI_driverAssistRoadSign",0),
       ("UI_baseMapSpeedLimitMPS","UI_driverAssistRoadSign",0),
+      ("UI_meanFleetSplineSpeedMPS","UI_driverAssistRoadSign",0),
+      ("UI_meanFleetSplineAccelMPS2","UI_driverAssistRoadSign",0),
+      ("UI_medianFleetSpeedMPS","UI_driverAssistRoadSign",0),
+      ("UI_splineLocConfidence","UI_driverAssistRoadSign",0),
+      ("UI_splineID","UI_driverAssistRoadSign",0),
+      ("UI_rampType","UI_driverAssistRoadSign",0),
       # We copy this whole message when spamming cancel
       ("SpdCtrlLvr_Stat", "STW_ACTN_RQ", 0),
       ("VSL_Enbl_Rq", "STW_ACTN_RQ", 0),
