@@ -305,6 +305,10 @@ void Device::updateBrightness(const UIState &s) {
     if (awake && s.should_turn_screen_off) {
       clipped_brightness = (s.alert_active || (interactive_timeout > 0)) ? clipped_brightness : 0;
     }
+
+    if (!s.should_turn_screen_off) {
+      interactive_timeout = 10;
+    }
   }
 
   int brightness = brightness_filter.update(clipped_brightness);
