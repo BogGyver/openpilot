@@ -155,7 +155,6 @@ class CarInterface(CarInterfaceBase):
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam)]
     else:
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam)]
-    ret.pcmCruise = not ret.openpilotLongitudinalControl
     return ret
 
   def update(self, c, can_strings):
