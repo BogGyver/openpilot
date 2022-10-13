@@ -321,7 +321,6 @@ class CarState(CarStateBase):
         self.map_suggested_speed = max(
             self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed
         )
-    self.compute_speed()
     if self.CP.carFingerprint != CAR.PREAP_MODELS and self.baseMapSpeedLimitMPS > 0 and (speed_limit_type != 0x1F or self.baseMapSpeedLimitMPS >= 5.56):
       self.speed_limit_ms = self.baseMapSpeedLimitMPS # this one is earlier than the actual sign but can also be unreliable, so we ignore it on SNA at higher speeds
     else:
@@ -331,6 +330,7 @@ class CarState(CarStateBase):
       self.fleet_speed_state = 2
     else:
       self.fleet_speed_state = 0
+    self.compute_speed()
     #Map based data
     # Gear
     ret.gearShifter = GEAR_MAP[self.can_define.dv["DI_torque2"]["DI_gear"].get(int(cp.vl["DI_torque2"]["DI_gear"]), "DI_GEAR_INVALID")]

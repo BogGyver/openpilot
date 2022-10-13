@@ -313,7 +313,7 @@ void Device::updateBrightness(const UIState &s) {
 
   int brightness = brightness_filter.update(clipped_brightness);
 
-  if (!awake) || ((!(s.alert_active && s.scene.ignition)) && s.should_turn_screen_off && (interactive_timeout == 0)) {
+  if ((!awake) || ((!(s.alert_active && s.scene.ignition)) && s.should_turn_screen_off && (interactive_timeout == 0))) {
     brightness = 0;
   }
 
