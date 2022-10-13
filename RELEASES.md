@@ -1,3 +1,12 @@
+Unity Version 0.8.13-55 (2022-10-21)
+========================
+ * Sound files volume fix
+ * Show steering icon on IC for AP cars when OP is available
+ * Engage at 0 MPH for AP cars
+
+ * Display shutdown
+ * 
+
 Unity Version 0.8.13-55 (2022-09-21)
 ========================
  * Sound toggles (to mute certain sounds)
