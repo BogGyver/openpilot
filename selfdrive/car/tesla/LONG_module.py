@@ -286,7 +286,7 @@ class LONGController:
             if self.CP.carFingerprint == CAR.AP2_MODELS:
                 messages.append(self.tesla_can.create_ap2_long_control(350.0, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
             if self.CP.carFingerprint == CAR.AP1_MODELS:
-                messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, False, False , 409.5, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
+                messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, False, False , 0, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
 
         return messages
 
