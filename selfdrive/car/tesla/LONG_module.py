@@ -261,16 +261,12 @@ class LONGController:
             min_jerk = CarControllerParams.JERK_LIMIT_MIN
 
             #if self.useLongControlData:
-            #    max_jerk = 0 if target_jerk < 0 else target_jerk
-            #    min_jerk = 0 if target_jerk > 0 else target_jerk
 
             tesla_jerk_limits = [min_jerk,max_jerk]
             tesla_accel_limits = [min_accel,max_accel]
 
             target_speed = target_speed * CV.MS_TO_KPH
             
-            #if self.madMax and not self.useLongControlData:
-            #    tesla_jerk_limits = [min_accel/2,max_accel/2]
                 
             #we now create the DAS_control for AP1 or DAS_longControl for AP2
             if self.CP.carFingerprint == CAR.AP2_MODELS:
@@ -290,7 +286,7 @@ class LONGController:
             if self.CP.carFingerprint == CAR.AP2_MODELS:
                 messages.append(self.tesla_can.create_ap2_long_control(350.0, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
             if self.CP.carFingerprint == CAR.AP1_MODELS:
-                messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, False, False , 350.0, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
+                messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, False, False , 409.5, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
 
         return messages
 

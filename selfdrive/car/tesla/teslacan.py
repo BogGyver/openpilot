@@ -138,7 +138,7 @@ class TeslaCAN:
       if static_cruise and cruise_enabled:
         accState = 3
     values = {
-      "DAS_setSpeed" :  clip(speed,0,200), #kph
+      "DAS_setSpeed" :  clip(speed,0,409.5), #kph
       "DAS_accState" :  accState, # 4-ACC ON, 3-HOLD, 0-CANCEL
       "DAS_aebEvent" :  0, # 0 - AEB NOT ACTIVE
       "DAS_jerkMin" :  clip(jerk_limits[0],-8.,8.), #m/s^3 -8.67,0
@@ -247,7 +247,7 @@ class TeslaCAN:
       "DAS_pmmSysFaultReason" : 0,
       "DAS_pmmCameraFaultReason" : 0,
       "DAS_ACC_report" : 1, #ACC_report_target_CIPV
-      "DAS_csaState" : 2, #CSA_EXTERNAL_STATE_AVAILABLE
+      "DAS_csaState" : DAS_csaState, #Curve Speed Adaptation
       "DAS_radarTelemetry" : 1, #normal
       "DAS_robState" : 2, #active
       "DAS_driverInteractionLevel" : 0, 

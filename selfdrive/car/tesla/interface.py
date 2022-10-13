@@ -58,7 +58,7 @@ class CarInterface(CarInterfaceBase):
     ret.radarTimeStep = (1.0 / 8) # 8Hz
 
     ret.steerLimitTimer = 1.0
-    ret.steerActuatorDelay = 0.1
+    ret.steerActuatorDelay = 0.25
     ret.steerRateCost = 0.5
 
     #safetyParam
@@ -71,16 +71,14 @@ class CarInterface(CarInterfaceBase):
     #  Panda.FLAG_TESLA_HAO = 64
     #  Panda.FLAG_TESLA_IBOOSTER = 128
 
-    ret.steerLimitTimer = 1.0
-    ret.steerActuatorDelay = 0.1
-    ret.steerRateCost = 0.5
+
     safetyParam = 0
     ret.wheelSpeedFactor = 1.
     if candidate in (CAR.AP2_MODELS, CAR.AP1_MODELS):
       ret.mass = 2100. + STD_CARGO_KG
       ret.wheelbase = 2.959
       ret.centerToFront = ret.wheelbase * 0.5
-      ret.steerRatio = 13.5
+      ret.steerRatio = 15
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_AP # has AP, ACC
       ret.openpilotLongitudinalControl = False
       set_long_tune(ret.longitudinalTuning, LongTunes.AP)
