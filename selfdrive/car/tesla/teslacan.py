@@ -235,7 +235,7 @@ class TeslaCAN:
     }
     return self.packer.make_can_msg("DAS_status", bus, values)
 
-  def create_das_status2(self, DAS_acc_speed_limit, fcw, bus, counter):
+  def create_das_status2(self, DAS_csaState, DAS_acc_speed_limit, fcw, bus, counter):
     fcw_sig = 0x0F if fcw == 0 else 0x01
     values = {
       "DAS_accSpeedLimit" : DAS_acc_speed_limit,

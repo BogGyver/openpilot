@@ -208,8 +208,10 @@ class HUDController:
         #          4-active_restricted 5-active_nav 8-aborting 9-aborted
         #          14-fault  15-SNA
         DAS_op_status = 5 if enabled else 2
+        DAS_csaState = 2 if enabled else 1
         if not self.engageable:
             DAS_op_status = 1
+            DAS_csaState = 0
 
         #preAP stuff
         speed_uom_kph = 1.0
@@ -232,7 +234,7 @@ class HUDController:
                     DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
                     CS.out.leftBlindspot, CS.out.rightBlindspot,
                     CS.DAS_fusedSpeedLimit, CS.fleet_speed_state, CAN_CHASSIS[self.CP.carFingerprint], 1))
-                messages.append(self.tesla_can.create_das_status2(cruise_speed, 
+                messages.append(self.tesla_can.create_das_status2(DAS_csaState, cruise_speed, 
                     DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1))
 
         if (enabled or self.IC_previous_enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
