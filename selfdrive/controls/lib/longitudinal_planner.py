@@ -26,6 +26,10 @@ AWARENESS_DECEL = -0.2  # car smoothly decel at .2m/s^2 when user is distracted
 _A_TOTAL_MAX_V = [2.2, 4.15]
 _A_TOTAL_MAX_BP = [20., 40.]
 
+ACCEL_MIN_TURN_SLOWDOWN = - 1.0 # m/s^2
+TURN_SPEED_FACTOR = 0.9 # be conservative and select 90% speed in turns
+
+
 
 def get_max_accel(CP,v_ego):
   return get_tesla_accel_limits(CP,v_ego)  
@@ -106,13 +110,16 @@ class Planner:
       curv = y_pp / (1. + y_p ** 2) ** 1.5
       a_y_max = 3.1 - v_ego * 0.032
       v_curvature = np.sqrt(a_y_max / np.clip(np.abs(curv), 1e-4, None))
-      model_speed = np.min(v_curvature)
+      model_speed = np.min(v_curvature) * TURN_SPEED_FACTOR
       model_speed = max(20.0 * CV.MPH_TO_MS, model_speed)  # Don't slow down below 20mph
     else:
       model_speed = 255.  # (MAX_SPEED)
-    print("curvature_speed=",model_speed, " cruise_speed=",v_cruise )
+    #print("curvature_speed=",model_speed, " cruise_speed=",v_cruise )
     #force the speed to the min between what's set and what we need for curvature
-    v_cruise = min(v_cruise,model_speed)
+    slowdown_for_turn = False
+    if model_speed < v_cruise:
+      v_cruise = min(v_cruise,model_speed)
+      slowdown_for_turn = True
 
     prev_accel_constraint = True
     if long_control_state == LongCtrlState.off or sm['carState'].gasPressed:
@@ -149,6 +156,8 @@ class Planner:
     # Interpolate 0.05 seconds and save as starting point for next iteration
     a_prev = self.a_desired
     self.a_desired = float(interp(DT_MDL, T_IDXS[:CONTROL_N], self.a_desired_trajectory))
+    if slowdown_for_turn:
+      self.a_desired = min(self.a_desired,ACCEL_MIN_TURN_SLOWDOWN)
     self.v_desired_filter.x = self.v_desired_filter.x + DT_MDL * (self.a_desired + a_prev) / 2.0
 
   def publish(self, sm, pm):
