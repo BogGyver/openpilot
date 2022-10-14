@@ -156,8 +156,10 @@ class Planner:
     # Interpolate 0.05 seconds and save as starting point for next iteration
     a_prev = self.a_desired
     self.a_desired = float(interp(DT_MDL, T_IDXS[:CONTROL_N], self.a_desired_trajectory))
-    if slowdown_for_turn:
-      self.a_desired = min(self.a_desired,ACCEL_MIN_TURN_SLOWDOWN)
+    if slowdown_for_turn and (v_ego > model_speed):
+      #we need to slow down, but not faster than ACCEL_MIN_TURN_SLOWDOWN
+      self.a_desired = min(self.a_desired,max (ACCEL_MIN_TURN_SLOWDOWN,model_speed - v_ego))
+
     self.v_desired_filter.x = self.v_desired_filter.x + DT_MDL * (self.a_desired + a_prev) / 2.0
 
   def publish(self, sm, pm):
