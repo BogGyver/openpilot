@@ -12,7 +12,7 @@ ACCEL_MULT_SPEED_V  =      [1.5, 1.3,  1.2,  1.0]
 ACCEL_MULT_SPEED_DELTA_V = [1.0, 1.01, 1.05,  1.1]
 ACCEL_MULT_ACCEL_PERC_V  = [1.0, 1.0,  1.05,  1.1]
 
-FLEET_SPEED_ACCEL = -1. # m/s2 how fast to reduce speed to match fleet, always negative 
+FLEET_SPEED_ACCEL = -0.5. # m/s2 how fast to reduce speed to match fleet, always negative 
 
 def _is_present(lead):
   return bool((not (lead is None)) and (lead.dRel > 0))

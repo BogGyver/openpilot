@@ -110,7 +110,7 @@ class Planner:
       model_speed = max(20.0 * CV.MPH_TO_MS, model_speed)  # Don't slow down below 20mph
     else:
       model_speed = 255.  # (MAX_SPEED)
-
+    print("curvature_speed=",model_speed, " cruise_speed=",v_cruise )
     #force the speed to the min between what's set and what we need for curvature
     v_cruise = min(v_cruise,model_speed)
 
