@@ -36,6 +36,7 @@ class CarController():
     self.lP = messaging.sub_sock('longitudinalPlan') 
     self.rS = messaging.sub_sock('radarState') 
     self.mD = messaging.sub_sock('modelV2')
+    self.cS = messaging.sub_sock('controlsState')
 
     self.long_control_counter = 0 
     
@@ -62,6 +63,7 @@ class CarController():
     long_plan = messaging.recv_one_or_none(self.lP)
     radar_state = messaging.recv_one_or_none(self.rS)
     model_data = messaging.recv_one_or_none(self.mD)
+    controls_state = messaging.recv_one_or_none(self.cS)
 
     if not enabled:
       self.v_target = CS.out.vEgo
@@ -98,7 +100,10 @@ class CarController():
     self.last_angle = apply_angle
 
     if enabled or (self.CP.carFingerprint == CAR.PREAP_MODELS):
-      can_sends.append(self.tesla_can.create_steering_control(apply_angle, enabled and not CS.human_control and not CS.out.cruiseState.standstill, CAN_EPAS[self.CP.carFingerprint], 1))
+      ldw_haptic = 0
+      if left_lane_depart or right_lane_depart:
+        ldw_haptic = 1
+      can_sends.append(self.tesla_can.create_steering_control(apply_angle, enabled and not CS.human_control and not CS.out.cruiseState.standstill, ldw_haptic, CAN_EPAS[self.CP.carFingerprint], 1))
 
 
     #update LONG Control module
@@ -107,7 +112,7 @@ class CarController():
       can_sends[0:0] = can_messages
 
     #update HUD Integration module
-    can_messages = self.hud_controller.update(enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
+    can_messages = self.hud_controller.update(controls_state, enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
             left_line, right_line, lead, left_lane_depart, right_lane_depart,CS.human_control,radar_state,CS.lat_plan,apply_angle,model_data)
     if len(can_messages) > 0:
       can_sends.extend(can_messages)

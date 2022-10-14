@@ -121,10 +121,10 @@ class TeslaCAN:
     }
     return self.packer.make_can_msg("DAS_telemetry", bus, values)
 
-  def create_steering_control(self, angle, enabled, bus, counter):
+  def create_steering_control(self, angle, enabled, ldw, bus, counter):
     values = {
       "DAS_steeringAngleRequest": -angle,
-      "DAS_steeringHapticRequest": 0,
+      "DAS_steeringHapticRequest": ldw,
       "DAS_steeringControlType": 1 if enabled else 0, #0-NONE, 1-ANGLE, 2-LKA, 3-Emergency LKA
       "DAS_steeringControlCounter": counter,
       "DAS_steeringControlChecksum": 0,
@@ -235,7 +235,7 @@ class TeslaCAN:
     }
     return self.packer.make_can_msg("DAS_status", bus, values)
 
-  def create_das_status2(self, DAS_acc_speed_limit, fcw, bus, counter):
+  def create_das_status2(self, DAS_csaState, DAS_acc_speed_limit, fcw, bus, counter):
     fcw_sig = 0x0F if fcw == 0 else 0x01
     values = {
       "DAS_accSpeedLimit" : DAS_acc_speed_limit,
@@ -247,7 +247,7 @@ class TeslaCAN:
       "DAS_pmmSysFaultReason" : 0,
       "DAS_pmmCameraFaultReason" : 0,
       "DAS_ACC_report" : 1, #ACC_report_target_CIPV
-      "DAS_csaState" : 2, #CSA_EXTERNAL_STATE_AVAILABLE
+      "DAS_csaState" : DAS_csaState, #Curve Speed Adaptation
       "DAS_radarTelemetry" : 1, #normal
       "DAS_robState" : 2, #active
       "DAS_driverInteractionLevel" : 0, 

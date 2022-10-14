@@ -141,7 +141,7 @@ CanMsgFwd  TESLA_AP_FWD_MODDED[] = {
     {.msg = {0x3E9,2,8},.fwd_to_bus=0,.expected_timestep = 500000U,.counter_mask_H=0x00FFFFF,.counter_mask_L=0xFFF0FCF3}, // DAS_bodyControls - Control Body - 2Hz - 
     //used for IC integration
     {.msg = {0x399,2,8},.fwd_to_bus=0,.expected_timestep = 500000U,.counter_mask_H=0x00F8031F,.counter_mask_L=0xFF3FFFF0}, // DAS_status - Status - 2Hz
-    {.msg = {0x389,2,8},.fwd_to_bus=0,.expected_timestep = 500000U,.counter_mask_H=0x00F0FF3F,.counter_mask_L=0xFFFF3FFF}, // DAS_status2 - Status - 2Hz
+    {.msg = {0x389,2,8},.fwd_to_bus=0,.expected_timestep = 500000U,.counter_mask_H=0x00F0FF3C,.counter_mask_L=0xFFFF3FFF}, // DAS_status2 - Status - 2Hz
     {.msg = {0x329,2,8},.fwd_to_bus=0,.expected_timestep = 1000000U,.counter_mask_H=0x00000000,.counter_mask_L=0x00000000}, // DAS_warningMatrix0 - Status - 1Hz - nocounter/nochecksum
     {.msg = {0x369,2,8},.fwd_to_bus=0,.expected_timestep = 1000000U,.counter_mask_H=0x00000000,.counter_mask_L=0x00000000}, // DAS_warningMatrix1 - Status - 1Hz - nocounter/nochecksum
     {.msg = {0x349,2,8},.fwd_to_bus=0,.expected_timestep = 1000000U,.counter_mask_H=0x00000000,.counter_mask_L=0x00000000}, // DAS_warningMatrix3 - Status - 1Hz - nocounter/nochecksum

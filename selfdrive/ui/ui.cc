@@ -193,11 +193,9 @@ static void update_state(UIState *s) {
 }
 
 void ui_update_params(UIState *s) {
-  const uint64_t frame = s->sm->frame;
+  //const uint64_t frame = s->sm->frame;
   s->scene.is_metric = Params().getBool("IsMetric");
-  if (frame % (6*UI_FREQ) == 0) {
-    s->should_turn_screen_off = ((!Params().tinkla_get_bool_param("TinklaDebugMode")) && Params().tinkla_get_bool_param("TinklaTurnScreenOff"));
-  }
+  s->should_turn_screen_off = Params().tinkla_get_bool_param("TinklaTurnScreenOff");
 }
 
 void UIState::updateStatus() {
@@ -302,18 +300,20 @@ void Device::updateBrightness(const UIState &s) {
     // Scale back to 10% to 100%
     clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
 
-    if (awake && s.should_turn_screen_off) {
-      clipped_brightness = (s.alert_active || (interactive_timeout > 0)) ? clipped_brightness : 0;
-    }
   }
 
   int brightness = brightness_filter.update(clipped_brightness);
+
+  if (s.should_turn_screen_off) {
+      brightness = (s.alert_active || (interactive_timeout > 0)) ? brightness : 0;
+  }
 
   if (!awake) {
     brightness = 0;
   }
 
-  if (brightness != last_brightness) {
+
+  if (brightness != last_brightness) { 
     if (!brightness_future.isRunning()) {
       brightness_future = QtConcurrent::run(Hardware::set_brightness, brightness);
       last_brightness = brightness;
@@ -346,7 +346,7 @@ void Device::updateWakefulness(const UIState &s) {
 
   bool should_be_awake = s.scene.ignition;
   if (s.should_turn_screen_off && should_be_awake) {
-    should_be_awake = (s.alert_active && should_be_awake);
+    should_be_awake = s.alert_active;
   }
   
   setAwake(should_be_awake || interactive_timeout > 0);

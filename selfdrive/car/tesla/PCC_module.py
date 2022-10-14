@@ -6,7 +6,7 @@ from common.params import Params
 from cereal import car
 
 ACCEL_MAX = 0.6  #0.6m/s2 * 36 = ~ 0 -> 50mph in 6 seconds
-ACCEL_MIN = -3.5
+ACCEL_MIN = -4.5 #changed from -3.5 to -4.5 to see if we get better braking with iBooster
 
 _DT = 0.05  # 20Hz in our case, since we don't want to process more than once the same radarState message
 _DT_MPC = _DT
@@ -15,7 +15,7 @@ _DT_MPC = _DT
 # Accel limits
 MAX_RADAR_DISTANCE = 120.0  # max distance to take in consideration radar reading
 MAX_PEDAL_VALUE_AVG = 100
-MAX_PEDAL_REGEN_VALUE = 0.0
+MAX_PEDAL_REGEN_VALUE = -22.1
 MAX_BRAKE_VALUE = 1 #ibooster fully pressed BBTODO determine the exact value we need
 PEDAL_HYST_GAP = (
     1.0  # don't change pedal command for small oscilalitons within this value
