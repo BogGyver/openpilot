@@ -12,6 +12,8 @@ ACCEL_MULT_SPEED_V  =      [1.5, 1.3,  1.2,  1.0]
 ACCEL_MULT_SPEED_DELTA_V = [1.0, 1.01, 1.05,  1.1]
 ACCEL_MULT_ACCEL_PERC_V  = [1.0, 1.0,  1.05,  1.1]
 
+FLEET_SPEED_ACCEL = -1. # m/s2 how fast to reduce speed to match fleet, always negative 
+
 def _is_present(lead):
   return bool((not (lead is None)) and (lead.dRel > 0))
 
@@ -261,7 +263,9 @@ class LONGController:
                 fleet_speed = self.fleet_speed.adjust(
                         CS, CS.out.cruiseState.speed, frame
                     )
-                target_speed = min(target_speed,fleet_speed,CS.out.cruiseState.speed)
+                if fleet_speed < target_speed:
+                    target_accel = min(target_accel,FLEET_SPEED_ACCEL)
+                    target_speed = min(target_speed,fleet_speed,CS.out.cruiseState.speed)
             
             max_accel = 0 if target_accel < 0 else target_accel
             min_accel = 0 if target_accel > 0 else target_accel

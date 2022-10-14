@@ -104,7 +104,6 @@ class Planner:
       y_p = 3 * coefs[0] * self.path_x ** 2 + 2 * coefs[1] * self.path_x + coefs[2]
       y_pp = 6 * coefs[0] * self.path_x + 2 * coefs[1]
       curv = y_pp / (1. + y_p ** 2) ** 1.5
-
       a_y_max = 3.1 - v_ego * 0.032
       v_curvature = np.sqrt(a_y_max / np.clip(np.abs(curv), 1e-4, None))
       model_speed = np.min(v_curvature)
@@ -112,7 +111,8 @@ class Planner:
     else:
       model_speed = 255.  # (MAX_SPEED)
 
-    v_ego = min(v_ego,model_speed)
+    #force the speed to the min between what's set and what we need for curvature
+    v_cruise = min(v_cruise,model_speed)
 
     prev_accel_constraint = True
     if long_control_state == LongCtrlState.off or sm['carState'].gasPressed:
