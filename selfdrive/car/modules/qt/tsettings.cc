@@ -334,6 +334,21 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
       "",
       0.0,-5.0,20.0,1.0,TINKLA_FLOAT
     },
+    {"TinklaTurnSlowdown",
+    "Slowdown in Turns",
+    "Reduces the car' speed in turns based on road curvature.",
+    "../assets/offroad/icon_speed_limit.png",
+    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+    },
+    {"TinklaTurnSlowdownFactor",
+      "Slowdown Factor in Turns",
+      "The multiplier used to compute the safe speed to take a turn. 0.9 is slower, 1.0 is faster.",
+      "../assets/offroad/icon_speed_limit.png",
+      "Slowdown Factor in Turns:",
+      "Enter the slowdown multiplier:",
+      "",
+      0.95,0.9,1.0,0.01,TINKLA_FLOAT
+    },
     {"TinklaSpeedMadMax",
     "Use MadMax Mode",
     "Use faster accel limits.",
