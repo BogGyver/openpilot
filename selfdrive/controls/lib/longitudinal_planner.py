@@ -14,6 +14,8 @@ from selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDXS as T_IDX
 from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, CONTROL_N
 from selfdrive.swaglog import cloudlog
 from selfdrive.car.tesla.interface import get_tesla_accel_limits
+from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
+
 
 LON_MPC_STEP = 0.2  # first step is 0.2s
 AWARENESS_DECEL = -0.2  # car smoothly decel at .2m/s^2 when user is distracted
@@ -27,8 +29,6 @@ _A_TOTAL_MAX_V = [2.2, 4.15]
 _A_TOTAL_MAX_BP = [20., 40.]
 
 ACCEL_MIN_TURN_SLOWDOWN = - 1.0 # m/s^2
-TURN_SPEED_FACTOR = 0.9 # be conservative and select 90% speed in turns
-
 
 
 def get_max_accel(CP,v_ego):
@@ -64,6 +64,8 @@ class Planner:
     #used for slow down in turns
     self.leadsData = None
     self.path_x = np.arange(192)
+    self.enable_turn_slowdown = load_bool_param("TinklaTurnSlowdown", True)
+    self.turn_slowdown_factor = load_float_param("TinklaTurnSlowdownFactor",0.95)
 
   def get_path_length_idx(self, y, distance):
     i = 0
@@ -86,7 +88,7 @@ class Planner:
     if sm['radarState'] is not None:
       self.leadsData = sm['radarState']
 
-    if sm['modelV2'] is not None:
+    if (sm['modelV2'] is not None) and self.enable_turn_slowdown:
       #TODO: Use probability to decide if the speed limit should be valid
       #leftLaneQuality = 1 if sm['modelV2'].laneLineProbs[0] > 0.25 else 0
       #rightLaneQuality = 1 if sm['modelV2'].laneLineProbs[3] > 0.25 else 0
@@ -110,7 +112,7 @@ class Planner:
       curv = y_pp / (1. + y_p ** 2) ** 1.5
       a_y_max = 3.1 - v_ego * 0.032
       v_curvature = np.sqrt(a_y_max / np.clip(np.abs(curv), 1e-4, None))
-      model_speed = np.min(v_curvature) * TURN_SPEED_FACTOR
+      model_speed = np.min(v_curvature) * self.turn_slowdown_factor
       model_speed = max(20.0 * CV.MPH_TO_MS, model_speed)  # Don't slow down below 20mph
     else:
       model_speed = 255.  # (MAX_SPEED)
@@ -159,6 +161,7 @@ class Planner:
     if slowdown_for_turn and (v_ego > model_speed):
       #we need to slow down, but not faster than ACCEL_MIN_TURN_SLOWDOWN
       self.a_desired = min(self.a_desired,max (ACCEL_MIN_TURN_SLOWDOWN,model_speed - v_ego))
+
     self.v_desired_filter.x = self.v_desired_filter.x + DT_MDL * (self.a_desired + a_prev) / 2.0
 
   def publish(self, sm, pm):
