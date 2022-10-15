@@ -27,7 +27,7 @@ _A_TOTAL_MAX_V = [2.2, 4.15]
 _A_TOTAL_MAX_BP = [20., 40.]
 
 ACCEL_MIN_TURN_SLOWDOWN = - 1.0 # m/s^2
-TURN_SPEED_FACTOR = 0.9 # be conservative and select 90% speed in turns
+TURN_SPEED_FACTOR = 1.0 # be conservative and select 90% speed in turns
 
 
 
