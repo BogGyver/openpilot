@@ -38,7 +38,7 @@ MAX_PCC_V_KPH = 270.0
 # Pull the cruise stalk twice in this many ms for a 'double pull'
 STALK_DOUBLE_PULL_MS = 750
 
-REGEN_BRAKE_MULTIPLIER = 6
+REGEN_BRAKE_MULTIPLIER = 12
 MIN_SAFE_DIST_M = 6.0
 
 T_FOLLOW = load_float_param("TinklaFollowDistance",1.45)
@@ -265,8 +265,10 @@ class PCCController:
             and CS.torqueLevel > TORQUE_LEVEL_DECEL
             and CS.out.vEgo >= 10.0 * CV.MPH_TO_MS
             and abs(CS.torqueLevel) < abs(self.lastTorqueForPedalForZeroTorque)
+            and self.prev_tesla_accel > 0.
         ):
-            self.PedalForZeroTorque = self.prev_tesla_pedal
+            #self.PedalForZeroTorque = self.prev_tesla_pedal
+            self.PedalForZeroTorque = self.prev_tesla_accel
             self.lastTorqueForPedalForZeroTorque = CS.torqueLevel
             # print ("Detected new Pedal For Zero Torque at %s" % (self.PedalForZeroTorque))
             # print ("Torque level at detection %s" % (CS.torqueLevel))
@@ -291,7 +293,7 @@ class PCCController:
         ZERO_ACCEL = self.PedalForZeroTorque
         REGEN_DECEL = -0.3 #BB needs to be calculated based on regen available, which is higher at lower speeds...
         if CS.out.vEgo < 5 * CV.MPH_TO_MS:
-            ZERO_ACCEL = 0
+            ZERO_ACCEL = 0.
         MAX_PEDAL_BP = [0., 5., 20., 30., 40]
         MAX_PEDAL_V = [65. , 75., 85., 100., 120.]
         if self.madMax:
@@ -312,6 +314,7 @@ class PCCController:
         tesla_accel = clip(
             tesla_pedal, 0.0, 1
         )  # _accel_pedal_max(CS.out.vEgo, self.v_pid, self.lead_1, self.prev_tesla_accel, CS))
+        self.prev_tesla_accel = tesla_accel
         tesla_regen = -clip(
             tesla_pedal * REGEN_BRAKE_MULTIPLIER,
             _brake_pedal_min(
@@ -325,7 +328,7 @@ class PCCController:
             0,
             MAX_PEDAL_VALUE_AVG - ZERO_ACCEL,
         )
-        tesla_pedal = tesla_accel - tesla_regen    
+        tesla_pedal = tesla_accel + tesla_regen    
         #only do pedal hysteresis when very close to speed set
         if abs(CS.out.vEgo * CV.MS_TO_KPH - self.pedal_speed_kph) < 0.5:
             tesla_pedal = self.pedal_hysteresis(tesla_pedal, enable_pedal)
@@ -349,6 +352,7 @@ class PCCController:
         self.torqueLevel_last = CS.torqueLevel
         self.prev_tesla_pedal = tesla_pedal * enable_pedal
         self.prev_v_ego = CS.out.vEgo
+        self.prev_tesla_accel = 
         return self.prev_tesla_pedal, self.prev_tesla_brake, enable_pedal, idx
 
     def pedal_hysteresis(self, pedal, enabled):
