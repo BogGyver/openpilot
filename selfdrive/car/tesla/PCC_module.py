@@ -311,11 +311,11 @@ class PCCController:
 
         tesla_accel = clip(
             tesla_pedal, 0.0, 1
-        )  # _accel_pedal_max(CS.v_ego, self.v_pid, self.lead_1, self.prev_tesla_accel, CS))
+        )  # _accel_pedal_max(CS.out.vEgo, self.v_pid, self.lead_1, self.prev_tesla_accel, CS))
         tesla_regen = -clip(
             tesla_pedal * REGEN_BRAKE_MULTIPLIER,
             _brake_pedal_min(
-                CS.v_ego, v_target, self.lead_1, CS, self.pedal_speed_kph
+                CS.out.vEgo, v_target, self.lead_1, CS, self.pedal_speed_kph
             ),
             0.0,
         )
@@ -395,7 +395,7 @@ def _brake_pedal_min(v_ego, v_target, lead, CS, max_speed_kph):
     brake_mult1 = _interp_map(speed_delta_perc, brake_perc_map)
     brake_mult2 = 0.0
     if _is_present(lead):
-        safe_dist_m = _safe_distance_m(CS.v_ego, CS)
+        safe_dist_m = _safe_distance_m(CS.out.vEgo, CS)
         brake_distance_map = OrderedDict(
             [
                 # (distance in m, decceleration fraction)
