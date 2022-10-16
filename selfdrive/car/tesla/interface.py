@@ -20,6 +20,7 @@ AP_ACCEL_MIN_V =     [-3.5, -3.5, -3.5, -3.5, -3.5]
 PREAP_ACCEL_MAX_V =   [ 1.2,  1.2,  1.2,  0.8,  0.6]
 PREAP_ACCEL_MIN_V =   [-1.2, -1.2, -1.2, -1.2, -1.2] #(regen only... for iBooster we need to check these)
 
+
 #this function is called from longitudinal_planner only for limits
 def get_tesla_accel_limits(CP, current_speed):
   a_min = 0.
@@ -36,7 +37,7 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def compute_gb(accel, speed):
     # TODO: is this correct?
-    return float(accel) / 6.0
+    return float(accel) 
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
@@ -82,14 +83,6 @@ class CarInterface(CarInterfaceBase):
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_AP # has AP, ACC
       ret.openpilotLongitudinalControl = False
       set_long_tune(ret.longitudinalTuning, LongTunes.AP)
-    elif candidate == CAR.AP1_MODELS: 
-      ret.mass = 2100. + STD_CARGO_KG
-      ret.wheelbase = 2.959
-      ret.centerToFront = ret.wheelbase * 0.5
-      ret.steerRatio = 13.5
-      safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_AP # has AP, ACC
-      ret.openpilotLongitudinalControl = False
-      set_long_tune(ret.longitudinalTuning, LongTunes.AP)
     elif candidate == CAR.AP1_MODELX:
       #TODO: update values
       ret.mass = 2560. + STD_CARGO_KG
@@ -103,7 +96,7 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 2100. + STD_CARGO_KG
       ret.wheelbase = 2.959
       ret.centerToFront = ret.wheelbase * 0.5
-      ret.steerRatio = 13.5
+      ret.steerRatio = 15
       ret.openpilotLongitudinalControl = False
       if load_bool_param("TinklaEnablePedal",False):
         set_long_tune(ret.longitudinalTuning, LongTunes.PEDAL)
