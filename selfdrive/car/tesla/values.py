@@ -106,6 +106,16 @@ CAN_AP_POWERTRAIN = {
 kdBp = [0, 5., 22.,35.]
 kdV = [0.02, 0.02, 0.022, 0.025]
 V_PID_FILE = "/data/params/pidParams"
+gasMaxBP = [0.0, 20.0]  # m/s
+gasMaxV = [
+            0.225,
+            0.525,
+        ]  # if ret.enableGasInterceptor else [0.] # max gas allowed
+brakeMaxBP = [0.0]  # m/s
+brakeMaxV = [
+            1.0
+        ]  # max brake allowed - BB: since we are using regen, make this even
+
 
 class CANBUS:
   # Lateral harness

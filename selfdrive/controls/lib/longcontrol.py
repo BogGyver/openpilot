@@ -6,7 +6,7 @@ from selfdrive.controls.lib.pid_real import  PIDController
 from selfdrive.controls.lib.drive_helpers import CONTROL_N
 from selfdrive.modeld.constants import T_IDXS
 import json
-from selfdrive.car.tesla.values import USE_REAL_PID, kdBp, kdV, V_PID_FILE
+from selfdrive.car.tesla.values import USE_REAL_PID, kdBp, kdV, V_PID_FILE,gasMaxBP, gasMaxV, brakeMaxBP, brakeMaxV
 
 LongCtrlState = car.CarControl.Actuators.LongControlState
 
@@ -130,8 +130,8 @@ class LongControl():
 
     # Actuation limits
     if self.USE_REAL_PID:
-      gas_max = interp(CS.vEgo, CP.gasMaxBP, CP.gasMaxV)
-      brake_max = interp(CS.vEgo, CP.brakeMaxBP, CP.brakeMaxV)
+      gas_max = interp(CS.vEgo, gasMaxBP, gasMaxV)
+      brake_max = interp(CS.vEgo, brakeMaxBP, brakeMaxV)
       self.pid.neg_limit = -brake_max
       self.pid.pos_limit = gas_max
 
