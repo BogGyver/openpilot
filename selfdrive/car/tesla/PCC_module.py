@@ -342,7 +342,7 @@ class PCCController:
             tesla_brake = 0
         if CS.has_ibooster_ecu and CS.brakeUnavailable:
             CS.longCtrlEvent = car.CarEvent.EventName.iBoosterBrakeNotOk
-        tesla_pedal = clip(tesla_pedal, self.prev_tesla_pedal - PEDAL_MAX_DOWN, self.prev_tesla_pedal + PEDAL_MAX_UP)
+        tesla_pedal = clip(tesla_pedal + MAX_PEDAL_REGEN_VALUE, self.prev_tesla_pedal - PEDAL_MAX_DOWN, self.prev_tesla_pedal + PEDAL_MAX_UP)
         
         
         self.prev_tesla_brake = tesla_brake * enable_pedal
