@@ -6,7 +6,8 @@ from selfdrive.controls.lib.pid_real import  PIDController
 from selfdrive.controls.lib.drive_helpers import CONTROL_N
 from selfdrive.modeld.constants import T_IDXS
 import json
-from selfdrive.car.tesla.values import USE_REAL_PID, kdBp, kdV, V_PID_FILE
+from selfdrive.car.tesla.tunes import kdBp, kdV, V_PID_FILE,gasMaxBP, gasMaxV, brakeMaxBP, brakeMaxV
+from selfdrive.car.tesla.values import USE_REAL_PID
 
 LongCtrlState = car.CarControl.Actuators.LongControlState
 
@@ -43,7 +44,7 @@ def long_control_state_trans(CP, active, long_control_state, v_ego, v_target_fut
 
 
 class LongControl():
-  def __init__(self, CP):
+  def __init__(self, CP, CI):
     self.long_control_state = LongCtrlState.off  # initialized to off
     
     self.USE_REAL_PID = USE_REAL_PID[CP.carFingerprint]
@@ -53,7 +54,7 @@ class LongControl():
           (kdBp,kdV),
           rate=1 / DT_CTRL,
           sat_limit=0.8,
-          convert=None)
+          convert=CI.compute_gb)
       self.load_pid()
     else:
       self.pid = PIController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
@@ -113,10 +114,13 @@ class LongControl():
 
       v_target = speeds[0]
       v_target_future = speeds[-1]
+      v_target_1sec = interp(CP.longitudinalActuatorDelayUpperBound + 1.0, T_IDXS[:CONTROL_N], speeds)
+
     else:
       v_target = 0.0
       v_target_future = 0.0
       a_target = 0.0
+      v_target_1sec = 0.0
 
     # TODO: This check is not complete and needs to be enforced by MPC
     #a_target = clip(a_target, ACCEL_MIN_ISO, ACCEL_MAX_ISO)
@@ -130,9 +134,9 @@ class LongControl():
 
     # Actuation limits
     if self.USE_REAL_PID:
-      gas_max = interp(CS.vEgo, CP.gasMaxBP, CP.gasMaxV)
-      brake_max = interp(CS.vEgo, CP.brakeMaxBP, CP.brakeMaxV)
-      self.pid.neg_limit = -brake_max
+      gas_max = interp(CS.vEgo, gasMaxBP, gasMaxV)
+      brake_max = interp(CS.vEgo, brakeMaxBP, brakeMaxV)
+      self.pid.neg_limit = brake_max
       self.pid.pos_limit = gas_max
 
     # Update state machine
@@ -154,10 +158,13 @@ class LongControl():
     # tracking objects and driving
     elif self.long_control_state == LongCtrlState.pid:
       self.v_pid = v_target
+      #look a second out if we need to brake
+      if v_target_1sec < CS.vEgo:
+        self.v_pid = v_target_1sec
 
       # Toyota starts braking more when it thinks you want to stop
       # Freeze the integrator so we don't accelerate to compensate, and don't allow positive acceleration
-      prevent_overshoot = not CP.stoppingControl and CS.vEgo < 1.5 and v_target_future < 0.7 and v_target_future < self.v_pid
+      prevent_overshoot = not CP.stoppingControl and CS.vEgo < 1.5 and v_target < 0.7 and v_target < self.v_pid
       deadzone = interp(CS.vEgo, CP.longitudinalTuning.deadzoneBP, CP.longitudinalTuning.deadzoneV)
       freeze_integrator = prevent_overshoot
 
@@ -171,16 +178,16 @@ class LongControl():
       # Keep applying brakes until the car is stopped
       if not CS.standstill or output_accel > CP.stopAccel:
         output_accel -= CP.stoppingDecelRate * DT_CTRL
-      if self.USE_REAL_PID:
-        output_accel = clip(output_accel, -brake_max, gas_max)
-      else:
-        output_accel = clip(output_accel, accel_limits[0], accel_limits[1])
+      # if self.USE_REAL_PID:
+      #   output_accel = clip(output_accel, brake_max, gas_max)
+      # else:
+      output_accel = clip(output_accel, accel_limits[0], accel_limits[1])
       self.reset(CS.vEgo)
 
     self.last_output_accel = output_accel
     
     final_accel = clip(output_accel, accel_limits[0], accel_limits[1])
-    if self.USE_REAL_PID:
-      final_accel = clip(output_accel, -brake_max, gas_max)
+    # if self.USE_REAL_PID:
+    #   final_accel = clip(output_accel, brake_max, gas_max)
 
     return final_accel

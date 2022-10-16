@@ -102,10 +102,7 @@ CAN_AP_POWERTRAIN = {
   CAR.AP1_MODELX: 6, 
 }
 
-#for real PID
-kdBp = [0, 5., 22.,35.]
-kdV = [0.02, 0.02, 0.022, 0.025]
-V_PID_FILE = "/data/params/pidParams"
+
 
 class CANBUS:
   # Lateral harness

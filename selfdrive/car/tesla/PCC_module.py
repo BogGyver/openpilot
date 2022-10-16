@@ -9,7 +9,7 @@ from selfdrive.car.modules.CFG_module import load_float_param
 
 
 ACCEL_MAX = 0.6  #0.6m/s2 * 36 = ~ 0 -> 50mph in 6 seconds
-ACCEL_MIN = -4.5 #changed from -3.5 to -4.5 to see if we get better braking with iBooster
+ACCEL_MIN = -1. #changed from -3.5 to -4.5 to see if we get better braking with iBooster
 
 _DT = 0.05  # 20Hz in our case, since we don't want to process more than once the same radarState message
 _DT_MPC = _DT
@@ -23,8 +23,8 @@ MAX_BRAKE_VALUE = 1 #ibooster fully pressed BBTODO determine the exact value we 
 PEDAL_HYST_GAP = (
     1.0  # don't change pedal command for small oscilalitons within this value
 )
-# Cap the pedal to go from 0 to max in 3 seconds
-PEDAL_MAX_UP = MAX_PEDAL_VALUE_AVG * _DT / 3
+# Cap the pedal to go from 0 to max in 6 seconds
+PEDAL_MAX_UP = MAX_PEDAL_VALUE_AVG * _DT / 6
 # Cap the pedal to go from max to 0 in 0.4 seconds
 PEDAL_MAX_DOWN = MAX_PEDAL_VALUE_AVG * _DT / 0.4
 
@@ -38,7 +38,7 @@ MAX_PCC_V_KPH = 270.0
 # Pull the cruise stalk twice in this many ms for a 'double pull'
 STALK_DOUBLE_PULL_MS = 750
 
-REGEN_BRAKE_MULTIPLIER = 6
+REGEN_BRAKE_MULTIPLIER = 3.
 MIN_SAFE_DIST_M = 6.0
 
 T_FOLLOW = load_float_param("TinklaFollowDistance",1.45)
@@ -265,6 +265,7 @@ class PCCController:
             and CS.torqueLevel > TORQUE_LEVEL_DECEL
             and CS.out.vEgo >= 10.0 * CV.MPH_TO_MS
             and abs(CS.torqueLevel) < abs(self.lastTorqueForPedalForZeroTorque)
+            #and self.prev_tesla_accel > 0.
         ):
             self.PedalForZeroTorque = self.prev_tesla_pedal
             self.lastTorqueForPedalForZeroTorque = CS.torqueLevel
@@ -288,17 +289,17 @@ class PCCController:
         #
         # we use the values from actuators.accel
         ##############################################################
-        ZERO_ACCEL = self.PedalForZeroTorque
+        ZERO_REGEN = self.PedalForZeroTorque
         REGEN_DECEL = -0.3 #BB needs to be calculated based on regen available, which is higher at lower speeds...
         if CS.out.vEgo < 5 * CV.MPH_TO_MS:
-            ZERO_ACCEL = 0
+            ZERO_REGEN = 0.
         MAX_PEDAL_BP = [0., 5., 20., 30., 40]
         MAX_PEDAL_V = [65. , 75., 85., 100., 120.]
         if self.madMax:
             MAX_PEDAL_V = [65. , 85., 105., 120., 140.]
         MAX_PEDAL_VALUE = interp(CS.out.vEgo, MAX_PEDAL_BP, MAX_PEDAL_V)
         ACCEL_LOOKUP_BP = [REGEN_DECEL, 0., ACCEL_MAX]
-        ACCEL_LOOKUP_V = [MAX_PEDAL_REGEN_VALUE, ZERO_ACCEL, MAX_PEDAL_VALUE]
+        ACCEL_LOOKUP_V = [MAX_PEDAL_REGEN_VALUE, ZERO_REGEN, MAX_PEDAL_VALUE]
 
         #brake values for iBooster
         BRAKE_LOOKUP_BP = [ACCEL_MIN, 0]
@@ -307,25 +308,30 @@ class PCCController:
         enable_pedal = 1.0 if self.enable_pedal_cruise else 0.0
         tesla_pedal = int(round(interp(actuators.accel/2, ACCEL_LOOKUP_BP, ACCEL_LOOKUP_V)))
         if self.USE_REAL_PID:
-            tesla_pedal = actuators.accel
+            tesla_pedal = int((actuators.accel -0.07)* 100)
+            tesla_pedal = clip(tesla_pedal, -20, 100)
+            #tesla_pedal = int(round(interp(actuators.accel, ACCEL_LOOKUP_BP, ACCEL_LOOKUP_V)))  
 
-        tesla_accel = clip(
-            tesla_pedal, 0.0, 1
-        )  # _accel_pedal_max(CS.v_ego, self.v_pid, self.lead_1, self.prev_tesla_accel, CS))
-        tesla_regen = -clip(
-            tesla_pedal * REGEN_BRAKE_MULTIPLIER,
-            _brake_pedal_min(
-                CS.v_ego, v_target, self.lead_1, CS, self.pedal_speed_kph
-            ),
-            0.0,
-        )
-        tesla_regen = clip((1.0 - tesla_regen) * ZERO_ACCEL, 0, ZERO_ACCEL)
-        tesla_accel = clip(
-            tesla_accel * (MAX_PEDAL_VALUE_AVG - ZERO_ACCEL),
-            0,
-            MAX_PEDAL_VALUE_AVG - ZERO_ACCEL,
-        )
-        tesla_pedal = tesla_accel + tesla_regen    
+
+        # tesla_accel = clip(
+        #     tesla_pedal, 0.0, 1
+        # )  # _accel_pedal_max(CS.out.vEgo, self.v_pid, self.lead_1, self.prev_tesla_accel, CS))
+        # self.prev_tesla_accel = tesla_accel
+        # tesla_regen = -clip(
+        #     tesla_pedal * REGEN_BRAKE_MULTIPLIER,
+        #     #_brake_pedal_min(
+        #     #    CS.out.vEgo, v_target, self.lead_1, CS, self.pedal_speed_kph
+        #     #),
+        #     -1.0,
+        #     0.0,
+        # )
+        # tesla_regen = clip((1.0 - tesla_regen) * (ZERO_REGEN - 0), 0, ZERO_REGEN - 0)
+        # tesla_accel = clip(
+        #     tesla_accel * (MAX_PEDAL_VALUE_AVG - ZERO_REGEN),
+        #     0,
+        #     MAX_PEDAL_VALUE_AVG - ZERO_REGEN,
+        # )
+        #tesla_pedal = tesla_accel + tesla_regen + MAX_PEDAL_REGEN_VALUE 
         #only do pedal hysteresis when very close to speed set
         if abs(CS.out.vEgo * CV.MS_TO_KPH - self.pedal_speed_kph) < 0.5:
             tesla_pedal = self.pedal_hysteresis(tesla_pedal, enable_pedal)
@@ -342,8 +348,12 @@ class PCCController:
             tesla_brake = 0
         if CS.has_ibooster_ecu and CS.brakeUnavailable:
             CS.longCtrlEvent = car.CarEvent.EventName.iBoosterBrakeNotOk
+        #only limit up when accelerating
+        #if CS.out.vEgo < v_target and CS.out.vEgo > self.prev_v_ego:
         tesla_pedal = clip(tesla_pedal, self.prev_tesla_pedal - PEDAL_MAX_DOWN, self.prev_tesla_pedal + PEDAL_MAX_UP)
-        
+        #else:
+        #    tesla_pedal = clip(tesla_pedal, self.prev_tesla_pedal - PEDAL_MAX_DOWN, MAX_PEDAL_VALUE_AVG)
+         
         
         self.prev_tesla_brake = tesla_brake * enable_pedal
         self.torqueLevel_last = CS.torqueLevel
@@ -395,7 +405,7 @@ def _brake_pedal_min(v_ego, v_target, lead, CS, max_speed_kph):
     brake_mult1 = _interp_map(speed_delta_perc, brake_perc_map)
     brake_mult2 = 0.0
     if _is_present(lead):
-        safe_dist_m = _safe_distance_m(CS.v_ego, CS)
+        safe_dist_m = _safe_distance_m(CS.out.vEgo, CS)
         brake_distance_map = OrderedDict(
             [
                 # (distance in m, decceleration fraction)
