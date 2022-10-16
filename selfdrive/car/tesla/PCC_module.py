@@ -328,7 +328,7 @@ class PCCController:
             0,
             MAX_PEDAL_VALUE_AVG - ZERO_ACCEL,
         )
-        tesla_pedal = tesla_accel - tesla_regen    
+        tesla_pedal = tesla_accel + tesla_regen    
         #only do pedal hysteresis when very close to speed set
         #if abs(CS.out.vEgo * CV.MS_TO_KPH - self.pedal_speed_kph) < 0.5:
         tesla_pedal = self.pedal_hysteresis(tesla_pedal, enable_pedal)
