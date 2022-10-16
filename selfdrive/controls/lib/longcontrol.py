@@ -67,18 +67,17 @@ class LongControl():
     try:
       v_pid_json = open(V_PID_FILE)
       data = json.load(v_pid_json)
-      if self.LoC:
-        if self.pid:
-          self.pid.p = data["p"]
-          self.pid.i = data["i"]
-          if "d" not in data:
-            self.pid.d = 0.01
-          else:
-            self.pid.d = data["d"]
-          self.pid.f = data["f"]
+      if self.pid:
+        self.pid.p = data["p"]
+        self.pid.i = data["i"]
+        if "d" not in data:
+          self.pid.d = 0.01
+        else:
+          self.pid.d = data["d"]
+        self.pid.f = data["f"]
       else:
         print("self.pid not initialized!")
-    except:
+    except IOError:
       print("file not present, creating at next reset")
 
   def save_pid(self):
@@ -129,6 +128,13 @@ class LongControl():
     self.pid.neg_limit = accel_limits[0]
     self.pid.pos_limit = accel_limits[1]
 
+    # Actuation limits
+    if self.USE_REAL_PID:
+      gas_max = interp(CS.vEgo, CP.gasMaxBP, CP.gasMaxV)
+      brake_max = interp(CS.vEgo, CP.brakeMaxBP, CP.brakeMaxV)
+      self.pid.neg_limit = -brake_max
+      self.pid.pos_limit = gas_max
+
     # Update state machine
     output_accel = self.last_output_accel
     prev_long_control_state = self.long_control_state
@@ -165,10 +171,16 @@ class LongControl():
       # Keep applying brakes until the car is stopped
       if not CS.standstill or output_accel > CP.stopAccel:
         output_accel -= CP.stoppingDecelRate * DT_CTRL
-      output_accel = clip(output_accel, accel_limits[0], accel_limits[1])
+      if self.USE_REAL_PID:
+        output_accel = clip(output_accel, -brake_max, gas_max)
+      else:
+        output_accel = clip(output_accel, accel_limits[0], accel_limits[1])
       self.reset(CS.vEgo)
 
     self.last_output_accel = output_accel
+    
     final_accel = clip(output_accel, accel_limits[0], accel_limits[1])
+    if self.USE_REAL_PID:
+      final_accel = clip(output_accel, -brake_max, gas_max)
 
     return final_accel

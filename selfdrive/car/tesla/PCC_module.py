@@ -1,9 +1,12 @@
 from common.numpy_fast import clip, interp
-from selfdrive.car.tesla.values import CruiseButtons
+from selfdrive.car.tesla.values import CruiseButtons, USE_REAL_PID
 from selfdrive.config import Conversions as CV
 import time
 from common.params import Params
 from cereal import car
+from collections import OrderedDict
+from selfdrive.car.modules.CFG_module import load_float_param
+
 
 ACCEL_MAX = 0.6  #0.6m/s2 * 36 = ~ 0 -> 50mph in 6 seconds
 ACCEL_MIN = -4.5 #changed from -3.5 to -4.5 to see if we get better braking with iBooster
@@ -35,6 +38,11 @@ MAX_PCC_V_KPH = 270.0
 # Pull the cruise stalk twice in this many ms for a 'double pull'
 STALK_DOUBLE_PULL_MS = 750
 
+REGEN_BRAKE_MULTIPLIER = 6
+MIN_SAFE_DIST_M = 6.0
+
+T_FOLLOW = load_float_param("TinklaFollowDistance",1.45)
+
 class PCCState:
     # Possible state of the PCC system, following the DI_cruiseState naming scheme.
     OFF = 0  # Disabled by UI (effectively never happens since button switches over to ACC mode).
@@ -49,8 +57,9 @@ def _current_time_millis():
 
 # this is for the pedal cruise control
 class PCCController:
-    def __init__(self, longcontroller,tesla_can,pedalcan):
+    def __init__(self, longcontroller,tesla_can,pedalcan,carFingerprint):
         self.LongCtr = longcontroller
+        self.carFingerprint = carFingerprint
         self.tesla_can = tesla_can
         self.human_cruise_action_time = 0
         self.pcc_available = self.prev_pcc_available = False
@@ -102,6 +111,7 @@ class PCCController:
         self.madMax = False
         if longcontroller.madMax:
             self.madMax = True
+        self.USE_REAL_PID = USE_REAL_PID[carFingerprint]
 
 
     def update_stat(self, CS, frame):
@@ -229,7 +239,7 @@ class PCCController:
         set_speed_limit_active,
         speed_limit_offset,
         alca_enabled,
-        radSt
+        radar_state
     ):
 
         if not self.LongCtr.CP.openpilotLongitudinalControl:
@@ -241,6 +251,9 @@ class PCCController:
         idx = self.pedal_idx
 
         self.prev_speed_limit_kph = self.speed_limit_kph
+
+        if radar_state is not None:
+                self.lead_1 = radar_state.radarState.leadOne
 
         ######################################################################################
         # Determine pedal "zero"
@@ -287,13 +300,32 @@ class PCCController:
         ACCEL_LOOKUP_BP = [REGEN_DECEL, 0., ACCEL_MAX]
         ACCEL_LOOKUP_V = [MAX_PEDAL_REGEN_VALUE, ZERO_ACCEL, MAX_PEDAL_VALUE]
 
-        #BRAKE_LOOKUP_BP = [ACCEL_MIN, REGEN_DECEL]
-        #we can't use above until we decide how to handle regen
+        #brake values for iBooster
         BRAKE_LOOKUP_BP = [ACCEL_MIN, 0]
         BRAKE_LOOKUP_V = [MAX_BRAKE_VALUE, 0.]
 
         enable_pedal = 1.0 if self.enable_pedal_cruise else 0.0
         tesla_pedal = int(round(interp(actuators.accel/2, ACCEL_LOOKUP_BP, ACCEL_LOOKUP_V)))
+        if self.USE_REAL_PID:
+            tesla_pedal = actuators.accel
+
+        tesla_accel = clip(
+            tesla_pedal, 0.0, 1
+        )  # _accel_pedal_max(CS.v_ego, self.v_pid, self.lead_1, self.prev_tesla_accel, CS))
+        tesla_regen = -clip(
+            tesla_pedal * REGEN_BRAKE_MULTIPLIER,
+            _brake_pedal_min(
+                CS.v_ego, v_target, self.lead_1, CS, self.pedal_speed_kph
+            ),
+            0.0,
+        )
+        tesla_regen = clip((1.0 - tesla_regen) * ZERO_ACCEL, 0, ZERO_ACCEL)
+        tesla_accel = clip(
+            tesla_accel * (MAX_PEDAL_VALUE_AVG - ZERO_ACCEL),
+            0,
+            MAX_PEDAL_VALUE_AVG - ZERO_ACCEL,
+        )
+        tesla_pedal = tesla_accel + tesla_regen    
         #only do pedal hysteresis when very close to speed set
         if abs(CS.out.vEgo * CV.MS_TO_KPH - self.pedal_speed_kph) < 0.5:
             tesla_pedal = self.pedal_hysteresis(tesla_pedal, enable_pedal)
@@ -311,6 +343,8 @@ class PCCController:
         if CS.has_ibooster_ecu and CS.brakeUnavailable:
             CS.longCtrlEvent = car.CarEvent.EventName.iBoosterBrakeNotOk
         tesla_pedal = clip(tesla_pedal, self.prev_tesla_pedal - PEDAL_MAX_DOWN, self.prev_tesla_pedal + PEDAL_MAX_UP)
+        
+        
         self.prev_tesla_brake = tesla_brake * enable_pedal
         self.torqueLevel_last = CS.torqueLevel
         self.prev_tesla_pedal = tesla_pedal * enable_pedal
@@ -340,3 +374,52 @@ class PCCController:
         # Mark pedal unavailable while traditional cruise is on.
         self.pcc_available = pedal_ready and CS.enablePedal
 
+def _brake_pedal_min(v_ego, v_target, lead, CS, max_speed_kph):
+    # if less than 7 MPH we don't have much left till 5MPH to brake, so full regen
+    if v_ego <= 7 * CV.MPH_TO_MS:
+        return -1
+    # if above speed limit quickly decel
+    if v_ego * CV.MS_TO_KPH > max_speed_kph:
+        return -0.8
+    speed_delta_perc = 100 * (v_ego - v_target) / v_ego
+    brake_perc_map = OrderedDict(
+        [
+            # (perc change, decel)
+            (0.0, 0.3),
+            (1.5, 0.5),
+            (5.0, 0.8),
+            (7.0, 1.0),
+            (50.0, 1.0),
+        ]
+    )
+    brake_mult1 = _interp_map(speed_delta_perc, brake_perc_map)
+    brake_mult2 = 0.0
+    if _is_present(lead):
+        safe_dist_m = _safe_distance_m(CS.v_ego, CS)
+        brake_distance_map = OrderedDict(
+            [
+                # (distance in m, decceleration fraction)
+                (0.8 * safe_dist_m, 1.0),
+                (1.0 * safe_dist_m, 0.6),
+                (3.0 * safe_dist_m, 0.4),
+            ]
+        )
+        brake_mult2 = _interp_map(lead.dRel, brake_distance_map)
+    brake_mult = max(brake_mult1, brake_mult2)
+    return -brake_mult
+
+def _interp_map(val, val_map):
+    """Helper to call interp with an OrderedDict for the mapping. I find
+    this easier to read than interp, which takes two arrays."""
+    return interp(val, list(val_map.keys()), list(val_map.values()))
+
+def _is_present(lead):
+    return bool((not (lead is None)) and (lead.dRel > 0))
+
+def _safe_distance_m(v_ego_ms, CS):
+    if CS.cruise_distance != 255:
+        apFollowTimeInS = 0.7 + (int(CS.cruise_distance/33) + 1) * 0.1
+    else:
+        apFollowTimeInS = T_FOLLOW
+
+    return max(apFollowTimeInS * (v_ego_ms + 1), MIN_SAFE_DIST_M)

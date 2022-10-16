@@ -53,7 +53,7 @@ class LONGController:
         self.prev_speed_limit_ms = 0.
         if (CP.carFingerprint == CAR.PREAP_MODELS):
             self.ACC = ACCController(self)
-            self.PCC = PCCController(self,tesla_can,pedalcan)
+            self.PCC = PCCController(self,tesla_can,pedalcan,CP.carFingerprint )
             self.speed_limit_ms = 0
             self.set_speed_limit_active = False
             self.speed_limit_offset_uom = load_float_param("TinklaSpeedLimitOffset",0.0)
