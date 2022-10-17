@@ -104,7 +104,7 @@ CAN_AP_POWERTRAIN = {
 
 #for real PID
 kdBp = [0, 5., 22.,35.]
-kdV = [0.02, 0.02, 0.022, 0.025]
+kdV = [0.002, 0.002, 0.0022, 0.0025]
 V_PID_FILE = "/data/params/pidParams"
 gasMaxBP = [0.0, 20.0]  # m/s
 gasMaxV = [

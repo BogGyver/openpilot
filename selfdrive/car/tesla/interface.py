@@ -36,7 +36,7 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def compute_gb(accel, speed):
     # TODO: is this correct?
-    return float(accel) / 6.0
+    return float(accel) / 3.0
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):

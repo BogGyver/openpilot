@@ -43,7 +43,7 @@ def long_control_state_trans(CP, active, long_control_state, v_ego, v_target_fut
 
 
 class LongControl():
-  def __init__(self, CP):
+  def __init__(self, CP, CI):
     self.long_control_state = LongCtrlState.off  # initialized to off
     
     self.USE_REAL_PID = USE_REAL_PID[CP.carFingerprint]
@@ -53,7 +53,7 @@ class LongControl():
           (kdBp,kdV),
           rate=1 / DT_CTRL,
           sat_limit=0.8,
-          convert=None)
+          convert=CI.compute_gb)
       self.load_pid()
     else:
       self.pid = PIController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
