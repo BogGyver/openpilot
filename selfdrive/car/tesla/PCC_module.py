@@ -265,10 +265,10 @@ class PCCController:
             and CS.torqueLevel > TORQUE_LEVEL_DECEL
             and CS.out.vEgo >= 10.0 * CV.MPH_TO_MS
             and abs(CS.torqueLevel) < abs(self.lastTorqueForPedalForZeroTorque)
-            and self.prev_tesla_accel > 0.
+            #and self.prev_tesla_accel > 0.
         ):
-            #self.PedalForZeroTorque = self.prev_tesla_pedal
-            self.PedalForZeroTorque = self.prev_tesla_accel
+            self.PedalForZeroTorque = self.prev_tesla_pedal
+            #self.PedalForZeroTorque = self.prev_tesla_accel
             self.lastTorqueForPedalForZeroTorque = CS.torqueLevel
             # print ("Detected new Pedal For Zero Torque at %s" % (self.PedalForZeroTorque))
             # print ("Torque level at detection %s" % (CS.torqueLevel))
