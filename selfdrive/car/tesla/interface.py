@@ -82,14 +82,6 @@ class CarInterface(CarInterfaceBase):
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_AP # has AP, ACC
       ret.openpilotLongitudinalControl = False
       set_long_tune(ret.longitudinalTuning, LongTunes.AP)
-    elif candidate == CAR.AP1_MODELS: 
-      ret.mass = 2100. + STD_CARGO_KG
-      ret.wheelbase = 2.959
-      ret.centerToFront = ret.wheelbase * 0.5
-      ret.steerRatio = 13.5
-      safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_AP # has AP, ACC
-      ret.openpilotLongitudinalControl = False
-      set_long_tune(ret.longitudinalTuning, LongTunes.AP)
     elif candidate == CAR.AP1_MODELX:
       #TODO: update values
       ret.mass = 2560. + STD_CARGO_KG
@@ -103,7 +95,7 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 2100. + STD_CARGO_KG
       ret.wheelbase = 2.959
       ret.centerToFront = ret.wheelbase * 0.5
-      ret.steerRatio = 13.5
+      ret.steerRatio = 15
       ret.openpilotLongitudinalControl = False
       if load_bool_param("TinklaEnablePedal",False):
         set_long_tune(ret.longitudinalTuning, LongTunes.PEDAL)
