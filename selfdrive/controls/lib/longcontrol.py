@@ -2,11 +2,8 @@ from cereal import car
 from common.numpy_fast import clip, interp
 from common.realtime import DT_CTRL
 from selfdrive.controls.lib.pid import PIController
-from selfdrive.controls.lib.pid_real import  PIDController
 from selfdrive.controls.lib.drive_helpers import CONTROL_N
 from selfdrive.modeld.constants import T_IDXS
-import json
-from selfdrive.car.tesla.values import USE_REAL_PID, kdBp, kdV, V_PID_FILE
 
 LongCtrlState = car.CarControl.Actuators.LongControlState
 
@@ -43,60 +40,18 @@ def long_control_state_trans(CP, active, long_control_state, v_ego, v_target_fut
 
 
 class LongControl():
-  def __init__(self, CP):
+  def __init__(self, CP, CI):
     self.long_control_state = LongCtrlState.off  # initialized to off
     
-    self.USE_REAL_PID = USE_REAL_PID[CP.carFingerprint]
-    if self.USE_REAL_PID:
-      self.pid = PIDController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
-          (CP.longitudinalTuning.kiBP, CP.longitudinalTuning.kiV),
-          (kdBp,kdV),
-          rate=1 / DT_CTRL,
-          sat_limit=0.8,
-          convert=None)
-      self.load_pid()
-    else:
-      self.pid = PIController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
+    self.pid = PIController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
           (CP.longitudinalTuning.kiBP, CP.longitudinalTuning.kiV),
           rate=1 / DT_CTRL)
     
     self.v_pid = 0.0
     self.last_output_accel = 0.0
 
-  def load_pid(self):
-    try:
-      v_pid_json = open(V_PID_FILE)
-      data = json.load(v_pid_json)
-      if self.LoC:
-        if self.pid:
-          self.pid.p = data["p"]
-          self.pid.i = data["i"]
-          if "d" not in data:
-            self.pid.d = 0.01
-          else:
-            self.pid.d = data["d"]
-          self.pid.f = data["f"]
-      else:
-        print("self.pid not initialized!")
-    except:
-      print("file not present, creating at next reset")
-
-  def save_pid(self):
-    data = {}
-    data["p"] = self.pid.p
-    data["i"] = self.pid.i
-    data["d"] = self.pid.d
-    data["f"] = self.pid.f
-    try:
-      with open(V_PID_FILE, "w") as outfile:
-        json.dump(data, outfile)
-    except IOError:
-      print("PDD pid parameters could not be saved to file")
-
   def reset(self, v_pid):
     """Reset PID controller and change setpoint"""
-    if not self.USE_REAL_PID:
-      self.pid.reset()
     self.v_pid = v_pid
 
   def update(self, active, CS, CP, long_plan, accel_limits):
@@ -114,10 +69,13 @@ class LongControl():
 
       v_target = speeds[0]
       v_target_future = speeds[-1]
+      v_target_1sec = interp(CP.longitudinalActuatorDelayUpperBound + 1.0, T_IDXS[:CONTROL_N], speeds)
+
     else:
       v_target = 0.0
       v_target_future = 0.0
       a_target = 0.0
+      v_target_1sec = 0.0
 
     # TODO: This check is not complete and needs to be enforced by MPC
     #a_target = clip(a_target, ACCEL_MIN_ISO, ACCEL_MAX_ISO)
@@ -126,20 +84,16 @@ class LongControl():
 
     a_target = clip(a_target, accel_limits[0], accel_limits[1])
 
+    # Actuation limits
     self.pid.neg_limit = accel_limits[0]
     self.pid.pos_limit = accel_limits[1]
 
+
     # Update state machine
     output_accel = self.last_output_accel
-    prev_long_control_state = self.long_control_state
     self.long_control_state = long_control_state_trans(CP, active, self.long_control_state, CS.vEgo,
                                                        v_target_future, CS.brakePressed,
                                                        CS.cruiseState.standstill)
-                                                      
-    if (self.long_control_state == LongCtrlState.off or self.long_control_state == LongCtrlState.stopping) and prev_long_control_state == LongCtrlState.pid:
-      #save pid state on disengage
-      if self.USE_REAL_PID:
-        self.save_pid()
 
     if self.long_control_state == LongCtrlState.off or CS.gasPressed:
       self.reset(CS.vEgo)
@@ -148,10 +102,13 @@ class LongControl():
     # tracking objects and driving
     elif self.long_control_state == LongCtrlState.pid:
       self.v_pid = v_target
+      #look a second out if we need to brake
+      if v_target_1sec < CS.vEgo:
+        self.v_pid = v_target
 
       # Toyota starts braking more when it thinks you want to stop
       # Freeze the integrator so we don't accelerate to compensate, and don't allow positive acceleration
-      prevent_overshoot = not CP.stoppingControl and CS.vEgo < 1.5 and v_target_future < 0.7 and v_target_future < self.v_pid
+      prevent_overshoot = not CP.stoppingControl and CS.vEgo < 1.5 and v_target < 0.7 and v_target < self.v_pid
       deadzone = interp(CS.vEgo, CP.longitudinalTuning.deadzoneBP, CP.longitudinalTuning.deadzoneV)
       freeze_integrator = prevent_overshoot
 
@@ -169,6 +126,7 @@ class LongControl():
       self.reset(CS.vEgo)
 
     self.last_output_accel = output_accel
+    
     final_accel = clip(output_accel, accel_limits[0], accel_limits[1])
 
     return final_accel

@@ -53,7 +53,7 @@ class LONGController:
         self.prev_speed_limit_ms = 0.
         if (CP.carFingerprint == CAR.PREAP_MODELS):
             self.ACC = ACCController(self)
-            self.PCC = PCCController(self,tesla_can,pedalcan)
+            self.PCC = PCCController(self,tesla_can,pedalcan,CP )
             self.speed_limit_ms = 0
             self.set_speed_limit_active = False
             self.speed_limit_offset_uom = load_float_param("TinklaSpeedLimitOffset",0.0)
@@ -139,7 +139,9 @@ class LONGController:
             CS.pcc_available = self.PCC.pcc_available
            
             if long_plan and long_plan.longitudinalPlan:
-                self.v_target = long_plan.longitudinalPlan.speeds[-1]
+                self.longPlan = long_plan.longitudinalPlan
+                self.v_target = self.longPlan.speeds[-1]
+
             if (not self.PCC.pcc_available) and frame % 20 == 0:  # acc processed at 5Hz
                 cruise_btn = self.ACC.update_acc(
                     enabled,
