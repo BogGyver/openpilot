@@ -185,6 +185,15 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     "../assets/offroad/icon_speed_limit.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
+    {"TinklaPedalProfile",
+      "Pedal Profile",
+      "The profile to be used with the Tinkla Pedal Interceptor. 1 (S60) to 3 (SP+)",
+      "../assets/offroad/icon_speed_limit.png",
+      "Pedal Interceptor Profile:",
+      "Enter profile #.",
+      "",
+      2.0,1.0,3.0,1.0,TINKLA_FLOAT
+    },
     {"TinklaAutoResumeACC",
     "AutoResume ACC",
     "Enables the use of the AutoResume mode ACC instead full disengagement. Works with both CC.",

@@ -26,6 +26,8 @@ class CarState(CarStateBase):
     # Needed by carcontroller
     self.msg_stw_actn_req = None
 
+    
+
     self.das_steeringControl_counter = -1
     self.das_status_counter = -1
     self.autopilot_enabled = False
@@ -128,7 +130,11 @@ class CarState(CarStateBase):
     self.prev_pedal_interceptor_state = self.pedal_interceptor_state = 0
     self.pedal_interceptor_value = 0.0
     self.pedal_interceptor_value2 = 0.0
-    self.teslaModel = "S"
+    self.teslaModel = ""
+    if CP.carFingerprint in [CAR.AP1_MODELX]:
+      self.teslaModel = "S"
+    elif CP.carFingerprint in [CAR.AP1_MODELS, CAR.PREAP_MODELS, CAR.AP2_MODELS]:
+      self.teslaModel = "X"
     self.teslaModelDetected = 0
     self.realPedalValue = 0.0
 
@@ -223,6 +229,18 @@ class CarState(CarStateBase):
     ret.steerWarning = self.steer_warning != "EAC_ERROR_IDLE"
     self.torqueLevel = cp.vl["DI_torque1"]["DI_torqueMotor"]
 
+    #Detect car model - Needs more work when we do 3/Y
+    #can look like S/SD/SP/SPD XD/XPD
+    if self.teslaModelDetected == 0:
+      prev_teslaModel = self.teslaModel
+      if cp.vl["GTW_carConfig"]["GTW_performanceConfig"] > 1:
+        self.teslaModel = self.teslaModel + "P"
+      if cp.vl["GTW_carConfig"]["GTW_fourWheelDrive"] == 1:
+        self.teslaModel = self.teslaModel + "D"
+      if (self.teslaModelDetected == 0) or (prev_teslaModel != self.teslaModel):
+        self.teslaModelDetected = 1
+
+
     # Cruise state
     #cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
     #speed_units = self.can_define.dv["DI_state"]["DI_speedUnits"].get(int(cp.vl["DI_state"]["DI_speedUnits"]), None)
@@ -283,7 +301,6 @@ class CarState(CarStateBase):
       if self.CP.openpilotLongitudinalControl:
         ret.cruiseState.available = True #(not ret.doorOpen) and (ret.gearShifter == car.CarState.GearShifter.drive) and (not ret.seatbeltUnlatched)
         #ret.cruiseState.available = ret.cruiseState.available and (not cruiseEnabled) and (not self.autopilot_enabled)
-      #ret.cruiseState.standstill = (cruise_state == "STANDSTILL")
       ret.cruiseState.standstill = False # This needs to be false, since we can resume from stop without sending anything special
       self.cruise_speed = False #ret.cruiseState.speed
     else:
@@ -472,6 +489,7 @@ class CarState(CarStateBase):
       ("DOOR_STATE_FrontTrunk", "GTW_carState", 1),
       ("BOOT_STATE", "GTW_carState", 1),
       ("GTW_performanceConfig","GTW_carConfig", 1),
+      ("GTW_fourWheelDrive", "GTW_carConfig", 1),
       ("BC_indicatorLStatus", "GTW_carState", 1),
       ("BC_indicatorRStatus", "GTW_carState", 1),
       # info for speed limit

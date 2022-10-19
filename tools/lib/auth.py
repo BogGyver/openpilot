@@ -23,8 +23,10 @@ Examples::
 
 import argparse
 import sys
+import os
 import pprint
 import webbrowser
+sys.path.append(os.path.abspath("../.."))
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any, Dict
 from urllib.parse import parse_qs, urlencode

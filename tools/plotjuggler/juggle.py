@@ -9,7 +9,7 @@ import tarfile
 import tempfile
 import requests
 import argparse
-
+sys.path.append(os.path.abspath("../.."))
 from common.basedir import BASEDIR
 from selfdrive.test.process_replay.compare_logs import save_log
 from tools.lib.api import CommaApi
