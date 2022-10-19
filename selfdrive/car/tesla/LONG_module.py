@@ -4,13 +4,15 @@ from selfdrive.car.tesla.PCC_module import PCCController
 from selfdrive.config import Conversions as CV
 from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
 from cereal import car
-from common.numpy_fast import interp
+from common.numpy_fast import interp,clip
 from selfdrive.car.tesla.speed_utils.fleet_speed import FleetSpeed
 
 ACCEL_MULTIPLIERS_BP =     [0.0, 5.0, 10.0, 30.0]
 ACCEL_MULT_SPEED_V  =      [1.5, 1.3,  1.2,  1.0]
 ACCEL_MULT_SPEED_DELTA_V = [1.0, 1.01, 1.05,  1.1]
 ACCEL_MULT_ACCEL_PERC_V  = [1.0, 1.0,  1.05,  1.1]
+TESLA_MAX_ACCEL = 2.0  # m/s^2
+TESLA_MIN_ACCEL = -3.5 # m/s^2
 
 FLEET_SPEED_ACCEL = -0.5 # m/s2 how fast to reduce speed to match fleet, always negative 
 
@@ -253,7 +255,7 @@ class LONGController:
 
             #following = False
             #TODO: see what works best for these
-            target_accel = actuators.accel 
+            target_accel = clip(actuators.accel, TESLA_MIN_ACCEL,TESLA_MAX_ACCEL)
             #target_jerk = 0.
             target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
 
