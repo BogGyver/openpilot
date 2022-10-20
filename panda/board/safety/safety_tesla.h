@@ -950,7 +950,7 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
         //autopark and eac status
         int psc_status = ((GET_BYTE(to_push, 0) & 0xF0) >> 4);
         int eac_status = (GET_BYTE(to_push, 1) & 0x07);
-        eac_enabled = (eac_status == 1);
+        eac_enabled = (eac_status == 2);
         autopark_enabled = (psc_status == 14) || ((psc_status >= 1) && (psc_status <=8));
         if (autopilot_enabled || eac_enabled || autopark_enabled) {
           controls_allowed = 0;

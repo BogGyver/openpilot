@@ -40,6 +40,7 @@ MAX_PCC_V_KPH = 270.0
 STALK_DOUBLE_PULL_MS = 750
 
 T_FOLLOW = load_float_param("TinklaFollowDistance",1.45)
+PEDAL_PROFILE = int(load_float_param("TinklaPedalProfile",2.0))
 
 class PCCState:
     # Possible state of the PCC system, following the DI_cruiseState naming scheme.
@@ -304,7 +305,7 @@ class PCCController:
         deadzone = interp(CS.out.vEgo, self.CP.longitudinalTuning.deadzoneBP, self.CP.longitudinalTuning.deadzoneV)
         freeze_integrator = prevent_overshoot
         
-        gas_max = interp(CS.out.vEgo, gasMaxBP, gasMaxV)
+        gas_max = interp(CS.out.vEgo, gasMaxBP, gasMaxV[PEDAL_PROFILE])
         brake_max = interp(CS.out.vEgo, brakeMaxBP, brakeMaxV)
         self.pid.neg_limit = brake_max
         self.pid.pos_limit = gas_max

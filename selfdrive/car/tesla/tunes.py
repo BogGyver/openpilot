@@ -23,10 +23,10 @@ pedal_kdV = [1.*factor3, 1.*factor3, 0.9*factor3, 0.8*factor3]
 V_PID_FILE = "/data/params/pidParams"
 
 gasMaxBP = [0.0, 20.0]  # m/s
-gasMaxV = [
-            0.125,
-            0.425,
-        ]  # if ret.enableGasInterceptor else [0.] # max gas allowed
+gasMaxV = [[0.250, 0.650], #S60, maybe S70
+           [0.125, 0.425], #S85, SD85/90, Maybe SP85
+           [0.080, 0.325], #SP+ SPD89, etc
+           ]
 brakeMaxBP = [0.0]  # m/s
 brakeMaxV = [
             -0.07
