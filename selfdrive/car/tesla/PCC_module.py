@@ -40,7 +40,7 @@ MAX_PCC_V_KPH = 270.0
 STALK_DOUBLE_PULL_MS = 750
 
 T_FOLLOW = load_float_param("TinklaFollowDistance",1.45)
-PEDAL_PROFILE = int(load_float_param("TinklaPedalProfile",2.0))
+PEDAL_PROFILE = int(load_float_param("TinklaPedalProfile",2.0)-1)
 
 class PCCState:
     # Possible state of the PCC system, following the DI_cruiseState naming scheme.
