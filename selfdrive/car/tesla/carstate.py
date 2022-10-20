@@ -490,7 +490,7 @@ class CarState(CarStateBase):
       ("DOOR_STATE_FrontTrunk", "GTW_carState", 1),
       ("BOOT_STATE", "GTW_carState", 1),
       ("GTW_performanceConfig","GTW_carConfig", 1),
-      ("GTW_fourWheelDrive", "GTW_carConfig", 1)
+      ("GTW_fourWheelDrive", "GTW_carConfig", 1),
       ("BC_indicatorLStatus", "GTW_carState", 1),
       ("BC_indicatorRStatus", "GTW_carState", 1),
       # info for speed limit
