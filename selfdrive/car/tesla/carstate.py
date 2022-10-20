@@ -301,7 +301,6 @@ class CarState(CarStateBase):
       if self.CP.openpilotLongitudinalControl:
         ret.cruiseState.available = True #(not ret.doorOpen) and (ret.gearShifter == car.CarState.GearShifter.drive) and (not ret.seatbeltUnlatched)
         #ret.cruiseState.available = ret.cruiseState.available and (not cruiseEnabled) and (not self.autopilot_enabled)
-      #ret.cruiseState.standstill = (cruise_state == "STANDSTILL")
       ret.cruiseState.standstill = False # This needs to be false, since we can resume from stop without sending anything special
       self.cruise_speed = False #ret.cruiseState.speed
     else:

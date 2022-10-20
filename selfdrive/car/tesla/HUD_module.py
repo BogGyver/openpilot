@@ -34,6 +34,7 @@ class HUDController:
         self._path_pinv = compute_path_pinv()
         self.leadsData = None
         self.engageable = False
+        self.prev_autopilot_enabled = False
 
 
     # to show lead car on IC
@@ -208,6 +209,8 @@ class HUDController:
         #          4-active_restricted 5-active_nav 8-aborting 9-aborted
         #          14-fault  15-SNA
         DAS_op_status = 5 if enabled else 2
+        if CS.autopilot_enabled:
+            DAS_op_status = 3
         DAS_csaState = 2 if enabled else 1
         if not self.engageable:
             DAS_op_status = 1
@@ -229,7 +232,9 @@ class HUDController:
 
         # send DAS_status and DAS_status2 at 2Hz
         if (self.IC_integration_counter %20 == 0) or (self.IC_previous_enabled and not enabled ):
-            if CS.enableICIntegration:
+            should_send = enabled or (self.IC_previous_enabled and not enabled )#not(self.prev_autopilot_enabled and CS.autopilot_enabled)
+            self.prev_autopilot_enabled = CS.autopilot_enabled
+            if CS.enableICIntegration and should_send:
                 messages.append(self.tesla_can.create_das_status(DAS_op_status, DAS_collision_warning,
                     DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
                     CS.out.leftBlindspot, CS.out.rightBlindspot,
