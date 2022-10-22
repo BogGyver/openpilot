@@ -15,6 +15,7 @@ from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, CONTROL_N
 from selfdrive.swaglog import cloudlog
 from selfdrive.car.tesla.interface import get_tesla_accel_limits
 from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
+from selfdrive.car.tesla.values import CAR
 
 
 LON_MPC_STEP = 0.2  # first step is 0.2s
@@ -30,6 +31,7 @@ _A_TOTAL_MAX_BP = [20., 40.]
 
 ACCEL_MIN_TURN_SLOWDOWN = - 1.0 # m/s^2
 
+HAS_IBOOSTER_ECU = load_bool_param("TinklaHasIBooster",False)
 
 def get_max_accel(CP,v_ego):
   return get_tesla_accel_limits(CP,v_ego)  
@@ -110,7 +112,11 @@ class Planner:
       y_p = 3 * coefs[0] * self.path_x ** 2 + 2 * coefs[1] * self.path_x + coefs[2]
       y_pp = 6 * coefs[0] * self.path_x + 2 * coefs[1]
       curv = y_pp / (1. + y_p ** 2) ** 1.5
-      a_y_max = 3.1 - v_ego * 0.032
+      a_y_max = 0.
+      if HAS_IBOOSTER_ECU or self.CP.carFingerprint not in [CAR.PREAP_MODELS]:
+        a_y_max = 3.2 - v_ego * 0.03
+      else:
+        a_y_max = 3.1 - v_ego * 0.032
       v_curvature = np.sqrt(a_y_max / np.clip(np.abs(curv), 1e-4, None))
       model_speed = np.min(v_curvature) * self.turn_slowdown_factor
       model_speed = max(20.0 * CV.MPH_TO_MS, model_speed)  # Don't slow down below 20mph

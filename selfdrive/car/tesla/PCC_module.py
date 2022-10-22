@@ -14,11 +14,12 @@ import json
 _DT = 0.05  # 20Hz in our case, since we don't want to process more than once the same radarState message
 
 ACCEL_MAX = 0.6  #0.6m/s2 * 36 = ~ 0 -> 50mph in 6 seconds
-ACCEL_MIN = -1. #changed from -3.5 to -4.5 to see if we get better braking with iBooster
+ACCEL_MIN = -0.5 #changed from -3.5 to -4.5 to see if we get better braking with iBooster
 MAX_BRAKE_VALUE = 1 #ibooster fully pressed BBTODO determine the exact value we need
-BRAKE_LOOKUP_BP = [ACCEL_MIN, 0]
+BRAKE_LOOKUP_BP = [ACCEL_MIN, interp(0.0,brakeMaxBP,brakeMaxV)]
 BRAKE_LOOKUP_V = [MAX_BRAKE_VALUE, 0.]
 PID_UNWIND_RATE = 0.6 * _DT
+PID_UNWIND_RATE_IBOOSTER = 0.4 * _DT
 
 # TODO: these should end up in values.py at some point, probably variable by trim
 # Accel limits
@@ -264,6 +265,9 @@ class PCCController:
 
         idx = self.pedal_idx
 
+        if CS.has_ibooster_ecu:
+            self.pid.i_unwind_rate = PID_UNWIND_RATE_IBOOSTER
+
         self.prev_speed_limit_kph = self.speed_limit_kph
 
         if radar_state is not None:
@@ -307,6 +311,8 @@ class PCCController:
         
         gas_max = interp(CS.out.vEgo, gasMaxBP, gasMaxV[PEDAL_PROFILE])
         brake_max = interp(CS.out.vEgo, brakeMaxBP, brakeMaxV)
+        if CS.has_ibooster_ecu:
+            brake_max = ACCEL_MIN
         self.pid.neg_limit = brake_max
         self.pid.pos_limit = gas_max
         
@@ -319,7 +325,8 @@ class PCCController:
             tesla_pedal = 0.0
             enable_pedal = 0.0
             self.reset(CS.out.vEgo)
-        tesla_pedal = clip(tesla_pedal, brake_max, gas_max)
+        tesla_brake = clip(tesla_pedal,ACCEL_MIN,interp(CS.out.vEgo, brakeMaxBP, brakeMaxV))
+        tesla_pedal = clip(tesla_pedal, interp(CS.out.vEgo, brakeMaxBP, brakeMaxV), gas_max)
         tesla_pedal = int((tesla_pedal -0.07)* 100)
 
         if abs(CS.out.vEgo * CV.MS_TO_KPH - self.pedal_speed_kph) < 0.5:
@@ -331,18 +338,18 @@ class PCCController:
             # we need roughty 6.5 mm / 15 = 
             tesla_brake = 0.43
         else:
-            tesla_brake = interp(actuators.accel, BRAKE_LOOKUP_BP, BRAKE_LOOKUP_V)
+            tesla_brake = interp(tesla_brake, BRAKE_LOOKUP_BP, BRAKE_LOOKUP_V)
 
         tesla_pedal = clip(tesla_pedal, self.prev_tesla_pedal - PEDAL_MAX_DOWN, self.prev_tesla_pedal + PEDAL_MAX_UP)
 
         # if gas pedal pressed, brake should be zero (we alwasys have pedal with ibooster)
-        if CS.has_ibooster_ecu:
-            if CS.brakeUnavailable:
-                CS.longCtrlEvent = car.CarEvent.EventName.iBoosterBrakeNotOk
-            if self.prev_tesla_pedal > 0:
-                tesla_brake = 0
-            if self.prev_tesla_brake > 0:
-                tesla_pedal = MAX_PEDAL_REGEN_VALUE
+        # if CS.has_ibooster_ecu:
+        #     if CS.brakeUnavailable:
+        #         CS.longCtrlEvent = car.CarEvent.EventName.iBoosterBrakeNotOk
+        #     if self.prev_tesla_pedal > 0:
+        #         tesla_brake = 0
+        #     if self.prev_tesla_brake > 0:
+        #         tesla_pedal = MAX_PEDAL_REGEN_VALUE
          
         
         self.prev_tesla_brake = tesla_brake * enable_pedal
