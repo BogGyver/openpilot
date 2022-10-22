@@ -16,7 +16,7 @@ _DT = 0.05  # 20Hz in our case, since we don't want to process more than once th
 ACCEL_MAX = 0.6  #0.6m/s2 * 36 = ~ 0 -> 50mph in 6 seconds
 ACCEL_MIN = -0.5 #changed from -3.5 to -4.5 to see if we get better braking with iBooster
 MAX_BRAKE_VALUE = 1 #ibooster fully pressed BBTODO determine the exact value we need
-BRAKE_LOOKUP_BP = [ACCEL_MIN,0.]
+BRAKE_LOOKUP_BP = [ACCEL_MIN,-0.02]
 BRAKE_LOOKUP_V = [MAX_BRAKE_VALUE, 0.]
 PID_UNWIND_RATE = 0.6 * _DT
 PID_UNWIND_RATE_IBOOSTER = 0.4 * _DT
