@@ -16,7 +16,7 @@ _DT = 0.05  # 20Hz in our case, since we don't want to process more than once th
 ACCEL_MAX = 0.6  #0.6m/s2 * 36 = ~ 0 -> 50mph in 6 seconds
 ACCEL_MIN = -0.5 #changed from -3.5 to -4.5 to see if we get better braking with iBooster
 MAX_BRAKE_VALUE = 1 #ibooster fully pressed BBTODO determine the exact value we need
-BRAKE_LOOKUP_BP = [ACCEL_MIN, interp(0.0,brakeMaxBP,brakeMaxV)]
+BRAKE_LOOKUP_BP = [ACCEL_MIN,0.]
 BRAKE_LOOKUP_V = [MAX_BRAKE_VALUE, 0.]
 PID_UNWIND_RATE = 0.6 * _DT
 PID_UNWIND_RATE_IBOOSTER = 0.4 * _DT
@@ -122,8 +122,10 @@ class PCCController:
         except IOError:
            print("PDD pid parameters could not be saved to file")
 
-    def reset(self, v_pid):
+    def reset(self, v_pid, real_brake_pressed):
         """Reset PID controller and change setpoint"""
+        if real_brake_pressed:
+          self.pid.reset()
         self.v_pid = v_pid
 
     def update_stat(self, CS, frame):
@@ -282,7 +284,7 @@ class PCCController:
         self.pedal_idx = (self.pedal_idx + 1) % 16
 
         if not self.pcc_available or not enabled:
-            self.reset(CS.out.vEgo)
+            self.reset(CS.out.vEgo, CS.realBrakePressed and CS.has_ibooster_ecu)
             return 0.0, 0.0, 0, idx
         
         if len(self.LongCtr.longPlan.speeds) == CONTROL_N:
