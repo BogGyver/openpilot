@@ -326,7 +326,7 @@ class PCCController:
         else:
             tesla_pedal = 0.0
             enable_pedal = 0.0
-            self.reset(CS.out.vEgo)
+            self.reset(CS.out.vEgo, CS.realBrakePressed and CS.has_ibooster_ecu)
         tesla_brake = clip(tesla_pedal,ACCEL_MIN,interp(CS.out.vEgo, brakeMaxBP, brakeMaxV))
         tesla_pedal = clip(tesla_pedal, interp(CS.out.vEgo, brakeMaxBP, brakeMaxV), gas_max)
         tesla_pedal = int((tesla_pedal -0.07)* 100)
