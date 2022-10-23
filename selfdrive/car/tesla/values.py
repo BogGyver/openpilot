@@ -144,6 +144,7 @@ class CarControllerParams:
   JERK_LIMIT_MIN = -8
   ACCEL_TO_SPEED_MULTIPLIER = 3
   ACCEL_TO_SPEED_MULTIPLIER_ACC = 1
+  ACCEL_TO_SPEED_MULTIPLIER_PCC = 1
 
 
 class CruiseButtons:

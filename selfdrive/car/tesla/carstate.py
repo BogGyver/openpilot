@@ -130,6 +130,7 @@ class CarState(CarStateBase):
     self.prev_pedal_interceptor_state = self.pedal_interceptor_state = 0
     self.pedal_interceptor_value = 0.0
     self.pedal_interceptor_value2 = 0.0
+    self.ibstBrakeApplied = False
     self.teslaModel = ""
     if CP.carFingerprint in [CAR.AP1_MODELX]:
       self.teslaModel = "S"
@@ -210,7 +211,7 @@ class CarState(CarStateBase):
     ret.brake = 0
     if self.has_ibooster_ecu:
       self.realBrakePressed = bool(cp.vl["ECU_BrakeStatus"]['DriverBrakeApplied'])
-      #ret.brakeLights = bool(cp.vl["ECU_BrakeStatus"]['BrakeApplied'])
+      self.ibstBrakeApplied = bool(cp.vl["ECU_BrakeStatus"]['BrakeApplied'])
       self.brakeUnavailable = not bool(cp.vl["ECU_BrakeStatus"]['BrakeOK'])
     else:
       self.realBrakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)

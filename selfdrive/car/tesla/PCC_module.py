@@ -6,8 +6,6 @@ import time
 from cereal import car
 from selfdrive.car.modules.CFG_module import load_float_param
 from selfdrive.controls.lib.pid_real import  PIDController
-from selfdrive.controls.lib.drive_helpers import CONTROL_N
-from selfdrive.modeld.constants import T_IDXS
 import json
 
 
@@ -249,6 +247,7 @@ class PCCController:
         frame,
         actuators,
         v_target,
+        a_target,
         pcm_override,
         speed_limit_ms,
         set_speed_limit_active,
@@ -284,26 +283,11 @@ class PCCController:
         if not self.pcc_available or not enabled:
             self.reset(CS.out.vEgo)
             return 0.0, 0.0, 0, idx
-        
-        if len(self.LongCtr.longPlan.speeds) == CONTROL_N:
-            speeds = self.LongCtr.longPlan.speeds
-            v_target_lower = interp(self.CP.longitudinalActuatorDelayLowerBound, T_IDXS[:CONTROL_N], speeds)
-            a_target_lower = 2 * (v_target_lower - speeds[0])/self.CP.longitudinalActuatorDelayLowerBound - self.LongCtr.longPlan.accels[0]
-
-            v_target_upper = interp(self.CP.longitudinalActuatorDelayUpperBound, T_IDXS[:CONTROL_N], speeds)
-            a_target_upper = 2 * (v_target_upper - speeds[0])/self.CP.longitudinalActuatorDelayUpperBound - self.LongCtr.longPlan.accels[0]
-            a_target = min(a_target_lower, a_target_upper)
-
-            v_target = speeds[0]
-            #v_target_future = speeds[-1]
-            #v_target_1sec = interp(self.CP.longitudinalActuatorDelayUpperBound + 1.0, T_IDXS[:CONTROL_N], speeds)
-        else:
-            v_target = 0.0
-            a_target = 0.0
-            #v_target_future = 0.0
-            #v_target_1sec = 0.0
 
         self.v_pid = v_target
+
+        #TODO: ibstBrakeApplied use that to determine if iBooster is still being pressed
+        # to prevent both pedals being on
 
         prevent_overshoot = not self.CP.stoppingControl and CS.out.vEgo < 1.5 and v_target < 0.7 and v_target < self.v_pid
         deadzone = interp(CS.out.vEgo, self.CP.longitudinalTuning.deadzoneBP, self.CP.longitudinalTuning.deadzoneV)

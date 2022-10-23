@@ -295,13 +295,6 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     QProcess::startDetached("/data/openpilot/selfdrive/car/modules/radarFlasher/flashTeslaRadar");
   });
 
-  QPushButton *ivs_flash_btn = new QPushButton("Flash Vacuum Sensor");
-  ivs_flash_btn->setObjectName("ivs_flash_btn");
-
-  QObject::connect(ivs_flash_btn, &QPushButton::clicked, [=](){
-    QProcess::startDetached("/data/openpilot/panda/board/ibooster_vacuum_sensor/flashIvs");
-  });
-
   setStyleSheet(R"(
     #flash_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #flash_btn:pressed { background-color: #4a4a4a; }
@@ -309,13 +302,10 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     #flash_pedal_btn:pressed { background-color: #4a4a4a; }
     #vin_radar_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #vin_radar_btn:pressed { background-color: #4a4a4a; }
-    #ivs_flash_btn { height: 120px; border-radius: 15px; background-color: #393939; }
-    #ivs_flash_btn:pressed { background-color: #4a4a4a; }
   )");
   addItem(flash_btn);
   addItem(flash_pedal_btn);
   addItem(vin_radar_btn);
-  addItem(ivs_flash_btn);
 }
 
 TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent) {

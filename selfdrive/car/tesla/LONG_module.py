@@ -3,7 +3,6 @@ from selfdrive.car.tesla.ACC_module import ACCController
 from selfdrive.car.tesla.PCC_module import PCCController
 from selfdrive.config import Conversions as CV
 from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
-from cereal import car
 from common.numpy_fast import interp,clip
 from selfdrive.car.tesla.speed_utils.fleet_speed import FleetSpeed
 
@@ -166,15 +165,20 @@ class LONGController:
             apply_accel = 0.0
             if self.PCC.pcc_available and frame % 5 == 0:  # pedal processed at 20Hz
                 self.v_target = 0
-                if long_plan is not None:
-                    self.v_target = long_plan.longitudinalPlan.speeds[-1] #was 0
+                #following = False
+                #TODO: see what works best for these
+                target_accel = clip(actuators.accel, TESLA_MIN_ACCEL,TESLA_MAX_ACCEL)
+                #target_jerk = 0.
+                target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER_PCC), 0)
+
                 self.apply_brake = 0.0
                 apply_accel, self.apply_brake, accel_needed, accel_idx = self.PCC.update_pdl(
                     enabled,
                     CS,
                     frame,
                     actuators,
-                    self.v_target,
+                    target_speed,
+                    target_accel,
                     pcm_override,
                     self.speed_limit_ms,
                     self.set_speed_limit_active,
@@ -189,43 +193,13 @@ class LONGController:
                         )
                     )
                     
-            if self.PCC.pcc_available:
                 if self.has_ibooster_ecu:
                     messages.append(
                         self.tesla_can.create_ibst_command(
                             enabled, 15 * self.apply_brake, frame, CAN_CHASSIS[self.CP.carFingerprint]
                         )
                     )
-                else:
-                    # let's try to use brake wipe to slow down the car
-                    # GTW_ESP1 is at 10Hz and we will spam at 100Hz
-                    if self.apply_brake >= 0.1:
-                        CS.gtw_esp1_bw_req = 2 #hard wipe
-                        if self.useBrakeWipe:
-                            CS.longCtrlEvent = car.CarEvent.EventName.brakeWipeHigh
-                    elif self.apply_brake > 0.0:
-                        CS.gtw_esp1_bw_req = 1 #soft wipe
-                        if self.useBrakeWipe:
-                            CS.longCtrlEvent = car.CarEvent.EventName.brakeWipeLow
-                    else:
-                        CS.gtw_esp1_bw_req = 0 #no wipe
-                    if CS.gtw_esp1_bw_req > 0:
-                        if CS.prev_gtw_esp1_bw_req == 0:
-                           #first time BW request happens
-                           CS.gtw_esp1_id = CS.gtw_esp1_last_sent_id
-                        CS.gtw_esp1_id = (CS.gtw_esp1_id + 1) % 8
-                        if (CS.gtw_esp1 is None) and self.useBrakeWipe:
-                            CS.longCtrlEvent = car.CarEvent.EventName.brakeWipeNotAvailable
-                        if (CS.gtw_esp1 is not None) and self.useBrakeWipe:
-                            messages.insert(0, self.tesla_can.create_brake_wipe_request(
-                                gtw_esp1_vals=CS.gtw_esp1,
-                                bw_req=CS.gtw_esp1_bw_req,
-                                bus=CAN_CHASSIS[self.CP.carFingerprint],
-                                counter=CS.gtw_esp1_id))
-                    CS.prev_gtw_esp1_bw_req = CS.gtw_esp1_bw_req
-
-            #TODO: update message sent in HUD
-
+                
         #AP ModelS with OP Long and enabled
         elif enabled and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
             #we use the same logic from planner here to get the speed
