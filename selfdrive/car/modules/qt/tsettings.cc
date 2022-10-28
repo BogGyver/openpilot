@@ -236,15 +236,15 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
       "m",
       0.0,-1.0,1.0,0.01,TINKLA_FLOAT
     },
-    {"TinklaHasIBooster",
-    "Car has iBooster",
-    "Set to true if you retrofitted Tesla Model S iBooster on pre-AutoPilot cars. Requires reboot.",
+    {"TinklaUseTeslaRadarUpsideDown",
+    "Use Radar Upside Down",
+    "Allows one to install the Tesla Radar upside down.",
     "../assets/offroad/icon_settings.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
-    {"TinklaUseBrakeWipe",
-    "Use Brake Wipe",
-    "Spams CAN bus with brake wipe request when needed to slow down. Alpha grade feature. Requires reboot.",
+    {"TinklaHasIBooster",
+    "Car has iBooster",
+    "Set to true if you retrofitted Tesla Model S iBooster on pre-AutoPilot cars. Requires reboot.",
     "../assets/offroad/icon_settings.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
@@ -295,13 +295,6 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     QProcess::startDetached("/data/openpilot/selfdrive/car/modules/radarFlasher/flashTeslaRadar");
   });
 
-  QPushButton *ivs_flash_btn = new QPushButton("Flash Vacuum Sensor");
-  ivs_flash_btn->setObjectName("ivs_flash_btn");
-
-  QObject::connect(ivs_flash_btn, &QPushButton::clicked, [=](){
-    QProcess::startDetached("/data/openpilot/panda/board/ibooster_vacuum_sensor/flashIvs");
-  });
-
   setStyleSheet(R"(
     #flash_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #flash_btn:pressed { background-color: #4a4a4a; }
@@ -309,13 +302,10 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     #flash_pedal_btn:pressed { background-color: #4a4a4a; }
     #vin_radar_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #vin_radar_btn:pressed { background-color: #4a4a4a; }
-    #ivs_flash_btn { height: 120px; border-radius: 15px; background-color: #393939; }
-    #ivs_flash_btn:pressed { background-color: #4a4a4a; }
   )");
   addItem(flash_btn);
   addItem(flash_pedal_btn);
   addItem(vin_radar_btn);
-  addItem(ivs_flash_btn);
 }
 
 TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
@@ -351,12 +341,12 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
     },
     {"TinklaTurnSlowdownFactor",
       "Slowdown Factor in Turns",
-      "The multiplier used to compute the safe speed to take a turn. 0.9 is slower, 1.0 is faster.",
+      "The multiplier used to compute the safe speed to take a turn. 0.8 is slower, 1.2 is faster.",
       "../assets/offroad/icon_speed_limit.png",
       "Slowdown Factor in Turns:",
       "Enter the slowdown multiplier:",
       "",
-      0.95,0.9,1.0,0.01,TINKLA_FLOAT
+      0.95,0.8,1.2,0.01,TINKLA_FLOAT
     },
     {"TinklaSpeedMadMax",
     "Use MadMax Mode",

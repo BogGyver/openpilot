@@ -49,7 +49,7 @@ T_IDXS_LST = [index_function(idx, max_val=MAX_T, max_idx=N+1) for idx in range(N
 
 T_IDXS = np.array(T_IDXS_LST)
 T_DIFFS = np.diff(T_IDXS, prepend=[0.])
-MIN_ACCEL = -4.5
+MIN_ACCEL = -3.5
 T_FOLLOW = load_float_param("TinklaFollowDistance",1.45)
 COMFORT_BRAKE = 2.5
 STOP_DISTANCE = 6.0 #base it if we have radar or just visual

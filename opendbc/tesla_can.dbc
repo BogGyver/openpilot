@@ -185,6 +185,12 @@ BO_ 280 DI_torque2: 6 DI
  SG_ DI_epbInterfaceReady : 39|1@1+ (1,0) [0|0] "" NEO
  SG_ DI_torque2Checksum : 40|8@1+ (1,0) [0|0] "" NEO
 
+BO_ 293 ESP_ACC: 4 ESP
+ SG_ Long_Acceleration : 0|8@1- (0.08,0) [-10.24|10] "m/s^2" NEO
+ SG_ Lat_Acceleration : 8|8@1- (0.08,0) [-10.24|10] "m/s^2" NEO
+ SG_ ESP_125hChecksum : 16|8@1+ (1,0) [0|0] "" NEO
+ SG_ ESP_125hCounter : 24|4@1+ (1,0) [0|0] "" NEO
+
 BO_ 309 ESP_135h: 5 ESP
  SG_ ESP_135hChecksum : 23|8@0+ (1,0) [0|255] ""  NEO
  SG_ ESP_135hCounter : 11|4@0+ (1,0) [0|15] ""  NEO

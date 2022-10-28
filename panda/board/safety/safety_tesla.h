@@ -52,6 +52,7 @@ bool tesla_longitudinal = false;
 bool tesla_powertrain = false;  // Are we the second panda intercepting the powertrain bus?
 
 bool bosch_radar_vin_learn = false;
+bool has_das_hw = false;
 
 int last_acc_status = -1;
 int prev_controls_allowed = 0;
@@ -452,7 +453,9 @@ static void teslaPreAp_fwd_to_radar_modded(uint8_t bus_num, CANPacket_t *to_fwd)
     //change frontradarHW = 1  and dashw = 1
     //SG_ GTW_dasHw : 7|2@0+ (1,0) [0|0] ""  NEO
     //SG_ GTW_parkAssistInstalled : 11|2@0+ (1,0) [0|0] ""  NEO
-
+    if ((RDLR & 0xC0) > 0) {
+      has_das_hw = true;
+    }
     RDLR = RDLR & 0xFFFFF33F;
     RDLR = RDLR | 0x100; //Park Assist
     RDLR = RDLR | 0x440; //forwardRadarHw, dasHw
@@ -782,10 +785,10 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
       valid = true;
   }
 
-  //if ((bus == 0) && (addr == 0x39D) && (!has_ibooster_ecu)) {
+  if ((bus == 0) && (addr == 0x39D) && (!has_ibooster_ecu) && (has_ap_hardware || has_das_hw)) {
     //found IBST_status, it has official ibooster
-    //has_ibooster = true;
-  //}
+    has_ibooster = true;
+  }
 
   //looking for radar messages to see if we have a timeout
   if ((addr == 0x300) && (bus == tesla_radar_can)) 

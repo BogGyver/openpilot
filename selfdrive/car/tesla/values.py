@@ -102,6 +102,9 @@ CAN_AP_POWERTRAIN = {
   CAR.AP1_MODELX: 6, 
 }
 
+TESLA_MAX_ACCEL = 2.0  # m/s^2
+TESLA_MIN_ACCEL = -4.5 # m/s^2
+
 
 
 class CANBUS:
@@ -144,6 +147,7 @@ class CarControllerParams:
   JERK_LIMIT_MIN = -8
   ACCEL_TO_SPEED_MULTIPLIER = 3
   ACCEL_TO_SPEED_MULTIPLIER_ACC = 1
+  ACCEL_TO_SPEED_MULTIPLIER_PCC = 1
 
 
 class CruiseButtons:

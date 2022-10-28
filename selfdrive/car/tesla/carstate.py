@@ -102,7 +102,7 @@ class CarState(CarStateBase):
     self.speed_control_enabled = 0
     self.cc_state = 1
     self.adaptive_cruise = 0
-    self.apFollowTimeInS = 2.5  # time in seconds to follow
+    self.apFollowTimeInS = load_float_param("TinklaFollowDistance",1.45)
     self.pcc_available = False
     self.torqueLevel = 0.0
     self.cruise_state = None
@@ -118,6 +118,10 @@ class CarState(CarStateBase):
     self.realBrakePressed = False
     self.userSpeedLimitOffsetMS = 0
 
+    #accelerations
+    self.esp_long_acceleration = 0.
+    self.esp_lat_acceleration = 0.
+
     #data to spam GTW_ESP1
     self.gtw_esp1 = None
     self.gtw_esp1_id = -1
@@ -130,6 +134,7 @@ class CarState(CarStateBase):
     self.prev_pedal_interceptor_state = self.pedal_interceptor_state = 0
     self.pedal_interceptor_value = 0.0
     self.pedal_interceptor_value2 = 0.0
+    self.ibstBrakeApplied = False
     self.teslaModel = ""
     if CP.carFingerprint in [CAR.AP1_MODELX]:
       self.teslaModel = "S"
@@ -210,7 +215,7 @@ class CarState(CarStateBase):
     ret.brake = 0
     if self.has_ibooster_ecu:
       self.realBrakePressed = bool(cp.vl["ECU_BrakeStatus"]['DriverBrakeApplied'])
-      #ret.brakeLights = bool(cp.vl["ECU_BrakeStatus"]['BrakeApplied'])
+      self.ibstBrakeApplied = bool(cp.vl["ECU_BrakeStatus"]['BrakeApplied'])
       self.brakeUnavailable = not bool(cp.vl["ECU_BrakeStatus"]['BrakeOK'])
     else:
       self.realBrakePressed = bool(cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
@@ -228,6 +233,9 @@ class CarState(CarStateBase):
     ret.steerError = steer_status == "EAC_FAULT"
     ret.steerWarning = self.steer_warning != "EAC_ERROR_IDLE"
     self.torqueLevel = cp.vl["DI_torque1"]["DI_torqueMotor"]
+
+    self.esp_long_acceleration = cp.vl["ESP_ACC"]["Long_Acceleration"]
+    self.esp_lat_acceleration = cp.vl["ESP_ACC"]["Lat_Acceleration"]
 
     #Detect car model - Needs more work when we do 3/Y
     #can look like S/SD/SP/SPD XD/XPD
@@ -536,6 +544,8 @@ class CarState(CarStateBase):
       ("WprSw6Posn", "STW_ACTN_RQ", 0),
       ("MC_STW_ACTN_RQ", "STW_ACTN_RQ", 0),
       ("CRC_STW_ACTN_RQ", "STW_ACTN_RQ", 0),
+      ("Long_Acceleration","ESP_ACC",0),
+      ("Lat_Acceleration","ESP_ACC",0),
     ]
 
     checks = [
@@ -593,7 +603,7 @@ class CarState(CarStateBase):
       ]
 
       checks += [
-        ("GTW_ESP1",1),
+        ("GTW_ESP1",0),
       ]
 
     signals += [
@@ -607,7 +617,7 @@ class CarState(CarStateBase):
     ]
 
     checks += [      
-      ("EPAS_sysStatus", 25),
+      ("EPAS_sysStatus", 5),
       #("PARK_status2",4),
     ]
 
@@ -632,7 +642,7 @@ class CarState(CarStateBase):
       ]
 
       checks += [
-        ("GAS_SENSOR", 10)
+        ("GAS_SENSOR", 0)
       ]
 
     return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 0, enforce_checks=False)
@@ -726,7 +736,7 @@ class CarState(CarStateBase):
         ]
 
         checks += [
-          ("GAS_SENSOR", 10)
+          ("GAS_SENSOR", 0)
         ]
 
     return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 2,enforce_checks=False)

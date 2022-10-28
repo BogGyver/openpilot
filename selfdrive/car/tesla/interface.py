@@ -6,31 +6,42 @@ from selfdrive.car.interfaces import CarInterfaceBase
 from selfdrive.car.modules.CFG_module import load_bool_param
 from panda import Panda
 from selfdrive.car.tesla.tunes import LongTunes, set_long_tune
-from selfdrive.car.tesla.PCC_module import ACCEL_MIN, ACCEL_MAX
 from common.numpy_fast import interp
 
 
 ButtonType = car.CarState.ButtonEvent.Type
-
+HAS_IBOOSTER_ECU = load_bool_param("TinklaHasIBooster",False)
+MAD_MAX = load_bool_param("TinklaSpeedMadMax",False)
 ACCEL_LOOKUP_BP =     [ 0.0,  7.5, 15.0, 25.0, 40.0]
 
-AP_ACCEL_MAX_V =     [ 2.5,  2.0,  1.5,  0.8,  0.8]
+AP_ACCEL_MAX_V =     [ 2.5,   1.5,  1.2,  0.8,  0.6]
 AP_ACCEL_MIN_V =     [-3.5, -3.5, -3.5, -3.5, -3.5]
 
-PREAP_ACCEL_MAX_V =   [ 1.2,  1.2,  1.2,  0.8,  0.6]
-PREAP_ACCEL_MIN_V =   [-1.2, -1.2, -1.2, -1.2, -1.2] #(regen only... for iBooster we need to check these)
+PREAP_ACCEL_MAX_V =   [ 2.5,  1.5,  1.2,  0.8,  0.6]
+PREAP_ACCEL_MIN_V =   [ 0., -0.5, -1.5, -1.5, -1.5] #(regen only... for iBooster we need to check these)
+
+PREAP_IBST_ACCEL_MAX_V =   [  2.5,   1.5,  1.2,  0.8,  0.6]
+PREAP_IBST_ACCEL_MIN_V =   [ -3.5, -3.5, -3.5, -3.5, -1.5]
+
+
 
 
 #this function is called from longitudinal_planner only for limits
 def get_tesla_accel_limits(CP, current_speed):
   a_min = 0.
   a_max = 0.
-  if CP.carFingerprint == CAR.AP1_MODELS:
+  ibooster_accel_coef = -1.5 if HAS_IBOOSTER_ECU else 0
+  if not CP.carFingerprint == CAR.PREAP_MODELS:
     a_min = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MIN_V)
     a_max = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MAX_V)
+  elif HAS_IBOOSTER_ECU:
+    a_min = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_ACCEL_MIN_V)
+    a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_ACCEL_MAX_V)
   else:
     a_min = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MIN_V)
     a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MAX_V)
+  if MAD_MAX:
+    a_max = a_max * 1.2
   return a_min, a_max
 
 class CarInterface(CarInterfaceBase):
@@ -41,10 +52,8 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
-    if CP.carFingerprint == CAR.AP1_MODELS:
-      return get_tesla_accel_limits(CP,current_speed)
-    else:
-      return ACCEL_MIN, ACCEL_MAX
+    return get_tesla_accel_limits(CP,current_speed)
+    
 
   @staticmethod
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=None):
@@ -146,6 +155,7 @@ class CarInterface(CarInterfaceBase):
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam)]
     else:
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam)]
+    ret.stoppingDecelRate = 0.6 #since we don't use the PID, this means a jerk in acceleration by x m/s^3
     return ret
 
   def update(self, c, can_strings):
