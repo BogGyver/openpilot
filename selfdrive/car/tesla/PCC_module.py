@@ -17,7 +17,7 @@ _DT_MPC = _DT
 # Accel limits
 MAX_RADAR_DISTANCE = 120.0  # max distance to take in consideration radar reading
 MAX_PEDAL_VALUE_AVG = 60
-MAX_PEDAL_REGEN_VALUE = -20.0
+MAX_PEDAL_REGEN_VALUE = -7.
 MIN_PEDAL_REGEN_VALUE = -7.
 MAX_BRAKE_VALUE = 0.8 #ibooster fully pressed BBTODO determine the exact value we need
 PEDAL_HYST_GAP = (
@@ -285,19 +285,14 @@ class PCCController:
         if CS.out.vEgo < 5 * CV.MPH_TO_MS:
             ZERO_ACCEL = 0.
         BRAKE_MULTIPLIER = 1.
-        #if CS.has_ibooster_ecu:
-        #    REGEN_DECEL = -0.8
-        #    BRAKE_MULTIPLIER = 1.
         
-        PEDAL_PROFILE = int(load_float_param("TinklaPedalProfile",2.0)-1)
         MAX_PEDAL_BP = PEDAL_BP
-        MAX_PEDAL_V = PEDAL_V[PEDAL_PROFILE]
+        MAX_PEDAL_V = PEDAL_V
         MAX_PEDAL_VALUE = interp(CS.out.vEgo, MAX_PEDAL_BP, MAX_PEDAL_V)
         
         ACCEL_LOOKUP_BP = [REGEN_DECEL, 0., ACCEL_MAX]
         ACCEL_LOOKUP_V = [MAX_PEDAL_REGEN_VALUE, ZERO_ACCEL, MAX_PEDAL_VALUE]
 
-        #BRAKE_LOOKUP_BP = [ACCEL_MIN, REGEN_DECEL]
         #we can't use above until we decide how to handle regen
         BRAKE_LOOKUP_BP = [ACCEL_MIN, 0]
         BRAKE_LOOKUP_V = [MAX_BRAKE_VALUE, 0.]

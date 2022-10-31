@@ -11,18 +11,19 @@ from common.numpy_fast import interp
 ButtonType = car.CarState.ButtonEvent.Type
 HAS_IBOOSTER_ECU = load_bool_param("TinklaHasIBooster",False)
 MAD_MAX = load_bool_param("TinklaSpeedMadMax",False)
-IS_PERF = load_bool_param("TinklaHasPerfMotor",False)
+IS_LIMO = load_bool_param("TinklaLimoMode",False)
 ACCEL_LOOKUP_BP =     [ 0.0,  7.5, 15.0, 25.0, 40.0]
 
 AP_ACCEL_MAX_V =     [ 2.5,   1.5,  1.2,  0.8,  0.6]
+AP_LIMO_ACCEL_MAX_V =     [ 2.0,   1.2,  1.0,  0.6,  0.4]
 AP_ACCEL_MIN_V =     [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
 
 PREAP_ACCEL_MAX_V =   [ 2.5,  1.5,  1.2,  0.8,  0.6]
-PREAP_PERF_ACCEL_MAX_V =   [ 2.,  1.2,  1.0,  0.6,  0.4]
+PREAP_LIMO_ACCEL_MAX_V =   [ 2.,  1.2,  1.0,  0.6,  0.4]
 PREAP_ACCEL_MIN_V =   [ -1.5, -1.5, -1.5, -1.5, -1.5] #(regen only... for iBooster the values go to MAX
 
 PREAP_IBST_ACCEL_MAX_V =   [  2.5,   1.5,  1.2,  0.8,  0.6]
-PREAP_IBST_PERF_ACCEL_MAX_V =   [ 2.,  1.2,  1.0,  0.6,  0.4]
+PREAP_IBST_LIMO_ACCEL_MAX_V =   [ 2.,  1.2,  1.0,  0.6,  0.4]
 PREAP_IBST_ACCEL_MIN_V =   [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
 
 #this function is called from longitudinal_planner only for limits
@@ -31,16 +32,19 @@ def get_tesla_accel_limits(CP, current_speed):
   a_max = 0.
   if not CP.carFingerprint == CAR.PREAP_MODELS:
     a_min = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MIN_V)
-    a_max = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MAX_V)
+    if IS_LIMO:
+      a_max = interp(current_speed,ACCEL_LOOKUP_BP,AP_LIMO_ACCEL_MAX_V)
+    else:
+      a_max = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MAX_V)
   elif HAS_IBOOSTER_ECU:
-    if IS_PERF:
-      a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_PERF_ACCEL_MAX_V)
+    if IS_LIMO:
+      a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_LIMO_ACCEL_MAX_V)
     else:
       a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_ACCEL_MAX_V)
     a_min = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_ACCEL_MIN_V)
   else:
-    if IS_PERF:
-      a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_PERF_ACCEL_MAX_V)
+    if IS_LIMO:
+      a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_LIMO_ACCEL_MAX_V)
     else:
       a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MAX_V)
     a_min = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MIN_V)
@@ -84,7 +88,6 @@ class CarInterface(CarInterfaceBase):
     #  Panda.FLAG_TESLA_NEED_RADAR_EMULATION = 32
     #  Panda.FLAG_TESLA_HAO = 64
     #  Panda.FLAG_TESLA_IBOOSTER = 128
-
 
     safetyParam = 0
     ret.wheelSpeedFactor = 1.
