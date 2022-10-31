@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from cereal import car
-from selfdrive.car.tesla.values import CAR, CruiseButtons, CAN_AP_POWERTRAIN
+from selfdrive.car.tesla.values import CAR, CruiseButtons, CAN_AP_POWERTRAIN, TESLA_MIN_ACCEL
 from selfdrive.car import STD_CARGO_KG, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, get_safety_config
 from selfdrive.car.interfaces import CarInterfaceBase
 from selfdrive.car.modules.CFG_module import load_bool_param
@@ -8,38 +8,42 @@ from panda import Panda
 from selfdrive.car.tesla.tunes import LongTunes, set_long_tune
 from common.numpy_fast import interp
 
-
 ButtonType = car.CarState.ButtonEvent.Type
 HAS_IBOOSTER_ECU = load_bool_param("TinklaHasIBooster",False)
 MAD_MAX = load_bool_param("TinklaSpeedMadMax",False)
+IS_PERF = load_bool_param("TinklaHasPerfMotor",False)
 ACCEL_LOOKUP_BP =     [ 0.0,  7.5, 15.0, 25.0, 40.0]
 
 AP_ACCEL_MAX_V =     [ 2.5,   1.5,  1.2,  0.8,  0.6]
-AP_ACCEL_MIN_V =     [-3.5, -3.5, -3.5, -3.5, -3.5]
+AP_ACCEL_MIN_V =     [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
 
 PREAP_ACCEL_MAX_V =   [ 2.5,  1.5,  1.2,  0.8,  0.6]
-PREAP_ACCEL_MIN_V =   [ 0., -0.5, -1.5, -1.5, -1.5] #(regen only... for iBooster we need to check these)
+PREAP_PERF_ACCEL_MAX_V =   [ 2.,  1.2,  1.0,  0.6,  0.4]
+PREAP_ACCEL_MIN_V =   [ -1.5, -1.5, -1.5, -1.5, -1.5] #(regen only... for iBooster the values go to MAX
 
 PREAP_IBST_ACCEL_MAX_V =   [  2.5,   1.5,  1.2,  0.8,  0.6]
-PREAP_IBST_ACCEL_MIN_V =   [ -3.5, -3.5, -3.5, -3.5, -1.5]
-
-
-
+PREAP_IBST_PERF_ACCEL_MAX_V =   [ 2.,  1.2,  1.0,  0.6,  0.4]
+PREAP_IBST_ACCEL_MIN_V =   [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
 
 #this function is called from longitudinal_planner only for limits
 def get_tesla_accel_limits(CP, current_speed):
   a_min = 0.
   a_max = 0.
-  ibooster_accel_coef = -1.5 if HAS_IBOOSTER_ECU else 0
   if not CP.carFingerprint == CAR.PREAP_MODELS:
     a_min = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MIN_V)
     a_max = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MAX_V)
   elif HAS_IBOOSTER_ECU:
+    if IS_PERF:
+      a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_PERF_ACCEL_MAX_V)
+    else:
+      a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_ACCEL_MAX_V)
     a_min = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_ACCEL_MIN_V)
-    a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_ACCEL_MAX_V)
   else:
+    if IS_PERF:
+      a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_PERF_ACCEL_MAX_V)
+    else:
+      a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MAX_V)
     a_min = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MIN_V)
-    a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MAX_V)
   if MAD_MAX:
     a_max = a_max * 1.2
   return a_min, a_max
@@ -165,8 +169,10 @@ class CarInterface(CarInterfaceBase):
     ret = self.CS.update(self.cp, self.cp_cam)
     if self.CP.carFingerprint == CAR.PREAP_MODELS:
       ret.canValid = self.cp.can_valid
+      ret.canErrorId = self.cp.error_address
     else:
       ret.canValid = self.cp.can_valid and self.cp_cam.can_valid
+      ret.canErrorId = max(self.cp.error_address, self.cp_cam.error_address)
 
     self.post_update(c,ret)
 

@@ -195,6 +195,7 @@ struct CarState {
   doorOpen @24 :Bool;
   seatbeltUnlatched @25 :Bool;
   canValid @26 :Bool;
+  canErrorId @40 :UInt32;
 
   # clutch (manual transmission only)
   clutchPressed @28 :Bool;

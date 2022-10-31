@@ -8,6 +8,8 @@ from selfdrive.swaglog import cloudlog
 from selfdrive.modeld.constants import index_function
 from selfdrive.controls.lib.radar_helpers import _LEAD_ACCEL_TAU
 from selfdrive.car.modules.CFG_module import load_float_param
+from selfdrive.car.tesla.values import TESLA_MIN_ACCEL
+
 
 if __name__ == '__main__':  # generating code
   from pyextra.acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
@@ -49,7 +51,7 @@ T_IDXS_LST = [index_function(idx, max_val=MAX_T, max_idx=N+1) for idx in range(N
 
 T_IDXS = np.array(T_IDXS_LST)
 T_DIFFS = np.diff(T_IDXS, prepend=[0.])
-MIN_ACCEL = -3.5
+MIN_ACCEL = TESLA_MIN_ACCEL #was -3.5, fewer places to tune
 T_FOLLOW = load_float_param("TinklaFollowDistance",1.45)
 COMFORT_BRAKE = 2.5
 STOP_DISTANCE = 6.0 #base it if we have radar or just visual
@@ -310,7 +312,7 @@ class LongitudinalMpc:
     v_ego = self.x0[1]
     a_ego = self.x0[2]
     if carstate.followDistanceS != 255:
-      self.t_follow = 0.7 + float(carstate.followDistanceS) * 0.1
+      self.t_follow = 0.7 + float(carstate.followDistanceS) * 0.2
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
 
     lead_xv_0 = self.process_lead(radarstate.leadOne)

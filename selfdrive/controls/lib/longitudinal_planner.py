@@ -31,8 +31,6 @@ _A_TOTAL_MAX_BP = [20., 40.]
 
 ACCEL_MIN_TURN_SLOWDOWN = - 1.0 # m/s^2
 
-HAS_IBOOSTER_ECU = load_bool_param("TinklaHasIBooster",False)
-
 def get_max_accel(CP,v_ego):
   return get_tesla_accel_limits(CP,v_ego)  
 

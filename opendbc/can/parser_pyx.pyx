@@ -30,6 +30,7 @@ cdef class CANParser:
     dict vl
     dict vl_all
     bool can_valid
+    int error_address
     string dbc_name
     int can_invalid_cnt
 
@@ -111,6 +112,8 @@ cdef class CANParser:
     if self.can.can_valid:
       self.can_invalid_cnt = 0
     self.can_valid = self.can_invalid_cnt < CAN_INVALID_CNT
+    if not self.can_valid:
+      self.error_address = self.can.error_address
 
     new_vals = self.can.query_latest()
     for cv in new_vals:

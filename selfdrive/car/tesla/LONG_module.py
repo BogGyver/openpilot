@@ -43,7 +43,7 @@ class LONGController:
         self.speed_limit_offset_ms = 0.0
         self.adjustSpeedWithSpeedLimit = load_bool_param("TinklaAdjustAccWithSpeedLimit",True)
         self.useLongControlData = load_bool_param("TinklaUseLongControlData",False)
-        average_speed_over_x_suggestions = 6  # 0.3 seconds (20x a second)
+        average_speed_over_x_suggestions = 10  # 0.3 seconds (20x a second)
         self.fleet_speed = FleetSpeed(average_speed_over_x_suggestions)
         self.prev_enabled = False
         self.speed_limit_ms = 0.
@@ -162,12 +162,13 @@ class LONGController:
             if self.PCC.pcc_available and frame % 2 == 0:  # pedal processed at 50Hz as we get speed at 50Hz from ESP_B
                 #following = False
                 #TODO: see what works best for these
+                self.v_target = self.longPlan.speeds[0]
                 if long_plan and long_plan.longitudinalPlan:
-                    self.v_target = (long_plan.longitudinalPlan.speeds[0] + long_plan.longitudinalPlan.speeds[1]) / 2. 
+                    self.v_target = long_plan.longitudinalPlan.speeds[0]
                     # 0 or -1 to try vs actual vs vTarget
-                    if (not self.has_ibooster_ecu) and min(long_plan.longitudinalPlan.speeds[0], long_plan.longitudinalPlan.speeds[-1]) < CS.out.vEgo:
-                      #regen only use the smaller of the two when slowing down
-                      self.v_target = min(long_plan.longitudinalPlan.speeds[0], long_plan.longitudinalPlan.speeds[-1])
+                    #if (not self.has_ibooster_ecu) and min(long_plan.longitudinalPlan.speeds[0], long_plan.longitudinalPlan.speeds[-1]) < CS.out.vEgo:
+                    #  #regen only use the smaller of the two when slowing down
+                    #  self.v_target = min(long_plan.longitudinalPlan.speeds[0], long_plan.longitudinalPlan.speeds[-1])
                 if self.v_target is None:
                     self.v_target = CS.out.vEgo
                 target_accel = clip(actuators.accel, TESLA_MIN_ACCEL,TESLA_MAX_ACCEL)
