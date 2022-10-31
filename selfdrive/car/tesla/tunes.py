@@ -28,10 +28,14 @@ V_PID_FILE = "/data/params/pidParams"
 
 # MPH       0   11  44  67    90
 PEDAL_BP = [0., 5., 20., 30., 40.]  # m/s
-PEDAL_V = [[37. , 43., 50., 55., 60.], #S60, maybe S70
-           [37. , 43., 50., 55., 60.], #S85, SD85/90, Maybe SP85
-           [37. , 43., 50., 55., 60.], #SP+ SPD89, etc
+PEDAL_V = [[60. , 60., 60., 60., 60.], #S60, maybe S70
+           [60. , 60., 60., 60., 60.], #S85, SD85/90, Maybe SP85
+           [60. , 60., 60., 60., 60.], #SP+ SPD89, etc
            ]
+#PEDAL_V = [[37. , 43., 50., 55., 60.], #S60, maybe S70
+#           [37. , 43., 50., 55., 60.], #S85, SD85/90, Maybe SP85
+#           [37. , 43., 50., 55., 60.], #SP+ SPD89, etc
+#           ]
 
 ###### LONG ######
 def set_long_tune(tune, name):

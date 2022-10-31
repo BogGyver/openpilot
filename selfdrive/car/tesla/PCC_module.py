@@ -18,7 +18,7 @@ _DT_MPC = _DT
 MAX_RADAR_DISTANCE = 120.0  # max distance to take in consideration radar reading
 MAX_PEDAL_VALUE_AVG = 60
 MAX_PEDAL_REGEN_VALUE = -20.0
-MIN_PEDAL_REGEN_VALUE = -2.
+MIN_PEDAL_REGEN_VALUE = -7.
 MAX_BRAKE_VALUE = 0.8 #ibooster fully pressed BBTODO determine the exact value we need
 PEDAL_HYST_GAP = (
     1.0  # don't change pedal command for small oscilalitons within this value
@@ -284,10 +284,10 @@ class PCCController:
         REGEN_DECEL = -0.8 #BB needs to be calculated based on regen available, which is higher at lower speeds...
         if CS.out.vEgo < 5 * CV.MPH_TO_MS:
             ZERO_ACCEL = 0.
-        BRAKE_MULTIPLIER = 1.2
-        if CS.has_ibooster_ecu:
-            REGEN_DECEL = -1.5
-            BRAKE_MULTIPLIER = 1.
+        BRAKE_MULTIPLIER = 1.
+        #if CS.has_ibooster_ecu:
+        #    REGEN_DECEL = -0.8
+        #    BRAKE_MULTIPLIER = 1.
         
         PEDAL_PROFILE = int(load_float_param("TinklaPedalProfile",2.0)-1)
         MAX_PEDAL_BP = PEDAL_BP
@@ -317,7 +317,7 @@ class PCCController:
         else:
             tesla_brake = interp(actuators.accel, BRAKE_LOOKUP_BP, BRAKE_LOOKUP_V)
         # if gas pedal pressed, brake should be zero (we alwasys have pedal with ibooster)
-        if CS.pedal_interceptor_value > 5:
+        if CS.pedal_interceptor_value > 0.02:
             tesla_brake = 0
         if CS.has_ibooster_ecu and CS.brakeUnavailable:
             CS.longCtrlEvent = car.CarEvent.EventName.iBoosterBrakeNotOk
