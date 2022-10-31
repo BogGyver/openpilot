@@ -159,7 +159,7 @@ class LONGController:
                          bus=CAN_CHASSIS[self.CP.carFingerprint],
                          counter=stlk_counter))
             apply_accel = 0.0
-            if self.PCC.pcc_available and frame % 2 == 0:  # pedal processed at 50Hz as we get speed at 50Hz from ESP_B
+            if self.PCC.pcc_available and frame % 5 == 0:  # pedal processed at 20Hz as we get speed at 50Hz from ESP_B
                 #following = False
                 #TODO: see what works best for these
                 self.v_target = self.longPlan.speeds[0]
