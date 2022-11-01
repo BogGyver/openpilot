@@ -54,8 +54,9 @@ T_DIFFS = np.diff(T_IDXS, prepend=[0.])
 MIN_ACCEL = TESLA_MIN_ACCEL #was -3.5, fewer places to tune
 T_FOLLOW = load_float_param("TinklaFollowDistance",1.45)
 COMFORT_BRAKE = 2.5
-STOP_DISTANCE = 6.0 #base it if we have radar or just visual
-DIST_FACTOR = 2
+STOP_DISTANCE = 3.0 #base it if we have radar or just visual
+DIST_FACTOR = 4
+V_EGO_D = 5.
 
 def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (DIST_FACTOR * COMFORT_BRAKE)
@@ -139,7 +140,7 @@ def gen_long_mpc_solver():
   # from an obstacle at every timestep. This obstacle can be a lead car
   # or other object. In e2e mode we can use x_position targets as a cost
   # instead.
-  costs = [((x_obstacle - x_ego) - (desired_dist_comfort)) / (v_ego + 10.),
+  costs = [((x_obstacle - x_ego) - (desired_dist_comfort)) / (v_ego + V_EGO_D),
            x_ego,
            v_ego,
            a_ego,
@@ -154,7 +155,7 @@ def gen_long_mpc_solver():
   constraints = vertcat(v_ego,
                         (a_ego - a_min),
                         (a_max - a_ego),
-                        ((x_obstacle - x_ego) - (3/4) * (desired_dist_comfort)) / (v_ego + 10.))
+                        ((x_obstacle - x_ego) - (3/4) * (desired_dist_comfort)) / (v_ego + V_EGO_D))
   ocp.model.con_h_expr = constraints
   ocp.model.con_h_expr_e = vertcat(np.zeros(CONSTR_DIM))
 

@@ -11,19 +11,17 @@ from common.numpy_fast import interp
 ButtonType = car.CarState.ButtonEvent.Type
 HAS_IBOOSTER_ECU = load_bool_param("TinklaHasIBooster",False)
 MAD_MAX = load_bool_param("TinklaSpeedMadMax",False)
-IS_LIMO = load_bool_param("TinklaLimoMode",False)
+
+#MPH                    0     16    33    55    90
 ACCEL_LOOKUP_BP =     [ 0.0,  7.5, 15.0, 25.0, 40.0]
 
 AP_ACCEL_MAX_V =     [ 2.5,   1.5,  1.2,  0.8,  0.6]
-AP_LIMO_ACCEL_MAX_V =     [ 2.0,   1.2,  1.0,  0.6,  0.4]
 AP_ACCEL_MIN_V =     [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
 
 PREAP_ACCEL_MAX_V =   [ 2.5,  1.5,  1.2,  0.8,  0.6]
-PREAP_LIMO_ACCEL_MAX_V =   [ 2.,  1.2,  1.0,  0.6,  0.4]
 PREAP_ACCEL_MIN_V =   [ -1.5, -1.5, -1.5, -1.5, -1.5] #(regen only... for iBooster the values go to MAX
 
 PREAP_IBST_ACCEL_MAX_V =   [  2.5,   1.5,  1.2,  0.8,  0.6]
-PREAP_IBST_LIMO_ACCEL_MAX_V =   [ 2.,  1.2,  1.0,  0.6,  0.4]
 PREAP_IBST_ACCEL_MIN_V =   [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
 
 #this function is called from longitudinal_planner only for limits
@@ -32,21 +30,12 @@ def get_tesla_accel_limits(CP, current_speed):
   a_max = 0.
   if not CP.carFingerprint == CAR.PREAP_MODELS:
     a_min = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MIN_V)
-    if IS_LIMO:
-      a_max = interp(current_speed,ACCEL_LOOKUP_BP,AP_LIMO_ACCEL_MAX_V)
-    else:
-      a_max = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MAX_V)
+    a_max = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MAX_V)
   elif HAS_IBOOSTER_ECU:
-    if IS_LIMO:
-      a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_LIMO_ACCEL_MAX_V)
-    else:
-      a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_ACCEL_MAX_V)
+    a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_ACCEL_MAX_V)
     a_min = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_ACCEL_MIN_V)
   else:
-    if IS_LIMO:
-      a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_LIMO_ACCEL_MAX_V)
-    else:
-      a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MAX_V)
+    a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MAX_V)
     a_min = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MIN_V)
   if MAD_MAX:
     a_max = a_max * 1.2
@@ -162,7 +151,12 @@ class CarInterface(CarInterfaceBase):
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam)]
     else:
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam)]
-    ret.stoppingDecelRate = 0.6 #since we don't use the PID, this means a jerk in acceleration by x m/s^3
+    if candidate == CAR.PREAP_MODELS:
+      ret.stoppingDecelRate = 1. 
+      ret.stoppingControl = HAS_IBOOSTER_ECU
+    else:
+      ret.stoppingDecelRate = 0.6 #since we don't use the PID, this means a jerk in acceleration by x m/s^3
+      ret.stoppingControl = True
     return ret
 
   def update(self, c, can_strings):

@@ -2,7 +2,6 @@
 from enum import Enum
 
 
-
 class LongTunes(Enum):
   PEDAL = 0
   ACC = 1
@@ -11,23 +10,13 @@ class LongTunes(Enum):
 PEDAL_MIN = -7.
 PEDAL_MAX = 65.
 
-factor1 = 0.5
-factor2 = 0.01
-factor3 = 0.02
-#for real PID used for pedal
-# MPH         0   11    50    80
-# km/h        0   18    80   126
-pedal_kpBP = [0.0, 5.0, 22.0, 35.0]
-pedal_kiBP = [0.0, 5.0, 22.0, 35.0]
-pedal_kdBP = [0.0, 5.0, 22.0, 35.0]
-pedal_kpV = [1.*factor1, 1.*factor1, 0.8*factor1, 0.8*factor1]
-pedal_kiV = [1.*factor2, 1.*factor2, 0.9*factor2, 0.8*factor2]
-pedal_kdV = [1.*factor3, 1.*factor3, 1.1*factor3, 1.25*factor3]
-V_PID_FILE = "/data/params/pidParams"
-
 # MPH       0   11  44  67    90
-PEDAL_BP = [0., 5., 20., 30., 40.]  # m/s
-PEDAL_V = [60. , 60., 60., 60., 60.]
+PEDAL_BP = [  0.,  5., 20., 30., 40.]  # m/s
+PEDAL_V = [ [35., 40., 60., 70., 85.],
+            [25., 30., 45., 50., 55.],
+            [20., 25., 35., 40., 50.],
+            [20., 20., 27., 30., 40.],
+]
 
 ###### LONG ######
 def set_long_tune(tune, name):

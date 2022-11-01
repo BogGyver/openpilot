@@ -630,7 +630,7 @@ class CarState(CarStateBase):
       ]
 
       checks += [
-        ("ECU_BrakeStatus", 40)
+        ("ECU_BrakeStatus", 0) #not safe but removed due to CAN Error messages at Seb's suggestion
       ]
 
     if enablePedal and pedalcanzero:

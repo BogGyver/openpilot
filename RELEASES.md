@@ -10,6 +10,8 @@ Unity Version 0.8.13-56 (2022-10-27)
  * improved acceleration handling for AP1
  * Add message ID for the CAN Error 
  * Reduce min accel to -4.5 
+ * Improve follow distance
+ * Better and smoother pedal with 4 proiles
 
 Unity Version 0.8.13-55 (2022-09-21)
 ========================

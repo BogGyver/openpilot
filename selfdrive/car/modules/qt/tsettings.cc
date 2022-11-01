@@ -63,12 +63,6 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "../assets/offroad/icon_warning.png",
       "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
       },
-    {"TinklaLimoMode",
-      "Limo Mode",
-      "Slower accelerations for a Limo Like drive.",
-      "../assets/offroad/icon_warning.png",
-      "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-      },
     {"TinklaTurnScreenOff",
       "Turn screen off while engaged",
       "Keeps device screen off even when engaged. It wakes the screen any time a message is shown.",
@@ -184,6 +178,15 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     "Uses CAN0 for pedal interceptor. Default (and safest option) is CAN2. Only enable if you know what you're doing.",
     "../assets/offroad/icon_speed_limit.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+    },
+    {"TinklaPedalProfile",
+      "Pedal Profile",
+      "The profile to be used with the Tinkla Pedal Interceptor. 1 (fast accel) to 4 (slow accel)",
+      "../assets/offroad/icon_speed_limit.png",
+      "Pedal Interceptor Profile:",
+      "Enter profile #.",
+      "",
+      2.0,1.0,4.0,1.0,TINKLA_FLOAT
     },
     {"TinklaAutoResumeACC",
     "AutoResume ACC",
