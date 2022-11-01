@@ -41,6 +41,9 @@ MAX_PCC_V_KPH = 270.0
 # Pull the cruise stalk twice in this many ms for a 'double pull'
 STALK_DOUBLE_PULL_MS = 750
 
+PEDAL_OFFSET = int(load_float_param("TinklaPedalOffset",0.))
+PEDAL_PROFILE = int(load_float_param("TinklaPedalProfile",2.0)-1)
+
 
 class PCCState:
     # Possible state of the PCC system, following the DI_cruiseState naming scheme.
@@ -289,7 +292,7 @@ class PCCController:
         if CS.out.vEgo < 5 * CV.MPH_TO_MS:
             ZERO_ACCEL = 0.
                     
-        PEDAL_PROFILE = int(load_float_param("TinklaPedalProfile",2.0)-1)
+        
         MAX_PEDAL_BP = PEDAL_BP
         MAX_PEDAL_V = PEDAL_V[PEDAL_PROFILE]
         MAX_PEDAL_VALUE = interp(CS.out.vEgo, MAX_PEDAL_BP, MAX_PEDAL_V)
@@ -306,7 +309,7 @@ class PCCController:
         BRAKE_LOOKUP_V = [MAX_BRAKE_VALUE, 0.]
 
         enable_pedal = 1.0 if self.enable_pedal_cruise else 0.0
-        tesla_pedal = int(round(interp(a_target, ACCEL_LOOKUP_BP, ACCEL_LOOKUP_V)))
+        tesla_pedal = int(round(interp(a_target, ACCEL_LOOKUP_BP, ACCEL_LOOKUP_V) + PEDAL_OFFSET))
         #only do pedal hysteresis when very close to speed set
         if abs(CS.out.vEgo * CV.MS_TO_KPH - self.pedal_speed_kph) < 0.5:
             tesla_pedal = self.pedal_hysteresis(tesla_pedal, enable_pedal)

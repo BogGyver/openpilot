@@ -26,8 +26,8 @@ const uint32_t TIME_TO_HIDE_ERRORS = 4000000; //4s to hide potential fake DAS er
 
 uint32_t time_cruise_engaged = 0;
 uint32_t time_op_disengaged = 0;
-const float TESLA_MAX_ACCEL = 2.0;  // m/s^2
-const float TESLA_MIN_ACCEL = -3.5; // m/s^2
+const float TESLA_MAX_ACCEL = 2.01;  // m/s^2
+const float TESLA_MIN_ACCEL = -4.51; // m/s^2
 
 //for safetyParam parsing
 const uint16_t FLAG_TESLA_POWERTRAIN = 1;
