@@ -342,6 +342,15 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
       "",
       0.95,0.8,1.2,0.01,TINKLA_FLOAT
     },
+    {"TinklaBrakeFactor",
+      "Braking Factor",
+      "The multiplier used to compute the Tesla braking power. 0.8 is slower, 1.2 is faster.",
+      "../assets/offroad/icon_speed_limit.png",
+      "Braking Factor:",
+      "Enter the braking multiplier:",
+      "",
+      1.0,0.8,1.2,0.01,TINKLA_FLOAT
+    },
     {"TinklaSpeedMadMax",
     "Use MadMax Mode",
     "Use faster accel limits.",

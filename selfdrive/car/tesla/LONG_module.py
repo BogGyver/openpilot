@@ -12,6 +12,7 @@ ACCEL_MULT_SPEED_DELTA_V = [1.0, 1.01, 1.05,  1.1]
 ACCEL_MULT_ACCEL_PERC_V  = [1.0, 1.0,  1.05,  1.1]
 
 FLEET_SPEED_ACCEL = -0.5 # m/s2 how fast to reduce speed to match fleet, always negative 
+BRAKE_FACTOR = load_float_param("TinklaBrakeFactor",1.0)
 
 def _is_present(lead):
   return bool((not (lead is None)) and (lead.dRel > 0))
@@ -59,6 +60,9 @@ class LONGController:
     def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state):
         messages = []
         self.has_ibooster_ecu = CS.has_ibooster_ecu
+        my_accel = actuators.accel
+        if my_accel < 0:
+            my_accel = my_accel * BRAKE_FACTOR
         #update options 
 
         if enabled and not self.prev_enabled:
@@ -159,7 +163,7 @@ class LONGController:
                          bus=CAN_CHASSIS[self.CP.carFingerprint],
                          counter=stlk_counter))
             apply_accel = 0.0
-            if self.PCC.pcc_available and frame % 5 == 0:  # pedal processed at 20Hz as we get speed at 50Hz from ESP_B
+            if self.PCC.pcc_available and frame % 1 == 0:  # pedal processed at 100Hz, we get speed at 50Hz from ESP_B
                 #following = False
                 #TODO: see what works best for these
                 self.v_target = self.longPlan.speeds[0]
@@ -171,7 +175,7 @@ class LONGController:
                     #  self.v_target = min(long_plan.longitudinalPlan.speeds[0], long_plan.longitudinalPlan.speeds[-1])
                 if self.v_target is None:
                     self.v_target = CS.out.vEgo
-                target_accel = clip(actuators.accel, TESLA_MIN_ACCEL,TESLA_MAX_ACCEL)
+                target_accel = clip(my_accel, TESLA_MIN_ACCEL,TESLA_MAX_ACCEL)
                 target_speed = max(self.v_target, 0)
 
                 self.apply_brake = 0.0
@@ -204,7 +208,7 @@ class LONGController:
                     )
                 
         #AP ModelS with OP Long and enabled
-        elif enabled and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
+        elif enabled and self.CP.openpilotLongitudinalControl and (frame %1 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
             #we use the same logic from planner here to get the speed
             speed_uom_kph = 1.0
             # cruise state: 0 unavailable, 1 available, 2 enabled, 3 hold
@@ -232,7 +236,7 @@ class LONGController:
 
             #following = False
             #TODO: see what works best for these
-            target_accel = clip(actuators.accel, TESLA_MIN_ACCEL,TESLA_MAX_ACCEL)
+            target_accel = clip(my_accel, TESLA_MIN_ACCEL,TESLA_MAX_ACCEL)
             #target_jerk = 0.
             target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
 

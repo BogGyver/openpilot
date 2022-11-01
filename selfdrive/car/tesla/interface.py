@@ -19,7 +19,7 @@ AP_ACCEL_MAX_V =     [ 2.5,   1.5,  1.2,  0.8,  0.6]
 AP_ACCEL_MIN_V =     [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
 
 PREAP_ACCEL_MAX_V =   [ 2.5,  1.5,  1.2,  0.8,  0.6]
-PREAP_ACCEL_MIN_V =   [ -1.5, -1.5, -1.5, -1.5, -1.5] #(regen only... for iBooster the values go to MAX
+PREAP_ACCEL_MIN_V =   [ -1., -1., -1., -1., -1.] #(regen only... for iBooster the values go to MAX
 
 PREAP_IBST_ACCEL_MAX_V =   [  2.5,   1.5,  1.2,  0.8,  0.6]
 PREAP_IBST_ACCEL_MIN_V =   [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]

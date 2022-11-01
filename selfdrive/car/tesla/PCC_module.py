@@ -11,7 +11,7 @@ ACCEL_MAX = 2.5  #0.6m/s2 * 36 = ~ 0 -> 50mph in 6 seconds
 ACCEL_MIN = TESLA_MIN_ACCEL
 
 
-_DT = 0.05  # 20Hz in our case, since we don't want to process more than once the same radarState message
+_DT = 0.01  # 100Hz
 _DT_MPC = _DT
 
 # TODO: these should end up in values.py at some point, probably variable by trim
@@ -19,9 +19,9 @@ _DT_MPC = _DT
 MAX_RADAR_DISTANCE = 120.0  # max distance to take in consideration radar reading
 
 MAX_PEDAL_VALUE_AVG = 60
-MAX_PEDAL_REGEN_VALUE = -7.
 MIN_PEDAL_REGEN_VALUE = -7.
-MAX_BRAKE_VALUE = 0.8 #ibooster fully pressed BBTODO determine the exact value we need
+MAX_BRAKE_VALUE = 1. #ibooster fully pressed BBTODO determine the exact value we need
+
 PEDAL_HYST_GAP = (
     1.0  # don't change pedal command for small oscilalitons within this value
 )
@@ -40,6 +40,7 @@ MAX_PCC_V_KPH = 270.0
 
 # Pull the cruise stalk twice in this many ms for a 'double pull'
 STALK_DOUBLE_PULL_MS = 750
+
 
 class PCCState:
     # Possible state of the PCC system, following the DI_cruiseState naming scheme.
@@ -281,7 +282,7 @@ class PCCController:
         ##############################################################
         # This mode uses the longitudinal MPC built in OP
         #
-        # we use the values from actuators.accel
+        # we use the values from a_target
         ##############################################################
         ZERO_ACCEL = self.PedalForZeroTorque
         REGEN_DECEL = -0.8 #BB needs to be calculated based on regen available, which is higher at lower speeds...
@@ -292,6 +293,10 @@ class PCCController:
         MAX_PEDAL_BP = PEDAL_BP
         MAX_PEDAL_V = PEDAL_V[PEDAL_PROFILE]
         MAX_PEDAL_VALUE = interp(CS.out.vEgo, MAX_PEDAL_BP, MAX_PEDAL_V)
+
+        MAX_PEDAL_REGEN_VALUE = -7.
+        if not CS.has_ibooster_ecu:
+            MAX_PEDAL_REGEN_VALUE = -20.
         
         ACCEL_LOOKUP_BP = [REGEN_DECEL, 0., ACCEL_MAX]
         ACCEL_LOOKUP_V = [MAX_PEDAL_REGEN_VALUE, ZERO_ACCEL, MAX_PEDAL_VALUE]
@@ -301,18 +306,18 @@ class PCCController:
         BRAKE_LOOKUP_V = [MAX_BRAKE_VALUE, 0.]
 
         enable_pedal = 1.0 if self.enable_pedal_cruise else 0.0
-        tesla_pedal = int(round(interp(actuators.accel, ACCEL_LOOKUP_BP, ACCEL_LOOKUP_V)))
+        tesla_pedal = int(round(interp(a_target, ACCEL_LOOKUP_BP, ACCEL_LOOKUP_V)))
         #only do pedal hysteresis when very close to speed set
         if abs(CS.out.vEgo * CV.MS_TO_KPH - self.pedal_speed_kph) < 0.5:
             tesla_pedal = self.pedal_hysteresis(tesla_pedal, enable_pedal)
-        if CS.out.vEgo < 0.1 and actuators.accel < 0.1:
+        if CS.out.vEgo < 0.1 and a_target < 0.1:
             #hold brake pressed at when standstill
             #BBTODO: show HOLD indicator in IC with integration
             # for about 14psi to hold a car even on slopes 
             # we need roughty 6.5 mm / 15 = 
             tesla_brake = 0.43
         else:
-            tesla_brake = interp(actuators.accel, BRAKE_LOOKUP_BP, BRAKE_LOOKUP_V)
+            tesla_brake = interp(a_target, BRAKE_LOOKUP_BP, BRAKE_LOOKUP_V)
         # if gas pedal pressed, brake should be zero (we alwasys have pedal with ibooster)
         if CS.pedal_interceptor_value > max(5.,ZERO_ACCEL):
             tesla_brake = 0
