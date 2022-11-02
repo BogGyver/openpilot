@@ -303,9 +303,9 @@ class PCCController:
         MAX_PEDAL_REGEN_VALUE = -7.
         if not CS.has_ibooster_ecu:
             MAX_PEDAL_REGEN_VALUE = -20.
-        if PEDAL_PROFILE == 0: #Tesla Model S 60kW
-            MAX_PEDAL_REGEN_VALUE = 0.
-            MIN_PEDAL_REGEN_VALUE = 0.
+        #if PEDAL_PROFILE == 0: #Tesla Model S 60kW
+        #    MAX_PEDAL_REGEN_VALUE = 0.
+        #    MIN_PEDAL_REGEN_VALUE = 0.
         
         ACCEL_LOOKUP_BP = [REGEN_DECEL, 0., ACCEL_MAX]
         ACCEL_LOOKUP_V = [MAX_PEDAL_REGEN_VALUE, ZERO_ACCEL, MAX_PEDAL_VALUE]
