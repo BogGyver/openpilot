@@ -289,8 +289,11 @@ class PCCController:
         ##############################################################
         ZERO_ACCEL = self.PedalForZeroTorque
         REGEN_DECEL = -0.8 #BB needs to be calculated based on regen available, which is higher at lower speeds...
-        #if CS.out.vEgo < 5 * CV.MPH_TO_MS and PEDAL_PROFILE > 0:
-        #    ZERO_ACCEL = 0.
+        if CS.out.vEgo < 5 * CV.MPH_TO_MS and PEDAL_PROFILE > 0:
+            ZERO_ACCEL = 0.
+
+        if CS.out.vEgo < 5 * CV.MPH_TO_MS and PEDAL_PROFILE == 0 and a_target > 0.01:
+            ZERO_ACCEL = 0.
                 
         MAX_PEDAL_BP = PEDAL_BP
         MAX_PEDAL_V = PEDAL_V[PEDAL_PROFILE]
