@@ -169,14 +169,12 @@ class LONGController:
                 self.v_target = self.longPlan.speeds[0]
                 if long_plan and long_plan.longitudinalPlan:
                     self.v_target = long_plan.longitudinalPlan.speeds[0]
-                    # 0 or -1 to try vs actual vs vTarget
-                    #if (not self.has_ibooster_ecu) and min(long_plan.longitudinalPlan.speeds[0], long_plan.longitudinalPlan.speeds[-1]) < CS.out.vEgo:
-                    #  #regen only use the smaller of the two when slowing down
-                    #  self.v_target = min(long_plan.longitudinalPlan.speeds[0], long_plan.longitudinalPlan.speeds[-1])
+                    self.a_target = long_plan.longitudinalPlan.accels[0]
+    
                 if self.v_target is None:
                     self.v_target = CS.out.vEgo
                 target_accel = clip(my_accel, TESLA_MIN_ACCEL,TESLA_MAX_ACCEL)
-                target_speed = max(self.v_target, 0)
+                target_speed = max(self.v_target, 0)                    
 
                 self.apply_brake = 0.0
                 apply_accel, self.apply_brake, accel_needed, accel_idx = self.PCC.update_pdl(
@@ -186,6 +184,7 @@ class LONGController:
                     actuators,
                     target_speed,
                     target_accel,
+                    self.a_target,
                     pcm_override,
                     self.speed_limit_ms,
                     self.set_speed_limit_active,

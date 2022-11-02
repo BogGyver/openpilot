@@ -188,15 +188,6 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
       "",
       2.0,1.0,4.0,1.0,TINKLA_FLOAT
     },
-    {"TinklaPedalOffset",
-      "Pedal Offset",
-      "Some cars might have an offset in the pedal. (-10 to 10 in 0.5 increment)",
-      "../assets/offroad/icon_speed_limit.png",
-      "Pedal Offset:",
-      "Enter offset #.",
-      "",
-      0.0,-10.0,10.0,0.5,TINKLA_FLOAT
-    },
     {"TinklaAutoResumeACC",
     "AutoResume ACC",
     "Enables the use of the AutoResume mode ACC instead full disengagement. Works with both CC.",
