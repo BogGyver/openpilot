@@ -104,6 +104,7 @@ class CarState(CarStateBase):
     self.adaptive_cruise = 0
     self.apFollowTimeInS = load_float_param("TinklaFollowDistance",1.45)
     self.pcc_available = False
+    self.pcc_enabled = False
     self.torqueLevel = 0.0
     self.cruise_state = None
     self.enableHumanLongControl = load_bool_param("TinklaForceTeslaPreAP", False)
@@ -205,11 +206,12 @@ class CarState(CarStateBase):
     #BBTODO: in latest versions of code Tesla does not populate this field
     ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
     self.realPedalValue = ret.gas
-    ret.gasPressed = (ret.gas > 0) 
+    ret.gasPressed = (ret.gas > 1.) 
     if self.enableHAO:
       self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
       ret.gas = 0
-      ret.gasPressed = False
+      if not self.pcc_enabled:
+        ret.gasPressed = False
 
     # Brake pedal
     ret.brake = 0
@@ -467,7 +469,8 @@ class CarState(CarStateBase):
         else:
           ret.cruiseState.standstill = ret.standstill
         ret.brakePressed = False
-        ret.gasPressed = False
+        if not self.pcc_enabled:
+          ret.gasPressed = False
         self.DAS_216_driverOverriding = False
         ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
 

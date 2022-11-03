@@ -18,10 +18,10 @@ ACCEL_LOOKUP_BP =     [ 0.0,  7.5, 15.0, 25.0, 40.0]
 AP_ACCEL_MAX_V =     [ 2.5,   1.5,  1.2,  0.8,  0.6]
 AP_ACCEL_MIN_V =     [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
 
-PREAP_ACCEL_MAX_V =   [ 2.5,  1.5,  1.2,  0.8,  0.6]
-PREAP_ACCEL_MIN_V =   [ -1., -1., -1., -1., -1.] #(regen only... for iBooster the values go to MAX
+PREAP_ACCEL_MAX_V =   [ 2.0,  1.0,  0.8,  0.5,  0.3]
+PREAP_ACCEL_MIN_V =   [ -1.5, -1.5, -1.5, -1.5, -1.5] #(regen only... for iBooster the values go to MAX
 
-PREAP_IBST_ACCEL_MAX_V =   [  2.5,   1.5,  1.2,  0.8,  0.6]
+PREAP_IBST_ACCEL_MAX_V =   [ 2.0,  1.0,  0.8,  0.5,  0.3]
 PREAP_IBST_ACCEL_MIN_V =   [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
 
 #this function is called from longitudinal_planner only for limits
@@ -38,7 +38,7 @@ def get_tesla_accel_limits(CP, current_speed):
     a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MAX_V)
     a_min = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MIN_V)
   if MAD_MAX:
-    a_max = a_max * 1.2
+    a_max = a_max + 0.5
   return a_min, a_max
 
 class CarInterface(CarInterfaceBase):

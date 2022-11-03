@@ -138,6 +138,7 @@ class LONGController:
                 else 0
             )
             CS.pcc_available = self.PCC.pcc_available
+            CS.pcc_enabled = self.PCC.enable_pedal_cruise
            
             if long_plan and long_plan.longitudinalPlan:
                 self.longPlan = long_plan.longitudinalPlan
@@ -163,7 +164,7 @@ class LONGController:
                          bus=CAN_CHASSIS[self.CP.carFingerprint],
                          counter=stlk_counter))
             apply_accel = 0.0
-            if self.PCC.pcc_available and frame % 1 == 0:  # pedal processed at 100Hz, we get speed at 50Hz from ESP_B
+            if self.PCC.pcc_available and frame %5 == 0:  # pedal processed at 20Hz, we get speed at 50Hz from ESP_B
                 #following = False
                 #TODO: see what works best for these
                 self.v_target = self.longPlan.speeds[0]

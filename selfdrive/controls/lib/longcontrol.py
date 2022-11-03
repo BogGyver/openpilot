@@ -52,6 +52,7 @@ class LongControl():
 
   def reset(self, v_pid):
     """Reset PID controller and change setpoint"""
+    self.pid.reset()
     self.v_pid = v_pid
 
   def update(self, active, CS, CP, long_plan, accel_limits):

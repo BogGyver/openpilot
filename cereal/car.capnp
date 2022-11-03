@@ -116,6 +116,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     brakeWipeNotAvailable @116;
     ccEnabled @117;
     ccDisabled @118;
+    promptMaxRegen @119;
 
     radarCanErrorDEPRECATED @15;
     communityFeatureDisallowedDEPRECATED @62;
