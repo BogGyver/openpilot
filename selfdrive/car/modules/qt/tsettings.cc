@@ -186,7 +186,7 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
       "Pedal Interceptor Profile:",
       "Enter profile #.",
       "",
-      2.0,1.0,4.0,1.0,TINKLA_FLOAT
+      2.0,1.0,5.0,1.0,TINKLA_FLOAT
     },
     {"TinklaAutoResumeACC",
     "AutoResume ACC",
