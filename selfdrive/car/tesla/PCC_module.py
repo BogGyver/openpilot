@@ -308,7 +308,7 @@ class PCCController:
                 
         MAX_PEDAL_BP = PEDAL_BP
         MAX_PEDAL_V = PEDAL_V[PEDAL_PROFILE]
-        MAX_PEDAL_VALUE = interp(CS.out.vEgo, MAX_PEDAL_BP, MAX_PEDAL_V)
+        MAX_PEDAL_VALUE = interp(CS.out.vEgo, MAX_PEDAL_BP, MAX_PEDAL_V) + 7. + self.pedal_min
         
         MIN_PEDAL_REGEN_VALUE = self.pedal_min
         MAX_PEDAL_REGEN_VALUE = self.pedal_min
