@@ -46,7 +46,7 @@ class CarInterface(CarInterfaceBase):
     ret.carName = "tesla"      
     ret.steerControlType = car.CarParams.SteerControlType.angle
 
-    ret.stopAccel = 0.0
+    ret.stopAccel = -2.0
     ret.longitudinalActuatorDelayUpperBound = 0.5 # s
     ret.radarTimeStep = (1.0 / 8) # 8Hz
 
