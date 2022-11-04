@@ -7,6 +7,8 @@ from selfdrive.car.modules.CFG_module import load_bool_param, load_float_param
 from panda import Panda
 from selfdrive.car.tesla.tunes import LongTunes, set_long_tune, ACCEL_LOOKUP_BP, ACCEL_MAX_LOOKUP_V, ACCEL_MIN_LOOKUP_V, ACCEL_REG_LOOKUP_V
 from common.numpy_fast import interp
+from selfdrive.config import Conversions as CV
+
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
