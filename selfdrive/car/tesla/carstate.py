@@ -202,17 +202,8 @@ class CarState(CarStateBase):
       unit=WHEEL_RADIUS,
     )
 
-    # Gas pedal
-    #BBTODO: in latest versions of code Tesla does not populate this field
-    ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
-    self.realPedalValue = ret.gas
-    ret.gasPressed = (ret.gas > 1.) 
-    if self.enableHAO:
-      self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
-      ret.gas = 0
-      if not self.pcc_enabled:
-        ret.gasPressed = False
-
+    
+      
     # Brake pedal
     ret.brake = 0
     if self.has_ibooster_ecu:
@@ -414,6 +405,13 @@ class CarState(CarStateBase):
     if sw_a is not None:
       self.msg_stw_actn_req = sw_a
       
+    # Gas pedal
+    #BBTODO: in latest versions of code Tesla does not populate this field
+    ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
+    self.realPedalValue = ret.gas
+    if self.enableHAO:
+      self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
+      ret.gas = 0
     #PREAP overrides at the last moment
     if self.CP.carFingerprint in [CAR.PREAP_MODELS]:
       #Message needed for GTW_ESP1
@@ -435,6 +433,11 @@ class CarState(CarStateBase):
           self.pedal_interceptor_value = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"]
           self.pedal_interceptor_value2 = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
           self.pedal_idx = cp_cam.vl["GAS_SENSOR"]["IDX"]
+        ret.gas = self.pedal_interceptor_value/100.
+        ret.gasPressed = (ret.gas > 0.05) 
+        if self.enableHAO:
+          self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
+          ret.gas = 0
 
       #preAP stuff
       if self.enableHumanLongControl:
@@ -457,7 +460,6 @@ class CarState(CarStateBase):
         )) and CruiseState.is_enabled_or_standby(self.cruise_state) 
         if self.cruise_buttons == CruiseButtons.MAIN:
           self.cruiseEnabled = not self.enableJustCC
-          ret.gasPressed = True #will reset the PID for pedal
         if self.cruise_buttons == CruiseButtons.CANCEL:
           self.cruiseEnabled = False
           
@@ -469,8 +471,6 @@ class CarState(CarStateBase):
         else:
           ret.cruiseState.standstill = ret.standstill
         ret.brakePressed = False
-        if not self.pcc_enabled:
-          ret.gasPressed = False
         self.DAS_216_driverOverriding = False
         ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
 

@@ -130,7 +130,7 @@ class CarInterfaceBase(ABC):
     self.CS.realSteeringPressed = ret.steeringPressed
     if self.CS.enableHAO:
       ret.gas = 0
-      ret.gasPressed = False
+      #ret.gasPressed = False
     self.CS.human_control = self.CS.HSO.update_stat(self.CS, c.enabled, c.actuators, self.frame)
     #Trick the alca if autoStartAlcaDelay is set
     if (self.CS.enableALC) and (self.CS.alca_need_engagement):
@@ -211,8 +211,7 @@ class CarInterfaceBase(ABC):
       events.add(EventName.steerUnavailable)
 
     # Disable on rising edge of gas or brake. Also disable on brake when speed > 0.
-    if (cs_out.gasPressed and not self.CS.out.gasPressed) or \
-       (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)):
+    if (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)):
       events.add(EventName.pedalPressed)
 
     # we engage when pcm is active (rising edge)

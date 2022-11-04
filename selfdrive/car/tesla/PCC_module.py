@@ -293,7 +293,10 @@ class PCCController:
             self.speed_limit_kph = 0.0
         self.pedal_idx = (self.pedal_idx + 1) % 16
 
-        if not self.pcc_available or not enabled:
+        if not self.pcc_available or not enabled or not self.enable_pedal_cruise:
+            return 0.0, 0.0, 0, idx
+
+        if CS.out.gasPressed:
             return 0.0, 0.0, 0, idx
 
         ##############################################################
@@ -375,6 +378,8 @@ class PCCController:
         self.torqueLevel_last = CS.torqueLevel
         self.prev_tesla_pedal = tesla_pedal * enable_pedal
         self.prev_v_ego = CS.out.vEgo
+        #if gas pressed don't send anyting
+        
         return self.prev_tesla_pedal, self.prev_tesla_brake, enable_pedal, idx
 
     def pedal_hysteresis(self, pedal, enabled):

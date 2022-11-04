@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from enum import Enum
-
+from selfdrive.car.tesla.values import TESLA_MIN_ACCEL
 
 class LongTunes(Enum):
   PEDAL = 0
@@ -19,6 +19,17 @@ PEDAL_V = [ [40., 45., 55., 65., 75., 85.],
             [20., 25., 30., 35., 40., 45.],
             [85., 85., 85., 85., 85., 85.],
 ]
+#MPH                    0     16    33    55    90
+ACCEL_LOOKUP_BP =     [ 0.0,  7.5, 15.0, 25.0, 40.0]
+
+AP_ACCEL_MAX_V =     [ 2.0,  1.0,  0.8,  0.5,  0.3]
+AP_ACCEL_MIN_V =     [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
+
+PREAP_ACCEL_MAX_V =   [ 2.0,  1.0,  0.8,  0.5,  0.3]
+PREAP_ACCEL_MIN_V =   [ -1.5, -1.5, -1.5, -1.5, -1.5] #(regen only... for iBooster the values go to MAX
+
+PREAP_IBST_ACCEL_MAX_V =   [ 2.0,  1.0,  0.8,  0.5,  0.3]
+PREAP_IBST_ACCEL_MIN_V =   [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
 
 ###### LONG ######
 def set_long_tune(tune, name):

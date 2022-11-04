@@ -95,6 +95,7 @@ class Planner:
       self.a_desired = a_ego
       # Smoothly changing between accel trajectory is only relevant when OP is driving
       prev_accel_constraint = False
+      return
 
     # Prevent divergence, smooth in current v_ego
     self.v_desired_filter.x = max(0.0, self.v_desired_filter.update(v_ego))

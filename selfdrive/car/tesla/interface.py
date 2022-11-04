@@ -1,36 +1,26 @@
 #!/usr/bin/env python3
 from cereal import car
-from selfdrive.car.tesla.values import CAR, CruiseButtons, CAN_AP_POWERTRAIN, TESLA_MIN_ACCEL
+from selfdrive.car.tesla.values import CAR, CruiseButtons, CAN_AP_POWERTRAIN
 from selfdrive.car import STD_CARGO_KG, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, get_safety_config
 from selfdrive.car.interfaces import CarInterfaceBase
 from selfdrive.car.modules.CFG_module import load_bool_param
 from panda import Panda
-from selfdrive.car.tesla.tunes import LongTunes, set_long_tune
+from selfdrive.car.tesla.tunes import LongTunes, set_long_tune, ACCEL_LOOKUP_BP, AP_ACCEL_MAX_V, AP_ACCEL_MIN_V,PREAP_ACCEL_MAX_V, PREAP_ACCEL_MIN_V, PREAP_IBST_ACCEL_MAX_V, PREAP_IBST_ACCEL_MIN_V
 from common.numpy_fast import interp
 
 ButtonType = car.CarState.ButtonEvent.Type
 HAS_IBOOSTER_ECU = load_bool_param("TinklaHasIBooster",False)
 MAD_MAX = load_bool_param("TinklaSpeedMadMax",False)
 
-#MPH                    0     16    33    55    90
-ACCEL_LOOKUP_BP =     [ 0.0,  7.5, 15.0, 25.0, 40.0]
 
-AP_ACCEL_MAX_V =     [ 2.5,   1.5,  1.2,  0.8,  0.6]
-AP_ACCEL_MIN_V =     [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
-
-PREAP_ACCEL_MAX_V =   [ 2.0,  1.0,  0.8,  0.5,  0.3]
-PREAP_ACCEL_MIN_V =   [ -1.5, -1.5, -1.5, -1.5, -1.5] #(regen only... for iBooster the values go to MAX
-
-PREAP_IBST_ACCEL_MAX_V =   [ 2.0,  1.0,  0.8,  0.5,  0.3]
-PREAP_IBST_ACCEL_MIN_V =   [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
 
 #this function is called from longitudinal_planner only for limits
 def get_tesla_accel_limits(CP, current_speed):
   a_min = 0.
   a_max = 0.
   if not CP.carFingerprint == CAR.PREAP_MODELS:
-    a_min = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MIN_V)
     a_max = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MAX_V)
+    a_min = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MIN_V)
   elif HAS_IBOOSTER_ECU:
     a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_ACCEL_MAX_V)
     a_min = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_ACCEL_MIN_V)

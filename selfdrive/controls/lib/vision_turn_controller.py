@@ -210,7 +210,7 @@ class VisionTurnController():
 
   def _state_transition(self):
     # In any case, if system is disabled or the feature is disabeld or gas is pressed, disable.
-    if not self._op_enabled or not self._is_enabled or self._gas_pressed:
+    if not self._op_enabled or not self._is_enabled: #or self._gas_pressed:
       self.state = VisionTurnControllerState.disabled
       return
 

@@ -92,13 +92,14 @@ class LongControl():
 
     # Update state machine
     output_accel = self.last_output_accel
-    self.long_control_state = long_control_state_trans(CP, active, self.long_control_state, CS.vEgo,
+    self.long_control_state = long_control_state_trans(CP, active and not CS.gasPressed, self.long_control_state, CS.vEgo,
                                                        v_target_future, CS.brakePressed,
                                                        CS.cruiseState.standstill)
 
     if self.long_control_state == LongCtrlState.off or CS.gasPressed:
       self.reset(CS.vEgo)
       output_accel = 0.
+      self.long_control_state = LongCtrlState.off
 
     # tracking objects and driving
     elif self.long_control_state == LongCtrlState.pid:
