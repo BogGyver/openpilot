@@ -104,6 +104,7 @@ class CarState(CarStateBase):
     self.adaptive_cruise = 0
     self.apFollowTimeInS = load_float_param("TinklaFollowDistance",1.45)
     self.pcc_available = False
+    self.adaptive_cruise_enabled = False
     self.pcc_enabled = False
     self.torqueLevel = 0.0
     self.cruise_state = None
@@ -135,6 +136,7 @@ class CarState(CarStateBase):
     self.prev_pedal_interceptor_state = self.pedal_interceptor_state = 0
     self.pedal_interceptor_value = 0.0
     self.pedal_interceptor_value2 = 0.0
+    self.pedal_interceptor_min = 10.
     self.ibstBrakeApplied = False
     self.teslaModel = ""
     if CP.carFingerprint in [CAR.AP1_MODELX]:
@@ -409,6 +411,7 @@ class CarState(CarStateBase):
     #BBTODO: in latest versions of code Tesla does not populate this field
     ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
     self.realPedalValue = ret.gas
+    ret.gasPressed = (ret.gas > 0)
     if self.enableHAO:
       self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
       ret.gas = 0
@@ -434,11 +437,12 @@ class CarState(CarStateBase):
           self.pedal_interceptor_value2 = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
           self.pedal_idx = cp_cam.vl["GAS_SENSOR"]["IDX"]
         ret.gas = self.pedal_interceptor_value/100.
-        ret.gasPressed = (ret.gas > 0.05) 
-        if self.enableHAO:
-          self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
+        ret.gasPressed = (self.pedal_interceptor_value > (self.pedal_interceptor_min + 3)) 
+        if self.enableHAO and self.pcc_enabled:
+          self.DAS_216_driverOverriding = 1 if ret.gasPressed else 0
           ret.gas = 0
-
+      if not self.pcc_enabled:
+        self.pccEvent = None
       #preAP stuff
       if self.enableHumanLongControl:
         self.enablePedal = (
@@ -471,7 +475,8 @@ class CarState(CarStateBase):
         else:
           ret.cruiseState.standstill = ret.standstill
         ret.brakePressed = False
-        self.DAS_216_driverOverriding = False
+        if not self.pcc_enabled:
+          self.DAS_216_driverOverriding = False
         ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
 
     return ret
@@ -553,9 +558,9 @@ class CarState(CarStateBase):
 
     checks = [
       # sig_address, frequency
-      ("DI_torque1", 100),
-      ("DI_torque2", 100),
-      ("STW_ANGLHP_STAT", 100),
+      ("DI_torque1", 20),
+      ("DI_torque2", 20),
+      ("STW_ANGLHP_STAT", 20),
       ("DI_state", 10),
       ("STW_ACTN_RQ", 10),
       ("GTW_carState", 10),     

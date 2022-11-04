@@ -37,7 +37,7 @@ _TURNING_ACC_BP = [1.5, 2.3, 3.]  # absolute value of current lat acc
 
 _LEAVING_ACC = 0.5  # Confortble acceleration to regain speed while leaving a turn.
 
-_MIN_LANE_PROB = 0.6  # Minimum lanes probability to allow curvature prediction based on lanes.
+_MIN_LANE_PROB = 0.4  # Minimum lanes probability to allow curvature prediction based on lanes.
 
 _DEBUG = False
 
@@ -210,7 +210,7 @@ class VisionTurnController():
 
   def _state_transition(self):
     # In any case, if system is disabled or the feature is disabeld or gas is pressed, disable.
-    if not self._op_enabled or not self._is_enabled: #or self._gas_pressed:
+    if not self._op_enabled or not self._is_enabled or self._gas_pressed:
       self.state = VisionTurnControllerState.disabled
       return
 

@@ -65,7 +65,7 @@ class Planner:
     self.leadsData = None
     self.path_x = np.arange(192)
     self.enable_turn_slowdown = load_bool_param("TinklaTurnSlowdown", True)
-    self.turn_slowdown_factor = load_float_param("TinklaTurnSlowdownFactor",0.95)
+    self.turn_slowdown_factor = 0.8 * load_float_param("TinklaTurnSlowdownFactor",1.0)
     self.cruise_source = 'cruise'
     self.vision_turn_controller = VisionTurnController(CP)
 

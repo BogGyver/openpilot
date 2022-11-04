@@ -3,32 +3,28 @@ from cereal import car
 from selfdrive.car.tesla.values import CAR, CruiseButtons, CAN_AP_POWERTRAIN
 from selfdrive.car import STD_CARGO_KG, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, get_safety_config
 from selfdrive.car.interfaces import CarInterfaceBase
-from selfdrive.car.modules.CFG_module import load_bool_param
+from selfdrive.car.modules.CFG_module import load_bool_param, load_float_param
 from panda import Panda
-from selfdrive.car.tesla.tunes import LongTunes, set_long_tune, ACCEL_LOOKUP_BP, AP_ACCEL_MAX_V, AP_ACCEL_MIN_V,PREAP_ACCEL_MAX_V, PREAP_ACCEL_MIN_V, PREAP_IBST_ACCEL_MAX_V, PREAP_IBST_ACCEL_MIN_V
+from selfdrive.car.tesla.tunes import LongTunes, set_long_tune, ACCEL_LOOKUP_BP, ACCEL_MAX_LOOKUP_V, ACCEL_MIN_LOOKUP_V, ACCEL_REG_LOOKUP_V
 from common.numpy_fast import interp
 
 ButtonType = car.CarState.ButtonEvent.Type
+EventName = car.CarEvent.EventName
 HAS_IBOOSTER_ECU = load_bool_param("TinklaHasIBooster",False)
-MAD_MAX = load_bool_param("TinklaSpeedMadMax",False)
+ACCEL_PROFILE = int(load_float_param("TinklaAccelProfile", 2.0)-1)
 
-
+UNSAFE_DISABLE_DISENGAGE_ON_GAS = 1
+UNSAFE_DISABLE_STOCK_AEB = 2
+UNSAFE_RAISE_LONGITUDINAL_LIMITS_TO_ISO_MAX = 8
 
 #this function is called from longitudinal_planner only for limits
 def get_tesla_accel_limits(CP, current_speed):
   a_min = 0.
-  a_max = 0.
-  if not CP.carFingerprint == CAR.PREAP_MODELS:
-    a_max = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MAX_V)
-    a_min = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MIN_V)
-  elif HAS_IBOOSTER_ECU:
-    a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_ACCEL_MAX_V)
-    a_min = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_IBST_ACCEL_MIN_V)
+  a_max = interp(current_speed,ACCEL_LOOKUP_BP,ACCEL_MAX_LOOKUP_V[ACCEL_PROFILE])
+  if CP.carFingerprint == CAR.PREAP_MODELS and not HAS_IBOOSTER_ECU:
+    a_min = interp(current_speed,ACCEL_LOOKUP_BP,ACCEL_REG_LOOKUP_V)
   else:
-    a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MAX_V)
-    a_min = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MIN_V)
-  if MAD_MAX:
-    a_max = a_max + 0.5
+    a_min = interp(current_speed,ACCEL_LOOKUP_BP,ACCEL_MIN_LOOKUP_V)
   return a_min, a_max
 
 class CarInterface(CarInterfaceBase):
@@ -147,6 +143,7 @@ class CarInterface(CarInterfaceBase):
     else:
       ret.stoppingDecelRate = 0.6 #since we don't use the PID, this means a jerk in acceleration by x m/s^3
       ret.stoppingControl = True
+    ret.unsafeMode = UNSAFE_DISABLE_DISENGAGE_ON_GAS | UNSAFE_RAISE_LONGITUDINAL_LIMITS_TO_ISO_MAX
     return ret
 
   def update(self, c, can_strings):
@@ -189,11 +186,16 @@ class CarInterface(CarInterfaceBase):
     events = self.create_common_events(ret)
     if self.CS.autopilot_enabled:
       events.add(car.CarEvent.EventName.invalidLkasSetting)
+    if ret.gasPressed and self.CS.adaptive_cruise_enabled:
+      events.add(EventName.gasPressed)
 
     if self.CS.longCtrlEvent:
       events.add(self.CS.longCtrlEvent)
       self.CS.longCtrlEvent = None
-    
+
+    if self.CS.pccEvent:
+      events.add(self.CS.pccEvent)
+
     ret.events = events.to_msg()
     
     self.CS.out = ret.as_reader()

@@ -11,9 +11,9 @@ ACCEL_MAX = 2.5  #0.6m/s2 * 36 = ~ 0 -> 50mph in 6 seconds
 ACCEL_MIN = TESLA_MIN_ACCEL
 MIN_SAFE_DIST_M = 3.
 
+ENABLE_REGEN_MODS = False
 
-_DT = 0.05  # 20Hz
-_DT_MPC = _DT
+_DT = 0.02  # 50Hz
 
 # TODO: these should end up in values.py at some point, probably variable by trim
 # Accel limits
@@ -40,7 +40,7 @@ STALK_DOUBLE_PULL_MS = 750
 #do not show max regen error 2 seconds after engagement
 TIMEOUT_REGEN_ERROR = 2000
 
-PEDAL_PROFILE = int(load_float_param("TinklaPedalProfile",2.0)-1)
+PEDAL_PROFILE = int(load_float_param("TinklaPedalProfile",5.0)-1)
 
 
 class PCCState:
@@ -90,7 +90,7 @@ class PCCController:
         self.lastTorqueForPedalForZeroTorque = TORQUE_LEVEL_DECEL
         self.lastApidForPedalForZeroTorque = 0.
         self.prev_a_pid = 0.
-        self.pedal_min = 10.
+        self.last_max_regen_time_ms = -1000.
 
         self.v_pid = 0.0
         self.a_pid = 0.0
@@ -279,8 +279,8 @@ class PCCController:
             # print ("Torque level at detection %s" % (CS.torqueLevel))
             # print ("Speed level at detection %s" % (CS.out.vEgo * CV.MS_TO_MPH))
         self.prev_a_pid = a_pid
-        if CS.pedal_interceptor_value < self.pedal_min:
-            self.pedal_min = CS.pedal_interceptor_value
+        if CS.pedal_interceptor_value < CS.pedal_interceptor_min:
+            CS.pedal_interceptor_min = CS.pedal_interceptor_value
 
         if CS.out.followDistanceS != 255:
             self.t_follow = 0.7 + float(CS.out.followDistanceS) * 0.2
@@ -307,16 +307,16 @@ class PCCController:
         ZERO_ACCEL = self.PedalForZeroTorque
         REGEN_DECEL = -0.8 #BB needs to be calculated based on regen available, which is higher at lower speeds...
         if CS.out.vEgo < 5 * CV.MPH_TO_MS:
-            ZERO_ACCEL = self.pedal_min + 7
+            ZERO_ACCEL = CS.pedal_interceptor_min + 7
                 
         MAX_PEDAL_BP = PEDAL_BP
         MAX_PEDAL_V = PEDAL_V[PEDAL_PROFILE]
-        MAX_PEDAL_VALUE = interp(CS.out.vEgo, MAX_PEDAL_BP, MAX_PEDAL_V) + 7. + self.pedal_min
+        MAX_PEDAL_VALUE = interp(CS.out.vEgo, MAX_PEDAL_BP, MAX_PEDAL_V) + 7. + CS.pedal_interceptor_min
         
-        MIN_PEDAL_REGEN_VALUE = self.pedal_min
-        MAX_PEDAL_REGEN_VALUE = self.pedal_min
+        MIN_PEDAL_REGEN_VALUE = CS.pedal_interceptor_min
+        MAX_PEDAL_REGEN_VALUE = CS.pedal_interceptor_min
         #if not CS.has_ibooster_ecu:
-        #    MAX_PEDAL_REGEN_VALUE = max(self.pedal_min -5., -20.)
+        #    MAX_PEDAL_REGEN_VALUE = max(CS.pedal_interceptor_min -5., -20.)
         A_PID_ZERO_REGEN = self.lastApidForPedalForZeroTorque
         
         ACCEL_LOOKUP_BP = [REGEN_DECEL, A_PID_ZERO_REGEN, ACCEL_MAX]
@@ -326,9 +326,8 @@ class PCCController:
         PEDAL_MAX_DOWN = MAX_PEDAL_VALUE * _DT / 0.4
         PEDAL_MAX_UP = (MAX_PEDAL_VALUE - self.prev_tesla_pedal) * _DT / 2.
 
-        #we can't use above until we decide how to handle regen
-        BRAKE_LOOKUP_BP = [ACCEL_MIN, A_PID_ZERO_REGEN]
-        BRAKE_LOOKUP_V = [MAX_BRAKE_VALUE, 0.]
+        BRAKE_LOOKUP_BP = [ACCEL_MIN, -3.5, -0.5, A_PID_ZERO_REGEN]
+        BRAKE_LOOKUP_V  = [   1.0   ,  0.8,  0.1,          0.     ]
 
         enable_pedal = 1.0 if self.enable_pedal_cruise else 0.0
         tesla_pedal = int(round(interp(a_pid, ACCEL_LOOKUP_BP, ACCEL_LOOKUP_V)))
@@ -339,12 +338,12 @@ class PCCController:
             EMERG_REGEN_MULT_BP = [1., 3.]
             EMERG_REGEN_MULT_V  = [tesla_pedal,MIN_PEDAL_REGEN_VALUE]
             
-            if brake_mult > 1:
+            if brake_mult > 1 and CS.out.vEgo > v_target:
                 tesla_pedal = interp(brake_mult,EMERG_REGEN_MULT_BP,EMERG_REGEN_MULT_V)
                 a_target = a_target * brake_mult
         #max regen with pedal is 1.5 on a good battery
         #so anything below -1.0 should be full regen
-        if a_target < -1.0: 
+        if ENABLE_REGEN_MODS and a_target < -1.0 and CS.out.vEgo > v_target: 
             tesla_pedal = MIN_PEDAL_REGEN_VALUE
 
         #only do pedal hysteresis when very close to speed set
@@ -371,9 +370,11 @@ class PCCController:
             tesla_pedal = min(tesla_pedal,MIN_PEDAL_REGEN_VALUE) 
         #show max regen message if we don't have ibooster
         if ((not CS.has_ibooster_ecu) and tesla_pedal == MIN_PEDAL_REGEN_VALUE and 
-                enable_pedal and CS.longCtrlEvent == None and
+                enable_pedal and
                 (_current_time_millis() - self.stalk_pull_time_ms) > TIMEOUT_REGEN_ERROR):
-            CS.longCtrlEvent = car.CarEvent.EventName.promptMaxRegen
+            CS.pccEvent = car.CarEvent.EventName.promptMaxRegen
+        else:
+            CS.pccEvent = None
         self.prev_tesla_brake = tesla_brake * enable_pedal
         self.torqueLevel_last = CS.torqueLevel
         self.prev_tesla_pedal = tesla_pedal * enable_pedal
