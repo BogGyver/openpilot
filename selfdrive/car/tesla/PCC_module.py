@@ -40,7 +40,7 @@ STALK_DOUBLE_PULL_MS = 750
 #do not show max regen error 2 seconds after engagement
 TIMEOUT_REGEN_ERROR = 2000
 
-PEDAL_PROFILE = 4 #int(load_float_param("TinklaPedalProfile",2.0)-1)
+PEDAL_PROFILE = int(load_float_param("TinklaPedalProfile",2.0)-1)
 
 
 class PCCState:
