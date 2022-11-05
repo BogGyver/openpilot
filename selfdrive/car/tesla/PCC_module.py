@@ -331,17 +331,16 @@ class PCCController:
         
         MIN_PEDAL_REGEN_VALUE = -8.
         MAX_PEDAL_REGEN_VALUE = -8.
-        A_PID_ZERO_REGEN = self.lastApidForPedalForZeroTorque
         
-        ACCEL_LOOKUP_BP = [REGEN_DECEL, A_PID_ZERO_REGEN, ACCEL_MAX]
+        ACCEL_LOOKUP_BP = [REGEN_DECEL, 0, ACCEL_MAX]
         ACCEL_LOOKUP_V = [MAX_PEDAL_REGEN_VALUE, ZERO_ACCEL, MAX_PEDAL_VALUE]
 
         # Cap the pedal to make acceleration smoother with just one pedal profile
         PEDAL_MAX_DOWN = MAX_PEDAL_VALUE * _DT / 0.4
         PEDAL_MAX_UP = (MAX_PEDAL_VALUE - self.prev_tesla_pedal) * _DT / 2.
 
-        BRAKE_LOOKUP_BP = [ACCEL_MIN, -3.5, -0.5, A_PID_ZERO_REGEN]
-        BRAKE_LOOKUP_V  = [   1.0   ,  0.8,  0.1,          0.     ]
+        BRAKE_LOOKUP_BP = [ACCEL_MIN, -3.5, -0.5, 0.]
+        BRAKE_LOOKUP_V  = [   1.0   ,  0.8,  0.1, 0.]
 
         enable_pedal = 1.0 if self.enable_pedal_cruise else 0.0
         tesla_pedal = int(round(interp(a_pid, ACCEL_LOOKUP_BP, ACCEL_LOOKUP_V)))
