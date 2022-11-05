@@ -21,8 +21,8 @@ PEDAL_V = [ [85., 85., 85., 85., 85., 85.],
 ]
 #MPH                    0     16    33    55    90
 ACCEL_LOOKUP_BP =     [ 0.0,  7.5, 15.0, 25.0, 40.0]
-ACCEL_MAX_LOOKUP_V  = [[ 2.0,  1.0,  0.6,  0.5,  0.45],
-                       [ 2.2,  1.4,  1.0,  0.7,  0.5],
+ACCEL_MAX_LOOKUP_V  = [[ 2.0,  1.2,  0.7,  0.6,  0.5],
+                       [ 2.2,  1.4,  1.0,  0.8,  0.6],
                        [ 2.5,  1.9,  1.5,  1.2,  1.0],
 ]
 ACCEL_MIN_LOOKUP_V =  [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
