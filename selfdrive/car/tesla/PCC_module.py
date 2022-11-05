@@ -13,7 +13,7 @@ MIN_SAFE_DIST_M = 3.
 
 ENABLE_REGEN_MODS = False
 
-_DT = 0.02  # 50Hz
+_DT = 0.01  # 100Hz
 
 # TODO: these should end up in values.py at some point, probably variable by trim
 # Accel limits

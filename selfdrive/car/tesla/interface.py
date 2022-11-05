@@ -9,7 +9,6 @@ from selfdrive.car.tesla.tunes import LongTunes, set_long_tune, ACCEL_LOOKUP_BP,
 from common.numpy_fast import interp
 from selfdrive.config import Conversions as CV
 
-
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
 HAS_IBOOSTER_ECU = load_bool_param("TinklaHasIBooster",False)
@@ -48,7 +47,6 @@ class CarInterface(CarInterfaceBase):
     ret.carName = "tesla"      
     ret.steerControlType = car.CarParams.SteerControlType.angle
 
-    ret.stopAccel = -2.0
     ret.longitudinalActuatorDelayUpperBound = 0.5 # s
     ret.radarTimeStep = (1.0 / 8) # 8Hz
 
@@ -143,7 +141,7 @@ class CarInterface(CarInterfaceBase):
       ret.stoppingDecelRate = 1. 
       ret.stoppingControl = False
       ret.stopAccel = -3.5 
-      ret.vEgoStopping = 7.5 * CV.KPH_TO_MS
+      ret.vEgoStopping = 5 * CV.MPH_TO_MS
     else:
       ret.stoppingDecelRate = 0.6 #since we don't use the PID, this means a jerk in acceleration by x m/s^3
       ret.stoppingControl = True

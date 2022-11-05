@@ -117,7 +117,7 @@ class LongControl():
       output_accel = self.pid.update(self.v_pid, CS.vEgo, speed=CS.vEgo, deadzone=deadzone, feedforward=a_target, freeze_integrator=freeze_integrator)
 
       if prevent_overshoot:
-        output_accel = min(output_accel, 0.0)
+        output_accel = min(output_accel, -0.1)
 
     # Intention is to stop, switch to a different brake control until we stop
     elif self.long_control_state == LongCtrlState.stopping:
