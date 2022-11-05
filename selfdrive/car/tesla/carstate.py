@@ -192,7 +192,8 @@ class CarState(CarStateBase):
     ret = car.CarState.new_message()
 
     # Vehicle speed
-    ret.vEgoRaw = cp.vl["ESP_B"]["ESP_vehicleSpeed"] * CV.KPH_TO_MS
+    #ret.vEgoRaw = cp.vl["ESP_B"]["ESP_vehicleSpeed"] * CV.KPH_TO_MS
+    ret.vEgoRaw = cp.vl["DI_torque2"]["DI_vehicleSpeed"] * CV.MPH_TO_MS
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.standstill = (ret.vEgo < 0.1)
 
@@ -491,6 +492,7 @@ class CarState(CarStateBase):
       ("DI_pedalPos", "DI_torque1", 0),
       ("DI_torqueMotor", "DI_torque1", 0),
       ("DI_brakePedal", "DI_torque2", 0),
+      ("DI_vehicleSpeed","DI_torque2", 0),
       ("StW_AnglHP", "STW_ANGLHP_STAT", 0),
       ("StW_AnglHP_Spd", "STW_ANGLHP_STAT", 0),
       ("DI_cruiseState", "DI_state", 0),
