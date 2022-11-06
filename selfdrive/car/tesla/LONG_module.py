@@ -204,7 +204,7 @@ class LONGController:
                             apply_accel, int(accel_needed), accel_idx, self.pedalcan
                         )
                     )
-                    
+            if self.PCC.pcc_available and frame % 5 == 0:  # ibooster sent at 20Hz
                 if self.has_ibooster_ecu:
                     messages.append(
                         self.tesla_can.create_ibst_command(
