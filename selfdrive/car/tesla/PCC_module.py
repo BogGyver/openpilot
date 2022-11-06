@@ -371,7 +371,10 @@ class PCCController:
         else:
             tesla_brake = interp(a_pid, BRAKE_LOOKUP_BP, BRAKE_LOOKUP_V)
         # if gas pedal pressed, brake should be zero (we alwasys have pedal with ibooster)
-        if _convert_p2_to_p1(CS.pedal_interceptor_value) > (MIN_PEDAL_REGEN_VALUE + 5.):
+        real_pedal = CS.pedal_interceptor_value
+        if CS.pedal_interceptor_min > -1.0:
+            real_pedal = _convert_p2_to_p1(CS.pedal_interceptor_value) 
+        if real_pedal > (MIN_PEDAL_REGEN_VALUE + 5.):
             tesla_brake = 0
         if CS.has_ibooster_ecu and CS.brakeUnavailable:
             CS.longCtrlEvent = car.CarEvent.EventName.iBoosterBrakeNotOk
