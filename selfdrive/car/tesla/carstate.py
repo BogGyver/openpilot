@@ -102,8 +102,10 @@ class CarState(CarStateBase):
     self.speed_control_enabled = 0
     self.cc_state = 1
     self.adaptive_cruise = 0
-    self.apFollowTimeInS = 2.5  # time in seconds to follow
+    self.apFollowTimeInS = load_float_param("TinklaFollowDistance",1.45)
     self.pcc_available = False
+    self.adaptive_cruise_enabled = False
+    self.pcc_enabled = False
     self.torqueLevel = 0.0
     self.cruise_state = None
     self.enableHumanLongControl = load_bool_param("TinklaForceTeslaPreAP", False)
@@ -118,6 +120,10 @@ class CarState(CarStateBase):
     self.realBrakePressed = False
     self.userSpeedLimitOffsetMS = 0
 
+    #accelerations
+    self.esp_long_acceleration = 0.
+    self.esp_lat_acceleration = 0.
+
     #data to spam GTW_ESP1
     self.gtw_esp1 = None
     self.gtw_esp1_id = -1
@@ -130,6 +136,7 @@ class CarState(CarStateBase):
     self.prev_pedal_interceptor_state = self.pedal_interceptor_state = 0
     self.pedal_interceptor_value = 0.0
     self.pedal_interceptor_value2 = 0.0
+    self.pedal_interceptor_min = 10.
     self.ibstBrakeApplied = False
     self.teslaModel = ""
     if CP.carFingerprint in [CAR.AP1_MODELX]:
@@ -186,6 +193,7 @@ class CarState(CarStateBase):
 
     # Vehicle speed
     ret.vEgoRaw = cp.vl["ESP_B"]["ESP_vehicleSpeed"] * CV.KPH_TO_MS
+    #ret.vEgoRaw = cp.vl["DI_torque2"]["DI_vehicleSpeed"] * CV.MPH_TO_MS
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.standstill = (ret.vEgo < 0.1)
 
@@ -197,16 +205,8 @@ class CarState(CarStateBase):
       unit=WHEEL_RADIUS,
     )
 
-    # Gas pedal
-    #BBTODO: in latest versions of code Tesla does not populate this field
-    ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
-    self.realPedalValue = ret.gas
-    ret.gasPressed = (ret.gas > 0) 
-    if self.enableHAO:
-      self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
-      ret.gas = 0
-      ret.gasPressed = False
-
+    
+      
     # Brake pedal
     ret.brake = 0
     if self.has_ibooster_ecu:
@@ -229,6 +229,9 @@ class CarState(CarStateBase):
     ret.steerError = steer_status == "EAC_FAULT"
     ret.steerWarning = self.steer_warning != "EAC_ERROR_IDLE"
     self.torqueLevel = cp.vl["DI_torque1"]["DI_torqueMotor"]
+
+    self.esp_long_acceleration = cp.vl["ESP_ACC"]["Long_Acceleration"]
+    self.esp_lat_acceleration = cp.vl["ESP_ACC"]["Lat_Acceleration"]
 
     #Detect car model - Needs more work when we do 3/Y
     #can look like S/SD/SP/SPD XD/XPD
@@ -405,6 +408,14 @@ class CarState(CarStateBase):
     if sw_a is not None:
       self.msg_stw_actn_req = sw_a
       
+    # Gas pedal
+    #BBTODO: in latest versions of code Tesla does not populate this field
+    ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
+    self.realPedalValue = ret.gas
+    ret.gasPressed = (ret.gas > 0)
+    if self.enableHAO:
+      self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
+      ret.gas = 0
     #PREAP overrides at the last moment
     if self.CP.carFingerprint in [CAR.PREAP_MODELS]:
       #Message needed for GTW_ESP1
@@ -426,7 +437,13 @@ class CarState(CarStateBase):
           self.pedal_interceptor_value = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"]
           self.pedal_interceptor_value2 = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
           self.pedal_idx = cp_cam.vl["GAS_SENSOR"]["IDX"]
-
+        ret.gas = self.pedal_interceptor_value/100.
+        ret.gasPressed = (self.pedal_interceptor_value > (self.pedal_interceptor_min + 5)) 
+        if self.enableHAO and self.pcc_enabled:
+          self.DAS_216_driverOverriding = 1 if ret.gasPressed else 0
+          ret.gas = 0
+      if not self.pcc_enabled:
+        self.pccEvent = None
       #preAP stuff
       if self.enableHumanLongControl:
         self.enablePedal = (
@@ -448,7 +465,6 @@ class CarState(CarStateBase):
         )) and CruiseState.is_enabled_or_standby(self.cruise_state) 
         if self.cruise_buttons == CruiseButtons.MAIN:
           self.cruiseEnabled = not self.enableJustCC
-          ret.gasPressed = True #will reset the PID for pedal
         if self.cruise_buttons == CruiseButtons.CANCEL:
           self.cruiseEnabled = False
           
@@ -460,8 +476,8 @@ class CarState(CarStateBase):
         else:
           ret.cruiseState.standstill = ret.standstill
         ret.brakePressed = False
-        ret.gasPressed = False
-        self.DAS_216_driverOverriding = False
+        if not self.pcc_enabled:
+          self.DAS_216_driverOverriding = False
         ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
 
     return ret
@@ -476,6 +492,7 @@ class CarState(CarStateBase):
       ("DI_pedalPos", "DI_torque1", 0),
       ("DI_torqueMotor", "DI_torque1", 0),
       ("DI_brakePedal", "DI_torque2", 0),
+      ("DI_vehicleSpeed","DI_torque2", 0),
       ("StW_AnglHP", "STW_ANGLHP_STAT", 0),
       ("StW_AnglHP_Spd", "STW_ANGLHP_STAT", 0),
       ("DI_cruiseState", "DI_state", 0),
@@ -537,13 +554,15 @@ class CarState(CarStateBase):
       ("WprSw6Posn", "STW_ACTN_RQ", 0),
       ("MC_STW_ACTN_RQ", "STW_ACTN_RQ", 0),
       ("CRC_STW_ACTN_RQ", "STW_ACTN_RQ", 0),
+      ("Long_Acceleration","ESP_ACC",0),
+      ("Lat_Acceleration","ESP_ACC",0),
     ]
 
     checks = [
       # sig_address, frequency
-      ("DI_torque1", 100),
-      ("DI_torque2", 100),
-      ("STW_ANGLHP_STAT", 100),
+      ("DI_torque1", 20),
+      ("DI_torque2", 20),
+      ("STW_ANGLHP_STAT", 20),
       ("DI_state", 10),
       ("STW_ACTN_RQ", 10),
       ("GTW_carState", 10),     
@@ -594,7 +613,7 @@ class CarState(CarStateBase):
       ]
 
       checks += [
-        ("GTW_ESP1",1),
+        ("GTW_ESP1",0),
       ]
 
     signals += [
@@ -608,7 +627,7 @@ class CarState(CarStateBase):
     ]
 
     checks += [      
-      ("EPAS_sysStatus", 25),
+      ("EPAS_sysStatus", 5),
       #("PARK_status2",4),
     ]
 
@@ -621,7 +640,7 @@ class CarState(CarStateBase):
       ]
 
       checks += [
-        ("ECU_BrakeStatus", 40)
+        ("ECU_BrakeStatus", 0) #not safe but removed due to CAN Error messages at Seb's suggestion
       ]
 
     if enablePedal and pedalcanzero:
@@ -633,7 +652,7 @@ class CarState(CarStateBase):
       ]
 
       checks += [
-        ("GAS_SENSOR", 10)
+        ("GAS_SENSOR", 0)
       ]
 
     return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 0, enforce_checks=False)
@@ -727,7 +746,7 @@ class CarState(CarStateBase):
         ]
 
         checks += [
-          ("GAS_SENSOR", 10)
+          ("GAS_SENSOR", 0)
         ]
 
     return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 2,enforce_checks=False)

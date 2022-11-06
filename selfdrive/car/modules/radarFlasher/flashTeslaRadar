@@ -2,4 +2,4 @@
 tmux kill-session -t comma
 cd /data/openpilot/selfdrive/car/modules/radarFlasher
 cp /data/openpilot/selfdrive/ui/qt/flasher ./flasher
-exec ./flasher "Flash" flash.sh "VIN Lrn" vin_learn.sh info.sh
+exec ./flasher "VIN Lrn" vin_learn.sh "-" vin_learn.sh info.sh

@@ -102,6 +102,9 @@ CAN_AP_POWERTRAIN = {
   CAR.AP1_MODELX: 6, 
 }
 
+TESLA_MAX_ACCEL = 2.0  # m/s^2
+TESLA_MIN_ACCEL = -4.5 # m/s^2
+
 
 
 class CANBUS:

@@ -66,6 +66,7 @@ class RadarInterface(RadarInterfaceBase):
     self.behindNoseCone = load_bool_param("TinklaTeslaRadarBehindNosecone",False)
     self.radar_offset = load_float_param("TinklaRadarOffset",0.0)
     self.ignoreRadarSGUError = load_bool_param("TinklaTeslaRadarIgnoreSGUError",False)
+    self.radarUpsideDown = load_bool_param("TinklaUseTeslaRadarUpsideDown",False)
 
 
   def update(self, can_strings):
@@ -145,6 +146,9 @@ class RadarInterface(RadarInterfaceBase):
       self.pts[i].vRel = msg_a['LongSpeed']
       self.pts[i].aRel = msg_a['LongAccel']
       self.pts[i].yvRel = msg_b['LatSpeed']
+      if self.radarUpsideDown:
+        self.pts[i].yRel = - self.pts[i].yRel
+        self.pts[i].yvRel = - self.pts[i].yvRel
       self.pts[i].measured = bool(msg_a['Meas'])
 
     ret.points = list(self.pts.values())

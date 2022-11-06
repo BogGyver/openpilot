@@ -635,6 +635,8 @@ class Controls:
     controlsState = dat.controlsState
     if current_alert:
       controlsState.alertText1 = current_alert.alert_text_1
+      if current_alert.alert_text_1 == "CAN Error: Check Connections":
+        current_alert.alert_text_1 = " ID: 0x%0.2X" % CS.canErrorId
       controlsState.alertText2 = current_alert.alert_text_2
       controlsState.alertSize = current_alert.alert_size
       controlsState.alertStatus = current_alert.alert_status

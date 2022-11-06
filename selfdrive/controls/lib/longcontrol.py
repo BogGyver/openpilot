@@ -8,7 +8,7 @@ from selfdrive.modeld.constants import T_IDXS
 LongCtrlState = car.CarControl.Actuators.LongControlState
 
 # As per ISO 15622:2018 for all speeds
-ACCEL_MIN_ISO = -3.5  # m/s^2
+ACCEL_MIN_ISO = -4.5  # m/s^2
 ACCEL_MAX_ISO = 2.0  # m/s^2
 
 
@@ -52,6 +52,7 @@ class LongControl():
 
   def reset(self, v_pid):
     """Reset PID controller and change setpoint"""
+    self.pid.reset()
     self.v_pid = v_pid
 
   def update(self, active, CS, CP, long_plan, accel_limits):
@@ -91,13 +92,14 @@ class LongControl():
 
     # Update state machine
     output_accel = self.last_output_accel
-    self.long_control_state = long_control_state_trans(CP, active, self.long_control_state, CS.vEgo,
+    self.long_control_state = long_control_state_trans(CP, active and not CS.gasPressed, self.long_control_state, CS.vEgo,
                                                        v_target_future, CS.brakePressed,
                                                        CS.cruiseState.standstill)
 
     if self.long_control_state == LongCtrlState.off or CS.gasPressed:
       self.reset(CS.vEgo)
       output_accel = 0.
+      self.long_control_state = LongCtrlState.off
 
     # tracking objects and driving
     elif self.long_control_state == LongCtrlState.pid:
@@ -108,14 +110,13 @@ class LongControl():
 
       # Toyota starts braking more when it thinks you want to stop
       # Freeze the integrator so we don't accelerate to compensate, and don't allow positive acceleration
-      prevent_overshoot = not CP.stoppingControl and CS.vEgo < 1.5 and v_target < 0.7 and v_target < self.v_pid
+      prevent_overshoot = not CP.stoppingControl and CS.vEgo < 4.5 and v_target_future < 0.7 and v_target_future < self.v_pid
       deadzone = interp(CS.vEgo, CP.longitudinalTuning.deadzoneBP, CP.longitudinalTuning.deadzoneV)
       freeze_integrator = prevent_overshoot
-
       output_accel = self.pid.update(self.v_pid, CS.vEgo, speed=CS.vEgo, deadzone=deadzone, feedforward=a_target, freeze_integrator=freeze_integrator)
 
       if prevent_overshoot:
-        output_accel = min(output_accel, 0.0)
+        output_accel = min(output_accel, -0.1)
 
     # Intention is to stop, switch to a different brake control until we stop
     elif self.long_control_state == LongCtrlState.stopping:

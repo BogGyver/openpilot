@@ -1,44 +1,42 @@
 #!/usr/bin/env python3
 from enum import Enum
-
+from selfdrive.car.tesla.values import TESLA_MIN_ACCEL
 
 class LongTunes(Enum):
   PEDAL = 0
   ACC = 1
   AP = 2
 
-factor1 = 0.05
-factor2 = 0.2
-factor3 = factor2 * 0 #.25
-#for real PID used for pedal
-# MPH         0   11    50    80
-# km/h        0   18    80   126
-pedal_kpBP = [0.0, 5.0, 22.0, 35.0]
-pedal_kiBP = [0.0, 5.0, 22.0, 35.0]
-pedal_kdBP = [0.0, 5.0, 22.0, 35.0]
-pedal_kpV = [1.*factor1, 1.*factor1, 0.6*factor1, 0.4*factor1]
-pedal_kiV = [1.*factor2, 1.*factor2, 0.9*factor2, 0.8*factor2]
-pedal_kdV = [1.*factor3, 1.*factor3, 0.9*factor3, 0.8*factor3]
-V_PID_FILE = "/data/params/pidParams"
+PEDAL_MIN = -7.
+PEDAL_MAX = 65.
 
-gasMaxBP = [0.0, 20.0]  # m/s
-gasMaxV = [[0.250, 0.650], #S60, maybe S70
-           [0.125, 0.425], #S85, SD85/90, Maybe SP85
-           [0.080, 0.325], #SP+ SPD89, etc
-           ]
-brakeMaxBP = [0.0]  # m/s
-brakeMaxV = [
-            -0.07
-        ]  # max brake allowed - BB: since we are using regen, make this even
+# MPH         0   11   27   44   67   90
+# km/h        0   18   43   72  108  144
+PEDAL_BP = [  0.,  5., 12., 20., 30., 40.]  # m/s
+PEDAL_V = [ [85., 85., 85., 85., 85., 85.],
+            [32., 37., 45., 55., 65., 70.],
+            [25., 30., 35., 40., 45., 50.],
+            [20., 25., 30., 35., 40., 45.],
+            [66., 66., 66., 66., 66., 66.],
+]
+#MPH                    0     16    33    55    90
+ACCEL_LOOKUP_BP =     [ 0.0,  7.5, 15.0, 25.0, 40.0]
+ACCEL_MAX_LOOKUP_V  = [[ 2.0,  1.2,  0.7,  0.6,  0.5],
+                       [ 2.2,  1.4,  1.0,  0.8,  0.6],
+                       [ 2.5,  1.9,  1.5,  1.2,  1.0],
+]
+ACCEL_MIN_LOOKUP_V =  [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
+ACCEL_REG_LOOKUP_V =  [ -1.5, -1.5, -1.5, -1.5, -1.5]
+
 
 ###### LONG ######
 def set_long_tune(tune, name):
   # Improved longitudinal tune
   if name == LongTunes.PEDAL:
-    tune.kpBP = [0]
-    tune.kiBP = [0]
-    tune.kpV = [0]
-    tune.kiV = [0]
+    tune.kpBP = [0.0, 5.0, 22.0, 35.0]
+    tune.kiBP = [0.0, 5.0, 22.0, 35.0]
+    tune.kpV = [0.60, 0.60, 0.60, 0.60]
+    tune.kiV = [0.07, 0.07, 0.07, 0.07]
   # Default longitudinal tune
   elif name == LongTunes.ACC:
     tune.kpBP = [0]

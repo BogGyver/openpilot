@@ -130,7 +130,7 @@ class CarInterfaceBase(ABC):
     self.CS.realSteeringPressed = ret.steeringPressed
     if self.CS.enableHAO:
       ret.gas = 0
-      ret.gasPressed = False
+      #ret.gasPressed = False
     self.CS.human_control = self.CS.HSO.update_stat(self.CS, c.enabled, c.actuators, self.frame)
     #Trick the alca if autoStartAlcaDelay is set
     if (self.CS.enableALC) and (self.CS.alca_need_engagement):
@@ -180,8 +180,8 @@ class CarInterfaceBase(ABC):
       events.add(EventName.wrongCarMode)
     if cs_out.espDisabled:
       events.add(EventName.espDisabled)
-    if cs_out.gasPressed:
-      events.add(EventName.gasPressed)
+    #if cs_out.gasPressed:
+    #  events.add(EventName.gasPressed)
     if cs_out.stockFcw:
       events.add(EventName.stockFcw)
     if cs_out.stockAeb:
@@ -211,8 +211,7 @@ class CarInterfaceBase(ABC):
       events.add(EventName.steerUnavailable)
 
     # Disable on rising edge of gas or brake. Also disable on brake when speed > 0.
-    if (cs_out.gasPressed and not self.CS.out.gasPressed) or \
-       (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)):
+    if (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)):
       events.add(EventName.pedalPressed)
 
     # we engage when pcm is active (rising edge)
@@ -266,6 +265,7 @@ class CarStateBase(ABC):
     self.autoStartAlcaDelay = load_float_param("TinklaAlcDelay",2.0)
     self.hsoNumbPeriod = load_float_param("TinklaHsoNumbPeriod",1.5)
     self.longCtrlEvent = None
+    self.pccEvent = None
 
     #end config section
 

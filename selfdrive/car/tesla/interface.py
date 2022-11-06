@@ -3,34 +3,29 @@ from cereal import car
 from selfdrive.car.tesla.values import CAR, CruiseButtons, CAN_AP_POWERTRAIN
 from selfdrive.car import STD_CARGO_KG, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, get_safety_config
 from selfdrive.car.interfaces import CarInterfaceBase
-from selfdrive.car.modules.CFG_module import load_bool_param
+from selfdrive.car.modules.CFG_module import load_bool_param, load_float_param
 from panda import Panda
-from selfdrive.car.tesla.tunes import LongTunes, set_long_tune
-from selfdrive.car.tesla.PCC_module import ACCEL_MIN, ACCEL_MAX
+from selfdrive.car.tesla.tunes import LongTunes, set_long_tune, ACCEL_LOOKUP_BP, ACCEL_MAX_LOOKUP_V, ACCEL_MIN_LOOKUP_V, ACCEL_REG_LOOKUP_V
 from common.numpy_fast import interp
-
+from selfdrive.config import Conversions as CV
 
 ButtonType = car.CarState.ButtonEvent.Type
+EventName = car.CarEvent.EventName
+HAS_IBOOSTER_ECU = load_bool_param("TinklaHasIBooster",False)
+ACCEL_PROFILE = int(load_float_param("TinklaAccelProfile", 2.0)-1)
 
-ACCEL_LOOKUP_BP =     [ 0.0,  7.5, 15.0, 25.0, 40.0]
-
-AP_ACCEL_MAX_V =     [ 2.5,  2.0,  1.5,  0.8,  0.8]
-AP_ACCEL_MIN_V =     [-3.5, -3.5, -3.5, -3.5, -3.5]
-
-PREAP_ACCEL_MAX_V =   [ 1.2,  1.2,  1.2,  0.8,  0.6]
-PREAP_ACCEL_MIN_V =   [-1.2, -1.2, -1.2, -1.2, -1.2] #(regen only... for iBooster we need to check these)
-
+UNSAFE_DISABLE_DISENGAGE_ON_GAS = 1
+UNSAFE_DISABLE_STOCK_AEB = 2
+UNSAFE_RAISE_LONGITUDINAL_LIMITS_TO_ISO_MAX = 8
 
 #this function is called from longitudinal_planner only for limits
 def get_tesla_accel_limits(CP, current_speed):
   a_min = 0.
-  a_max = 0.
-  if CP.carFingerprint == CAR.AP1_MODELS:
-    a_min = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MIN_V)
-    a_max = interp(current_speed,ACCEL_LOOKUP_BP,AP_ACCEL_MAX_V)
+  a_max = interp(current_speed,ACCEL_LOOKUP_BP,ACCEL_MAX_LOOKUP_V[ACCEL_PROFILE])
+  if CP.carFingerprint == CAR.PREAP_MODELS and not HAS_IBOOSTER_ECU:
+    a_min = interp(current_speed,ACCEL_LOOKUP_BP,ACCEL_REG_LOOKUP_V)
   else:
-    a_min = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MIN_V)
-    a_max = interp(current_speed,ACCEL_LOOKUP_BP,PREAP_ACCEL_MAX_V)
+    a_min = interp(current_speed,ACCEL_LOOKUP_BP,ACCEL_MIN_LOOKUP_V)
   return a_min, a_max
 
 class CarInterface(CarInterfaceBase):
@@ -41,10 +36,8 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
-    if CP.carFingerprint == CAR.AP1_MODELS:
-      return get_tesla_accel_limits(CP,current_speed)
-    else:
-      return ACCEL_MIN, ACCEL_MAX
+    return get_tesla_accel_limits(CP,current_speed)
+    
 
   @staticmethod
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=None):
@@ -54,7 +47,6 @@ class CarInterface(CarInterfaceBase):
     ret.carName = "tesla"      
     ret.steerControlType = car.CarParams.SteerControlType.angle
 
-    ret.stopAccel = 0.0
     ret.longitudinalActuatorDelayUpperBound = 0.5 # s
     ret.radarTimeStep = (1.0 / 8) # 8Hz
 
@@ -71,7 +63,6 @@ class CarInterface(CarInterfaceBase):
     #  Panda.FLAG_TESLA_NEED_RADAR_EMULATION = 32
     #  Panda.FLAG_TESLA_HAO = 64
     #  Panda.FLAG_TESLA_IBOOSTER = 128
-
 
     safetyParam = 0
     ret.wheelSpeedFactor = 1.
@@ -146,6 +137,16 @@ class CarInterface(CarInterfaceBase):
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam)]
     else:
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam)]
+    if candidate == CAR.PREAP_MODELS:
+      ret.stoppingDecelRate = 1. 
+      ret.stoppingControl = True
+      ret.stopAccel = -2.0 
+      #ret.vEgoStopping = 5 * CV.MPH_TO_MS
+    else:
+      ret.stoppingDecelRate = 0.6 #since we don't use the PID, this means a jerk in acceleration by x m/s^3
+      ret.stoppingControl = True
+      ret.stopAccel = -2.0
+    ret.unsafeMode = UNSAFE_DISABLE_DISENGAGE_ON_GAS | UNSAFE_RAISE_LONGITUDINAL_LIMITS_TO_ISO_MAX
     return ret
 
   def update(self, c, can_strings):
@@ -155,8 +156,10 @@ class CarInterface(CarInterfaceBase):
     ret = self.CS.update(self.cp, self.cp_cam)
     if self.CP.carFingerprint == CAR.PREAP_MODELS:
       ret.canValid = self.cp.can_valid
+      ret.canErrorId = self.cp.error_address
     else:
       ret.canValid = self.cp.can_valid and self.cp_cam.can_valid
+      ret.canErrorId = max(self.cp.error_address, self.cp_cam.error_address)
 
     self.post_update(c,ret)
 
@@ -186,11 +189,16 @@ class CarInterface(CarInterfaceBase):
     events = self.create_common_events(ret)
     if self.CS.autopilot_enabled:
       events.add(car.CarEvent.EventName.invalidLkasSetting)
+    if ret.gasPressed and self.CS.adaptive_cruise_enabled:
+      events.add(EventName.gasPressed)
 
     if self.CS.longCtrlEvent:
       events.add(self.CS.longCtrlEvent)
       self.CS.longCtrlEvent = None
-    
+
+    if self.CS.pccEvent:
+      events.add(self.CS.pccEvent)
+
     ret.events = events.to_msg()
     
     self.CS.out = ret.as_reader()
