@@ -270,7 +270,6 @@ class PCCController:
         if not CS.enablePedal:
             return 0.0, 0.0, -1, -1
 
-        idx = self.pedal_idx
 
         if radSt is not None:
             self.lead_1 = radSt.radarState.leadOne
@@ -307,13 +306,13 @@ class PCCController:
                 self.pedal_speed_kph = self.speed_limit_kph
         else:  # reset internal speed limit, so double pull doesn't set higher speed than current (e.g. after leaving the highway)
             self.speed_limit_kph = 0.0
-        self.pedal_idx = (self.pedal_idx + 1) % 16
+        
 
         if not self.pcc_available or not enabled or not self.enable_pedal_cruise:
-            return 0.0, 0.0, 0, idx
+            return 0.0, 0.0, 0, self.pedal_idx
 
         if CS.out.gasPressed:
-            return 0.0, 0.0, 0, idx
+            return 0.0, 0.0, 0, self.pedal_idx
 
         ##############################################################
         # This mode uses the longitudinal MPC built in OP
@@ -322,22 +321,23 @@ class PCCController:
         ##############################################################
         ZERO_ACCEL = self.PedalForZeroTorque
         REGEN_DECEL = -0.8 #BB needs to be calculated based on regen available, which is higher at lower speeds...
-        if CS.out.vEgo < 5 * CV.MPH_TO_MS:
-            ZERO_ACCEL = 0.
-                
+        
         MAX_PEDAL_BP = PEDAL_BP
         MAX_PEDAL_V = PEDAL_V[PEDAL_PROFILE]
         MAX_PEDAL_VALUE = interp(CS.out.vEgo, MAX_PEDAL_BP, MAX_PEDAL_V)
         
         MIN_PEDAL_REGEN_VALUE = -8.
         MAX_PEDAL_REGEN_VALUE = -8.
+
+        if CS.out.vEgo < 5 * CV.MPH_TO_MS:
+            ZERO_ACCEL = MIN_PEDAL_REGEN_VALUE + 3.
         
         ACCEL_LOOKUP_BP = [REGEN_DECEL, 0, ACCEL_MAX]
-        ACCEL_LOOKUP_V = [MAX_PEDAL_REGEN_VALUE, ZERO_ACCEL, MAX_PEDAL_VALUE]
+        ACCEL_LOOKUP_V = [MIN_PEDAL_REGEN_VALUE, ZERO_ACCEL, MAX_PEDAL_VALUE]
 
         # Cap the pedal to make acceleration smoother with just one pedal profile
         PEDAL_MAX_DOWN = MAX_PEDAL_VALUE * _DT / 0.4
-        PEDAL_MAX_UP = (MAX_PEDAL_VALUE - self.prev_tesla_pedal) * _DT / 2.
+        PEDAL_MAX_UP = (MAX_PEDAL_VALUE - self.prev_tesla_pedal) * _DT
 
         BRAKE_LOOKUP_BP = [ACCEL_MIN, -3.5, -0.8, 0.]
         BRAKE_LOOKUP_V  = [   1.0   ,  0.8,  0.0, 0.]
@@ -360,8 +360,8 @@ class PCCController:
             tesla_pedal = MIN_PEDAL_REGEN_VALUE
 
         #only do pedal hysteresis when very close to speed set
-        if abs(CS.out.vEgo * CV.MS_TO_KPH - self.pedal_speed_kph) < 0.5:
-            tesla_pedal = self.pedal_hysteresis(tesla_pedal, enable_pedal) #+ MIN_PEDAL_REGEN_VALUE
+        if abs(CS.out.vEgo * CV.MS_TO_KPH - self.pedal_speed_kph) < 0.8:
+            tesla_pedal = self.pedal_hysteresis(tesla_pedal, enable_pedal)
         if (CS.out.vEgo < 0.1) and (a_target < 0.01):
             #hold brake pressed at when standstill
             #BBTODO: show HOLD indicator in IC with integration
@@ -371,7 +371,7 @@ class PCCController:
         else:
             tesla_brake = interp(a_pid, BRAKE_LOOKUP_BP, BRAKE_LOOKUP_V)
         # if gas pedal pressed, brake should be zero (we alwasys have pedal with ibooster)
-        if CS.pedal_interceptor_value > (MIN_PEDAL_REGEN_VALUE + 5.):
+        if _convert_p2_to_p1(CS.pedal_interceptor_value) > (MIN_PEDAL_REGEN_VALUE + 5.):
             tesla_brake = 0
         if CS.has_ibooster_ecu and CS.brakeUnavailable:
             CS.longCtrlEvent = car.CarEvent.EventName.iBoosterBrakeNotOk
@@ -396,7 +396,7 @@ class PCCController:
         pedal2send = self.prev_tesla_pedal
         if enable_pedal == 1 and CS.pedal_interceptor_min > -1.0:
             pedal2send = _convert_p1_to_p2(self.prev_tesla_pedal)
-        return pedal2send, self.prev_tesla_brake, enable_pedal, idx
+        return pedal2send, self.prev_tesla_brake, enable_pedal, self.pedal_idx
 
     def pedal_hysteresis(self, pedal, enabled):
         # for small accel oscillations within PEDAL_HYST_GAP, don't change the command

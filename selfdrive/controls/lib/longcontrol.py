@@ -8,7 +8,7 @@ from selfdrive.modeld.constants import T_IDXS
 LongCtrlState = car.CarControl.Actuators.LongControlState
 
 # As per ISO 15622:2018 for all speeds
-ACCEL_MIN_ISO = -3.5  # m/s^2
+ACCEL_MIN_ISO = -4.5  # m/s^2
 ACCEL_MAX_ISO = 2.0  # m/s^2
 
 
@@ -113,7 +113,6 @@ class LongControl():
       prevent_overshoot = not CP.stoppingControl and CS.vEgo < 4.5 and v_target_future < 0.7 and v_target_future < self.v_pid
       deadzone = interp(CS.vEgo, CP.longitudinalTuning.deadzoneBP, CP.longitudinalTuning.deadzoneV)
       freeze_integrator = prevent_overshoot
-
       output_accel = self.pid.update(self.v_pid, CS.vEgo, speed=CS.vEgo, deadzone=deadzone, feedforward=a_target, freeze_integrator=freeze_integrator)
 
       if prevent_overshoot:

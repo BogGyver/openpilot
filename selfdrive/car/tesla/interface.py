@@ -139,9 +139,9 @@ class CarInterface(CarInterfaceBase):
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam)]
     if candidate == CAR.PREAP_MODELS:
       ret.stoppingDecelRate = 1. 
-      ret.stoppingControl = False
-      ret.stopAccel = -3.5 
-      ret.vEgoStopping = 5 * CV.MPH_TO_MS
+      ret.stoppingControl = True
+      ret.stopAccel = -2.0 
+      #ret.vEgoStopping = 5 * CV.MPH_TO_MS
     else:
       ret.stoppingDecelRate = 0.6 #since we don't use the PID, this means a jerk in acceleration by x m/s^3
       ret.stoppingControl = True

@@ -182,7 +182,6 @@ class LONGController:
                 target_accel = clip(my_accel, TESLA_MIN_ACCEL,TESLA_MAX_ACCEL)
                 target_speed = max(self.v_target, 0)                    
 
-                self.apply_brake = 0.0
                 apply_accel, self.apply_brake, accel_needed, accel_idx = self.PCC.update_pdl(
                     enabled,
                     CS,
@@ -198,14 +197,16 @@ class LONGController:
                     CS.alca_engaged,
                     radar_state
                 )
-                if (accel_needed > -1) and (accel_idx > -1):
+                #send pedal commands at 50Hz
+                if (accel_needed > -1) and (accel_idx > -1) and frame % 2 == 0:
                     messages.append(
                         self.tesla_can.create_pedal_command_msg(
                             apply_accel, int(accel_needed), accel_idx, self.pedalcan
                         )
                     )
-            if self.PCC.pcc_available and frame % 5 == 0:  # ibooster sent at 20Hz
-                if self.has_ibooster_ecu:
+                    self.PCC.pedal_idx = (self.PCC.pedal_idx + 1) % 16
+                #send ibooster commands at 10Hz    
+                if self.has_ibooster_ecu  and frame % 10 == 0:
                     messages.append(
                         self.tesla_can.create_ibst_command(
                             enabled, 15 * self.apply_brake, frame, CAN_CHASSIS[self.CP.carFingerprint]

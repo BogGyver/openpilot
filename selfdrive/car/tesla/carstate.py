@@ -438,7 +438,7 @@ class CarState(CarStateBase):
           self.pedal_interceptor_value2 = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
           self.pedal_idx = cp_cam.vl["GAS_SENSOR"]["IDX"]
         ret.gas = self.pedal_interceptor_value/100.
-        ret.gasPressed = (self.pedal_interceptor_value > (self.pedal_interceptor_min + 3)) 
+        ret.gasPressed = (self.pedal_interceptor_value > (self.pedal_interceptor_min + 5)) 
         if self.enableHAO and self.pcc_enabled:
           self.DAS_216_driverOverriding = 1 if ret.gasPressed else 0
           ret.gas = 0

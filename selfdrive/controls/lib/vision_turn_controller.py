@@ -41,6 +41,8 @@ _MIN_LANE_PROB = 0.4  # Minimum lanes probability to allow curvature prediction 
 
 _DEBUG = False
 
+_TURNING_FACTOR_BP = [ 5.6, 27.8]   #20 to 100 km/h
+_TURNING_FACTOR_V  = [ 0.8,  1.1]
 
 def _debug(msg):
   if not _DEBUG:
@@ -278,7 +280,7 @@ class VisionTurnController():
     self._v_ego = v_ego
     self._a_ego = a_ego
     self._v_cruise_setpoint = v_cruise_setpoint
-    self._factor = turn_slowdown_factor
+    self._factor = turn_slowdown_factor * interp(v_ego,_TURNING_FACTOR_BP,_TURNING_FACTOR_V)
     self._is_enabled = turn_slowdown_enabled
 
     self._update_calculations(sm)
