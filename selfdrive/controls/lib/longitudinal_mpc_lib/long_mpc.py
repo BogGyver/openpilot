@@ -54,10 +54,10 @@ T_DIFFS = np.diff(T_IDXS, prepend=[0.])
 MIN_ACCEL = TESLA_MIN_ACCEL #was -3.5, fewer places to tune
 T_FOLLOW = load_float_param("TinklaFollowDistance",1.45)
 COMFORT_BRAKE = 2.5
-STOP_DISTANCE = 3.0 #base it if we have radar or just visual
+STOP_DISTANCE = 6.0 #base it if we have radar or just visual
 DIST_FACTOR = 2
-DIST_FACTOR_STOPPED = 4
-V_EGO_D = 1.
+DIST_FACTOR_STOPPED = 2
+V_EGO_D = 5.
 
 def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (DIST_FACTOR_STOPPED * COMFORT_BRAKE)
@@ -315,6 +315,8 @@ class LongitudinalMpc:
     a_ego = self.x0[2]
     if carstate.followDistanceS != 255:
       self.t_follow = 0.7 + float(carstate.followDistanceS) * 0.2
+    else:
+      self.t_follow = T_FOLLOW
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
 
     lead_xv_0 = self.process_lead(radarstate.leadOne)

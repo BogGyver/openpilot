@@ -39,6 +39,7 @@ class LONGController:
         self.packer = packer
         self.pedalcan = pedalcan
         self.has_ibooster_ecu = False
+        self.ibooster_idx = 0
         self.apply_brake = 0.0
         self.speed_limit_offset_uom = 0
         self.speed_limit_offset_ms = 0.0
@@ -209,9 +210,10 @@ class LONGController:
                 if self.has_ibooster_ecu  and frame % 10 == 0:
                     messages.append(
                         self.tesla_can.create_ibst_command(
-                            enabled, 15 * self.apply_brake, frame, CAN_CHASSIS[self.CP.carFingerprint]
+                            enabled, 15 * self.apply_brake, self.ibooster_idx, CAN_CHASSIS[self.CP.carFingerprint]
                         )
                     )
+                    self.ibooster_idx = (self.ibooster_idx + 1) % 16
                 
         #AP ModelS with OP Long and enabled
         elif enabled and self.CP.openpilotLongitudinalControl and (frame %1 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):

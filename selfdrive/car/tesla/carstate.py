@@ -11,6 +11,20 @@ from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
 #TODOBB: sometimes tesla on the rear has 265/35ZR21 and they are 28.3" diameter 0.359m
 #for now OP does not allow for various uom per tire ... to look into it
 WHEEL_RADIUS = 0.353
+PEDAL_MIN = load_float_param("TeslaPedalCalibMin",-3.)
+PEDAL_MAX = load_float_param("TeslaPedalCalibMax",99.6)
+PEDAL_FACTOR = load_float_param("TeslaPedalCalibFactor",1.)
+PEDAL_ZERO = load_float_param("TeslaPedalCalibZero",0.) - 1 / PEDAL_FACTOR
+PEDAL_CALIBRATED = load_bool_param("TeslaPedalCalibDone",False)
+PEDAL_DI_MIN = -5
+PEDAL_DI_ZERO = 0
+PEDAL_DI_PRESSED = 2
+
+def transform_pedal_to_di(val):
+  return PEDAL_DI_ZERO + (val - PEDAL_ZERO) * PEDAL_FACTOR
+
+def transform_di_to_pedal(val):
+  return PEDAL_ZERO + (val - PEDAL_DI_ZERO) / PEDAL_FACTOR
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -136,7 +150,6 @@ class CarState(CarStateBase):
     self.prev_pedal_interceptor_state = self.pedal_interceptor_state = 0
     self.pedal_interceptor_value = 0.0
     self.pedal_interceptor_value2 = 0.0
-    self.pedal_interceptor_min = 10.
     self.ibstBrakeApplied = False
     self.teslaModel = ""
     if CP.carFingerprint in [CAR.AP1_MODELX]:
@@ -429,16 +442,16 @@ class CarState(CarStateBase):
       if self.enablePedal:
         if self.pedalcanzero:
           self.pedal_interceptor_state = cp.vl["GAS_SENSOR"]["STATE"]
-          self.pedal_interceptor_value = cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"]
-          self.pedal_interceptor_value2 = cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
+          self.pedal_interceptor_value = transform_pedal_to_di(cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"])
+          self.pedal_interceptor_value2 = transform_pedal_to_di(cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"])
           self.pedal_idx = cp.vl["GAS_SENSOR"]["IDX"]
         else:
           self.pedal_interceptor_state = cp_cam.vl["GAS_SENSOR"]["STATE"]
-          self.pedal_interceptor_value = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"]
-          self.pedal_interceptor_value2 = cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]
+          self.pedal_interceptor_value = transform_pedal_to_di(cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"])
+          self.pedal_interceptor_value2 = transform_pedal_to_di(cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"])
           self.pedal_idx = cp_cam.vl["GAS_SENSOR"]["IDX"]
         ret.gas = self.pedal_interceptor_value/100.
-        ret.gasPressed = (self.pedal_interceptor_value > (self.pedal_interceptor_min + 5)) 
+        ret.gasPressed = (self.pedal_interceptor_value > PEDAL_DI_PRESSED) 
         if self.enableHAO and self.pcc_enabled:
           self.DAS_216_driverOverriding = 1 if ret.gasPressed else 0
           ret.gas = 0
