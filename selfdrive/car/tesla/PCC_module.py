@@ -4,8 +4,7 @@ from selfdrive.config import Conversions as CV
 import time
 from common.params import Params
 from selfdrive.car.modules.CFG_module import load_float_param
-from selfdrive.car.tesla.tunes import PEDAL_BP, PEDAL_V
-from selfdrive.car.tesla.carstate import PEDAL_DI_PRESSED,PEDAL_DI_MIN, PEDAL_CALIBRATED, transform_di_to_pedal
+from selfdrive.car.tesla.tunes import PEDAL_BP, PEDAL_V, PEDAL_DI_PRESSED,PEDAL_DI_MIN, PEDAL_CALIBRATED, transform_di_to_pedal
 from cereal import car
 
 ACCEL_MAX = 2.5  #0.6m/s2 * 36 = ~ 0 -> 50mph in 6 seconds
@@ -113,10 +112,6 @@ class PCCController:
         self.continuous_lead_sightings = 0
         self.params = Params()
         self.pedalcan = pedalcan
-        self.madMax = False
-        #if longcontroller.madMax:
-        #    self.madMax = True
-        self.t_follow = load_float_param("TinklaFollowDistance",1.45)
 
 
     def update_stat(self, CS, frame):
@@ -285,9 +280,6 @@ class PCCController:
             # print ("Speed level at detection %s" % (CS.out.vEgo * CV.MS_TO_MPH))
         self.prev_a_pid = a_pid
 
-        if CS.out.followDistanceS != 255:
-            self.t_follow = 0.7 + float(CS.out.followDistanceS) * 0.2
-
         if set_speed_limit_active and speed_limit_ms > 0:
             self.speed_limit_kph = (speed_limit_ms + speed_limit_offset) * CV.MS_TO_KPH
             if int(self.prev_speed_limit_kph) != int(self.speed_limit_kph):
@@ -329,34 +321,15 @@ class PCCController:
         BRAKE_LOOKUP_BP = [-3.5, 0.]
         BRAKE_LOOKUP_V  = [ 1.0, 0.]
 
-        #if a_pid < 0:
-        #    a_pid = a_pid * 2
-
         enable_pedal = 1.0 if self.enable_pedal_cruise else 0.0
         tesla_pedal = int(round(interp(a_pid, ACCEL_LOOKUP_BP, ACCEL_LOOKUP_V)))
         
-        #extra braking when on regen only
-        #if not CS.has_ibooster_ecu:
-        #    brake_mult = _brake_mult_pcc(CS.out.vEgo,self.lead_1, self.t_follow,CS)
-        #    EMERG_REGEN_MULT_BP = [1., 3.]
-        #    EMERG_REGEN_MULT_V  = [tesla_pedal,MIN_PEDAL_REGEN_VALUE]
-        #    
-        #    if brake_mult > 1 and CS.out.vEgo > v_target:
-        #        tesla_pedal = interp(brake_mult,EMERG_REGEN_MULT_BP,EMERG_REGEN_MULT_V)
-        #        a_target = a_target * brake_mult
-        #max regen with pedal is 1.5 on a good battery
-        #so anything below -1.0 should be full regen
-        #if ENABLE_REGEN_MODS and a_target < -1.0 and CS.out.vEgo > v_target: 
-        #    tesla_pedal = MIN_PEDAL_REGEN_VALUE
 
         #only do pedal hysteresis when very close to speed set
         if abs(CS.out.vEgo * CV.MS_TO_KPH - self.pedal_speed_kph) < 0.8 and CS.out.vEgo > 5.:
             tesla_pedal = self.pedal_hysteresis(tesla_pedal, enable_pedal)
         if (CS.out.vEgo < 0.1) and (a_target < 0.01):
             #hold brake pressed at when standstill
-            #BBTODO: show HOLD indicator in IC with integration
-            # for about 14psi to hold a car even on slopes 
-            # we need roughty 6.5 mm / 15 = 
             tesla_brake = 0.43
         else:
             tesla_brake = clip(interp(a_pid, BRAKE_LOOKUP_BP, BRAKE_LOOKUP_V),0,1)
@@ -408,47 +381,6 @@ class PCCController:
         pedal_ready = (
             frame < self.pedal_timeout_frame and CS.pedal_interceptor_state == 0
         )
-        #acc_disabled = CS.enablePedal or CruiseState.is_off(CS.cruise_state)
         # Mark pedal unavailable while traditional cruise is on.
         self.pcc_available = pedal_ready and CS.enablePedal
 
-DIST_BP = [7., 1000.]
-DIST_V  = [0., 1000.]
-SEC_TILL_COLLISION_BP = [0., 4.,  7., 10.]
-SEC_TILL_COLLISION_V  = [10, 1.0, 0.5, 0.3]
-SAFE_DIST_MAP_BP = [-.3, -.2, -.1 , 0. ]
-SAFE_DIST_MAP_V  = [10., 5., 2., 1.]
-
-def _visual_radar_adjusted_dist_m(m):
-    return interp(m,DIST_BP,DIST_V)
-
-def _safe_distance_m(v_ego_ms, t_follow):
-    return max(t_follow * (v_ego_ms + 1), MIN_SAFE_DIST_M)
-
-def _is_present(lead):
-    return bool((not (lead is None)) and (lead.dRel > 0))
-
-def _sec_til_collision(lead, t_follow, CS):
-    if _is_present(lead) and lead.vRel < 0:
-        if CS.useTeslaRadar:
-            # BB: take in consideration acceleration when looking at time to collision.
-            return min(
-                0.1,
-                -4
-                + lead.dRel / abs(lead.vRel + min(0, lead.aRel) * t_follow),
-            )
-        else:
-            return _visual_radar_adjusted_dist_m(lead.dRel) / abs(
-                lead.vRel + min(0, lead.aRel) * t_follow
-            )
-    else:
-        return 60.0  # Arbitrary, but better than MAXINT because we can still do math on it.
-
-def _brake_mult_pcc(v_ego,lead, t_follow,CS):
-    safe_dist = _safe_distance_m(v_ego, t_follow)
-    sec_till_collision = _sec_til_collision(lead,t_follow,CS)
-    m1 = 1.
-    if lead.dRel > 0:
-        m1 = interp((lead.dRel-safe_dist)/lead.dRel,DIST_BP, DIST_V)
-    m2 = interp(sec_till_collision, SEC_TILL_COLLISION_BP, SEC_TILL_COLLISION_V)
-    return max(1.,m1*m2)

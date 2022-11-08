@@ -1,30 +1,15 @@
 import copy
 from cereal import car
-from selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS, CAR, CruiseButtons, CruiseState
+from selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS, CAR, CruiseButtons, CruiseState, WHEEL_RADIUS
 from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from selfdrive.config import Conversions as CV
 from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
+from selfdrive.car.tesla.tunes import transform_pedal_to_di,PEDAL_DI_PRESSED
 
-#tesla uses various tires, this is for now for the 245/45R19s or 245/35ZR21s and they are 27.8" diameter = 0.353m
-#TODOBB: sometimes tesla on the rear has 265/35ZR21 and they are 28.3" diameter 0.359m
-#for now OP does not allow for various uom per tire ... to look into it
-WHEEL_RADIUS = 0.353
-PEDAL_MIN = load_float_param("TeslaPedalCalibMin",-3.)
-PEDAL_MAX = load_float_param("TeslaPedalCalibMax",99.6)
-PEDAL_FACTOR = load_float_param("TeslaPedalCalibFactor",1.)
-PEDAL_ZERO = load_float_param("TeslaPedalCalibZero",0.) - 1 / PEDAL_FACTOR
-PEDAL_CALIBRATED = load_bool_param("TeslaPedalCalibDone",False)
-PEDAL_DI_MIN = -5
-PEDAL_DI_ZERO = 0
-PEDAL_DI_PRESSED = 2
 
-def transform_pedal_to_di(val):
-  return PEDAL_DI_ZERO + (val - PEDAL_ZERO) * PEDAL_FACTOR
 
-def transform_di_to_pedal(val):
-  return PEDAL_ZERO + (val - PEDAL_DI_ZERO) / PEDAL_FACTOR
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -296,7 +281,7 @@ class CarState(CarStateBase):
     self.cruise_distance = cp.vl["STW_ACTN_RQ"]["DTR_Dist_Rq"]
     if self.cruise_distance != 255:
       # pos1=0, pos2=33, pos3=66, pos4=100, pos5=133, pos6=166, pos7=200, SNA=255
-      ret.followDistanceS = int(self.cruise_distance/33) + 1
+      ret.followDistanceS = int(self.cruise_distance/33)
     else:
       ret.followDistanceS = 255
     
