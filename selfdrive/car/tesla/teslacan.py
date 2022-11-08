@@ -23,13 +23,13 @@ class TeslaCAN:
     ret += sum(dat)
     return ret & 0xFF
 
-  def create_ibst_command(self, enabled, brake, raw_cnt, bus):
+  def create_ibst_command(self, enabled, brake, idx, bus):
     brake = clip(brake,0,15) #for tesla we limit to 15mm
     values = {
       "BrakePositionCommand" : brake,
       "BrakeRelativeCommand": 0,
       "BrakeMode": enabled * 2,
-      "Brake_Counter" : raw_cnt % 16,
+      "Brake_Counter" : idx,
       "Brake_Checksum" : 0,
     }
     data = self.packer.make_can_msg("ECU_BrakeCommand", bus, values)[2]

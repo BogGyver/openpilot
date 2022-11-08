@@ -1,4 +1,4 @@
-Unity Version 0.8.13-56 (2022-10-27)
+Unity Version 0.8.13-56 (2022-11-08)
 ========================
  * Sound files volume fix
  * Show TACC icon on IC for AP cars when OP is available
@@ -7,11 +7,16 @@ Unity Version 0.8.13-56 (2022-10-27)
  * Fleet based speed (AP cars)
  * Slow down in turns based on SunnyPilot 
  * prevent iBooster from pressing both pedals
- * improved acceleration handling for AP1
+ * Improved acceleration handling for AP1
  * Add message ID for the CAN Error 
  * Reduce min accel to -4.5 
  * Improve follow distance
  * Better and smoother pedal with 4 proiles
+ * Universal calibration tool for pedal interceptor
+ * iBooster control improvement
+ * Add 5 pedal profiles and 3 acceleration profiles for better long control wiht pedal
+ * Add alert when maximum regen is used with pedal to show braking limit 
+ * Prevent PCC engagement with uncalibrated pedals
 
 Unity Version 0.8.13-55 (2022-09-21)
 ========================

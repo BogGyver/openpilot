@@ -192,6 +192,7 @@ selfdrive/car/modules/radarFlasher/*
 selfdrive/car/tesla/speed_utils/*.py
 selfdrive/car/tesla/radar_tools/*
 selfdrive/car/tesla/tinkla/*
+selfdrive/car/tesla/pedal_calibrator/*
 
 selfdrive/car/modules/*.py
 

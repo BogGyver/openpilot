@@ -89,7 +89,9 @@ class CarInterface(CarInterfaceBase):
       ret.centerToFront = ret.wheelbase * 0.5
       ret.steerRatio = 15
       ret.openpilotLongitudinalControl = False
-      if load_bool_param("TinklaEnablePedal",False):
+      if HAS_IBOOSTER_ECU:
+        set_long_tune(ret.longitudinalTuning, LongTunes.IBST)
+      elif load_bool_param("TinklaEnablePedal",False):
         set_long_tune(ret.longitudinalTuning, LongTunes.PEDAL)
       else:
         set_long_tune(ret.longitudinalTuning, LongTunes.ACC)

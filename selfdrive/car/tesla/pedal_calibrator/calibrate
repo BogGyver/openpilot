@@ -1,0 +1,5 @@
+#! /bin/sh
+tmux kill-session -t comma
+cd /data/openpilot/selfdrive/car/tesla/pedal_calibrator
+cp /data/openpilot/selfdrive/ui/qt/flasher ./flasher
+exec ./flasher "Calib." calibrate.sh "-" calibrate.sh info.sh

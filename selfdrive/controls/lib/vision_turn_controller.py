@@ -42,7 +42,7 @@ _MIN_LANE_PROB = 0.4  # Minimum lanes probability to allow curvature prediction 
 _DEBUG = False
 
 _TURNING_FACTOR_BP = [ 5.6, 27.8]   #20 to 100 km/h
-_TURNING_FACTOR_V  = [ 0.8,  1.0]
+_TURNING_FACTOR_V  = [ 0.8,  1.1]
 
 def _debug(msg):
   if not _DEBUG:

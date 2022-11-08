@@ -282,6 +282,13 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     QProcess::startDetached("/data/openpilot/panda/board/pedal/flashPedal");
   });
 
+  QPushButton *calibrate_pedal_btn = new QPushButton("Calibrate Pedal");
+  calibrate_pedal_btn->setObjectName("calibrate_pedal_btn");
+
+  QObject::connect(calibrate_pedal_btn, &QPushButton::clicked, [=](){
+    QProcess::startDetached("/data/openpilot/selfdrive/car/tesla/pedal_calibrator/calibrate");
+  });
+
   QPushButton *vin_radar_btn = new QPushButton("Radar VIN Learn");
   vin_radar_btn->setObjectName("vin_radar_btn");
 
@@ -294,11 +301,14 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     #flash_btn:pressed { background-color: #4a4a4a; }
     #flash_pedal_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #flash_pedal_btn:pressed { background-color: #4a4a4a; }
+    #calibrate_pedal_btn { height: 120px; border-radius: 15px; background-color: #393939; }
+    #calibrate_pedal_btn:pressed { background-color: #4a4a4a; }
     #vin_radar_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #vin_radar_btn:pressed { background-color: #4a4a4a; }
   )");
   addItem(flash_btn);
   addItem(flash_pedal_btn);
+  addItem(calibrate_pedal_btn);
   addItem(vin_radar_btn);
 }
 

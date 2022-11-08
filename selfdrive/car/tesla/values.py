@@ -105,7 +105,10 @@ CAN_AP_POWERTRAIN = {
 TESLA_MAX_ACCEL = 2.0  # m/s^2
 TESLA_MIN_ACCEL = -4.5 # m/s^2
 
-
+#tesla uses various tires, this is for now for the 245/45R19s or 245/35ZR21s and they are 27.8" diameter = 0.353m
+#TODOBB: sometimes tesla on the rear has 265/35ZR21 and they are 28.3" diameter 0.359m
+#for now OP does not allow for various uom per tire ... to look into it
+WHEEL_RADIUS = 0.353
 
 class CANBUS:
   # Lateral harness
