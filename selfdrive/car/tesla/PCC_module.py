@@ -318,7 +318,7 @@ class PCCController:
         PEDAL_MAX_DOWN = MAX_PEDAL_VALUE * _DT / 0.4
         PEDAL_MAX_UP = (MAX_PEDAL_VALUE - self.prev_tesla_pedal) * _DT
 
-        BRAKE_LOOKUP_BP = [-3.5, 0.]
+        BRAKE_LOOKUP_BP = [-4.5, 0.]
         BRAKE_LOOKUP_V  = [ 1.0, 0.]
 
         enable_pedal = 1.0 if self.enable_pedal_cruise else 0.0

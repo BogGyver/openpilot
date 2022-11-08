@@ -41,8 +41,8 @@ PEDAL_V = [ [99., 99., 99., 99., 99., 99.], #1-S60
 ]
 #MPH                    0    3    16    33    55    90
 ACCEL_LOOKUP_BP =     [ 0.0, 1.3, 7.5, 15.0, 25.0, 40.0]
-ACCEL_MAX_LOOKUP_V  = [[0.3, 0.5, 0.9,  0.7,  0.6,  0.5], #1-Chill
-                       [0.3, 0.6, 1.2,  1.0,  0.8,  0.6], #2-Standard
+ACCEL_MAX_LOOKUP_V  = [[0.3, 0.7, 0.9,  0.7,  0.6,  0.5], #1-Chill
+                       [0.3, 0.9, 1.2,  1.0,  0.8,  0.6], #2-Standard
                        [0.3, 1.6, 1.9,  1.5,  1.2,  1.0], #3-MadMax
 ]
 ACCEL_MIN_LOOKUP_V =  [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
@@ -56,13 +56,13 @@ def set_long_tune(tune, name):
     tune.kpBP = [0.0, 5.0, 22.0, 35.0]
     tune.kiBP = [0.0, 5.0, 22.0, 35.0]
     tune.kpV = [0.75, 0.75, 0.75, 0.75]
-    tune.kiV = [0.07, 0.05, 0.03, 0.01]
+    tune.kiV = [0.07, 0.07, 0.07, 0.07]
   # Default longitudinal tune
   elif name == LongTunes.IBST:
     tune.kpBP = [0.0, 5.0, 22.0, 35.0]
     tune.kiBP = [0.0, 5.0, 22.0, 35.0]
     tune.kpV = [0.50, 0.50, 0.45, 0.40]
-    tune.kiV = [0.05, 0.04, 0.03, 0.01]
+    tune.kiV = [0.05, 0.05, 0.05, 0.05]
   elif name == LongTunes.ACC:
     tune.kpBP = [0]
     tune.kiBP = [0]
