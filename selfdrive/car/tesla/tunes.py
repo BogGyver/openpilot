@@ -56,13 +56,13 @@ def set_long_tune(tune, name):
     tune.kpBP = [0.0, 5.0, 22.0, 35.0]
     tune.kiBP = [0.0, 5.0, 22.0, 35.0]
     tune.kpV = [0.75, 0.75, 0.75, 0.75]
-    tune.kiV = [0.07, 0.07, 0.07, 0.07]
+    tune.kiV = [0.07, 0.05, 0.03, 0.01]
   # Default longitudinal tune
   elif name == LongTunes.IBST:
     tune.kpBP = [0.0, 5.0, 22.0, 35.0]
     tune.kiBP = [0.0, 5.0, 22.0, 35.0]
-    tune.kpV = [0.60, 0.60, 0.60, 0.60]
-    tune.kiV = [0.07, 0.07, 0.07, 0.07]
+    tune.kpV = [0.50, 0.50, 0.45, 0.40]
+    tune.kiV = [0.05, 0.04, 0.03, 0.01]
   elif name == LongTunes.ACC:
     tune.kpBP = [0]
     tune.kiBP = [0]
