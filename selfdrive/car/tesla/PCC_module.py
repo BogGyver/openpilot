@@ -167,17 +167,20 @@ class PCCController:
             ready = CS.enablePedal
             if ready and double_pull:
                 # A double pull enables ACC. updating the max ACC speed if necessary.
-                if not self.enable_pedal_cruise:
+                if not self.enable_pedal_cruise and PEDAL_CALIBRATED:
                     CS.longCtrlEvent = car.CarEvent.EventName.pccEnabled
-                self.enable_pedal_cruise = True
-                # Increase PCC speed to match current, if applicable.
-                # We round the target speed in the user's units of measurement to avoid jumpy speed readings
-                current_speed_kph_uom_rounded = (
-                    int(CS.out.vEgo * CV.MS_TO_KPH / speed_uom_kph + 0.5) * speed_uom_kph
-                )
-                self.pedal_speed_kph = max(
-                    current_speed_kph_uom_rounded, self.speed_limit_kph
-                )
+                if not PEDAL_CALIBRATED:
+                    CS.longCtrlEvent = car.CarEvent.EventName.pedalCalibrationNeeded
+                else:
+                    self.enable_pedal_cruise = True
+                    # Increase PCC speed to match current, if applicable.
+                    # We round the target speed in the user's units of measurement to avoid jumpy speed readings
+                    current_speed_kph_uom_rounded = (
+                        int(CS.out.vEgo * CV.MS_TO_KPH / speed_uom_kph + 0.5) * speed_uom_kph
+                    )
+                    self.pedal_speed_kph = max(
+                        current_speed_kph_uom_rounded, self.speed_limit_kph
+                    )
         # Handle pressing the cancel button.
         elif CS.cruise_buttons == CruiseButtons.CANCEL:
             if self.enable_pedal_cruise:
@@ -211,6 +214,8 @@ class PCCController:
             self.pedal_speed_kph = clip(
                 self.pedal_speed_kph, MIN_PCC_V_KPH, MAX_PCC_V_KPH
             )
+            if not PEDAL_CALIBRATED:
+                CS.longCtrlEvent = car.CarEvent.EventName.pedalCalibrationNeeded
         # If something disabled cruise control, disable PCC too
         elif self.enable_pedal_cruise and CS.cruise_state and not CS.enablePedal:
             self.enable_pedal_cruise = False
@@ -345,7 +350,7 @@ class PCCController:
         #    tesla_pedal = MIN_PEDAL_REGEN_VALUE
 
         #only do pedal hysteresis when very close to speed set
-        if abs(CS.out.vEgo * CV.MS_TO_KPH - self.pedal_speed_kph) < 0.8 and CS.out.vEgo > 15.:
+        if abs(CS.out.vEgo * CV.MS_TO_KPH - self.pedal_speed_kph) < 0.8 and CS.out.vEgo > 5.:
             tesla_pedal = self.pedal_hysteresis(tesla_pedal, enable_pedal)
         if (CS.out.vEgo < 0.1) and (a_target < 0.01):
             #hold brake pressed at when standstill

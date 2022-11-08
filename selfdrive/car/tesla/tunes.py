@@ -6,6 +6,7 @@ class LongTunes(Enum):
   PEDAL = 0
   ACC = 1
   AP = 2
+  IBST = 3
 
 #These values are in DI_PEDAL range
 # MPH         0   11   27   44   67   90
@@ -34,8 +35,13 @@ def set_long_tune(tune, name):
     tune.kpBP = [0.0, 5.0, 22.0, 35.0]
     tune.kiBP = [0.0, 5.0, 22.0, 35.0]
     tune.kpV = [0.90, 0.90, 0.90, 0.90]
-    tune.kiV = [0.10, 0.10, 0.10, 0.10]
+    tune.kiV = [0.05, 0.05, 0.05, 0.05]
   # Default longitudinal tune
+  elif name == LongTunes.IBST:
+    tune.kpBP = [0.0, 5.0, 22.0, 35.0]
+    tune.kiBP = [0.0, 5.0, 22.0, 35.0]
+    tune.kpV = [0.60, 0.60, 0.60, 0.60]
+    tune.kiV = [0.07, 0.07, 0.07, 0.07]
   elif name == LongTunes.ACC:
     tune.kpBP = [0]
     tune.kiBP = [0]
