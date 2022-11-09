@@ -296,6 +296,9 @@ class PedalCalibrator:
       #self.brakePressed = bool(self.cp.vl["BrakeMessage"]["driverBrakeStatus"] != 1)
       if not self.brakePressed:
         self.show_error(4)
+        if self.pedal_enabled == 1:
+          self.create_pedal_command_msg(0, 0, self.pedal_can)
+          self.pedal_enabled = 0
         continue
 
       #Gear
@@ -303,12 +306,18 @@ class PedalCalibrator:
       #self.gear_neutral = self.gearShifter == car.CarState.GearShifter.neutral
       if not self.gear_neutral:
         self.show_error(2)
+        if self.pedal_enabled == 1:
+          self.create_pedal_command_msg(0, 0, self.pedal_can)
+          self.pedal_enabled = 0
         continue
 
       #DI Pedal Level
       #self.di_gas = self.cp.vl["DI_torque1"]["DI_pedalPos"]
       if self.di_gas > 0 and self.status < 3:
         self.show_error(3)
+        if self.pedal_enabled == 1:
+          self.create_pedal_command_msg(0, 0, self.pedal_can)
+          self.pedal_enabled = 0
         continue
 
       #Pedal Msg
