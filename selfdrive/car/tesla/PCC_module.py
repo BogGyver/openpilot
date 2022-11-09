@@ -300,7 +300,12 @@ class PCCController:
         # we use the values from a_pid
         ##############################################################
         ZERO_ACCEL = self.PedalForZeroTorque
-        REGEN_DECEL = -0.8 #BB needs to be calculated based on regen available, which is higher at lower speeds...
+        #BB regen braking is -1.5 as measured when full regen available
+        #needs to be calculated based on regen available
+        #also at lower speeds it should be faster to crank up to full brake
+        REGEN_DECEL_BP = [10., 20.]
+        REGEN_DECEL_V = [-0.8, -1.5]
+        REGEN_DECEL = interp(CS.out.vEgo, REGEN_DECEL_BP, REGEN_DECEL_V)
         
         MAX_PEDAL_BP = PEDAL_BP
         MAX_PEDAL_V = PEDAL_V[PEDAL_PROFILE]
