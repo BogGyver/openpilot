@@ -17,6 +17,10 @@ Unity Version 0.8.13-56 (2022-11-08)
  * Add 5 pedal profiles and 3 acceleration profiles for better long control wiht pedal
  * Add alert when maximum regen is used with pedal to show braking limit 
  * Prevent PCC engagement with uncalibrated pedals
+ * Cancel automatic lane change on blinker or wheel touch
+ * Toggle to ignore wrong date/time on device
+ * Increase steering angle limits on Panda
+ * Fix Controls Mismatch when taking over steering
 
 Unity Version 0.8.13-55 (2022-09-21)
 ========================

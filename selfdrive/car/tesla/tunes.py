@@ -45,6 +45,10 @@ ACCEL_MAX_LOOKUP_V  = [[0.3, 0.7, 0.9,  0.7,  0.6,  0.5], #1-Chill
                        [0.3, 0.9, 1.2,  1.0,  0.8,  0.6], #2-Standard
                        [0.3, 1.6, 1.9,  1.5,  1.2,  1.0], #3-MadMax
 ]
+ACCEL_AP_MAX_LOOKUP_V  = [[2.0, 1.8, 1.2,  0.7,  0.6,  0.5], #1-Chill
+                          [2.2, 2.0, 1.4,  1.0,  0.8,  0.6], #2-Standard
+                          [2.5, 2.3, 1.9,  1.5,  1.2,  1.0], #3-MadMax
+]
 ACCEL_MIN_LOOKUP_V =  [TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL, TESLA_MIN_ACCEL]
 ACCEL_REG_LOOKUP_V =  [ -1.5, -1.5, -1.5, -1.5, -1.5, -1.5]
 

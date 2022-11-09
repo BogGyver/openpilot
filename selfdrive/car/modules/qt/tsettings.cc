@@ -242,6 +242,12 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     "../assets/offroad/icon_settings.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
+    {"TinklaIgnoreDateTime",
+    "Ignore wrong Date/Time",
+    "Allows a rebooted EON to run even if the date is incorrect. Prevents need to connect to network upon restarting.",
+    "../assets/offroad/icon_settings.png",
+    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+    },
     {"TinklaForceTeslaPreAP",
     "Force PreAP Tesla Model S ",
     "Forces the fingerprint to match a PreAP Tesla Model S. Requires reboot.",

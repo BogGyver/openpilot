@@ -2,11 +2,11 @@ void can_send(CANPacket_t *to_push, uint8_t bus_number, bool skip_tx_hook);
 
 const struct lookup_t TESLA_LOOKUP_ANGLE_RATE_UP = {
     {2., 7., 17.},
-    {8., 8., 8.}};
+    {8., 4., 2.5}};
 
 const struct lookup_t TESLA_LOOKUP_ANGLE_RATE_DOWN = {
     {2., 7., 17.},
-    {8., 8., 8.}};
+    {9., 5., 4.5}};
 
 const int TESLA_DEG_TO_CAN = 10;
 
@@ -75,6 +75,12 @@ uint32_t DAS_lastStalkH = 0;
 int EPB_epasControl_idx = 0;
 int time_at_last_stalk_pull = -1;
 int current_car_time = -1;
+
+int hands_on_level = 0;
+int prev_hands_on_level = 0;
+uint32_t hands_on_level_last_signal = 0;
+const uint32_t TIME_FOR_HANDS_ON = 1000000; //1s after touching
+bool human_steering = false;
 
 
 //use for Bosch radar
@@ -885,6 +891,19 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
           // Steering angle: (0.1 * val) - 819.2 in deg.
           // Store it 1/10 deg to match steering request
           int angle_meas_new = (((GET_BYTE(to_push, 4) & 0x3F) << 8) | GET_BYTE(to_push, 5)) - 8192;
+          hands_on_level = ((GET_BYTE(to_push, 4) >> 6) & 0x03);
+          float torsionBarTorque = ABS((((GET_BYTE(to_push, 2) & 0x0F) << 8) | GET_BYTE(to_push, 3))* 0.01 -20.5);
+          if ((hands_on_level > 0) || (torsionBarTorque > 0.9)) {
+            hands_on_level_last_signal = microsecond_timer_get();
+          }
+          uint32_t ts = microsecond_timer_get();
+          uint32_t ts_elapsed = get_ts_elapsed(ts, hands_on_level_last_signal);
+          if (ts_elapsed <= TIME_FOR_HANDS_ON) {
+            human_steering = true;
+          } else {
+            human_steering = false;
+          }
+          prev_hands_on_level = hands_on_level;
           update_sample(&angle_meas, angle_meas_new);
         }
 
@@ -1058,19 +1077,21 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
       int lowest_desired_angle = desired_angle_last - ((desired_angle_last >= 0) ? delta_angle_down : delta_angle_up);
 
       // Check for violation;
-      violation |= max_limit_check(desired_angle, highest_desired_angle, lowest_desired_angle);
+      if (!human_steering ) {
+        violation |= max_limit_check(desired_angle, highest_desired_angle, lowest_desired_angle);
+      }
     }
     
     desired_angle_last = desired_angle;
 
     // Angle should be the same as current angle while not steering
     if(!controls_allowed && ((desired_angle < (angle_meas.min - 1)) || (desired_angle > (angle_meas.max + 1)))) {
-      violation = true;
+      violation = !human_steering ;
     }
 
     // No angle control allowed when controls are not allowed
     if(!controls_allowed && steer_control_enabled) {
-      violation = true;
+      violation = !human_steering;
     }
   }
 

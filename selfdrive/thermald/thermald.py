@@ -26,6 +26,7 @@ from selfdrive.statsd import statlog
 from selfdrive.swaglog import cloudlog
 from selfdrive.thermald.power_monitoring import PowerMonitoring
 from selfdrive.version import terms_version, training_version
+from selfdrive.car.modules.CFG_module import load_bool_param
 
 ThermalStatus = log.DeviceState.ThermalStatus
 NetworkType = log.DeviceState.NetworkType
@@ -331,7 +332,7 @@ def thermald_thread(end_event, hw_queue):
 
     # Ensure date/time are valid
     now = datetime.datetime.utcnow()
-    startup_conditions["time_valid"] = (now.year > 2020) or (now.year == 2020 and now.month >= 10)
+    startup_conditions["time_valid"] = (now.year > 2020) or (now.year == 2020 and now.month >= 10) or load_bool_param("TinklaIgnoreDateTime",False)
     set_offroad_alert_if_changed("Offroad_InvalidTime", (not startup_conditions["time_valid"]))
 
     startup_conditions["up_to_date"] = params.get("Offroad_ConnectivityNeeded") is None or params.get_bool("DisableUpdates") or params.get_bool("SnoozeUpdate")

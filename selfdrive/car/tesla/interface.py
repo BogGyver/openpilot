@@ -5,7 +5,7 @@ from selfdrive.car import STD_CARGO_KG, gen_empty_fingerprint, scale_rot_inertia
 from selfdrive.car.interfaces import CarInterfaceBase
 from selfdrive.car.modules.CFG_module import load_bool_param, load_float_param
 from panda import Panda
-from selfdrive.car.tesla.tunes import LongTunes, set_long_tune, ACCEL_LOOKUP_BP, ACCEL_MAX_LOOKUP_V, ACCEL_MIN_LOOKUP_V, ACCEL_REG_LOOKUP_V
+from selfdrive.car.tesla.tunes import LongTunes, set_long_tune, ACCEL_LOOKUP_BP, ACCEL_MAX_LOOKUP_V, ACCEL_MIN_LOOKUP_V, ACCEL_REG_LOOKUP_V, ACCEL_AP_MAX_LOOKUP_V
 from common.numpy_fast import interp
 from selfdrive.config import Conversions as CV
 
@@ -24,7 +24,10 @@ def get_tesla_accel_limits(CP, current_speed):
   a_max = interp(current_speed,ACCEL_LOOKUP_BP,ACCEL_MAX_LOOKUP_V[ACCEL_PROFILE])
   if CP.carFingerprint == CAR.PREAP_MODELS and not HAS_IBOOSTER_ECU:
     a_min = interp(current_speed,ACCEL_LOOKUP_BP,ACCEL_REG_LOOKUP_V)
+  elif CP.carFingerprint == CAR.PREAP_MODELS and HAS_IBOOSTER_ECU:
+    a_min = interp(current_speed,ACCEL_LOOKUP_BP,ACCEL_MIN_LOOKUP_V)
   else:
+    a_max = interp(current_speed,ACCEL_LOOKUP_BP,ACCEL_AP_MAX_LOOKUP_V[ACCEL_PROFILE])
     a_min = interp(current_speed,ACCEL_LOOKUP_BP,ACCEL_MIN_LOOKUP_V)
   return a_min, a_max
 
