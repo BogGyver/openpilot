@@ -304,7 +304,7 @@ class PCCController:
         #needs to be calculated based on regen available
         #also at lower speeds it should be faster to crank up to full brake
         REGEN_DECEL_BP = [10., 20.]
-        REGEN_DECEL_V = [-0.8, -1.5]
+        REGEN_DECEL_V = [-0.8, -1.45]
         REGEN_DECEL = interp(CS.out.vEgo, REGEN_DECEL_BP, REGEN_DECEL_V)
         
         MAX_PEDAL_BP = PEDAL_BP
@@ -350,7 +350,7 @@ class PCCController:
             #waiting on ibooster to unwind to accelerate
             tesla_pedal = min(tesla_pedal,MIN_PEDAL_REGEN_VALUE) 
         #show max regen message if we don't have ibooster
-        if ((not CS.has_ibooster_ecu) and tesla_pedal == MIN_PEDAL_REGEN_VALUE and 
+        if ((not CS.has_ibooster_ecu) and tesla_pedal <= 0.95 * MIN_PEDAL_REGEN_VALUE and 
                 enable_pedal ==1 and
                 (_current_time_millis() - self.stalk_pull_time_ms) > TIMEOUT_REGEN_ERROR):
             CS.pccEvent = car.CarEvent.EventName.promptMaxRegen
