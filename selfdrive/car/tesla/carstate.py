@@ -340,10 +340,10 @@ class CarState(CarStateBase):
         self.map_suggested_speed = max(
             self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed
         )
-    if self.CP.carFingerprint != CAR.PREAP_MODELS and self.baseMapSpeedLimitMPS > 0 and (speed_limit_type != 0x1F or self.baseMapSpeedLimitMPS >= 5.56):
-      self.speed_limit_ms = self.baseMapSpeedLimitMPS # this one is earlier than the actual sign but can also be unreliable, so we ignore it on SNA at higher speeds
-    else:
-      self.speed_limit_ms = cp.vl['UI_gpsVehicleSpeed']["UI_mppSpeedLimit"] * map_speed_uom_to_ms
+    #if self.CP.carFingerprint != CAR.PREAP_MODELS and self.baseMapSpeedLimitMPS > 0 and (speed_limit_type != 0x1F or self.baseMapSpeedLimitMPS >= 5.56):
+    #  self.speed_limit_ms = self.baseMapSpeedLimitMPS # this one is earlier than the actual sign but can also be unreliable, so we ignore it on SNA at higher speeds
+    #else:
+    self.speed_limit_ms = cp.vl['UI_gpsVehicleSpeed']["UI_mppSpeedLimit"] * map_speed_uom_to_ms
     self.DAS_fusedSpeedLimit = self._convert_to_DAS_fusedSpeedLimit(self.speed_limit_ms * map_speed_ms_to_uom, speed_limit_type)
     if self.DAS_fusedSpeedLimit > 1:
       self.fleet_speed_state = 2
@@ -410,10 +410,11 @@ class CarState(CarStateBase):
     #BBTODO: in latest versions of code Tesla does not populate this field
     ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
     self.realPedalValue = ret.gas
-    ret.gasPressed = (ret.gas > 0)
+    ret.gasPressed = (ret.gas > 0.1 )
     if self.enableHAO:
       self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
       ret.gas = 0
+      ret.gasPressed = False
     #PREAP overrides at the last moment
     if self.CP.carFingerprint in [CAR.PREAP_MODELS]:
       #Message needed for GTW_ESP1

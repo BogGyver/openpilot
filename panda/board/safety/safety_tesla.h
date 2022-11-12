@@ -191,7 +191,9 @@ const CanMsg TESLA_PREAP_TX_MSGS[] = {
     {0x2D9, 1, 8},  //BC_status
     {0x560, 1, 8},  //radar VIN fake message
     {0x641, 1, 8},  //UDS message to radar CAN0 0x671 -> 0x641 on CAN1
+    {0x671, 1, 8},  //UDS message to radar 0x671 as is
     {0x681, 0, 8},  //UDS answer from CAN1 0x651 -> 0x681 on CAN0
+    {0x651, 0, 8},  //UDS answer from roadar 0x651 as is
     //pedal
     {0x551, 0, 6}, //GAS_INTERCEPTOR command can0
     {0x551, 2, 6}, //GAS_INTERCEPTOR command can2
@@ -786,8 +788,8 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
   int bus = GET_BUS(to_push);
   int addr = GET_ADDR(to_push);
 
-  if (((bus == 0) && (addr == 0x671)) || 
-      ((bus == tesla_radar_can) && (addr = 0x651))) {
+  if (((bus == 0) && (addr == 0x671)) || ((bus == 0) && (addr == 0x641)) ||
+      ((bus == tesla_radar_can) && (addr = 0x651)) || ((bus == tesla_radar_can) && (addr = 0x681))) {
       valid = true;
   }
 
@@ -1095,7 +1097,7 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
     }
   }
 
-  if(!tesla_powertrain && (addr == 0x45)) {
+  /*if(!tesla_powertrain && (addr == 0x45)) {
     // No button other than cancel can be sent by us when we have AP
     if (has_ap_hardware) {
       int control_lever_status = (GET_BYTE(to_send, 0) & 0x3F);
@@ -1103,7 +1105,7 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
         violation = true;
       }
     }
-  }
+  }*/
 
   if(addr == (tesla_powertrain ? 0x2bf : 0x2b9)) {
     // DAS_control: longitudinal control message
@@ -1197,12 +1199,20 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
       if ((bus_num == 0) && (addr == 0x671)) {
         //change addr
         teslaPreAp_fwd_to_radar_as_is(tesla_radar_can, to_fwd, 0x641);
+        //also send as is
+        return -1;
+      }
+      if ((bus_num == 0) && (addr == 0x641)) {
         return -1;
       }
       //forward 0x651 on can1 to 0x681 on can0 radar UDS
       if ((bus_num == tesla_radar_can) && (addr == 0x651)) {
         //change addr
         teslaPreAp_fwd_to_radar_as_is(0, to_fwd, 0x681);
+        //also send as is
+        return -1;
+      }
+      if ((bus_num == tesla_radar_can) && (addr == 0x681)) {
         return -1;
       }
   }

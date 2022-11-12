@@ -1,3 +1,10 @@
+Unity Version 0.8.13-57 (2022-11-XX)
+========================
+ * Fix pedal pressed message on ACC
+ * Adjust top speed with speed limit for AP1
+ * Show set speed in lower right corner for RHD cars
+ * Brake factor speed adjustable (1.1 below 70km/h, 1.4 above 110km/h)
+
 Unity Version 0.8.13-56 (2022-11-08)
 ========================
  * Sound files volume fix
@@ -11,7 +18,7 @@ Unity Version 0.8.13-56 (2022-11-08)
  * Add message ID for the CAN Error 
  * Reduce min accel to -4.5 
  * Improve follow distance
- * Better and smoother pedal with 4 proiles
+ * Better and smoother pedal with 4 profiles
  * Universal calibration tool for pedal interceptor
  * iBooster control improvement
  * Add 5 pedal profiles and 3 acceleration profiles for better long control wiht pedal

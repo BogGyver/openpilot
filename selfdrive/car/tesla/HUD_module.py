@@ -223,10 +223,10 @@ class HUDController:
         v_cruise_pcm = max(0.0, CS.out.vEgo * CV.MS_TO_KPH) * speed_uom_kph
         if CS.cruiseEnabled:
             v_cruise_pcm = max(0.0, CS.out.cruiseState.speed * CV.MS_TO_KPH) * speed_uom_kph
+        cruise_speed = CS.out.cruiseState.speed * CV.MS_TO_MPH
         DAS_control_speed = v_cruise_pcm
         if CS.carNotInDrive:
             DAS_control_speed = 350.0/3.6
-        cruise_speed = CS.out.cruiseState.speed * CV.MS_TO_MPH
         if self.engageable and (not enabled) and cruise_speed == 0:
             cruise_speed = 10
 

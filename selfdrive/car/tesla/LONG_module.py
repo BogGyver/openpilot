@@ -1,4 +1,4 @@
-from selfdrive.car.tesla.values import CarControllerParams, CAR, CAN_CHASSIS, CAN_POWERTRAIN, CruiseState, TESLA_MAX_ACCEL, TESLA_MIN_ACCEL
+from selfdrive.car.tesla.values import CruiseButtons, CarControllerParams, CAR, CAN_CHASSIS, CAN_POWERTRAIN, CruiseState, TESLA_MAX_ACCEL, TESLA_MIN_ACCEL
 from selfdrive.car.tesla.ACC_module import ACCController
 from selfdrive.car.tesla.PCC_module import PCCController
 from selfdrive.config import Conversions as CV
@@ -12,6 +12,8 @@ ACCEL_MULT_SPEED_DELTA_V = [1.0, 1.01, 1.05,  1.1]
 ACCEL_MULT_ACCEL_PERC_V  = [1.0, 1.0,  1.05,  1.1]
 
 FLEET_SPEED_ACCEL = -0.5 # m/s2 how fast to reduce speed to match fleet, always negative 
+BRAKE_FACTOR_BP = [18., 31.]
+BRAKE_FACTOR_V = [1.1, 1.4]
 BRAKE_FACTOR = load_float_param("TinklaBrakeFactor",1.0)
 
 def _is_present(lead):
@@ -41,21 +43,26 @@ class LONGController:
         self.has_ibooster_ecu = False
         self.ibooster_idx = 0
         self.apply_brake = 0.0
-        self.speed_limit_offset_uom = 0
+        self.speed_limit_offset_uom = load_float_param("TinklaSpeedLimitOffset",0.0)
         self.speed_limit_offset_ms = 0.0
         self.adjustSpeedWithSpeedLimit = load_bool_param("TinklaAdjustAccWithSpeedLimit",True)
+        self.adjustSpeedRelative = load_bool_param("TinklaSpeedLimitUseRelative",False)
         self.useLongControlData = load_bool_param("TinklaUseLongControlData",False)
         average_speed_over_x_suggestions = 10  # 0.3 seconds (20x a second)
+        self.speed_limit_uom = 0.
+        self.prev_speed_limit_uom = 0.
         self.fleet_speed = FleetSpeed(average_speed_over_x_suggestions)
         self.prev_enabled = False
         self.speed_limit_ms = 0.
         self.prev_speed_limit_ms = 0.
+        self.ap1_adjusting_speed = False
+        self.ap1_speed_target = 0.
+        self.set_speed_limit_active = False
         if (CP.carFingerprint == CAR.PREAP_MODELS):
             self.ACC = ACCController(self)
             self.PCC = PCCController(self,tesla_can,pedalcan,CP )
-            self.speed_limit_ms = 0
-            self.set_speed_limit_active = False
-            self.speed_limit_offset_uom = load_float_param("TinklaSpeedLimitOffset",0.0)
+            
+            
             
 
     def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state):
@@ -63,7 +70,7 @@ class LONGController:
         self.has_ibooster_ecu = CS.has_ibooster_ecu
         my_accel = actuators.accel
         if my_accel < 0:
-            my_accel = my_accel * BRAKE_FACTOR
+            my_accel = my_accel * BRAKE_FACTOR 
         #update options 
 
         if enabled and not self.prev_enabled:
@@ -74,19 +81,21 @@ class LONGController:
             self.speed_limit_ms = CS.speed_limit_ms
             if self.speed_limit_ms != self.prev_speed_limit_ms:
                 self.fleet_speed.reset_averager() #reset fleet averager on speed limit changes
+                self.prev_speed_limit_ms = self.speed_limit_ms
             self.set_speed_limit_active = self.adjustSpeedWithSpeedLimit if self.speed_limit_ms > 0 else False
 
         if frame % 100 == 0:
-            if self.CP.carFingerprint != CAR.PREAP_MODELS:
-                self.speed_limit_offset_ms = CS.userSpeedLimitOffsetMS
-            else:
-                if load_bool_param("TinklaSpeedLimitUseRelative",False):
+            #if self.CP.carFingerprint != CAR.PREAP_MODELS:
+            #    self.speed_limit_offset_ms = CS.userSpeedLimitOffsetMS
+            #else:
+            if self.adjustSpeedRelative:
+                if self.speed_limit_ms > 0:
                     self.speed_limit_offset_ms = self.speed_limit_offset_uom * self.speed_limit_ms / 100.0
-                else:
-                    if CS.speed_units == "KPH":
-                        self.speed_limit_offset_ms = self.speed_limit_offset_uom* CV.KPH_TO_MS
-                    elif CS.speed_units == "MPH":
-                        self.speed_limit_offset_ms = self.speed_limit_offset_uom* CV.MPH_TO_MS
+            else:
+                if CS.speed_units == "KPH":
+                    self.speed_limit_offset_ms = self.speed_limit_offset_uom* CV.KPH_TO_MS
+                elif CS.speed_units == "MPH":
+                    self.speed_limit_offset_ms = self.speed_limit_offset_uom* CV.MPH_TO_MS
         
 
         #if not openpilot long control just exit
@@ -180,7 +189,7 @@ class LONGController:
     
                 if self.v_target is None:
                     self.v_target = CS.out.vEgo
-                target_accel = clip(my_accel, TESLA_MIN_ACCEL,TESLA_MAX_ACCEL)
+                target_accel = clip(my_accel * interp(CS.out.vEgo, BRAKE_FACTOR_BP, BRAKE_FACTOR_V ), TESLA_MIN_ACCEL,TESLA_MAX_ACCEL)
                 target_speed = max(self.v_target, 0)                    
 
                 apply_accel, self.apply_brake, accel_needed, accel_idx = self.PCC.update_pdl(
@@ -226,7 +235,45 @@ class LONGController:
                 CS.cc_state = 1
             if CS.speed_units == "MPH":
                 speed_uom_kph = CV.KPH_TO_MPH
-            CS.acc_speed_kph = CS.cruise_speed * CV.MS_TO_KPH
+            CS.acc_speed_kph = CS.out.cruiseState.speed * CV.MS_TO_KPH
+
+            if self.set_speed_limit_active and self.speed_limit_ms > 0:
+                self.speed_limit_uom = int((self.speed_limit_ms + self.speed_limit_offset_ms) * CV.MS_TO_KPH * speed_uom_kph)
+            if (
+                int(self.prev_speed_limit_uom) != int(self.speed_limit_uom) 
+                and self.speed_limit_ms > 0
+                and int(CS.acc_speed_kph * speed_uom_kph) != int(self.speed_limit_uom)
+            ):
+                self.ap1_adjusting_speed = True
+                self.ap1_speed_target = self.speed_limit_uom
+            self.prev_speed_limit_uom = self.speed_limit_uom
+            if self.ap1_adjusting_speed and int(CS.acc_speed_kph * speed_uom_kph) == int(self.ap1_speed_target):
+                self.ap1_adjusting_speed = False
+                self.ap1_speed_target = 0
+            if self.ap1_adjusting_speed  and frame % 20 == 0:
+                #adjust speed at 5Hz
+                speed_offset_uom = int(self.ap1_speed_target - CS.acc_speed_kph * speed_uom_kph)
+                
+                button_to_press = None
+                if speed_offset_uom <= -5:
+                    button_to_press = CruiseButtons.DECEL_2ND
+                elif speed_offset_uom <= -1:
+                    button_to_press = CruiseButtons.DECEL_SET
+                elif speed_offset_uom >= 5:
+                    button_to_press = CruiseButtons.RES_ACCEL_2ND
+                elif speed_offset_uom >= 1:
+                    button_to_press = CruiseButtons.RES_ACCEL
+                else:
+                    self.ap1_adjusting_speed = False
+                    self.ap1_speed_target = 0
+                if button_to_press:
+                    # insert the message first since it is racing against messages from the real stalk
+                    stlk_counter = ((CS.msg_stw_actn_req['MC_STW_ACTN_RQ'] + 1) % 16)
+                    messages.append(self.tesla_can.create_action_request(
+                         msg_stw_actn_req=CS.msg_stw_actn_req,
+                         button_to_press=button_to_press,
+                         bus=CAN_CHASSIS[self.CP.carFingerprint],
+                         counter=stlk_counter))
             CS.v_cruise_pcm = CS.acc_speed_kph * speed_uom_kph
             CS.speed_control_enabled = 1
             CS.cc_state = 3 # was 2, we use HOLD to show it's OP for now

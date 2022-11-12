@@ -11,6 +11,18 @@ from cereal import car
 # CS.imperial_speed_units -> CS.speed_units == "MPH"
 # CS.pcm_acc_status -> CS.cruise_state
 
+def get_cc_units_kph(is_imperial_units):
+    # Cruise control buttons behave differently depending on whether the car
+    # is configured for metric or imperial units.
+    if is_imperial_units:
+        # Imperial unit cars adjust cruise in units of 1 and 5 mph.
+        half_press_kph = 1 * CV.MPH_TO_KPH
+        full_press_kph = 5 * CV.MPH_TO_KPH
+    else:
+        # Metric cars adjust cruise in units of 1 and 5 kph.
+        half_press_kph = 1
+        full_press_kph = 5
+    return half_press_kph, full_press_kph
 
 class ACCState:
     # Possible states of the ACC system, following the DI_cruiseState naming
@@ -206,7 +218,7 @@ class ACCController:
 
     def _update_max_acc_speed(self, CS):
         # Adjust the max ACC speed based on user cruise stalk actions.
-        half_press_kph, full_press_kph = self._get_cc_units_kph(CS.speed_units == "MPH")
+        half_press_kph, full_press_kph = get_cc_units_kph(CS.speed_units == "MPH")
         speed_change_map = {
             CruiseButtons.RES_ACCEL: half_press_kph,
             CruiseButtons.RES_ACCEL_2ND: full_press_kph,
@@ -351,19 +363,6 @@ class ACCController:
             return sys.maxsize
         return abs(float(lead_car.dRel) / lead_car.vRel)
 
-    def _get_cc_units_kph(self, is_imperial_units):
-        # Cruise control buttons behave differently depending on whether the car
-        # is configured for metric or imperial units.
-        if is_imperial_units:
-            # Imperial unit cars adjust cruise in units of 1 and 5 mph.
-            half_press_kph = 1 * CV.MPH_TO_KPH
-            full_press_kph = 5 * CV.MPH_TO_KPH
-        else:
-            # Metric cars adjust cruise in units of 1 and 5 kph.
-            half_press_kph = 1
-            full_press_kph = 5
-        return half_press_kph, full_press_kph
-
     # Adjust speed based off OP's longitudinal model.
     def _calc_button(self, CS, desired_speed_ms):
         button_to_press = None
@@ -382,7 +381,7 @@ class ACCController:
             # control speed, in KPH.
             speed_offset_kph = desired_speed_ms * CV.MS_TO_KPH - CS.v_cruise_actual
 
-            half_press_kph, full_press_kph = self._get_cc_units_kph(
+            half_press_kph, full_press_kph = get_cc_units_kph(
                 CS.speed_units == "MPH"
             )
 
