@@ -48,10 +48,11 @@ class LONGController:
         self.adjustSpeedWithSpeedLimit = load_bool_param("TinklaAdjustAccWithSpeedLimit",True)
         self.adjustSpeedRelative = load_bool_param("TinklaSpeedLimitUseRelative",False)
         self.useLongControlData = load_bool_param("TinklaUseLongControlData",False)
-        average_speed_over_x_suggestions = 10  # 0.3 seconds (20x a second)
+        average_speed_over_x_suggestions = 5  # 1 second @ 5Hz
         self.speed_limit_uom = 0.
         self.prev_speed_limit_uom = 0.
         self.fleet_speed = FleetSpeed(average_speed_over_x_suggestions)
+        self.fleet_speed_ms = 0.
         self.prev_enabled = False
         self.speed_limit_ms = 0.
         self.prev_speed_limit_ms = 0.
@@ -300,12 +301,13 @@ class LONGController:
                 target_accel = 0.
 
             if self.useLongControlData:
-                fleet_speed = self.fleet_speed.adjust(
-                        CS, CS.out.cruiseState.speed, frame
-                    )
-                if fleet_speed < target_speed:
+                if frame % 20 == 0: #update fleet speed info at 5 Hz
+                    self.fleet_speed_ms = self.fleet_speed.adjust(
+                            CS, CS.out.cruiseState.speed, frame
+                        )
+                if self.fleet_speed_ms < target_speed and self.fleet_speed_ms > 0:
                     target_accel = min(target_accel,FLEET_SPEED_ACCEL)
-                    target_speed = min(target_speed,fleet_speed,CS.out.cruiseState.speed)
+                    target_speed = min(target_speed,self.fleet_speed_ms,CS.out.cruiseState.speed)
             
             max_accel = 0 if target_accel < 0 else target_accel
             min_accel = 0 if target_accel > 0 else target_accel
