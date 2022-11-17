@@ -74,6 +74,7 @@ class CarState(CarStateBase):
     self.DAS_fusedSpeedLimit = 0
     self.baseMapSpeedLimitMPS = 0
     self.fleet_speed_state = 0
+    self.speed_limit_ms_das = 0.
 
     self.cruise_distance = 255
 
@@ -340,15 +341,27 @@ class CarState(CarStateBase):
         self.map_suggested_speed = max(
             self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed
         )
+    if self.CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP1_MODELX, CAR.AP2_MODELS]:
+      self.speed_limit_ms_das = cp_cam.vl["DAS_status"]["DAS_fusedSpeedLimit"] / map_speed_ms_to_uom
+      if cp_cam.vl["DAS_status"]["DAS_fusedSpeedLimit"] >= 150:
+        #set to zero for no speed limit (0x1E) or SNA ((0x1F)
+        self.speed_limit_ms_das = 0.
     if self.CP.carFingerprint != CAR.PREAP_MODELS and self.baseMapSpeedLimitMPS > 0 and (speed_limit_type != 0x1F or self.baseMapSpeedLimitMPS >= 5.56):
       self.speed_limit_ms = self.baseMapSpeedLimitMPS # this one is earlier than the actual sign but can also be unreliable, so we ignore it on SNA at higher speeds
     else:
       self.speed_limit_ms = cp.vl['UI_gpsVehicleSpeed']["UI_mppSpeedLimit"] * map_speed_uom_to_ms
-    self.DAS_fusedSpeedLimit = self._convert_to_DAS_fusedSpeedLimit(self.speed_limit_ms * map_speed_ms_to_uom, speed_limit_type)
+    if self.CP.carFingerprint != CAR.PREAP_MODELS:
+      self.DAS_fusedSpeedLimit = cp_cam.vl["DAS_status"]["DAS_fusedSpeedLimit"]
+    else:
+      self.DAS_fusedSpeedLimit = self._convert_to_DAS_fusedSpeedLimit(self.speed_limit_ms * map_speed_ms_to_uom, speed_limit_type)
+    
     if self.DAS_fusedSpeedLimit > 1:
       self.fleet_speed_state = 2
     else:
       self.fleet_speed_state = 0
+    if self.speed_limit_ms_das > 0:
+      self.speed_limit_ms = min(self.speed_limit_ms_das,self.speed_limit_ms)
+    self.userSpeedLimitOffsetMS = cp.vl["UI_gpsVehicleSpeed"]["UI_userSpeedOffset"]
     self.compute_speed()
     #Map based data
     # Gear
@@ -511,6 +524,7 @@ class CarState(CarStateBase):
       ("BC_indicatorRStatus", "GTW_carState", 1),
       # info for speed limit
       ("UI_mapSpeedLimitUnits","UI_gpsVehicleSpeed",0),
+      ("UI_userSpeedOffset","UI_gpsVehicleSpeed",0),
       ("UI_mppSpeedLimit","UI_gpsVehicleSpeed",0),
       ("UI_mapSpeedLimit","UI_driverAssistMapData",0),
       ("UI_roadSign","UI_driverAssistRoadSign",0),

@@ -56,6 +56,7 @@ class LONGController:
         self.prev_enabled = False
         self.speed_limit_ms = 0.
         self.prev_speed_limit_ms = 0.
+        self.prev_speed_limit_ms_das = 0.
         self.ap1_adjusting_speed = False
         self.ap1_speed_target = 0.
         self.set_speed_limit_active = False
@@ -76,7 +77,7 @@ class LONGController:
 
         if enabled and not self.prev_enabled:
             self.fleet_speed.reset_averager()
-        self.prev_enabled = enabled
+        
 
         if frame % 10 == 0:
             self.speed_limit_ms = CS.speed_limit_ms
@@ -86,9 +87,8 @@ class LONGController:
             self.set_speed_limit_active = self.adjustSpeedWithSpeedLimit if self.speed_limit_ms > 0 else False
 
         if frame % 100 == 0:
-            #if self.CP.carFingerprint != CAR.PREAP_MODELS:
-            #    self.speed_limit_offset_ms = CS.userSpeedLimitOffsetMS
-            #else:
+            if self.CP.carFingerprint != CAR.PREAP_MODELS:
+                self.speed_limit_offset_uom = CS.userSpeedLimitOffsetMS
             if self.adjustSpeedRelative:
                 if self.speed_limit_ms > 0:
                     self.speed_limit_offset_ms = self.speed_limit_offset_uom * self.speed_limit_ms / 100.0
@@ -237,23 +237,32 @@ class LONGController:
             if CS.speed_units == "MPH":
                 speed_uom_kph = CV.KPH_TO_MPH
             CS.acc_speed_kph = CS.out.cruiseState.speed * CV.MS_TO_KPH
-
+            acc_speed_uom_int = int(round(CS.acc_speed_kph * speed_uom_kph + 0.01))
             if self.set_speed_limit_active and self.speed_limit_ms > 0:
-                self.speed_limit_uom = int((self.speed_limit_ms + self.speed_limit_offset_ms) * CV.MS_TO_KPH * speed_uom_kph)
+                self.speed_limit_uom = int(round((self.speed_limit_ms + self.speed_limit_offset_ms) * CV.MS_TO_KPH * speed_uom_kph + 0.01))
             if (
-                int(self.prev_speed_limit_uom) != int(self.speed_limit_uom) 
+                self.prev_speed_limit_uom != self.speed_limit_uom
                 and self.speed_limit_ms > 0
-                and int(CS.acc_speed_kph * speed_uom_kph) != int(self.speed_limit_uom)
+                and acc_speed_uom_int != self.speed_limit_uom
+            ) or (
+                enabled and 
+                not self.prev_enabled
+                and self.speed_limit_ms > 0
+            ) or (
+                CS.speed_limit_ms_das != self.prev_speed_limit_ms_das
+                and CS.speed_limit_ms_das > 0
+                and self.speed_limit_ms > 0
             ):
                 self.ap1_adjusting_speed = True
                 self.ap1_speed_target = self.speed_limit_uom
             self.prev_speed_limit_uom = self.speed_limit_uom
-            if self.ap1_adjusting_speed and int(CS.acc_speed_kph * speed_uom_kph) == int(self.ap1_speed_target):
+            self.prev_speed_limit_ms_das = CS.speed_limit_ms_das
+            if self.ap1_adjusting_speed and acc_speed_uom_int == self.ap1_speed_target:
                 self.ap1_adjusting_speed = False
                 self.ap1_speed_target = 0
-            if self.ap1_adjusting_speed  and frame % 20 == 0:
+            if self.ap1_adjusting_speed  and frame % 50 == 0:
                 #adjust speed at 5Hz
-                speed_offset_uom = int(self.ap1_speed_target - CS.acc_speed_kph * speed_uom_kph)
+                speed_offset_uom = self.ap1_speed_target - acc_speed_uom_int
                 
                 button_to_press = None
                 if speed_offset_uom <= -5:
@@ -264,9 +273,7 @@ class LONGController:
                     button_to_press = CruiseButtons.RES_ACCEL_2ND
                 elif speed_offset_uom >= 1:
                     button_to_press = CruiseButtons.RES_ACCEL
-                else:
-                    self.ap1_adjusting_speed = False
-                    self.ap1_speed_target = 0
+
                 if button_to_press:
                     # insert the message first since it is racing against messages from the real stalk
                     stlk_counter = ((CS.msg_stw_actn_req['MC_STW_ACTN_RQ'] + 1) % 16)
@@ -340,5 +347,6 @@ class LONGController:
             if self.CP.carFingerprint == CAR.AP1_MODELS:
                 messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, False, False , 0, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
 
+        self.prev_enabled = enabled
         return messages
 
