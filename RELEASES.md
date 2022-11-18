@@ -3,7 +3,7 @@ Unity Version 0.8.13-57 (2022-11-17)
  * Fix pedal pressed message on ACC
  * Adjust top speed with speed limit for AP1
  * Show set speed in lower right corner for RHD cars
- * Brake factor speed adjustable (1.1 below 70km/h, 1.4 above 110km/h)
+ * Brake factor speed adjustable (1.15 below 70km/h, 1.45 above 100km/h)
 
 Unity Version 0.8.13-56 (2022-11-08)
 ========================
