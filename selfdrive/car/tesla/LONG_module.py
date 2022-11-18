@@ -12,8 +12,8 @@ ACCEL_MULT_SPEED_DELTA_V = [1.0, 1.01, 1.05,  1.1]
 ACCEL_MULT_ACCEL_PERC_V  = [1.0, 1.0,  1.05,  1.1]
 
 FLEET_SPEED_ACCEL = -0.5 # m/s2 how fast to reduce speed to match fleet, always negative 
-BRAKE_FACTOR_BP = [18., 31.]
-BRAKE_FACTOR_V = [1.1, 1.45]
+BRAKE_FACTOR_BP = [18., 28.]
+BRAKE_FACTOR_V = [1.15, 1.45]
 BRAKE_FACTOR = load_float_param("TinklaBrakeFactor",1.0)
 
 def _is_present(lead):
