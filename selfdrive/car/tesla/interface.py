@@ -82,7 +82,7 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 2560. + STD_CARGO_KG
       ret.wheelbase = 2.964
       ret.centerToFront = ret.wheelbase * 0.5
-      ret.steerRatio = 13.5
+      ret.steerRatio = 15
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_AP  # has AP, ACC
       ret.openpilotLongitudinalControl = False
       set_long_tune(ret.longitudinalTuning, LongTunes.AP)

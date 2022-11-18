@@ -176,7 +176,7 @@ void OnroadAlerts::paintEvent(QPaintEvent *event) {
 OnroadHud::OnroadHud(QWidget *parent) : QWidget(parent) {
   engage_img = loadPixmap("../assets/img_chffr_wheel.png", {img_size, img_size});
   dm_img = loadPixmap("../assets/img_driver_face.png", {img_size, img_size});
-
+  is_rhd = Params().getBool("IsRHD");
   connect(this, &OnroadHud::valueChanged, [=] { update(); });
 }
 
@@ -218,20 +218,38 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   p.fillRect(0, 0, width(), header_h, bg);
 
   // max speed
-  QRect rc(bdr_s * 2, bdr_s * 1.5, 184, 202);
-  p.setPen(QPen(QColor(0xff, 0xff, 0xff, 100), 10));
-  p.setBrush(QColor(0, 0, 0, 100));
-  p.drawRoundedRect(rc, 20, 20);
-  p.setPen(Qt::NoPen);
+  if (is_rhd) {
+    QRect rc(1600, 700, 184, 202);
+    p.setPen(QPen(QColor(0xff, 0xff, 0xff, 100), 10));
+    p.setBrush(QColor(0, 0, 0, 100));
+    p.drawRoundedRect(rc, 20, 20);
+    p.setPen(Qt::NoPen);
 
-  configFont(p, "Open Sans", 48, "Regular");
-  drawText(p, rc.center().x(), 118, "MAX", is_cruise_set ? 200 : 100);
-  if (is_cruise_set) {
-    configFont(p, "Open Sans", 88, is_cruise_set ? "Bold" : "SemiBold");
-    drawText(p, rc.center().x(), 212, maxSpeed, 255);
+    configFont(p, "Open Sans", 48, "Regular");
+    drawText(p, rc.center().x(), 755, "MAX", is_cruise_set ? 200 : 100);
+    if (is_cruise_set) {
+      configFont(p, "Open Sans", 88, is_cruise_set ? "Bold" : "SemiBold");
+      drawText(p, rc.center().x(), 850, maxSpeed, 255);
+    } else {
+      configFont(p, "Open Sans", 80, "SemiBold");
+      drawText(p, rc.center().x(), 850, maxSpeed, 100);
+    }
   } else {
-    configFont(p, "Open Sans", 80, "SemiBold");
-    drawText(p, rc.center().x(), 212, maxSpeed, 100);
+    QRect rc(bdr_s * 2, bdr_s * 1.5, 184, 202);
+    p.setPen(QPen(QColor(0xff, 0xff, 0xff, 100), 10));
+    p.setBrush(QColor(0, 0, 0, 100));
+    p.drawRoundedRect(rc, 20, 20);
+    p.setPen(Qt::NoPen);
+
+    configFont(p, "Open Sans", 48, "Regular");
+    drawText(p, rc.center().x(), 118, "MAX", is_cruise_set ? 200 : 100);
+    if (is_cruise_set) {
+      configFont(p, "Open Sans", 88, is_cruise_set ? "Bold" : "SemiBold");
+      drawText(p, rc.center().x(), 212, maxSpeed, 255);
+    } else {
+      configFont(p, "Open Sans", 80, "SemiBold");
+      drawText(p, rc.center().x(), 212, maxSpeed, 100);
+    }
   }
 
   // current speed
