@@ -13,7 +13,7 @@ ACCEL_MULT_ACCEL_PERC_V  = [1.0, 1.0,  1.05,  1.1]
 
 FLEET_SPEED_ACCEL = -0.5 # m/s2 how fast to reduce speed to match fleet, always negative 
 BRAKE_FACTOR_BP = [18., 31.]
-BRAKE_FACTOR_V = [1.1, 1.4]
+BRAKE_FACTOR_V = [1.1, 1.45]
 BRAKE_FACTOR = load_float_param("TinklaBrakeFactor",1.0)
 
 def _is_present(lead):
@@ -260,7 +260,7 @@ class LONGController:
             if self.ap1_adjusting_speed and acc_speed_uom_int == self.ap1_speed_target:
                 self.ap1_adjusting_speed = False
                 self.ap1_speed_target = 0
-            if self.ap1_adjusting_speed  and frame % 50 == 0:
+            if self.ap1_adjusting_speed  and frame % 33 == 0:
                 #adjust speed at 5Hz
                 speed_offset_uom = self.ap1_speed_target - acc_speed_uom_int
                 
