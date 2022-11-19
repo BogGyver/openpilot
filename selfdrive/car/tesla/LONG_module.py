@@ -240,7 +240,8 @@ class LONGController:
             acc_speed_uom_int = int(round(CS.acc_speed_kph * speed_uom_kph + 0.01))
             if self.set_speed_limit_active and self.speed_limit_ms > 0:
                 self.speed_limit_uom = int(round((self.speed_limit_ms + self.speed_limit_offset_ms) * CV.MS_TO_KPH * speed_uom_kph + 0.01))
-            if (
+            if ( self.set_speed_limit_active and
+            ((
                 self.prev_speed_limit_uom != self.speed_limit_uom
                 and self.speed_limit_ms > 0
                 and acc_speed_uom_int != self.speed_limit_uom
@@ -252,7 +253,7 @@ class LONGController:
                 CS.speed_limit_ms_das != self.prev_speed_limit_ms_das
                 and CS.speed_limit_ms_das > 0
                 and self.speed_limit_ms > 0
-            ):
+            ))):
                 self.ap1_adjusting_speed = True
                 self.ap1_speed_target = self.speed_limit_uom
             self.prev_speed_limit_uom = self.speed_limit_uom
