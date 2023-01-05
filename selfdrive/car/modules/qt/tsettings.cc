@@ -397,6 +397,12 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
       "",
       0.0,0.0,0.0,0.0,TINKLA_STRING
     },
+    {"TinklaUseAEBevent",
+    "Use AEB Events (Experimental)",
+    "Use AEB Events to control speed on cars with AP disabled. This is an EXPERIMENTAL feature.",
+    "../assets/offroad/icon_settings.png",
+    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+    },
     {"TinklaDisableStartStopSounds",
     "Disable Main Sounds",
     "Disables the device from playing the Engagement and Disengagement sounds. To be used when the car will generate these sounds by itself. Prompt and Warning sounds will still be played.",
