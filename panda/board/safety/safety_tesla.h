@@ -1267,6 +1267,11 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
           WORD_TO_BYTE_ARRAY(&to_fwd->data[4], GET_BYTES_48(to_fwd) | (tesla_compute_checksum(to_fwd) << 24));
         }
       }
+      //enable autopilot=1 if autopilot=0
+      if ((addr = 0x398) && (((GET_BYTE(to_fwd, 7) & 0x38)>>3)==0)) {
+        //we have autopilot but it's disabled, so enable it for just "highway" to get ACC going
+        WORD_TO_BYTE_ARRAY(&to_fwd->data[4],(GET_BYTES_48(to_fwd) & 0xC7FFFFFF) | 0X08000000);
+      }
       //do not forward IC integration stuff from 0 -> 2 because they should not even be there
       if ((addr == 0x399) || (addr == 0x389) || (addr == 0x239) ||(addr == 0x309) || (addr == 0x3A9) || (addr == 0x329) || (addr == 0x369) || (addr == 0x349)) {
         return -1;

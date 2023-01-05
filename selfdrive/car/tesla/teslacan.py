@@ -347,6 +347,8 @@ class TeslaCAN:
       else:
           int_accelCommand = 0
           int_accelCommand2 = 0
+      int_accelCommand = clip(int_accelCommand, 0, 65534)
+      int_accelCommand2 = clip(int_accelCommand2, 0, 65534)
       msg = create_string_buffer(msg_len)
       struct.pack_into(
           "BBBBB",

@@ -113,10 +113,6 @@ void CAN1_TX_IRQ_Handler(void) {
   CAN->TSR |= CAN_TSR_RQCP0;
 }
 
-// two independent values
-uint16_t gas_set_0 = 0;
-uint16_t gas_set_1 = 0;
-
 #define MAX_TIMEOUT 10U
 uint32_t timeout = 0;
 uint32_t current_index = 0;
@@ -128,6 +124,12 @@ uint32_t current_index = 0;
 #define FAULT_STARTUP 4U
 #define FAULT_TIMEOUT 5U
 #define FAULT_INVALID 6U
+#define GAS_NO_VALUE 0U
+
+// two independent values
+uint32_t gas_set_0 = GAS_NO_VALUE;
+uint32_t gas_set_1 = GAS_NO_VALUE;
+
 uint8_t state = FAULT_STARTUP;
 const uint8_t crc_poly = 0xD5U;  // standard crc8
 
@@ -172,13 +174,13 @@ void CAN1_RX0_IRQ_Handler(void) {
             gas_set_1 = value_1;
           } else {
             // clear the fault state if values are 0
-            if ((value_0 == 0U) && (value_1 == 0U)) {
+            if ((value_0 == GAS_NO_VALUE) && (value_1 == GAS_NO_VALUE)) {
               state = NO_FAULT;
             } else {
               state = FAULT_INVALID;
             }
-            gas_set_0 = 0;
-            gas_set_1 = 0;
+            gas_set_0 = GAS_NO_VALUE;
+            gas_set_1 = GAS_NO_VALUE;
           }
           // clear the timeout
           timeout = 0;
@@ -187,6 +189,8 @@ void CAN1_RX0_IRQ_Handler(void) {
       } else {
         // wrong checksum = fault
         state = FAULT_BAD_CHECKSUM;
+        gas_set_0 = GAS_NO_VALUE;
+        gas_set_1 = GAS_NO_VALUE;
       }
     }
     // next
@@ -196,6 +200,8 @@ void CAN1_RX0_IRQ_Handler(void) {
 
 void CAN1_SCE_IRQ_Handler(void) {
   state = FAULT_SCE;
+  gas_set_0 = GAS_NO_VALUE;
+  gas_set_1 = GAS_NO_VALUE;
   llcan_clear_send(CAN);
 }
 
@@ -233,6 +239,8 @@ void TIM3_IRQ_Handler(void) {
   } else {
     // old can packet hasn't sent!
     state = FAULT_SEND;
+    gas_set_0 = GAS_NO_VALUE;
+    gas_set_1 = GAS_NO_VALUE;
     #ifdef DEBUG
       puts("CAN MISS\n");
     #endif
@@ -247,6 +255,8 @@ void TIM3_IRQ_Handler(void) {
   // up timeout for gas set
   if (timeout == MAX_TIMEOUT) {
     state = FAULT_TIMEOUT;
+    gas_set_0 = GAS_NO_VALUE;
+    gas_set_1 = GAS_NO_VALUE;
   } else {
     timeout += 1U;
   }
@@ -260,7 +270,7 @@ void pedal(void) {
   pdl1 = adc_get(ADCCHAN_ACCEL1);
 
   // write the pedal to the DAC
-  if (state == NO_FAULT) {
+  if ((state == NO_FAULT) && (gas_set_0 != GAS_NO_VALUE) && (gas_set_1 != GAS_NO_VALUE)) {
     dac_set(0, MAX(gas_set_0, pdl0));
     dac_set(1, MAX(gas_set_1, pdl1));
   } else {
@@ -292,7 +302,8 @@ int main(void) {
 
   // init board
   current_board->init();
-
+  gas_set_0 = GAS_NO_VALUE;
+  gas_set_1 = GAS_NO_VALUE;
 #ifdef PEDAL_USB
   // enable USB
   usb_init();
