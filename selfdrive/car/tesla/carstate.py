@@ -25,7 +25,7 @@ class CarState(CarStateBase):
     # Needed by carcontroller
     self.msg_stw_actn_req = None
 
-    
+    self.autopilot_disabled = False
 
     self.das_steeringControl_counter = -1
     self.das_status_counter = -1
@@ -231,6 +231,7 @@ class CarState(CarStateBase):
 
     self.esp_long_acceleration = cp.vl["ESP_ACC"]["Long_Acceleration"]
     self.esp_lat_acceleration = cp.vl["ESP_ACC"]["Lat_Acceleration"]
+    self.autopilot_disabled = (cp.vl["GTW_carConfig"]["GTW_autopilot"] == 0)
 
     #Detect car model - Needs more work when we do 3/Y
     #can look like S/SD/SP/SPD XD/XPD
@@ -520,6 +521,7 @@ class CarState(CarStateBase):
       ("BOOT_STATE", "GTW_carState", 1),
       ("GTW_performanceConfig","GTW_carConfig", 1),
       ("GTW_fourWheelDrive", "GTW_carConfig", 1),
+      ("GTW_autopilot", "GTW_carConfig", 1),
       ("BC_indicatorLStatus", "GTW_carState", 1),
       ("BC_indicatorRStatus", "GTW_carState", 1),
       # info for speed limit

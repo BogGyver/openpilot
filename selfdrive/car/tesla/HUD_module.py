@@ -242,7 +242,7 @@ class HUDController:
                 messages.append(self.tesla_can.create_das_status2(DAS_csaState, cruise_speed, 
                     DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1))
 
-        if (enabled or self.IC_previous_enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
+        if (enabled or CS.autopilot_enabled or self.IC_previous_enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
 
             # send DAS_bodyControls
             if (self.IC_integration_counter in [20,70]) or (self.IC_previous_enabled and not enabled):
