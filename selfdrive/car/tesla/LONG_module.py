@@ -48,6 +48,7 @@ class LONGController:
         self.adjustSpeedWithSpeedLimit = load_bool_param("TinklaAdjustAccWithSpeedLimit",True)
         self.adjustSpeedRelative = load_bool_param("TinklaSpeedLimitUseRelative",False)
         self.useLongControlData = load_bool_param("TinklaUseLongControlData",False)
+        self.autopilot_disabled = load_bool_param("TinklaAutopilotDisabled",False)
         average_speed_over_x_suggestions = 5  # 1 second @ 5Hz
         self.speed_limit_uom = 0.
         self.prev_speed_limit_uom = 0.
@@ -60,7 +61,8 @@ class LONGController:
         self.ap1_adjusting_speed = False
         self.ap1_speed_target = 0.
         self.set_speed_limit_active = False
-        if (CP.carFingerprint == CAR.PREAP_MODELS):
+        self.longPlan = None
+        if (CP.carFingerprint == CAR.PREAP_MODELS) or self.autopilot_disabled:
             self.ACC = ACCController(self)
             self.PCC = PCCController(self,tesla_can,pedalcan,CP )
             
@@ -74,6 +76,19 @@ class LONGController:
         if my_accel < 0:
             my_accel = my_accel * BRAKE_FACTOR 
         #update options 
+        
+        target_accel = clip(my_accel, TESLA_MIN_ACCEL,TESLA_MAX_ACCEL)
+        if self.CP.carFingerprint == CAR.PREAP_MODELS or CS.autopilot_disabled:
+            target_accel = clip(my_accel * interp(CS.out.vEgo, BRAKE_FACTOR_BP, BRAKE_FACTOR_V ), TESLA_MIN_ACCEL,TESLA_MAX_ACCEL)
+
+        max_accel = 0 if target_accel < 0 else target_accel
+        min_accel = 0 if target_accel > 0 else target_accel
+
+        max_jerk = CarControllerParams.JERK_LIMIT_MAX
+        min_jerk = CarControllerParams.JERK_LIMIT_MIN
+
+        tesla_jerk_limits = [min_jerk,max_jerk]
+        tesla_accel_limits = [min_accel,max_accel]
 
         if enabled and not self.prev_enabled:
             self.fleet_speed.reset_averager()
@@ -103,7 +118,7 @@ class LONGController:
         if not self.CP.openpilotLongitudinalControl:
             return messages
         #preAP ModelS
-        if self.CP.carFingerprint == CAR.PREAP_MODELS:
+        if self.CP.carFingerprint == CAR.PREAP_MODELS or CS.autopilot_disabled:
             # update PCC module info
             pedal_can_sends = self.PCC.update_stat(CS, frame)
             if len(pedal_can_sends) > 0:
@@ -183,14 +198,12 @@ class LONGController:
             if self.PCC.pcc_available and frame % 1 == 0:  # pedal processed at 100Hz, we get speed at 50Hz from ESP_B
                 #following = False
                 #TODO: see what works best for these
-                self.v_target = self.longPlan.speeds[0]
-                if long_plan and long_plan.longitudinalPlan:
-                    self.v_target = long_plan.longitudinalPlan.speeds[0]
-                    self.a_target = long_plan.longitudinalPlan.accels[0]
+                if self.longPlan:
+                    self.v_target = self.longPlan.speeds[0]
+                    self.a_target = self.longPlan.accels[0]
     
                 if self.v_target is None:
                     self.v_target = CS.out.vEgo
-                target_accel = clip(my_accel * interp(CS.out.vEgo, BRAKE_FACTOR_BP, BRAKE_FACTOR_V ), TESLA_MIN_ACCEL,TESLA_MAX_ACCEL)
                 target_speed = max(self.v_target, 0)                    
 
                 apply_accel, self.apply_brake, accel_needed, accel_idx = self.PCC.update_pdl(
@@ -224,6 +237,23 @@ class LONGController:
                         )
                     )
                     self.ibooster_idx = (self.ibooster_idx + 1) % 16
+                
+                if self.autopilot_disabled:
+                    target_speed = target_speed * CV.MS_TO_KPH
+                    if enabled:
+                        if self.CP.carFingerprint == CAR.AP1_MODELS:
+                            messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, False, CS.pcc_enabled ,target_speed, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
+                    else:
+                        if CS.carNotInDrive:
+                            CS.cc_state = 0
+                        else:
+                            CS.cc_state = 1
+                        #send this values so we can enable at 0 km/h
+                        tesla_accel_limits = [-1.4000000000000004,1.8000000000000007]
+                        tesla_jerk_limits = [-0.46000000000000085,0.47600000000000003]
+                        if self.CP.carFingerprint == CAR.AP1_MODELS:
+                            messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, False, False , 0, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
+
                 
         #AP ModelS with OP Long and enabled
         elif enabled and self.CP.openpilotLongitudinalControl and (frame %1 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
@@ -299,9 +329,6 @@ class LONGController:
                 self.j_target = 8
 
             #following = False
-            #TODO: see what works best for these
-            target_accel = clip(my_accel, TESLA_MIN_ACCEL,TESLA_MAX_ACCEL)
-            #target_jerk = 0.
             target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
 
             #if accel pedal pressed send 0 for target_accel
@@ -316,15 +343,6 @@ class LONGController:
                 if self.fleet_speed_ms < target_speed and self.fleet_speed_ms > 0:
                     target_accel = min(target_accel,FLEET_SPEED_ACCEL)
                     target_speed = min(target_speed,self.fleet_speed_ms,CS.out.cruiseState.speed)
-            
-            max_accel = 0 if target_accel < 0 else target_accel
-            min_accel = 0 if target_accel > 0 else target_accel
-
-            max_jerk = CarControllerParams.JERK_LIMIT_MAX
-            min_jerk = CarControllerParams.JERK_LIMIT_MIN
-
-            tesla_jerk_limits = [min_jerk,max_jerk]
-            tesla_accel_limits = [min_accel,max_accel]
 
             target_speed = target_speed * CV.MS_TO_KPH
             

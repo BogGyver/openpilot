@@ -11,7 +11,7 @@ from cereal import car
 from panda import Panda
 import time
 import sys
-from selfdrive.car.modules.CFG_module import save_bool_param,save_float_param
+from selfdrive.car.modules.CFG_module import save_bool_param,save_float_param,load_bool_param
 
 MAX_PEDAL_ERRORS = 10
 
@@ -201,6 +201,8 @@ class PedalCalibrator:
     self.pedal_available = False
     self.pedal_timeout = True
     self.pedal_can = 2
+    if load_bool_param("TinklaPedalCanZero", False):
+      self.pedal_can = 0
     self.pedal_error_count = 0
 
     #for status=2 - computing pedal zero

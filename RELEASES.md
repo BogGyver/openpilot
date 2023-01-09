@@ -1,3 +1,8 @@
+Unity Version 0.8.13-58 (2023-1-xx)
+========================
+ * Fix pedal calibration for CAN0
+ * OP for AP1 cars with AP disabled
+
 Unity Version 0.8.13-57 (2022-11-17)
 ========================
  * Fix pedal pressed message on ACC

@@ -48,7 +48,7 @@ class CarController():
       CS.autoresumeAcc = load_bool_param("TinklaAutoResumeACC",False)
     can_sends = []
     #add 1 second delay logic to wait for AP which has a status at 2Hz
-    if self.CP.carFingerprint != CAR.PREAP_MODELS:
+    if self.CP.carFingerprint != CAR.PREAP_MODELS and not CS.autopilot_disabled:
       if CS.cruiseEnabled:
         if not self.prevCruiseEnabled:
           self.cruiseDelayFrame = frame
