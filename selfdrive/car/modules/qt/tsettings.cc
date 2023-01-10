@@ -397,9 +397,9 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
       "",
       0.0,0.0,0.0,0.0,TINKLA_STRING
     },
-    {"TinklaUseAEBevent",
-    "Use AEB Events (Experimental)",
-    "Use AEB Events to control speed on cars with AP disabled. This is an EXPERIMENTAL feature.",
+    {"TinklaAutopilotDisabled",
+    "Autopilot feature disabled",
+    "Use when car has the autopilot feature disabled.",
     "../assets/offroad/icon_settings.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },

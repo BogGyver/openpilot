@@ -9,7 +9,8 @@ from selfdrive.car import make_can_msg
 from selfdrive.car.tesla.values import CarControllerParams, CAN_CHASSIS, CAN_POWERTRAIN
 from selfdrive.car.modules.CFG_module import load_bool_param
 
-USE_AEB_EVENT = load_bool_param("TinklaUseAEBevent",False)
+AUTOPILOT_DISABLED = load_bool_param("TinklaAutopilotDisabled",False)
+ENABLE_AEB_EVENTS = False
 
 class TeslaCAN: 
   def __init__(self, dbc_name, packer, pt_packer):
@@ -137,16 +138,17 @@ class TeslaCAN:
   def create_ap1_long_control(self, in_drive, static_cruise, cruise_enabled, speed, accel_limits, jerk_limits, bus, counter):
     accState = 0
     aeb_event = 0
-    if USE_AEB_EVENT:
-      aeb_event = 1 #AEB ACTIVE
     if in_drive:
       accState = 4
       if static_cruise and cruise_enabled:
         accState = 3
+      if cruise_enabled and AUTOPILOT_DISABLED and ENABLE_AEB_EVENTS:
+        aeb_event = 1 #AEB ACTIVE
+        #accState = 0 #ACC DISABLED
     values = {
       "DAS_setSpeed" :  clip(speed,0,200), #kph
       "DAS_accState" :  accState, # 4-ACC ON, 3-HOLD, 0-CANCEL
-      "DAS_aebEvent" :  aeb_event, # 0 - AEB NOT ACTIVE
+      "DAS_aebEvent" :  aeb_event, # 1 - AEB ACTIVE, 0 - AEB NOT ACTIVE
       "DAS_jerkMin" :  clip(jerk_limits[0],-8.,8.), #m/s^3 -8.67,0
       "DAS_jerkMax" :  clip(jerk_limits[1],-8.,8.), #m/s^3 0,8.67
       "DAS_accelMin" : clip(accel_limits[0],-12.,3.44), #m/s^2 -15,5.44
@@ -305,6 +307,7 @@ class TeslaCAN:
     apply_angle,
     enable_steer_control,
     pedalEnabled,
+    autopilot_disabled,
     bus,
   ):
     units_included = 1
@@ -332,7 +335,7 @@ class TeslaCAN:
             acc_speed_limit + 0.5
         ),  # IC rounds current speed, so we need to round cruise speed the same way
         int(
-            (legal_speed_limit & 0x1F) + ((pedalEnabled << 5) & 0x20)
+            (legal_speed_limit & 0x1F) + ((pedalEnabled << 5) & 0x20) + ((autopilot_disabled << 7) & 0x80)
         ),  # positions 7 not used yet, 6 determines extended or not CC_state
         int(c_apply_steer & 0xFF),
         int((c_apply_steer >> 8) & 0xFF)

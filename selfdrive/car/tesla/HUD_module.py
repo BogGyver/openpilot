@@ -232,7 +232,7 @@ class HUDController:
 
         # send DAS_status and DAS_status2 at 2Hz
         if (self.IC_integration_counter %20 == 0) or (self.IC_previous_enabled and not enabled ):
-            should_send = enabled or (self.IC_previous_enabled and not enabled )#not(self.prev_autopilot_enabled and CS.autopilot_enabled)
+            should_send = enabled or (self.IC_previous_enabled and not enabled ) or CS.autopilot_disabled_det 
             self.prev_autopilot_enabled = CS.autopilot_enabled
             if CS.enableICIntegration and should_send:
                 messages.append(self.tesla_can.create_das_status(DAS_op_status, DAS_collision_warning,
@@ -242,7 +242,7 @@ class HUDController:
                 messages.append(self.tesla_can.create_das_status2(DAS_csaState, cruise_speed, 
                     DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1))
 
-        if (enabled or CS.autopilot_enabled or self.IC_previous_enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
+        if (enabled or CS.autopilot_disabled_det or self.IC_previous_enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
 
             # send DAS_bodyControls
             if (self.IC_integration_counter in [20,70]) or (self.IC_previous_enabled and not enabled):
@@ -282,9 +282,9 @@ class HUDController:
                         CS.DAS_219_lcTempUnavailableSpeed, CS.DAS_220_lcTempUnavailableRoad, CS.DAS_221_lcAborting, CS.DAS_222_accCameraBlind,
                         CS.DAS_208_rackDetected, CS.DAS_216_driverOverriding, CS.stopSignWarning, CS.stopLightWarning, CAN_CHASSIS[self.CP.carFingerprint]))
 
-            #send message for TB/Panda if preAP
-            if self.CP.carFingerprint == CAR.PREAP_MODELS:
-                if CS.enableICIntegration:
+            #send message for TB/Panda if preAP or AP disabled 
+            if self.CP.carFingerprint == CAR.PREAP_MODELS or CS.autopilot_disabled:
+                if CS.enableICIntegration and self.CP.carFingerprint == CAR.PREAP_MODELS:
                     messages.append(
                         self.tesla_can.create_ap1_long_control(
                             not CS.carNotInDrive, 
@@ -314,10 +314,11 @@ class HUDController:
                         1 if CS.pcc_available else 0, 
                         DAS_alca_state,
                         v_cruise_pcm,
-                        CS.DAS_fusedSpeedLimit,
+                        int(CS.DAS_fusedSpeedLimit),
                         apply_angle,
                         1 if enabled else 0,
                         1 if CS.enablePedal else 0, #is pedal enabled
+                        1 if CS.autopilot_disabled else 0, #autopilot feature disabled
                         CAN_CHASSIS[self.CP.carFingerprint],
                     )
                 )

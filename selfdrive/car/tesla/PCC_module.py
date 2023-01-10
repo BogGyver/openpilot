@@ -387,5 +387,5 @@ class PCCController:
             frame < self.pedal_timeout_frame and CS.pedal_interceptor_state == 0
         )
         # Mark pedal unavailable while traditional cruise is on.
-        self.pcc_available = pedal_ready and CS.enablePedal
+        self.pcc_available = (pedal_ready and CS.enablePedal) or (CS.autopilot_disabled)
 

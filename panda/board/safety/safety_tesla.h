@@ -41,6 +41,7 @@ const uint16_t FLAG_TESLA_HAS_IBOOSTER = 128;
 
 
 bool has_ap_hardware = false;
+bool has_ap_disabled = false;
 bool has_ibooster = false;
 bool has_ibooster_ecu = false;
 bool has_acc = false;
@@ -109,6 +110,8 @@ const CanMsg TESLA_AP_TX_MSGS[] = {
     {0x329, 0, 8},  // DAS_warningMatrix0
     {0x369, 0, 8},  // DAS_warningMatrix1
     {0x349, 0, 8},  // DAS_warningMatrix3
+    {0x398, 0, 8},  // GTW_carConfig
+    {0x659, 0, 8},  // FAKE PANDA MESSAGE
   };
 #define TESLA_AP_TX_LEN (sizeof(TESLA_AP_TX_MSGS) / sizeof(TESLA_AP_TX_MSGS[0]))
 
@@ -728,6 +731,10 @@ static void do_fake_stalk_cancel(void) {
   MHB = MHB + (crc << 24);
   DAS_lastStalkH = MHB;
   send_fake_message(8,0x45,0,MLB,MHB);
+  //if we have AP hardware and it is disabled send also on CAN2
+  if (has_ap_hardware && has_ap_disabled) {
+    send_fake_message(8,0x45,2,MLB,MHB);
+  }
 }
 
 static void teslaPreAp_send_IC_messages(void) {
@@ -858,7 +865,7 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
           DAS_lastStalkL = GET_BYTES_04(to_push);
           DAS_lastStalkH = GET_BYTES_48(to_push);
           // 6 bits starting at position 0
-          if (!has_ap_hardware) {
+          if ((!has_ap_hardware) || (has_ap_hardware && has_ap_disabled)) {
             int ap_lever_position = GET_BYTE(to_push, 0) & 0x3F;
             if (ap_lever_position == 2)
             { // pull forward
@@ -875,7 +882,7 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
               controls_allowed = 0;
             }
             //if using pedal, send a cancel immediately to cancel the CC
-            if ((pedalCan != -1) && (pedalEnabled == 1) && (ap_lever_position > 1)) {
+            if ((pedalEnabled == 1) && (ap_lever_position > 1)) {
               do_fake_stalk_cancel();
             }
           }
@@ -918,14 +925,14 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
 
       if(addr == (tesla_powertrain ? 0x106 : 0x108)) {
         // Gas pressed - only for ACC for now
-        if (has_ap_hardware) {
+        if (has_ap_hardware && !has_ap_disabled) {
           gas_pressed = ((GET_BYTE(to_push, 6) != 0) && (!enable_hao));
         }
       }
 
       if(addr == (tesla_powertrain ? 0x1f8 : 0x20a)) {
         // Brake pressed - only for ACC for now
-        if (has_ap_hardware) {
+        if (has_ap_hardware && !has_ap_disabled) {
           brake_pressed = ((GET_BYTE(to_push, 0) & 0x0C) >> 2 != 1);
         }
       }
@@ -938,7 +945,7 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
                               (cruise_state == 4) ||  // OVERRIDE
                               (cruise_state == 6) ||  // PRE_FAULT
                               (cruise_state == 7);    // PRE_CANCEL
-        if (has_ap_hardware) {
+        if (has_ap_hardware && !has_ap_disabled) {
           if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
             time_cruise_engaged = microsecond_timer_get();
           }
@@ -1030,6 +1037,8 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
 
   if (addr == 0x659) {
     pedalEnabled = ((GET_BYTE(to_send, 5) >> 5) & 0x01);
+    has_ap_disabled = ((GET_BYTE(to_send, 5) >> 7) & 0x01);
+    tx = 0;
   }
 
   //do not allow long control if not enabled
@@ -1112,7 +1121,7 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
     if (tesla_longitudinal) {
       // No AEB events may be sent by openpilot
       int aeb_event = GET_BYTE(to_send, 2) & 0x03U;
-      if (aeb_event != 0) {
+      if ((aeb_event != 0) && (!has_ap_disabled)) {
         violation = true;
       }
 
@@ -1272,6 +1281,7 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
       if ((addr == 0x398) && (((GET_BYTE(to_fwd, 7) & 0x38)>>3) == 0)) {
         //we have autopilot but it's disabled, so enable it for just "highway" to get ACC going
         WORD_TO_BYTE_ARRAY(&to_fwd->data[4],(GET_BYTES_48(to_fwd) & 0xC7FFFFFF) | 0x08000000);
+        has_ap_disabled = true;
       }
 
       //do not forward IC integration stuff from 0 -> 2 because they should not even be there

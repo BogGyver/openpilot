@@ -25,7 +25,8 @@ class CarState(CarStateBase):
     # Needed by carcontroller
     self.msg_stw_actn_req = None
 
-    self.autopilot_disabled = False
+    self.autopilot_disabled = load_bool_param("TinklaAutopilotDisabled",False)
+    self.autopilot_disabled_det = False
 
     self.das_steeringControl_counter = -1
     self.das_status_counter = -1
@@ -108,7 +109,7 @@ class CarState(CarStateBase):
     self.pcc_enabled = False
     self.torqueLevel = 0.0
     self.cruise_state = None
-    self.enableHumanLongControl = load_bool_param("TinklaForceTeslaPreAP", False)
+    self.enableHumanLongControl = load_bool_param("TinklaForceTeslaPreAP", False) or self.autopilot_disabled
     self.enableICIntegration = load_bool_param("TinklaHasIcIntegration", False)
     self.pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
     self.has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
@@ -231,7 +232,6 @@ class CarState(CarStateBase):
 
     self.esp_long_acceleration = cp.vl["ESP_ACC"]["Long_Acceleration"]
     self.esp_lat_acceleration = cp.vl["ESP_ACC"]["Lat_Acceleration"]
-    self.autopilot_disabled = (cp.vl["GTW_carConfig"]["GTW_autopilot"] == 0)
 
     #Detect car model - Needs more work when we do 3/Y
     #can look like S/SD/SP/SPD XD/XPD
@@ -244,6 +244,7 @@ class CarState(CarStateBase):
       if (self.teslaModelDetected == 0) or (prev_teslaModel != self.teslaModel):
         self.teslaModelDetected = 1
 
+    self.autopilot_disabled_det = (cp.vl["GTW_carConfig"]["GTW_autopilot"] == 0)
 
     # Cruise state
     #cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
@@ -287,7 +288,7 @@ class CarState(CarStateBase):
     else:
       ret.followDistanceS = 255
     
-    if (self.CP.carFingerprint != CAR.PREAP_MODELS):
+    if (self.CP.carFingerprint != CAR.PREAP_MODELS) and (not self.autopilot_disabled):
       acc_enabled = (cruise_state in ["ENABLED", "STANDSTILL", "OVERRIDE", "PRE_FAULT", "PRE_CANCEL"])
       self.autopilot_enabled = (autopilot_status in ["ACTIVE_1", "ACTIVE_2"]) #, "ACTIVE_NAVIGATE_ON_AUTOPILOT"])
       cruiseEnabled = acc_enabled and not self.autopilot_enabled and not summon_or_autopark_enabled
@@ -436,6 +437,7 @@ class CarState(CarStateBase):
       if gtw_esp1 is not None:
         self.gtw_esp1 = gtw_esp1
         self.gtw_esp1_last_sent_id = self.gtw_esp1["GTW_ESP1Counter"]
+    if self.CP.carFingerprint in [CAR.PREAP_MODELS] or self.autopilot_disabled:
       #Pedal Interceptor
       self.prev_pedal_interceptor_state = self.pedal_interceptor_state
       self.prev_pedal_idx = self.pedal_idx
@@ -451,7 +453,8 @@ class CarState(CarStateBase):
           self.pedal_interceptor_value2 = transform_pedal_to_di(cp_cam.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"])
           self.pedal_idx = cp_cam.vl["GAS_SENSOR"]["IDX"]
         ret.gas = self.pedal_interceptor_value/100.
-        ret.gasPressed = (self.pedal_interceptor_value > PEDAL_DI_PRESSED) 
+        ret.gasPressed = (self.pedal_interceptor_value > PEDAL_DI_PRESSED)
+      if self.enablePedal:
         if self.enableHAO and self.pcc_enabled:
           self.DAS_216_driverOverriding = 1 if ret.gasPressed else 0
           ret.gas = 0
