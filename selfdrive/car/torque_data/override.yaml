@@ -10,6 +10,9 @@ NISSAN ROGUE 2019: [.nan, 1.5, .nan]
 # Tesla has high torque
 TESLA AP1 MODEL S: [.nan, 2.5, .nan]
 TESLA AP2 MODEL S: [.nan, 2.5, .nan]
+TESLA AP1 MODEL x: [.nan, 2.5, .nan]
+TESLA AP2 MODEL x: [.nan, 2.5, .nan]
+TESLA PREAP MODEL S: [.nan, 2.5, .nan]
 
 # Guess
 FORD BRONCO SPORT 1ST GEN: [.nan, 1.5, .nan]

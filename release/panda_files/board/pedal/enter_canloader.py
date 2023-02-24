@@ -15,6 +15,7 @@ if __name__ == "__main__":
   p = Panda()
   p.set_safety_mode(Panda.SAFETY_ALLOUTPUT)
   pedalcan = 2
+  mcu_type = p.get_mcu_type()
   if load_bool_param("TinklaPedalCanZero", False):
       pedalcan = 0
 
@@ -34,6 +35,6 @@ if __name__ == "__main__":
     time.sleep(0.1)
     print("flashing", args.fn)
     code = open(args.fn, "rb").read()
-    Panda.flash_static(CanHandle(p, pedalcan), code)
+    Panda.flash_static(CanHandle(p, pedalcan), code, mcu_type)
 
   print("can flash done")

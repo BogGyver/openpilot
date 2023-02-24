@@ -14,6 +14,7 @@ if __name__ == "__main__":
 
   p = Panda()
   p.set_safety_mode(Panda.SAFETY_ALLOUTPUT)
+  mcu_type = p.get_mcu_type()
   ivscan = 0
 
   while 1:
@@ -32,6 +33,6 @@ if __name__ == "__main__":
     time.sleep(0.1)
     print("flashing", args.fn)
     code = open(args.fn, "rb").read()
-    Panda.flash_static(CanHandle(p, ivscan), code)
+    Panda.flash_static(CanHandle(p, ivscan), code, mcu_type)
 
   print("can flash done")
