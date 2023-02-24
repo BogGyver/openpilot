@@ -1,20 +1,18 @@
 import copy
 import crcmod
-from opendbc.can.can_define import CANDefine
 from common.numpy_fast import clip
 from ctypes import create_string_buffer
 import struct
-from selfdrive.config import Conversions as CV
+from common.conversions import Conversions as CV
 from selfdrive.car import make_can_msg
-from selfdrive.car.tesla.values import CarControllerParams, CAN_CHASSIS, CAN_POWERTRAIN
+from selfdrive.car.tesla.values import CANBUS, CarControllerParams, CAN_CHASSIS, CAN_POWERTRAIN
 from selfdrive.car.modules.CFG_module import load_bool_param
 
 AUTOPILOT_DISABLED = load_bool_param("TinklaAutopilotDisabled",False)
 ENABLE_AEB_EVENTS = False
 
 class TeslaCAN: 
-  def __init__(self, dbc_name, packer, pt_packer):
-    self.can_define = CANDefine(dbc_name)
+  def __init__(self, packer, pt_packer):
     self.packer = packer
     self.pt_packer = pt_packer
     #Calculate CRC8 using 1D poly, FF start, FF end"
@@ -383,7 +381,7 @@ class TeslaCAN:
       "DAS_jerkMax": CarControllerParams.JERK_LIMIT_MAX,
       "DAS_accelMin": min_accel,
       "DAS_accelMax": max_accel,
-      "DAS_controlCounter": (cnt % 8),
+      "DAS_controlCounter": cnt,
       "DAS_controlChecksum": 0,
     }
 

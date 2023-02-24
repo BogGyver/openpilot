@@ -7,7 +7,7 @@
 
 StrParamControl::StrParamControl(QString theLabel, QString theDescription, 
               QString theWindowTitle, QString theWindowInfo,
-              QString theParam, QString theDefaultValue,
+              QString theParam, QString theDefaultValueDisplay, QString theDefaultValue,
               QString icon) : ButtonControl(theLabel, "", theDescription) {
   param_label.setAlignment(Qt::AlignRight | Qt::AlignVCenter);
   param_label.setStyleSheet("color: #aaaaaa");
@@ -19,25 +19,31 @@ StrParamControl::StrParamControl(QString theLabel, QString theDescription,
   hlayout->insertWidget(2, &param_label);
   param_name = theParam;
   default_value = theDefaultValue;
+  default_value_display = theDefaultValueDisplay;
   window_title = theWindowTitle;
   window_info = theWindowInfo;
   description_txt = theDescription;
   label_txt = theLabel;
 
   QObject::connect(this, &ButtonControl::clicked, [=]() {
-    try {
-      QString txtValue = InputDialog::getNumber(window_title, this,
-                  window_info, false, 1, value);
-      tinkla_set_str_param(param_name.toStdString(),txtValue.toStdString());
-    } catch(std::exception e) {
-      //restore to last value
+    QString cur = QString::fromStdString(tinkla_get_str_param(param_name.toStdString(),default_value.toStdString()));
+    if (cur == default_value) {
+      cur = default_value_display;
+    }
+    QStringList options = window_info.split(",");
+    QString selection = MultiOptionDialog::getSelection(window_title, options, cur, this);
+    if (!selection.isEmpty()) {
+      if (selection == theDefaultValueDisplay) {
+        selection = default_value;
+      }
+      tinkla_set_str_param(param_name.toStdString(),selection.toStdString());
     }
     refresh();
   });
 
   refresh();
 }
-
+ 
 
 void StrParamControl::refresh() {
   bool locked = params.getBool((param_name + "Lock").toStdString());

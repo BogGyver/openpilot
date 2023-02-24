@@ -1,8 +1,8 @@
 #!/bin/bash
 
 while read hash submodule ref; do
-  git -C $submodule fetch --depth 100 origin tesla_unity_dev
-  git -C $submodule branch -r --contains $hash | grep "origin/tesla_unity_dev"
+  git -C $submodule fetch --depth 200 origin tesla_unity_devC3
+  git -C $submodule branch -r --contains $hash | grep "origin/tesla_unity_devC3"
   if [ "$?" -eq 0 ]; then
     echo "$submodule ok"
   else

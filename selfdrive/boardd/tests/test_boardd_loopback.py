@@ -12,7 +12,7 @@ from common.spinner import Spinner
 from common.timeout import Timeout
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.car import make_can_msg
-from selfdrive.hardware import TICI
+from system.hardware import TICI
 from selfdrive.test.helpers import phone_only, with_processes
 
 
@@ -51,7 +51,7 @@ class TestBoardd(unittest.TestCase):
     cp.safetyConfigs = [safety_config]*num_pandas
 
     params = Params()
-    params.put("CarVin", b"0"*17)
+    params.put_bool("FirmwareObdQueryDone", True)
     params.put_bool("ControlsReady", True)
     params.put("CarParams", cp.to_bytes())
 

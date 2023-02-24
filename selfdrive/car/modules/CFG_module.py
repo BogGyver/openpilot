@@ -43,4 +43,24 @@ def load_float_param(param_name,param_def_value):
         print("Initializing "+param_name+" with value ",param_def_value*1.0)
         save_float_param(param_name,param_def_value * 1.0)
         return param_def_value * 1.0
+
+def save_str_param(param_name,param_value):
+    try:
+        with open(OP_PARAMS_PATH+"/"+param_name, "w") as outfile:
+             outfile.write(f'{param_value}')
+    except IOError:
+        print("Failed to save "+param_name+" with value ",param_value)
+
+def load_str_param(param_name,param_def_value):
+    try:
+        with open(OP_PARAMS_PATH+"/"+param_name, 'r') as f:
+            for line in f:
+                value_saved = line
+        return value_saved
+    except IOError:
+        print("Initializing "+param_name+" with value ",param_def_value)
+        save_float_param(param_name,param_def_value)
+        return param_def_value
+
+
         

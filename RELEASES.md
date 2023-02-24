@@ -1,178 +1,141 @@
-Unity Version 0.8.13-58 (2023-1-xx)
+Unity Version 0.9.1-1 (2023-2-25)
 ========================
- * Fix pedal calibration for CAN0
- * OP for AP1 cars with AP disabled
+ * Bring Unity to OP 0.9.1
 
-Unity Version 0.8.13-57 (2022-11-17)
+Version 0.9.2 (2023-03-XX)
 ========================
- * Fix pedal pressed message on ACC
- * Adjust top speed with speed limit for AP1
- * Show set speed in lower right corner for RHD cars
- * Brake factor speed adjustable (1.15 below 70km/h, 1.45 above 100km/h)
+* Draw MPC path instead of model predicted path, this is a more accurate representation of what the car will do.
 
-Unity Version 0.8.13-56 (2022-11-08)
+Version 0.9.1 (2023-02-23)
 ========================
- * Sound files volume fix
- * Show TACC icon on IC for AP cars when OP is available
- * Display shutdown
- * Engage at 0 MPH (AP cars)
- * Fleet based speed (AP cars)
- * Slow down in turns based on SunnyPilot 
- * prevent iBooster from pressing both pedals
- * Improved acceleration handling for AP1
- * Add message ID for the CAN Error 
- * Reduce min accel to -4.5 
- * Improve follow distance
- * Better and smoother pedal with 4 profiles
- * Universal calibration tool for pedal interceptor
- * iBooster control improvement
- * Add 5 pedal profiles and 3 acceleration profiles for better long control wiht pedal
- * Add alert when maximum regen is used with pedal to show braking limit 
- * Prevent PCC engagement with uncalibrated pedals
- * Cancel automatic lane change on blinker or wheel touch
- * Toggle to ignore wrong date/time on device
- * Increase steering angle limits on Panda
- * Fix Controls Mismatch when taking over steering
+* New driving model
+  * 30% improved height estimation resulting in better driving performance for tall cars
+* Driver monitoring: removed timer resetting on user interaction if distracted
+* UI updates
+  * Adjust alert volume using ambient noise level
+  * Driver monitoring icon shows driver's head pose
+  * German translation thanks to Vrabetz and CzokNorris!
+* Cadillac Escalade 2017 support thanks to rickygilleland!
+* Chevrolet Bolt EV 2022-23 support thanks to JasonJShuler!
+* Genesis GV60 2023 support thanks to sunnyhaibin!
+* Hyundai Tucson 2022-23 support
+* Kia K5 Hybrid 2020 support thanks to sunnyhaibin!
+* Kia Niro Hybrid 2023 support thanks to sunnyhaibin!
+* Kia Sorento 2022-23 support thanks to sunnyhaibin!
+* Kia Sorento Plug-in Hybrid 2022 support thanks to sunnyhaibin!
+* Toyota C-HR 2021 support thanks to eFiniLan!
+* Toyota C-HR Hybrid 2022 support thanks to Korben00!
+* Volkswagen Crafter and MAN TGE 2017-23 support thanks to jyoung8607!
 
-Unity Version 0.8.13-55 (2022-09-21)
+Version 0.9.0 (2022-11-21)
 ========================
- * Sound toggles (to mute certain sounds)
- * Sound files
+* New driving model
+  * Internal feature space information content increased tenfold during training to ~700 bits, which makes the model dramatically more accurate
+  * Less reliance on previous frames makes model more reactive and snappy
+  * Trained in new reprojective simulator
+  * Trained in 36 hours from scratch, compared to one week for previous releases
+  * Training now simulates both lateral and longitudinal behavior, which allows openpilot to slow down for turns, stop at traffic lights, and more in experimental mode
+* Experimental driving mode
+  * End-to-end longitudinal control
+  * Stops for traffic lights and stop signs
+  * Slows down for turns
+  * openpilot defaults to chill mode, enable experimental mode in settings
+* Driver monitoring updates
+  * New bigger model with added end-to-end distracted trigger
+  * Reduced false positives during driver calibration
+* Self-tuning torque controller: learns parameters live for each car
+* Torque controller used on all Toyota, Lexus, Hyundai, Kia, and Genesis models
+* UI updates
+  * Matched speeds shown on car's dash
+  * Multi-language in navigation
+  * Improved update experience
+  * Border turns grey while overriding steering
+  * Bookmark events while driving; view them in comma connect
+  * New onroad visualization for experimental mode
+* tools: new and improved cabana thanks to deanlee!
+* Experimental longitudinal support for Volkswagen, CAN-FD Hyundai, and new GM models
+* Genesis GV70 2022-23 support thanks to zunichky and sunnyhaibin!
+* Hyundai Santa Cruz 2021-22 support thanks to sunnyhaibin!
+* Kia Sportage 2023 support thanks to sunnyhaibin!
+* Kia Sportage Hybrid 2023 support thanks to sunnyhaibin!
+* Kia Stinger 2022 support thanks to sunnyhaibin!
 
-Unity Version 0.8.13-54 (2022-09-19)
+Version 0.8.16 (2022-08-26)
 ========================
- * Add capabilities for Str params
- * Implement fixed fingerprint option to avoid fingerprinting issues
+* New driving model
+  * Reduced turn cutting
+* Auto-detect right hand drive setting with driver monitoring model
+* Improved fan controller for comma three
+* New translations
+  * Japanese thanks to cydia2020!
+  * Brazilian Portuguese thanks to AlexandreSato!
+* Chevrolet Bolt EUV 2022-23 support thanks to JasonJShuler!
+* Chevrolet Silverado 1500 2020-21 support thanks to JasonJShuler!
+* GMC Sierra 1500 2020-21 support thanks to JasonJShuler!
+* Hyundai Ioniq 5 2022 support thanks to sunnyhaibin!
+* Hyundai Kona Electric 2022 support thanks to sunnyhaibin!
+* Hyundai Tucson Hybrid 2022 support thanks to sunnyhaibin!
+* Subaru Legacy 2020-22 support thanks to martinl!
+* Subaru Outback 2020-22 support
 
-Unity Version 0.8.13-53 (2022-08-05)
+Version 0.8.15 (2022-07-20)
 ========================
- * iBooster ECU fixes
- * Try to fix Controls Mismatch issues
- * Add toggle for radar error with AP
- 
- Unity Version 0.8.13-52 (2022-08-05)
-========================
- * Reset Pedal PID on engagement
- * Toggle for Model S Performance for pedal (bug fix)
- * Pedal profile for MS Performance (bug fix)
- * Toggle to prevent auto updates
- * Toggle for dev unit (bug fix)
- * Autoresume speed from stand still
+* New driving model
+  * Path planning uses end-to-end output instead of lane lines at all times
+  * Reduced ping pong
+  * Improved lane centering
+* New lateral controller based on physical wheel torque model
+  * Much smoother control that's consistent across the speed range
+  * Effective feedforward that uses road roll
+  * Simplified tuning, all car-specific parameters can be derived from data
+  * Used on select Toyota and Hyundai models at first
+  * Significantly improved control on TSS-P Prius
+* New driver monitoring model
+  * Bigger model, covering full interior view from driver camera
+  * Works with a wider variety of mounting angles
+  * 3x more unique comma three training data than previous
+* Navigation improvements
+  * Speed limits shown while navigating
+  * Faster position fix by using raw GPS measurements
+* UI updates
+  * Multilanguage support for settings and home screen
+  * New font
+  * Refreshed max speed design
+  * More consistent camera view perspective across cars
+* Reduced power usage: device runs cooler and fan spins less
+* AGNOS 5
+  * Support VSCode remote SSH target
+  * Support for delta updates to reduce data usage on future OS updates
+* Chrysler ECU firmware fingerprinting thanks to realfast!
+* Honda Civic 2022 support
+* Hyundai Tucson 2021 support thanks to bluesforte!
+* Kia EV6 2022 support
+* Lexus NX Hybrid 2020 support thanks to AlexandreSato!
+* Ram 1500 2019-21 support thanks to realfast!
 
-Unity Version 0.8.13-51 (2022-07-05)
+Version 0.8.14 (2022-06-01)
 ========================
- * New PID for pedal, including way to save state
- * Toggle for Model S Performance for pedal
- * Pedal profile for MS Performance
-
-Unity Version 0.8.13-49 (2022-05-30)
-========================
- * Fix CAN-flashing code
- 
- Unity Version 0.8.13-48 (2022-05-18)
-========================
- * Limit iBooster travel to a max of 15mm (90psi on my car)
- * Set Hold values for iBooster to 6.5mm (14psi)
- * Change lane poly calculation logic for IC integrtion
-
-Unity Version 0.8.13-47 (2022-05-11)
-========================
- * Do not send iBooster brake command when real accelerator pedal is pressed
-
-Unity Version 0.8.13-46 (2022-05-10)
-========================
- * Do not send iBooster brake command when accelerator pedal is pressed
- * Increase brake hold value 
-
-Unity Version 0.8.13-45 (2022-05-09s)
-========================
- * Update firmware for Vacuum Sensor board with brake release condition
- * Allow 0x553 for iBooster in panda
- * Allow 0x555 for IVS in panda
- 
- Unity Version 0.8.13-44 (2022-05-04)
-========================
- * Update firmware for Vacuum Sensor board
- * Fix CRC for iBooster
-
-Unity Version 0.8.13-43 (2022-04-21)
-========================
- * Fix Pedal over CC issues when MCU2 or no Tinkla Buddy
- * Add firmware for Vacuum Sensor board
- * Fix CRC for iBooster
-
-Unity Version 0.8.13-41 (2022-04-19)
-========================
- * Fix startup screen for C3
- * Fix modem initialization for C3 (comma three: correctly set initial EPS bearer settings for AT&T sim cards)
- * Fix logic for enabling OP on preAP MS
- * Add C3 Tinkla Splash
-
-Unity Version 0.8.13-39 (2022-04-16)
-========================
- * Fix bug in iBooster ECU messaging
-
-Unity Version 0.8.13-38 (2022-04-05)
-========================
- * Always show OP data on IC for AP1/AP2
- * Toggle to switch the maps on the left side of the screen (Comma three)
- * fix speed limit indicator when using pedal with Tinkla Buddy
-
-Unity Version 0.8.13-37 (2022-04-01)
-========================
- * added configuration value for HandsOnLevel before human takeover
- * fixed acceleration for AP1 stop-and-go which was limited at 1.2m/s^2
- * added testing toggle for full LongControl from planner vs actuator (AP1 or preAP with iBooster)
- * fixed release scripts
- * fixed automatic flashing of panda code
-
-Unity Version 0.8.13-34 (2022-03-27)
-========================
- * full support for OP long control with AP1
- * follow distance is adjustable from CC stalk (when available)
- * UI shows multiple road lanes when detected by OP
- * fix bug where ACC would show disabled message after brake press even when not enabled
- * variable acceleration based on speed for AP1 OP based long control
- * improve pedal tune (by vandreykiv)
- * fix variables default value not showing correctly in UI
-
-Unity Version 0.8.13-33 (2022-03-26)
-========================
- * new events to show when Standard CC is enabled
- * added shutdown timeout for device (vandreykiv)
-
-Unity Version 0.8.13-32 (2022-03-20)
-========================
- * allows Standard CC (no LKAS) to be used with pedal when cruise enabled
- * allows Standard CC (no LKAS) to be used with ACC by double press down
- * allows for pedal to be used over CC (when setting enabled)
-
-Unity Version 0.8.13-31 (2022-03-18)
-========================
- * requires EON Gold/Black Panda or Comma two/three
- * no need for EPAS harness
- * Panda flash built in UI
- * Pedal flash built in UI
- * EPAS patching built in UI
- * Radar VIN Learner built in UI
- * radar behind nosecone setting as part of VIN Learn (set via UI)
- * works with either human long control, ACC or pedal
- * no more ssh to install or update
- * no more ssh to change any settings, all done through UI
- * automatic change top speed based on speed limit and offset (either units or %)
- * automatic lane change with adjustable delay
- * human steering override with adjustable delay for re-engagement
- * steering never disengages unless you cancel it via stalk
- * adjustable follow distance though UI
- * allows for CC without LKAS when using Pedal
- * pedal can be on either CAN0 or CAN2 (set via UI)
- * support for iBooster ECU (in dev) 
-
+ * New driving model
+   * Bigger model, using both of comma three's road-facing cameras
+   * Better at cut-in detection and tight turns
+ * New driver monitoring model
+   * Tweaked network structure to improve output resolution for DSP
+   * Fixed bug in quantization aware training to reduce quantizing errors
+   * Resulted in 7x less MSE and no more random biases at runtime
+ * Added toggle to disable disengaging on the accelerator pedal
+ * comma body support
+ * Audi RS3 support thanks to jyoung8607!
+ * Hyundai Ioniq Plug-in Hybrid 2019 support thanks to sunnyhaibin!
+ * Hyundai Tucson Diesel 2019 support thanks to sunnyhaibin!
+ * Toyota Alphard Hybrid 2021 support
+ * Toyota Avalon Hybrid 2022 support
+ * Toyota RAV4 2022 support
+ * Toyota RAV4 Hybrid 2022 support
 
 Version 0.8.13 (2022-02-18)
 ========================
  * Improved driver monitoring
-   * Retuned driver pose learner for relaxed driving positions
+   * Re-tuned driver pose learner for relaxed driving positions
    * Added reliance on driving model to be more scene adaptive
    * Matched strictness between comma two and comma three
  * Improved performance in turns by compensating for the road bank angle
@@ -318,7 +281,7 @@ Version 0.8.4 (2021-05-17)
  * Delay controls start until system is ready
  * Fuzzy car identification, enabled with Community Features toggle
  * Localizer optimized for increased precision and less CPU usage
- * Retuned lateral control to be more aggressive when model is confident
+ * Re-tuned lateral control to be more aggressive when model is confident
  * Toyota Mirai 2021 support
  * Lexus NX 300 2020 support thanks to goesreallyfast!
  * Volkswagen Atlas 2018-19 support thanks to jyoung8607!

@@ -8,11 +8,9 @@ from cereal import car
 from common.numpy_fast import interp
 from common.params import Params
 from common.realtime import Ratekeeper, Priority, config_realtime_process
-from selfdrive.config import RADAR_TO_CAMERA
-from selfdrive.controls.lib.cluster.fastcluster_py import cluster_points_centroid
-from selfdrive.controls.lib.radar_helpers import Cluster, Track
-from selfdrive.swaglog import cloudlog
-from selfdrive.hardware import TICI
+from selfdrive.controls.lib.radar_helpers import Cluster, Track, RADAR_TO_CAMERA
+from system.swaglog import cloudlog
+from third_party.cluster.fastcluster_py import cluster_points_centroid
 
 
 class KalmanParams():
@@ -37,7 +35,7 @@ class KalmanParams():
     self.K = [[interp(dt, dts, K0)], [interp(dt, dts, K1)]]
 
 
-def laplacian_cdf(x, mu, b):
+def laplacian_pdf(x, mu, b):
   b = max(b, 1e-4)
   return math.exp(-abs(x-mu)/b)
 
@@ -47,9 +45,9 @@ def match_vision_to_cluster(v_ego, lead, clusters):
   offset_vision_dist = lead.x[0] - RADAR_TO_CAMERA
 
   def prob(c):
-    prob_d = laplacian_cdf(c.dRel, offset_vision_dist, lead.xStd[0])
-    prob_y = laplacian_cdf(c.yRel, -lead.y[0], lead.yStd[0])
-    prob_v = laplacian_cdf(c.vRel + v_ego, lead.v[0], lead.vStd[0])
+    prob_d = laplacian_pdf(c.dRel, offset_vision_dist, lead.xStd[0])
+    prob_y = laplacian_pdf(c.yRel, -lead.y[0], lead.yStd[0])
+    prob_v = laplacian_pdf(c.vRel + v_ego, lead.v[0], lead.vStd[0])
 
     # This is isn't exactly right, but good heuristic
     return prob_d * prob_y * prob_v
@@ -104,7 +102,7 @@ class RadarD():
 
     self.ready = False
 
-  def update(self, sm, rr, enable_lead):
+  def update(self, sm, rr):
     self.current_time = 1e-9*max(sm.logMonoTime.values())
 
     if sm.updated['carState']:
@@ -164,24 +162,22 @@ class RadarD():
 
     # *** publish radarState ***
     dat = messaging.new_message('radarState')
-    dat.valid = sm.all_alive_and_valid() and len(rr.errors) == 0
+    dat.valid = sm.all_checks() and len(rr.errors) == 0
     radarState = dat.radarState
     radarState.mdMonoTime = sm.logMonoTime['modelV2']
-    radarState.canMonoTimes = list(rr.canMonoTimes)
     radarState.radarErrors = list(rr.errors)
     radarState.carStateMonoTime = sm.logMonoTime['carState']
 
-    if enable_lead:
-      leads_v3 = sm['modelV2'].leadsV3
-      if len(leads_v3) > 1:
-        radarState.leadOne = get_lead(self.v_ego, self.ready, clusters, leads_v3[0], low_speed_override=True)
-        radarState.leadTwo = get_lead(self.v_ego, self.ready, clusters, leads_v3[1], low_speed_override=False)
+    leads_v3 = sm['modelV2'].leadsV3
+    if len(leads_v3) > 1:
+      radarState.leadOne = get_lead(self.v_ego, self.ready, clusters, leads_v3[0], low_speed_override=True)
+      radarState.leadTwo = get_lead(self.v_ego, self.ready, clusters, leads_v3[1], low_speed_override=False)
     return dat
 
 
 # fuses camera and radar data for best lead detection
 def radard_thread(sm=None, pm=None, can_sock=None):
-  config_realtime_process(5 if TICI else 2, Priority.CTRL_LOW)
+  config_realtime_process(5, Priority.CTRL_LOW)
 
   # wait for stats about the car to come in from controls
   cloudlog.info("radard is waiting for CarParams")
@@ -205,9 +201,6 @@ def radard_thread(sm=None, pm=None, can_sock=None):
   rk = Ratekeeper(1.0 / CP.radarTimeStep, print_delay_threshold=None)
   RD = RadarD(CP.radarTimeStep, RI.delay)
 
-  # TODO: always log leads once we can hide them conditionally
-  enable_lead = CP.openpilotLongitudinalControl or not CP.radarOffCan
-
   while 1:
     can_strings = messaging.drain_sock_raw(can_sock, wait_for_one=True)
     rr = RI.update(can_strings)
@@ -217,7 +210,7 @@ def radard_thread(sm=None, pm=None, can_sock=None):
 
     sm.update(0)
 
-    dat = RD.update(sm, rr, enable_lead)
+    dat = RD.update(sm, rr)
     dat.radarState.cumLagMs = -rk.remaining*1000.
 
     pm.send('radarState', dat)

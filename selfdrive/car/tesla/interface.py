@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 from cereal import car
-from selfdrive.car.tesla.values import CAR, CruiseButtons, CAN_AP_POWERTRAIN
+from selfdrive.car.tesla.values import CANBUS, CAR, CruiseButtons, CAN_AP_POWERTRAIN
 from selfdrive.car import STD_CARGO_KG, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, get_safety_config
 from selfdrive.car.interfaces import CarInterfaceBase
-from selfdrive.car.modules.CFG_module import load_bool_param, load_float_param
+from selfdrive.car.modules.CFG_module import load_bool_param, load_float_param, load_str_param
 from panda import Panda
 from selfdrive.car.tesla.tunes import LongTunes, set_long_tune, ACCEL_LOOKUP_BP, ACCEL_MAX_LOOKUP_V, ACCEL_MIN_LOOKUP_V, ACCEL_REG_LOOKUP_V, ACCEL_AP_MAX_LOOKUP_V
 from common.numpy_fast import interp
-from selfdrive.config import Conversions as CV
+from common.conversions import Conversions as CV
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
@@ -33,29 +33,27 @@ def get_tesla_accel_limits(CP, current_speed):
 
 class CarInterface(CarInterfaceBase):
   @staticmethod
-  def compute_gb(accel, speed):
-    # TODO: is this correct?
-    return float(accel) 
-
-  @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
     return get_tesla_accel_limits(CP,current_speed)
     
 
   @staticmethod
-  def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=None):
-    if load_bool_param("TinklaForceTeslaPreAP",False):
+  def _get_params(ret,candidate, fingerprint=gen_empty_fingerprint(), car_fw=None, experimental_long=True):
+    if load_str_param("TinklaAPForceFingerprint", "") == "TESLA PREAP MODEL S":
       candidate = CAR.PREAP_MODELS
-    ret = CarInterfaceBase.get_std_params(candidate, fingerprint)
     ret.carName = "tesla"      
     ret.steerControlType = car.CarParams.SteerControlType.angle
 
+    # Set kP and kI to 0 over the whole speed range to have the planner accel as actuator command
+    ret.longitudinalTuning.kpBP = [0]
+    ret.longitudinalTuning.kpV = [0]
+    ret.longitudinalTuning.kiBP = [0]
+    ret.longitudinalTuning.kiV = [0]
     ret.longitudinalActuatorDelayUpperBound = 0.5 # s
     ret.radarTimeStep = (1.0 / 8) # 8Hz
 
     ret.steerLimitTimer = 1.0
     ret.steerActuatorDelay = 0.25
-    ret.steerRateCost = 0.5
 
     #safetyParam
     # BIT - MEANING
@@ -77,7 +75,7 @@ class CarInterface(CarInterfaceBase):
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_AP # has AP, ACC
       ret.openpilotLongitudinalControl = False
       set_long_tune(ret.longitudinalTuning, LongTunes.AP)
-    elif candidate == CAR.AP1_MODELX:
+    elif candidate in (CAR.AP1_MODELX, CAR.AP2_MODELX):
       #TODO: update values
       ret.mass = 2560. + STD_CARGO_KG
       ret.wheelbase = 2.964
@@ -114,6 +112,7 @@ class CarInterface(CarInterfaceBase):
     if load_bool_param("TinklaEnableOPLong",False) or ret.openpilotLongitudinalControl:
       safetyParam = safetyParam | Panda.FLAG_TESLA_LONG_CONTROL
       ret.openpilotLongitudinalControl = True
+      ret.experimentalLongitudinalAvailable = experimental_long
     if load_bool_param("TinklaHasIcIntegration",False):
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_IC_INTEGRATION
     # true if car has ibooster
@@ -121,14 +120,11 @@ class CarInterface(CarInterfaceBase):
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_IBOOSTER
     ret.rotationalInertia = scale_rot_inertia(ret.mass, ret.wheelbase)
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront)
-    ret.radarOffCan = False
+    ret.radarUnavailable = False
     if candidate == CAR.PREAP_MODELS:
-      ret.radarOffCan = not load_bool_param("TinklaUseTeslaRadar",False)
-    # set safetyParam flag for OP Long Control
-    if ret.openpilotLongitudinalControl:
-      safetyParam = safetyParam | Panda.FLAG_TESLA_LONG_CONTROL
+      ret.radarUnavailable = not load_bool_param("TinklaUseTeslaRadar",False)
 
-    if candidate == CAR.AP2_MODELS:
+    if candidate in (CAR.AP2_MODELS,CAR.AP2_MODELX):
       # Check if we have messages on an auxiliary panda, and that 0x2bf (DAS_control) is present on the AP powertrain bus
       # If so, we assume that it is connected to the longitudinal harness.
       if (CAN_AP_POWERTRAIN[candidate] in fingerprint.keys()) and (0x2bf in fingerprint[CAN_AP_POWERTRAIN[candidate]].keys()):
@@ -151,13 +147,9 @@ class CarInterface(CarInterfaceBase):
       ret.stoppingDecelRate = 0.6 #since we don't use the PID, this means a jerk in acceleration by x m/s^3
       ret.stoppingControl = True
       ret.stopAccel = -2.0
-    ret.unsafeMode = UNSAFE_DISABLE_DISENGAGE_ON_GAS | UNSAFE_RAISE_LONGITUDINAL_LIMITS_TO_ISO_MAX
     return ret
 
-  def update(self, c, can_strings):
-    self.cp.update_strings(can_strings)
-    self.cp_cam.update_strings(can_strings)
-
+  def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam)
     if self.CP.carFingerprint == CAR.PREAP_MODELS:
       ret.canValid = self.cp.can_valid
@@ -189,9 +181,10 @@ class CarInterface(CarInterfaceBase):
         be.type = ButtonType.setCruise
       buttonEvents.append(be)
 
-    ret.buttonEvents = buttonEvents
+    #ret.buttonEvents = buttonEvents
     
     events = self.create_common_events(ret)
+
     if self.CS.autopilot_enabled:
       events.add(car.CarEvent.EventName.invalidLkasSetting)
     if ret.gasPressed and self.CS.adaptive_cruise_enabled:
@@ -206,17 +199,10 @@ class CarInterface(CarInterfaceBase):
 
     ret.events = events.to_msg()
     
-    self.CS.out = ret.as_reader()
     self.CS.DAS_canErrors = 0 if ret.canValid else 1
     
-    return self.CS.out
-
-  def apply(self, c):
-    self.pre_apply(c)
-    ret = self.CC.update(c, c.enabled, self.CS, self.frame, c.actuators, 
-        c.cruiseControl.cancel,c.cruiseControl.speedOverride,c.cruiseControl.override,
-                          c.hudControl.visualAlert, c.hudControl.audibleAlert, c.hudControl.leftLaneVisible,
-                          c.hudControl.rightLaneVisible, c.hudControl.leadVisible,
-                          c.hudControl.leftLaneDepart, c.hudControl.rightLaneDepart)
-    self.frame += 1
     return ret
+
+  def apply(self, c, now_nanos):
+    self.pre_apply(c)
+    return self.CC.update(c, self.CS, now_nanos)

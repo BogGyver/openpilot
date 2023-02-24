@@ -7,25 +7,31 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null && pwd)"
 cd $DIR
 
 BUILD_DIR=/data/openpilot
-SOURCE_DIR=/data/openpilot_beta
+SOURCE_DIR=/data/openpilot_betaC3
+
+
+RELEASE_BRANCH=tesla_unity_releaseC3
 
 
 if [ -f /TICI ]; then
   FILES_SRC="release/files_tici"
-  RELEASE_BRANCH=tesla_unity_releaseC3
-elif [ -f /EON ]; then
-  FILES_SRC="release/files_eon"
-  RELEASE_BRANCH=tesla_unity_releaseC2
 else
-  exit 0
+  echo "no release files set"
+  exit 1
 fi
+
+if [ -z "$RELEASE_BRANCH" ]; then
+  echo "RELEASE_BRANCH is not set"
+  exit 1
+fi
+
 
 # set git identity
 source $DIR/identity.sh
 
 echo "[-] Setting up repo T=$SECONDS"
 rm -rf $SOURCE_DIR
-git clone git@github.com:boggyver/openpilot.git --depth=1 -b tesla_unity_beta $SOURCE_DIR
+git clone git@github.com:boggyver/openpilot.git --depth=1 -b tesla_unity_betaC3 $SOURCE_DIR
 
 rm -rf $BUILD_DIR
 mkdir -p $BUILD_DIR
@@ -45,10 +51,10 @@ cp -pR --parents $(cat $FILES_SRC) $BUILD_DIR/
 cd $BUILD_DIR
 
 rm -f panda/board/obj/panda.bin.signed
+rm -f panda/board/obj/panda_h7.bin.signed
 
-TINKLAVERSION=$(cat selfdrive/common/tinkla_version.h | awk -F[\"]  '{print $2}')
-echo "#define COMMA_VERSION \"$TINKLAVERSION\"" > $BUILD_DIR/selfdrive/common/version.h
-
+VERSION=$(cat common/version.h | awk -F[\"-]  '{print $2}')
+echo "#define COMMA_VERSION \"$VERSION-release\"" > common/version.h
 
 echo "[-] committing version $TINKLAVERSION T=$SECONDS"
 git add -f .
@@ -72,6 +78,8 @@ mv board/obj/ivs.bin.signed /tmp/ivs.bin.signed
 mv board/obj/ivs_usb.bin.signed /tmp/ivs_usb.bin.signed 
 mv board/obj/bootstub.ivs.bin /tmp/bootstub.ivs.bin
 mv board/obj/bootstub.ivs_usb.bin /tmp/bootstub.ivs_usb.bin
+mv board/obj/panda_h7.bin.signed /tmp/panda_h7.bin.signed
+
 popd
 
 # Build
@@ -95,7 +103,7 @@ find . -name 'moc_*' -delete
 find . -name '__pycache__' -delete
 rm -rf panda/board panda/certs panda/crypto
 rm -rf .sconsign.dblite Jenkinsfile release/
-rm models/supercombo.dlc
+rm selfdrive/modeld/models/supercombo.onnx
 
 # Move back signed panda fw
 mkdir -p panda/board/obj
@@ -112,6 +120,7 @@ mv /tmp/ivs.bin.signed $BUILD_DIR/panda/board/obj/ivs.bin.signed
 mv /tmp/ivs_usb.bin.signed $BUILD_DIR/panda/board/obj/ivs_usb.bin.signed
 mv /tmp/bootstub.ivs.bin $BUILD_DIR/panda/board/obj/bootstub.ivs.bin
 mv /tmp/bootstub.ivs_usb.bin $BUILD_DIR/panda/board/obj/bootstub.ivs_usb.bin
+mv /tmp/panda_h7.bin.signed $BUILD_DIR/panda/board/obj/panda_h7.bin.signed
 
 # Restore third_party
 git checkout third_party/

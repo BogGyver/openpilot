@@ -6,7 +6,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-#include "selfdrive/common/params.h"
+#include "common/params.h"
 #include "selfdrive/ui/qt/widgets/toggle.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 

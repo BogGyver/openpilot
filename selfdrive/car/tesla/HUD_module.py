@@ -1,7 +1,7 @@
 from common.numpy_fast import clip
 from selfdrive.car.tesla.values import CAR, CAN_CHASSIS
 from cereal import car
-from selfdrive.config import Conversions as CV
+from common.conversions import Conversions as CV
 import numpy as np
 
 IC_LANE_SCALE = 0.5
@@ -93,23 +93,22 @@ class HUDController:
     def update(self, controls_state, enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart,human_control,radar_state,lat_plan,apply_angle,model_data):
         # TODO: additional lanes to show on IC
-        self.IC_integration_counter = ((self.IC_integration_counter + 2) % 100)
+        self.IC_integration_counter = ((self.IC_integration_counter + 1) % 100)
 
         if self.IC_integration_warning_counter > 0:
             self.IC_integration_warning_counter = self.IC_integration_warning_counter - 1
         messages = []
 
         if controls_state is not None:
-            self.engageable = controls_state.controlsState. engageable
-
-        if lat_plan is not None:
-            CS.laneWidth = lat_plan.lateralPlan.laneWidth
-            CS.lProb = lat_plan.lateralPlan.lProb
-            CS.rProb = lat_plan.lateralPlan.rProb
-            CS.lLine = 1 if CS.lProb > 0.45 else 0
-            CS.rLine = 1 if CS.rProb > 0.45 else 0
+            self.engageable = controls_state.controlsState.engageable 
+            #print("Engageable: ", self.engageable)           
             
         if model_data is not None:
+            CS.laneWidth = 4.0 #lat_plan.lateralPlan.laneWidth
+            CS.lProb = model_data.modelV2.laneLineProbs[1]
+            CS.rProb = model_data.modelV2.laneLineProbs[2]
+            CS.lLine = 1 if CS.lProb > 0.45 else 0
+            CS.rLine = 1 if CS.rProb > 0.45 else 0
             self.leftLaneQuality = 1 if model_data.modelV2.laneLineProbs[0] > 0.25 else 0
             self.rightLaneQuality = 1 if model_data.modelV2.laneLineProbs[3] > 0.25 else 0
             #let's get the position points and compute poly coef
@@ -239,8 +238,14 @@ class HUDController:
                     DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
                     CS.out.leftBlindspot, CS.out.rightBlindspot,
                     CS.DAS_fusedSpeedLimit, CS.fleet_speed_state, CAN_CHASSIS[self.CP.carFingerprint], 1))
+                #print("Sending DAS_status (DAS_op_status, DAS_collision_warning, DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, CS.out.leftBlindspot, CS.out.rightBlindspot,CS.DAS_fusedSpeedLimit, CS.fleet_speed_state, CAN_CHASSIS[self.CP.carFingerprint], 1) with values(",DAS_op_status, DAS_collision_warning,
+                #    DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
+                #    CS.out.leftBlindspot, CS.out.rightBlindspot,
+                #    CS.DAS_fusedSpeedLimit, CS.fleet_speed_state, CAN_CHASSIS[self.CP.carFingerprint], 1,")")
                 messages.append(self.tesla_can.create_das_status2(DAS_csaState, cruise_speed, 
                     DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1))
+                #print("Sending DAS_status2 (DAS_csaState, cruise_speed, DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1) with values (",DAS_csaState, cruise_speed, 
+                #    DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1,")")
 
         if (enabled or CS.autopilot_disabled_det or self.IC_previous_enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
 

@@ -32,34 +32,28 @@ a.out
 *.class
 *.pyxbldc
 *.vcd
+*.qm
 config.json
 clcache
 compile_commands.json
+compare_runtime*.html
 
 persist
 board/obj/
 selfdrive/boardd/boardd
 selfdrive/logcatd/logcatd
 selfdrive/mapd/default_speeds_by_region.json
-selfdrive/proclogd/proclogd
+system/proclogd/proclogd
 selfdrive/ui/_ui
-selfdrive/ui/qt/flasher
-selfdrive/car/modules/teslaEpasFlasher/flasher
-selfdrive/car/tesla/pedal_calibrator/flasher
-selfdrive/car/modules/radarFlasher/flasher
-selfdrive/panda/board/flasher
-selfdrive/panda/board/pedal/flasher
 selfdrive/test/longitudinal_maneuvers/out
 selfdrive/visiond/visiond
-selfdrive/loggerd/loggerd
-selfdrive/loggerd/bootlog
 selfdrive/sensord/_gpsd
 selfdrive/sensord/_sensord
-selfdrive/camerad/camerad
-selfdrive/camerad/test/ae_gray_test
+system/camerad/camerad
+system/camerad/test/ae_gray_test
 selfdrive/modeld/_modeld
+selfdrive/modeld/_navmodeld
 selfdrive/modeld/_dmonitoringmodeld
-selfdrive/car/modules/qt/moc_*.*
 /src/
 
 one
@@ -83,10 +77,16 @@ cppcheck_report.txt
 comma*.sh
 
 selfdrive/modeld/thneed/compile
-models/*.thneed
+selfdrive/modeld/models/*.thneed
+selfdrive/ui/qt/flasher
+
 
 *.bz2
 
 build/
 
 !**/.gitkeep
+
+poetry.toml
+opendbc/can/packer_pyx.cpp
+opendbc/can/parser_pyx.cpp

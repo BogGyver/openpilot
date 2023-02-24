@@ -69,27 +69,9 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "../assets/offroad/icon_settings.png",
       "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
       },
-    {"TinklaDebugMode",
-      "Show Debug View",
-      "Shows the image captured by the road camera, including detected path and lanes.",
-      "../assets/offroad/icon_settings.png",
-      "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-      },
     {"TinklaHideGps",
       "Hide GPS Warnings",
       "Hides the GPS warning when user doesn't care about them.",
-      "../assets/offroad/icon_settings.png",
-      "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-      },
-    {"TinklaMapsOnLeft",
-      "Maps on left side",
-      "Shows the maps on the left side of the screen.",
-      "../assets/offroad/icon_settings.png",
-      "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-      },
-    {"TinklaFlipScreen",
-      "Flip screen (for RHD)",
-      "Flips the screen for people driving on the wrong side of the road. Changes to C2 hardware are needed. C2 only.",
       "../assets/offroad/icon_settings.png",
       "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
       },
@@ -133,7 +115,7 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       addItem(new NumParamControl(title, desc, edit_title,edit_desc, edit_uom, param,val_default,val_min,val_max,val_step, icon));
     }
     if (field_type == TINKLA_STRING) {
-      addItem(new StrParamControl(title, desc, edit_title,edit_desc, param, QString::fromStdString(""), icon));
+      addItem(new StrParamControl(title, desc, edit_title,edit_desc, param, edit_uom, QString::fromStdString(""), icon));
     }
   };
   QPushButton *flash_btn = new QPushButton("Flash Panda");
@@ -248,12 +230,6 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
     "../assets/offroad/icon_settings.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
-    {"TinklaForceTeslaPreAP",
-    "Force PreAP Tesla Model S ",
-    "Forces the fingerprint to match a PreAP Tesla Model S. Requires reboot.",
-    "../assets/offroad/icon_settings.png",
-    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-    },
   };
   Params params;
   for (auto &[param, title, desc, icon, edit_title,edit_desc, edit_uom, val_default,val_min,val_max,val_step, field_type] : tinkla_toggles) {
@@ -270,7 +246,7 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
       addItem(new NumParamControl(title, desc, edit_title,edit_desc, edit_uom, param,val_default,val_min,val_max,val_step, icon));
     }
     if (field_type == TINKLA_STRING) {
-      addItem(new StrParamControl(title, desc, edit_title,edit_desc, param, QString::fromStdString(""), icon));
+      addItem(new StrParamControl(title, desc, edit_title,edit_desc, param, edit_uom, QString::fromStdString(""), icon));
     }
   };
 
@@ -343,21 +319,6 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
       "",
       0.0,-5.0,20.0,1.0,TINKLA_FLOAT
     },
-    {"TinklaTurnSlowdown",
-    "Slowdown in Turns",
-    "Reduces the car' speed in turns based on road curvature.",
-    "../assets/offroad/icon_speed_limit.png",
-    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-    },
-    {"TinklaTurnSlowdownFactor",
-      "Slowdown Factor in Turns",
-      "The multiplier used to compute the safe speed to take a turn. 0.5 is slower, 1.5 is faster.",
-      "../assets/offroad/icon_speed_limit.png",
-      "Slowdown Factor in Turns:",
-      "Enter the slowdown multiplier:",
-      "",
-      1.0,0.5,1.5,0.01,TINKLA_FLOAT
-    },
     {"TinklaBrakeFactor",
       "Braking Factor",
       "The multiplier used to compute the Tesla braking power. 0.5 is less and 1.5 is more.",
@@ -376,12 +337,6 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
       "",
       2.0,1.0,3.0,1.0,TINKLA_FLOAT
     },
-    {"TinklaUseLongControlData",
-    "Use LongControl data",
-    "Uses data from Tesla fleet to control speed based on maps. Requires AP.",
-    "../assets/offroad/icon_speed_limit.png",
-    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-    },
     {"TinklaTeslaRadarIgnoreSGUError",
     "Ignore Radar Errors",
     "Ignore Tesla Radar errors about calibration. ",
@@ -389,12 +344,12 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
     },
     {"TinklaAPForceFingerprint",
-      "Force Tesla AP Fingerprint",
-      "Forces fingerprint for a specific model of Tesla with AutoPilot. This should not be used for preAP Tesla Model S.",
+      "Force Tesla Fingerprint",
+      "Forces fingerprint for a specific model of Tesla.",
       "../assets/offroad/icon_settings.png",
       "Fingerprint:",
-      "Enter a valid fingerprint name. Check WiKi for values.",
-      "",
+      "TESLA PREAP MODEL S,TESLA AP1 MODEL S,TESLA AP1 MODEL X,TESLA AP2+ MODEL S,TESLA AP2+ MODEL X,NONE",
+      "NONE",
       0.0,0.0,0.0,0.0,TINKLA_STRING
     },
     {"TinklaAutopilotDisabled",
@@ -431,7 +386,7 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
       addItem(new NumParamControl(title, desc, edit_title,edit_desc, edit_uom, param,val_default,val_min,val_max,val_step, icon));
     }
     if (field_type == TINKLA_STRING) {
-      addItem(new StrParamControl(title, desc, edit_title,edit_desc, param, QString::fromStdString(""), icon));
+      addItem(new StrParamControl(title, desc, edit_title,edit_desc, param, edit_uom, QString::fromStdString(""), icon));
     }
   };
 }

@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
   QString button2_label(argv[3]);
   QString button2_script(argv[4]);
   QString splash_script(argv[5]);
-  initApp();
+  initApp(argc, argv);
   QApplication a(argc, argv);
   QWidget window;
   setMainWindow(&window);

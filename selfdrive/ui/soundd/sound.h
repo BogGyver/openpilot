@@ -2,7 +2,7 @@
 #include <QSoundEffect>
 #include <QString>
 
-#include "selfdrive/hardware/hw.h"
+#include "system/hardware/hw.h"
 #include "selfdrive/ui/ui.h"
 
 

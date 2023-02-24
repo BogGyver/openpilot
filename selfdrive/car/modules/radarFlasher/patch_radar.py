@@ -8,7 +8,7 @@ from tqdm import tqdm
 from enum import IntEnum
 import time
 
-from selfdrive.car.modules.CFG_module import load_bool_param
+from selfdrive.car.modules.CFG_module import load_bool_param,load_str_param
 from panda import Panda
 from panda.python.uds import UdsClient, MessageTimeoutError, NegativeResponseError, _negative_response_codes
 from panda.python.uds import SESSION_TYPE, ACCESS_TYPE, ROUTINE_CONTROL_TYPE, ROUTINE_IDENTIFIER_TYPE, RESET_TYPE,DATA_IDENTIFIER_TYPE
@@ -352,7 +352,7 @@ if __name__ == "__main__":
   args = parser.parse_args()
 
   safetyParam = 0
-  if not load_bool_param("TinklaForceTeslaPreAP", False):
+  if load_str_param("TinklaAPForceFingerprint", "") != "TESLA PREAP MODEL S":
     print("This software should only be used on preAP Tesla Model S!!!")
     sys.exit(1)
   if load_bool_param("TinklaUseTeslaRadar",False):
@@ -365,11 +365,13 @@ if __name__ == "__main__":
 
   if load_bool_param("TinklaHasIBooster",False):
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_IBOOSTER
+  
+  safety_param = safety_param | Panda.FLAG_TESLA_RADAR_VIN_LEARN
 
   panda = Panda()
   panda.reset()
   #negative safetyParam used when doing VIN learn in our SAFETY_TESL for now
-  panda.set_safety_mode(Panda.SAFETY_TESLA, param=-safetyParam)
+  panda.set_safety_mode(Panda.SAFETY_TESLA, param=safetyParam)
   uds_client = UdsClient(panda, args.can_addr, bus=args.can_bus, rx_addr=args.can_addr + 0x10, timeout=3, debug=args.debug)
 
   os.chdir(os.path.dirname(os.path.realpath(__file__)))

@@ -1,11 +1,12 @@
 import copy
+from collections import deque
 from cereal import car
-from selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS, CAR, CruiseButtons, CruiseState, WHEEL_RADIUS
+from selfdrive.car.tesla.values import DBC, CANBUS, GEAR_MAP, DOORS, BUTTONS, CAR, CruiseButtons, CruiseState, WHEEL_RADIUS
 from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
-from selfdrive.config import Conversions as CV
-from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
+from common.conversions import Conversions as CV
+from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param, load_str_param
 from selfdrive.car.tesla.tunes import transform_pedal_to_di,PEDAL_DI_PRESSED
 
 
@@ -20,10 +21,11 @@ class CarState(CarStateBase):
 
     self.hands_on_level = 0
     self.steer_warning = None
-    self.acc_state = 0
+    self.das_control_counters = deque(maxlen=32)
 
     # Needed by carcontroller
     self.msg_stw_actn_req = None
+    self.acc_state = 0
 
     self.autopilot_disabled = load_bool_param("TinklaAutopilotDisabled",False)
     self.autopilot_disabled_det = False
@@ -109,12 +111,11 @@ class CarState(CarStateBase):
     self.pcc_enabled = False
     self.torqueLevel = 0.0
     self.cruise_state = None
-    self.enableHumanLongControl = load_bool_param("TinklaForceTeslaPreAP", False) or self.autopilot_disabled
+    self.enableHumanLongControl = (load_str_param("TinklaAPForceFingerprint", "") == "TESLA PREAP MODEL S") or self.autopilot_disabled
     self.enableICIntegration = load_bool_param("TinklaHasIcIntegration", False)
     self.pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
     self.has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
     self.handsOnLimit = load_float_param("TinklaHandsOnLevel",1.0)
-    self.mapAwareSpeed = load_bool_param("TinklaUseLongControlData", False)
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
       self.enableICIntegration = True
     self.brakeUnavailable = True
@@ -226,8 +227,8 @@ class CarState(CarStateBase):
     ret.steeringRateDeg = -cp.vl["STW_ANGLHP_STAT"]["StW_AnglHP_Spd"] # This is from a different angle sensor, and at different rate
     self.hands_on_level = cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
     ret.steeringPressed = (self.hands_on_level >= self.handsOnLimit)
-    ret.steerError = steer_status == "EAC_FAULT"
-    ret.steerWarning = self.steer_warning != "EAC_ERROR_IDLE"
+    ret.steerFaultPermanent = steer_status == "EAC_FAULT"
+    ret.steerFaultTemporary = (self.steer_warning not in ("EAC_ERROR_IDLE", "EAC_ERROR_HANDS_ON"))
     self.torqueLevel = cp.vl["DI_torque1"]["DI_torqueMotor"]
 
     self.esp_long_acceleration = cp.vl["ESP_ACC"]["Long_Acceleration"]
@@ -409,18 +410,22 @@ class CarState(CarStateBase):
       park_left_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotLeft"].get(int(cp.vl["PARK_status2"]["PARK_sdiBlindSpotLeft"])) == "WARNING"
       das_right_blindspot = self.can_define.dv["DAS_status"]["DAS_blindSpotRearRight"].get(int(cp_cam.vl["DAS_status"]["DAS_blindSpotRearRight"])) in ["WARNING_LEVEL_2","WARNING_LEVEL_1"]
       das_left_blindspot = self.can_define.dv["DAS_status"]["DAS_blindSpotRearLeft"].get(int(cp_cam.vl["DAS_status"]["DAS_blindSpotRearLeft"])) in ["WARNING_LEVEL_2","WARNING_LEVEL_1"]
+      ret.stockAeb = (cp_cam.vl["DAS_control"]["DAS_aebEvent"] == 1)
+      self.acc_state = 0 #cp_cam.vl["DAS_control"]["DAS_accState"]
     else:
       das_right_blindspot = False
       das_left_blindspot = False
       park_right_blindspot = False
       park_left_blindspot = False
+      ret.stockAeb = False
+      self.acc_state = 0
     ret.rightBlindspot = (park_right_blindspot or das_right_blindspot)
     ret.leftBlindspot = (park_left_blindspot or das_left_blindspot)
     # Messages needed by carcontroller
     sw_a = copy.copy(cp.vl["STW_ACTN_RQ"])
     if sw_a is not None:
       self.msg_stw_actn_req = sw_a
-      
+
     # Gas pedal
     #BBTODO: in latest versions of code Tesla does not populate this field
     ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
@@ -495,7 +500,7 @@ class CarState(CarStateBase):
         if not self.pcc_enabled:
           self.DAS_216_driverOverriding = False
         ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
-
+    
     return ret
 
   @staticmethod
@@ -505,75 +510,75 @@ class CarState(CarStateBase):
     has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
     signals = [
       # sig_name, sig_address, default
-      ("DI_pedalPos", "DI_torque1", 0),
-      ("DI_torqueMotor", "DI_torque1", 0),
-      ("DI_brakePedal", "DI_torque2", 0),
-      ("DI_vehicleSpeed","DI_torque2", 0),
-      ("StW_AnglHP", "STW_ANGLHP_STAT", 0),
-      ("StW_AnglHP_Spd", "STW_ANGLHP_STAT", 0),
-      ("DI_cruiseState", "DI_state", 0),
-      ("DI_digitalSpeed", "DI_state", 0),
-      ("DI_speedUnits", "DI_state", 0),
-      ("DI_cruiseSet", "DI_state", 0),
-      ("DI_gear", "DI_torque2", 0),
-      ("DOOR_STATE_FL", "GTW_carState", 1),
-      ("DOOR_STATE_FR", "GTW_carState", 1),
-      ("DOOR_STATE_RL", "GTW_carState", 1),
-      ("DOOR_STATE_RR", "GTW_carState", 1),
-      ("DOOR_STATE_FrontTrunk", "GTW_carState", 1),
-      ("BOOT_STATE", "GTW_carState", 1),
-      ("GTW_performanceConfig","GTW_carConfig", 1),
-      ("GTW_fourWheelDrive", "GTW_carConfig", 1),
-      ("GTW_autopilot", "GTW_carConfig", 1),
-      ("BC_indicatorLStatus", "GTW_carState", 1),
-      ("BC_indicatorRStatus", "GTW_carState", 1),
+      ("DI_pedalPos", "DI_torque1"),
+      ("DI_torqueMotor", "DI_torque1"),
+      ("DI_brakePedal", "DI_torque2"),
+      ("DI_vehicleSpeed","DI_torque2"),
+      ("StW_AnglHP", "STW_ANGLHP_STAT"),
+      ("StW_AnglHP_Spd", "STW_ANGLHP_STAT"),
+      ("DI_cruiseState", "DI_state"),
+      ("DI_digitalSpeed", "DI_state"),
+      ("DI_speedUnits", "DI_state"),
+      ("DI_cruiseSet", "DI_state"),
+      ("DI_gear", "DI_torque2"),
+      ("DOOR_STATE_FL", "GTW_carState"),
+      ("DOOR_STATE_FR", "GTW_carState"),
+      ("DOOR_STATE_RL", "GTW_carState"),
+      ("DOOR_STATE_RR", "GTW_carState"),
+      ("DOOR_STATE_FrontTrunk", "GTW_carState"),
+      ("BOOT_STATE", "GTW_carState"),
+      ("GTW_performanceConfig","GTW_carConfig"),
+      ("GTW_fourWheelDrive", "GTW_carConfig"),
+      ("GTW_autopilot", "GTW_carConfig"),
+      ("BC_indicatorLStatus", "GTW_carState"),
+      ("BC_indicatorRStatus", "GTW_carState"),
       # info for speed limit
-      ("UI_mapSpeedLimitUnits","UI_gpsVehicleSpeed",0),
-      ("UI_userSpeedOffset","UI_gpsVehicleSpeed",0),
-      ("UI_mppSpeedLimit","UI_gpsVehicleSpeed",0),
-      ("UI_mapSpeedLimit","UI_driverAssistMapData",0),
-      ("UI_roadSign","UI_driverAssistRoadSign",0),
-      ("UI_baseMapSpeedLimitMPS","UI_driverAssistRoadSign",0),
-      ("UI_meanFleetSplineSpeedMPS","UI_driverAssistRoadSign",0),
-      ("UI_meanFleetSplineAccelMPS2","UI_driverAssistRoadSign",0),
-      ("UI_medianFleetSpeedMPS","UI_driverAssistRoadSign",0),
-      ("UI_splineLocConfidence","UI_driverAssistRoadSign",0),
-      ("UI_splineID","UI_driverAssistRoadSign",0),
-      ("UI_rampType","UI_driverAssistRoadSign",0),
+      ("UI_mapSpeedLimitUnits","UI_gpsVehicleSpeed"),
+      ("UI_userSpeedOffset","UI_gpsVehicleSpeed"),
+      ("UI_mppSpeedLimit","UI_gpsVehicleSpeed"),
+      ("UI_mapSpeedLimit","UI_driverAssistMapData"),
+      ("UI_roadSign","UI_driverAssistRoadSign"),
+      ("UI_baseMapSpeedLimitMPS","UI_driverAssistRoadSign"),
+      ("UI_meanFleetSplineSpeedMPS","UI_driverAssistRoadSign"),
+      ("UI_meanFleetSplineAccelMPS2","UI_driverAssistRoadSign"),
+      ("UI_medianFleetSpeedMPS","UI_driverAssistRoadSign"),
+      ("UI_splineLocConfidence","UI_driverAssistRoadSign"),
+      ("UI_splineID","UI_driverAssistRoadSign"),
+      ("UI_rampType","UI_driverAssistRoadSign"),
       # We copy this whole message when spamming cancel
-      ("SpdCtrlLvr_Stat", "STW_ACTN_RQ", 0),
-      ("VSL_Enbl_Rq", "STW_ACTN_RQ", 0),
-      ("SpdCtrlLvrStat_Inv", "STW_ACTN_RQ", 0),
-      ("DTR_Dist_Rq", "STW_ACTN_RQ", 0),
-      ("TurnIndLvr_Stat", "STW_ACTN_RQ", 0),
-      ("HiBmLvr_Stat", "STW_ACTN_RQ", 0),
-      ("WprWashSw_Psd", "STW_ACTN_RQ", 0),
-      ("WprWash_R_Sw_Posn_V2", "STW_ACTN_RQ", 0),
-      ("StW_Lvr_Stat", "STW_ACTN_RQ", 0),
-      ("StW_Cond_Flt", "STW_ACTN_RQ", 0),
-      ("StW_Cond_Psd", "STW_ACTN_RQ", 0),
-      ("HrnSw_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw00_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw01_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw02_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw03_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw04_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw05_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw06_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw07_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw08_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw09_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw10_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw11_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw12_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw13_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw14_Psd", "STW_ACTN_RQ", 0),
-      ("StW_Sw15_Psd", "STW_ACTN_RQ", 0),
-      ("WprSw6Posn", "STW_ACTN_RQ", 0),
-      ("MC_STW_ACTN_RQ", "STW_ACTN_RQ", 0),
-      ("CRC_STW_ACTN_RQ", "STW_ACTN_RQ", 0),
-      ("Long_Acceleration","ESP_ACC",0),
-      ("Lat_Acceleration","ESP_ACC",0),
+      ("SpdCtrlLvr_Stat", "STW_ACTN_RQ"),
+      ("VSL_Enbl_Rq", "STW_ACTN_RQ"),
+      ("SpdCtrlLvrStat_Inv", "STW_ACTN_RQ"),
+      ("DTR_Dist_Rq", "STW_ACTN_RQ"),
+      ("TurnIndLvr_Stat", "STW_ACTN_RQ"),
+      ("HiBmLvr_Stat", "STW_ACTN_RQ"),
+      ("WprWashSw_Psd", "STW_ACTN_RQ"),
+      ("WprWash_R_Sw_Posn_V2", "STW_ACTN_RQ"),
+      ("StW_Lvr_Stat", "STW_ACTN_RQ"),
+      ("StW_Cond_Flt", "STW_ACTN_RQ"),
+      ("StW_Cond_Psd", "STW_ACTN_RQ"),
+      ("HrnSw_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw00_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw01_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw02_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw03_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw04_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw05_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw06_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw07_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw08_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw09_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw10_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw11_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw12_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw13_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw14_Psd", "STW_ACTN_RQ"),
+      ("StW_Sw15_Psd", "STW_ACTN_RQ"),
+      ("WprSw6Posn", "STW_ACTN_RQ"),
+      ("MC_STW_ACTN_RQ", "STW_ACTN_RQ"),
+      ("CRC_STW_ACTN_RQ", "STW_ACTN_RQ"),
+      ("Long_Acceleration","ESP_ACC"),
+      ("Lat_Acceleration","ESP_ACC"),
     ]
 
     checks = [
@@ -587,12 +592,12 @@ class CarState(CarStateBase):
     ]
 
     signals += [
-      ("ESP_vehicleSpeed", "ESP_B", 0),
-      ("ESP_wheelPulseCountFrL", "ESP_B", 0),
-      ("ESP_wheelPulseCountFrR", "ESP_B", 0),
-      ("ESP_wheelPulseCountReL", "ESP_B", 0),
-      ("ESP_wheelPulseCountReR", "ESP_B", 0),
-      ("driverBrakeStatus", "BrakeMessage", 0),
+      ("ESP_vehicleSpeed", "ESP_B"),
+      ("ESP_wheelPulseCountFrL", "ESP_B"),
+      ("ESP_wheelPulseCountFrR", "ESP_B"),
+      ("ESP_wheelPulseCountReL", "ESP_B"),
+      ("ESP_wheelPulseCountReR", "ESP_B"),
+      ("driverBrakeStatus", "BrakeMessage"),
     ]
     checks += [
       ("ESP_B", 50),
@@ -601,7 +606,7 @@ class CarState(CarStateBase):
     
     if not (CP.carFingerprint in [CAR.AP1_MODELX]):
       signals += [
-        ("SDM_bcklDrivStatus", "SDM1", 0),
+        ("SDM_bcklDrivStatus", "SDM1"),
       ]
 
       checks += [
@@ -610,7 +615,7 @@ class CarState(CarStateBase):
 
     if (CP.carFingerprint in [CAR.AP1_MODELX]):
       signals += [
-        ("RCM_buckleDriverStatus","RCM_status",0),
+        ("RCM_buckleDriverStatus","RCM_status"),
       ]
 
       checks += [
@@ -619,15 +624,15 @@ class CarState(CarStateBase):
 
     if (CP.carFingerprint in [CAR.PREAP_MODELS]):
       signals += [
-        ("GTW_ESP1Counter","GTW_ESP1",0),
-        ("GTW_hillStartAssistEnabled","GTW_ESP1",0),
-        ("GTW_brakeDiscWipeRequest","GTW_ESP1",0),
-        ("GTW_brakeFluidLow","GTW_ESP1",0),
-        ("GTW_pedalCalRxEnable","GTW_ESP1",0),
-        ("GTW_ambientTemperature","GTW_ESP1",0),
-        ("GTW_pedalCalTargetCurve","GTW_ESP1",0),
-        ("GTW_espModeSwitch","GTW_ESP1",0),
-        ("GTW_ESP1Checksum","GTW_ESP1",0),
+        ("GTW_ESP1Counter","GTW_ESP1"),
+        ("GTW_hillStartAssistEnabled","GTW_ESP1"),
+        ("GTW_brakeDiscWipeRequest","GTW_ESP1"),
+        ("GTW_brakeFluidLow","GTW_ESP1"),
+        ("GTW_pedalCalRxEnable","GTW_ESP1"),
+        ("GTW_ambientTemperature","GTW_ESP1"),
+        ("GTW_pedalCalTargetCurve","GTW_ESP1"),
+        ("GTW_espModeSwitch","GTW_ESP1"),
+        ("GTW_ESP1Checksum","GTW_ESP1"),
       ]
 
       checks += [
@@ -635,13 +640,13 @@ class CarState(CarStateBase):
       ]
 
     signals += [
-      ("EPAS_handsOnLevel", "EPAS_sysStatus", 0),
-      ("EPAS_torsionBarTorque", "EPAS_sysStatus", 0),
-      ("EPAS_internalSAS", "EPAS_sysStatus", 0),
-      ("EPAS_eacStatus", "EPAS_sysStatus", 1),
-      ("EPAS_eacErrorCode", "EPAS_sysStatus", 0),
-      ("PARK_sdiBlindSpotRight","PARK_status2",0),
-      ("PARK_sdiBlindSpotLeft","PARK_status2",0),
+      ("EPAS_handsOnLevel", "EPAS_sysStatus"),
+      ("EPAS_torsionBarTorque", "EPAS_sysStatus"),
+      ("EPAS_internalSAS", "EPAS_sysStatus"),
+      ("EPAS_eacStatus", "EPAS_sysStatus"),
+      ("EPAS_eacErrorCode", "EPAS_sysStatus"),
+      ("PARK_sdiBlindSpotRight","PARK_status2"),
+      ("PARK_sdiBlindSpotLeft","PARK_status2"),
     ]
 
     checks += [      
@@ -651,10 +656,10 @@ class CarState(CarStateBase):
 
     if has_ibooster_ecu:
       signals += [
-        ("BrakeApplied", "ECU_BrakeStatus", 0),
-        ("BrakeOK", "ECU_BrakeStatus", 0),
-        ("DriverBrakeApplied", "ECU_BrakeStatus", 0),
-        ("BrakePedalPosition", "ECU_BrakeStatus", 0),
+        ("BrakeApplied", "ECU_BrakeStatus"),
+        ("BrakeOK", "ECU_BrakeStatus"),
+        ("DriverBrakeApplied", "ECU_BrakeStatus"),
+        ("BrakePedalPosition", "ECU_BrakeStatus"),
       ]
 
       checks += [
@@ -663,10 +668,10 @@ class CarState(CarStateBase):
 
     if enablePedal and pedalcanzero:
       signals += [
-        ("INTERCEPTOR_GAS", "GAS_SENSOR", 0),
-        ("INTERCEPTOR_GAS2", "GAS_SENSOR", 0),
-        ("STATE", "GAS_SENSOR", 0),
-        ("IDX", "GAS_SENSOR", 0),
+        ("INTERCEPTOR_GAS", "GAS_SENSOR"),
+        ("INTERCEPTOR_GAS2", "GAS_SENSOR"),
+        ("STATE", "GAS_SENSOR"),
+        ("IDX", "GAS_SENSOR"),
       ]
 
       checks += [
@@ -686,62 +691,63 @@ class CarState(CarStateBase):
       signals = [
         # sig_name, sig_address, default
         #we need the steering control counter
-        ("DAS_steeringControlCounter", "DAS_steeringControl", 0),
+        ("DAS_steeringControlCounter", "DAS_steeringControl"),
         # We copy this whole message when we change the status for IC
-        ("DAS_autopilotState", "DAS_status", 0),
-        ("DAS_blindSpotRearLeft", "DAS_status", 0),
-        ("DAS_blindSpotRearRight", "DAS_status", 0),
-        ("DAS_fusedSpeedLimit", "DAS_status", 0),
-        ("DAS_suppressSpeedWarning", "DAS_status", 0),
-        ("DAS_summonObstacle", "DAS_status", 0),
-        ("DAS_summonClearedGate", "DAS_status", 0),
-        ("DAS_visionOnlySpeedLimit", "DAS_status", 0),
-        ("DAS_heaterState", "DAS_status", 0),
-        ("DAS_forwardCollisionWarning", "DAS_status", 0),
-        ("DAS_autoparkReady", "DAS_status", 0),
-        ("DAS_autoParked", "DAS_status", 0),
-        ("DAS_autoparkWaitingForBrake", "DAS_status", 0),
-        ("DAS_summonFwdLeashReached", "DAS_status", 0),
-        ("DAS_summonRvsLeashReached", "DAS_status", 0),
-        ("DAS_sideCollisionAvoid", "DAS_status", 0),
-        ("DAS_sideCollisionWarning", "DAS_status", 0),
-        ("DAS_sideCollisionInhibit", "DAS_status", 0),
-        ("DAS_csaState", "DAS_status2", 0),
-        ("DAS_laneDepartureWarning", "DAS_status", 0),
-        ("DAS_fleetSpeedState", "DAS_status", 0),
-        ("DAS_autopilotHandsOnState", "DAS_status", 0),
-        ("DAS_autoLaneChangeState", "DAS_status", 0),
-        ("DAS_summonAvailable", "DAS_status", 0),
-        ("DAS_statusCounter", "DAS_status", 0),
-        ("DAS_statusChecksum", "DAS_status", 0),
-        ("DAS_headlightRequest", "DAS_bodyControls", 0),
-        ("DAS_hazardLightRequest", "DAS_bodyControls", 0),
-        ("DAS_wiperSpeed", "DAS_bodyControls", 0),
-        ("DAS_turnIndicatorRequest", "DAS_bodyControls", 0),
-        ("DAS_highLowBeamDecision", "DAS_bodyControls", 0),
-        ("DAS_highLowBeamOffReason", "DAS_bodyControls", 0),
-        ("DAS_turnIndicatorRequestReason", "DAS_bodyControls", 0),
-        ("DAS_bodyControlsCounter", "DAS_bodyControls", 0),
-        ("DAS_bodyControlsChecksum", "DAS_bodyControls", 0),
-        ("DAS_accSpeedLimit", "DAS_status2", 0),
-        ("DAS_pmmObstacleSeverity", "DAS_status2", 0),
-        ("DAS_pmmLoggingRequest", "DAS_status2", 0),
-        ("DAS_activationFailureStatus", "DAS_status2", 0),
-        ("DAS_pmmUltrasonicsFaultReason", "DAS_status2", 0),
-        ("DAS_pmmRadarFaultReason", "DAS_status2", 0),
-        ("DAS_pmmSysFaultReason", "DAS_status2", 0),
-        ("DAS_pmmCameraFaultReason", "DAS_status2", 0),
-        ("DAS_ACC_report", "DAS_status2", 0),
-        ("DAS_lssState", "DAS_status", 0),
-        ("DAS_radarTelemetry", "DAS_status2", 0),
-        ("DAS_robState", "DAS_status2", 0),
-        ("DAS_driverInteractionLevel", "DAS_status2", 0),
-        ("DAS_ppOffsetDesiredRamp", "DAS_status2", 0),
-        ("DAS_longCollisionWarning", "DAS_status2", 0),
-        ("DAS_status2Counter", "DAS_status2", 0),
-        ("DAS_status2Checksum", "DAS_status2", 0),
-        ("DAS_eacState", "DAS_pscControl", 0),
-        ("DAS_pscParkState", "DAS_pscControl", 0),
+        ("DAS_autopilotState", "DAS_status"),
+        ("DAS_blindSpotRearLeft", "DAS_status"),
+        ("DAS_blindSpotRearRight", "DAS_status"),
+        ("DAS_fusedSpeedLimit", "DAS_status"),
+        ("DAS_suppressSpeedWarning", "DAS_status"),
+        ("DAS_summonObstacle", "DAS_status"),
+        ("DAS_summonClearedGate", "DAS_status"),
+        ("DAS_visionOnlySpeedLimit", "DAS_status"),
+        ("DAS_heaterState", "DAS_status"),
+        ("DAS_forwardCollisionWarning", "DAS_status"),
+        ("DAS_autoparkReady", "DAS_status"),
+        ("DAS_autoParked", "DAS_status"),
+        ("DAS_autoparkWaitingForBrake", "DAS_status"),
+        ("DAS_summonFwdLeashReached", "DAS_status"),
+        ("DAS_summonRvsLeashReached", "DAS_status"),
+        ("DAS_sideCollisionAvoid", "DAS_status"),
+        ("DAS_sideCollisionWarning", "DAS_status"),
+        ("DAS_sideCollisionInhibit", "DAS_status"),
+        ("DAS_csaState", "DAS_status2"),
+        ("DAS_laneDepartureWarning", "DAS_status"),
+        ("DAS_fleetSpeedState", "DAS_status"),
+        ("DAS_autopilotHandsOnState", "DAS_status"),
+        ("DAS_autoLaneChangeState", "DAS_status"),
+        ("DAS_summonAvailable", "DAS_status"),
+        ("DAS_statusCounter", "DAS_status"),
+        ("DAS_statusChecksum", "DAS_status"),
+        ("DAS_headlightRequest", "DAS_bodyControls"),
+        ("DAS_hazardLightRequest", "DAS_bodyControls"),
+        ("DAS_wiperSpeed", "DAS_bodyControls"),
+        ("DAS_turnIndicatorRequest", "DAS_bodyControls"),
+        ("DAS_highLowBeamDecision", "DAS_bodyControls"),
+        ("DAS_highLowBeamOffReason", "DAS_bodyControls"),
+        ("DAS_turnIndicatorRequestReason", "DAS_bodyControls"),
+        ("DAS_bodyControlsCounter", "DAS_bodyControls"),
+        ("DAS_bodyControlsChecksum", "DAS_bodyControls"),
+        ("DAS_accSpeedLimit", "DAS_status2"),
+        ("DAS_pmmObstacleSeverity", "DAS_status2"),
+        ("DAS_pmmLoggingRequest", "DAS_status2"),
+        ("DAS_activationFailureStatus", "DAS_status2"),
+        ("DAS_pmmUltrasonicsFaultReason", "DAS_status2"),
+        ("DAS_pmmRadarFaultReason", "DAS_status2"),
+        ("DAS_pmmSysFaultReason", "DAS_status2"),
+        ("DAS_pmmCameraFaultReason", "DAS_status2"),
+        ("DAS_ACC_report", "DAS_status2"),
+        ("DAS_lssState", "DAS_status"),
+        ("DAS_radarTelemetry", "DAS_status2"),
+        ("DAS_robState", "DAS_status2"),
+        ("DAS_driverInteractionLevel", "DAS_status2"),
+        ("DAS_ppOffsetDesiredRamp", "DAS_status2"),
+        ("DAS_longCollisionWarning", "DAS_status2"),
+        ("DAS_status2Counter", "DAS_status2"),
+        ("DAS_status2Checksum", "DAS_status2"),
+        ("DAS_eacState", "DAS_pscControl"),
+        ("DAS_pscParkState", "DAS_pscControl"),
+        ("DAS_aebEvent","DAS_control"),
       ]
 
       checks = [
@@ -757,10 +763,10 @@ class CarState(CarStateBase):
     if CP.carFingerprint in [CAR.PREAP_MODELS]:
       if enablePedal and not pedalcanzero:
         signals += [
-          ("INTERCEPTOR_GAS", "GAS_SENSOR", 0),
-          ("INTERCEPTOR_GAS2", "GAS_SENSOR", 0),
-          ("STATE", "GAS_SENSOR", 0),
-          ("IDX", "GAS_SENSOR", 0),
+          ("INTERCEPTOR_GAS", "GAS_SENSOR"),
+          ("INTERCEPTOR_GAS2", "GAS_SENSOR"),
+          ("STATE", "GAS_SENSOR"),
+          ("IDX", "GAS_SENSOR"),
         ]
 
         checks += [

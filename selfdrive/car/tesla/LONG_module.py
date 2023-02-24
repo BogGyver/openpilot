@@ -1,17 +1,15 @@
 from selfdrive.car.tesla.values import CruiseButtons, CarControllerParams, CAR, CAN_CHASSIS, CAN_POWERTRAIN, CruiseState, TESLA_MAX_ACCEL, TESLA_MIN_ACCEL
 from selfdrive.car.tesla.ACC_module import ACCController
 from selfdrive.car.tesla.PCC_module import PCCController
-from selfdrive.config import Conversions as CV
+from common.conversions import Conversions as CV
 from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
 from common.numpy_fast import interp,clip
-from selfdrive.car.tesla.speed_utils.fleet_speed import FleetSpeed
 
 ACCEL_MULTIPLIERS_BP =     [0.0, 5.0, 10.0, 30.0]
 ACCEL_MULT_SPEED_V  =      [1.5, 1.3,  1.2,  1.0]
 ACCEL_MULT_SPEED_DELTA_V = [1.0, 1.01, 1.05,  1.1]
 ACCEL_MULT_ACCEL_PERC_V  = [1.0, 1.0,  1.05,  1.1]
 
-FLEET_SPEED_ACCEL = -0.5 # m/s2 how fast to reduce speed to match fleet, always negative 
 BRAKE_FACTOR_BP = [18., 28.]
 BRAKE_FACTOR_V = [1.15, 1.45]
 BRAKE_FACTOR = load_float_param("TinklaBrakeFactor",1.0)
@@ -47,16 +45,12 @@ class LONGController:
         self.speed_limit_offset_ms = 0.0
         self.adjustSpeedWithSpeedLimit = load_bool_param("TinklaAdjustAccWithSpeedLimit",True)
         self.adjustSpeedRelative = load_bool_param("TinklaSpeedLimitUseRelative",False)
-        self.useLongControlData = load_bool_param("TinklaUseLongControlData",False)
         self.autopilot_disabled = load_bool_param("TinklaAutopilotDisabled",False)
         average_speed_over_x_suggestions = 5  # 1 second @ 5Hz
         self.speed_limit_uom = 0.
         self.prev_speed_limit_uom = 0.
-        self.fleet_speed = FleetSpeed(average_speed_over_x_suggestions)
-        self.fleet_speed_ms = 0.
         self.prev_enabled = False
         self.speed_limit_ms = 0.
-        self.prev_speed_limit_ms = 0.
         self.prev_speed_limit_ms_das = 0.
         self.ap1_adjusting_speed = False
         self.ap1_speed_target = 0.
@@ -69,7 +63,7 @@ class LONGController:
             
             
 
-    def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_speed,pcm_override, long_plan,radar_state):
+    def update(self, enabled, CS, frame, actuators, cruise_cancel,pcm_override, long_plan,radar_state):
         messages = []
         self.has_ibooster_ecu = CS.has_ibooster_ecu
         my_accel = actuators.accel
@@ -89,16 +83,10 @@ class LONGController:
 
         tesla_jerk_limits = [min_jerk,max_jerk]
         tesla_accel_limits = [min_accel,max_accel]
-
-        if enabled and not self.prev_enabled:
-            self.fleet_speed.reset_averager()
         
 
         if frame % 10 == 0:
             self.speed_limit_ms = CS.speed_limit_ms
-            if self.speed_limit_ms != self.prev_speed_limit_ms:
-                self.fleet_speed.reset_averager() #reset fleet averager on speed limit changes
-                self.prev_speed_limit_ms = self.speed_limit_ms
             self.set_speed_limit_active = self.adjustSpeedWithSpeedLimit if self.speed_limit_ms > 0 else False
 
         if frame % 100 == 0:
@@ -334,15 +322,6 @@ class LONGController:
             #if accel pedal pressed send 0 for target_accel
             if CS.realPedalValue > 0 and CS.enableHAO:
                 target_accel = 0.
-
-            if self.useLongControlData:
-                if frame % 20 == 0: #update fleet speed info at 5 Hz
-                    self.fleet_speed_ms = self.fleet_speed.adjust(
-                            CS, CS.out.cruiseState.speed, frame
-                        )
-                if self.fleet_speed_ms < target_speed and self.fleet_speed_ms > 0:
-                    target_accel = min(target_accel,FLEET_SPEED_ACCEL)
-                    target_speed = min(target_speed,self.fleet_speed_ms,CS.out.cruiseState.speed)
 
             target_speed = target_speed * CV.MS_TO_KPH
             

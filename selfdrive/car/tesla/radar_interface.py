@@ -59,7 +59,7 @@ class RadarInterface(RadarInterfaceBase):
     self.updated_messages = set()
     self.track_id = 0
     self.trigger_msg = RADAR_MSGS_B[-1]
-    self.radar_off_can = CP.radarOffCan
+    self.radar_off_can = CP.radarUnavailable
     self.fingerprint = CP.carFingerprint
     if not self.radar_off_can:
       self.rcp = get_radar_can_parser(CP)

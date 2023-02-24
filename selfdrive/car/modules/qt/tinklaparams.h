@@ -8,7 +8,7 @@ using std::ifstream;
 using std::ofstream;
 #include <sstream>
 #include <cstdlib> 
-#include "selfdrive/common/params.h"
+#include "common/params.h"
 
 
 //const std::string tinkla_params_path = "/data/params";

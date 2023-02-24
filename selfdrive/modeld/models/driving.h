@@ -9,15 +9,20 @@
 #include <memory>
 
 #include "cereal/messaging/messaging.h"
-#include "selfdrive/common/mat.h"
-#include "selfdrive/common/modeldata.h"
-#include "selfdrive/common/util.h"
+#include "cereal/visionipc/visionipc_client.h"
+#include "common/mat.h"
+#include "common/modeldata.h"
+#include "common/util.h"
 #include "selfdrive/modeld/models/commonmodel.h"
+#include "selfdrive/modeld/models/nav.h"
 #include "selfdrive/modeld/runners/run.h"
 
+constexpr int FEATURE_LEN = 128;
+constexpr int HISTORY_BUFFER_LEN = 99;
 constexpr int DESIRE_LEN = 8;
 constexpr int DESIRE_PRED_LEN = 4;
 constexpr int TRAFFIC_CONVENTION_LEN = 2;
+constexpr int DRIVING_STYLE_LEN = 12;
 constexpr int MODEL_FREQ = 20;
 
 constexpr int DISENGAGE_LEN = 5;
@@ -30,6 +35,8 @@ constexpr int LEAD_MHP_N = 2;
 constexpr int LEAD_TRAJ_LEN = 6;
 constexpr int LEAD_PRED_DIM = 4;
 constexpr int LEAD_MHP_SELECTION = 3;
+// Padding to get output shape as multiple of 4
+constexpr int PAD_SIZE = 2;
 
 struct ModelOutputXYZ {
   float x;
@@ -147,6 +154,7 @@ struct ModelOutputLeads {
 };
 static_assert(sizeof(ModelOutputLeads) == (sizeof(ModelOutputLeadPrediction)*LEAD_MHP_N) + (sizeof(float)*LEAD_MHP_SELECTION));
 
+
 struct ModelOutputPose {
   ModelOutputXYZ velocity_mean;
   ModelOutputXYZ rotation_mean;
@@ -154,6 +162,20 @@ struct ModelOutputPose {
   ModelOutputXYZ rotation_std;
 };
 static_assert(sizeof(ModelOutputPose) == sizeof(ModelOutputXYZ)*4);
+
+struct ModelOutputWideFromDeviceEuler {
+  ModelOutputXYZ mean;
+  ModelOutputXYZ std;
+};
+static_assert(sizeof(ModelOutputWideFromDeviceEuler) == sizeof(ModelOutputXYZ)*2);
+
+struct ModelOutputTemporalPose {
+  ModelOutputXYZ velocity_mean;
+  ModelOutputXYZ rotation_mean;
+  ModelOutputXYZ velocity_std;
+  ModelOutputXYZ rotation_std;
+};
+static_assert(sizeof(ModelOutputTemporalPose) == sizeof(ModelOutputXYZ)*4);
 
 struct ModelOutputDisengageProb {
   float gas_disengage;
@@ -200,6 +222,11 @@ struct ModelOutputMeta {
 };
 static_assert(sizeof(ModelOutputMeta) == sizeof(ModelOutputDesireProb) + sizeof(float) + (sizeof(ModelOutputDisengageProb)*DISENGAGE_LEN) + (sizeof(ModelOutputBlinkerProb)*BLINKER_LEN) + (sizeof(ModelOutputDesireProb)*DESIRE_PRED_LEN));
 
+struct ModelOutputFeatures {
+  std::array<float, FEATURE_LEN> feature;
+};
+static_assert(sizeof(ModelOutputFeatures) == (sizeof(float)*FEATURE_LEN));
+
 struct ModelOutput {
   const ModelOutputPlans plans;
   const ModelOutputLaneLines lane_lines;
@@ -207,35 +234,46 @@ struct ModelOutput {
   const ModelOutputLeads leads;
   const ModelOutputMeta meta;
   const ModelOutputPose pose;
+  const ModelOutputWideFromDeviceEuler wide_from_device_euler;
+  const ModelOutputTemporalPose temporal_pose;
 };
 
 constexpr int OUTPUT_SIZE = sizeof(ModelOutput) / sizeof(float);
+
 #ifdef TEMPORAL
-  constexpr int TEMPORAL_SIZE = 512;
+  constexpr int TEMPORAL_SIZE = HISTORY_BUFFER_LEN * FEATURE_LEN;
 #else
   constexpr int TEMPORAL_SIZE = 0;
 #endif
-constexpr int NET_OUTPUT_SIZE = OUTPUT_SIZE + TEMPORAL_SIZE;
+constexpr int NET_OUTPUT_SIZE = OUTPUT_SIZE + FEATURE_LEN + PAD_SIZE;
 
 // TODO: convert remaining arrays to std::array and update model runners
 struct ModelState {
-  ModelFrame *frame;
+  ModelFrame *frame = nullptr;
+  ModelFrame *wide_frame = nullptr;
+  std::array<float, HISTORY_BUFFER_LEN * FEATURE_LEN> feature_buffer = {};
   std::array<float, NET_OUTPUT_SIZE> output = {};
   std::unique_ptr<RunModel> m;
 #ifdef DESIRE
   float prev_desire[DESIRE_LEN] = {};
-  float pulse_desire[DESIRE_LEN] = {};
+  float pulse_desire[DESIRE_LEN*(HISTORY_BUFFER_LEN+1)] = {};
 #endif
 #ifdef TRAFFIC_CONVENTION
   float traffic_convention[TRAFFIC_CONVENTION_LEN] = {};
 #endif
+#ifdef DRIVING_STYLE
+  float driving_style[DRIVING_STYLE_LEN] = {};
+#endif
+#ifdef NAV
+  float nav_features[NAV_FEATURE_LEN] = {};
+#endif
 };
 
 void model_init(ModelState* s, cl_device_id device_id, cl_context context);
-ModelOutput *model_eval_frame(ModelState* s, cl_mem yuv_cl, int width, int height,
-                           const mat3 &transform, float *desire_in);
+ModelOutput *model_eval_frame(ModelState* s, VisionBuf* buf, VisionBuf* buf_wide,
+                              const mat3 &transform, const mat3 &transform_wide, float *desire_in, bool is_rhd, float *driving_style, float *nav_features, bool prepare_only);
 void model_free(ModelState* s);
-void model_publish(PubMaster &pm, uint32_t vipc_frame_id, uint32_t frame_id, float frame_drop,
+void model_publish(PubMaster &pm, uint32_t vipc_frame_id, uint32_t vipc_frame_id_extra, uint32_t frame_id, float frame_drop,
                    const ModelOutput &net_outputs, uint64_t timestamp_eof,
                    float model_execution_time, kj::ArrayPtr<const float> raw_pred, const bool valid);
 void posenet_publish(PubMaster &pm, uint32_t vipc_frame_id, uint32_t vipc_dropped_frames,

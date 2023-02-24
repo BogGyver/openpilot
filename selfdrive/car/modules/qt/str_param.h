@@ -10,7 +10,7 @@ class StrParamControl : public ButtonControl {
   Q_OBJECT
 
 public:
-  StrParamControl(QString theLabel, QString theDescription, QString theWindowTitle, QString theWindowInfo, QString theParam, QString theDefaultValue, QString icon);
+  StrParamControl(QString theLabel, QString theDescription, QString theWindowTitle, QString theWindowInfo, QString theParam, QString theDefaultValueDisplay, QString theDefaultValue, QString icon);
 
 private:
   QString param_name;
@@ -19,7 +19,7 @@ private:
   QLabel param_label;
   QString description_txt;
   QString label_txt;
-
+  QString default_value_display;
   Params params;
 
   QString default_value;

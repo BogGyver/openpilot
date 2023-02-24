@@ -1,6 +1,6 @@
 from common.numpy_fast import clip, interp
 from selfdrive.car.tesla.values import CruiseButtons,TESLA_MIN_ACCEL
-from selfdrive.config import Conversions as CV
+from common.conversions import Conversions as CV
 import time
 from common.params import Params
 from selfdrive.car.modules.CFG_module import load_float_param

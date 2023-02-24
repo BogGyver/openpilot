@@ -7,7 +7,7 @@ class FleetSpeed:
         self.frame_last_adjustment = 0
 
     def adjust(self, CS, max_speed_ms, frame):
-        if CS.mapAwareSpeed and self.is_valid(CS, max_speed_ms):
+        if False and self.is_valid(CS, max_speed_ms):
             self.frame_last_adjustment = frame
             # if max speed is greater than the speed limit, apply a relative offset to map speed
             if (
@@ -32,7 +32,7 @@ class FleetSpeed:
     @classmethod
     def is_available(cls, CS):
         return (
-            CS.mapAwareSpeed
+            False
             and CS.medianFleetSpeedMPS > 0
             and CS.splineLocConfidence > 60
             and CS.UI_splineID > 0
