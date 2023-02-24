@@ -366,7 +366,7 @@ if __name__ == "__main__":
   if load_bool_param("TinklaHasIBooster",False):
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_IBOOSTER
   
-  safety_param = safety_param | Panda.FLAG_TESLA_RADAR_VIN_LEARN
+  safetyParam = safetyParam | Panda.FLAG_TESLA_RADAR_VIN_LEARN
 
   panda = Panda()
   panda.reset()
