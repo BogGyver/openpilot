@@ -1,0 +1,5 @@
+#! /bin/sh
+tmux kill-session -t comma
+cd /data/openpilot/panda/board
+cp /data/openpilot/selfdrive/ui/qt/flasher ./flasher
+exec ./flasher "Flash" recover.sh "-" flash.sh info.sh
