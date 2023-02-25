@@ -10,7 +10,7 @@ class HSOController:
 
         if CS.enableHSO and enabled:
             # if steering but not by ALCA
-            if CS.realSteeringPressed:
+            if CS.HSOSteeringPressed:
                 self.frame_humanSteered = frame
             elif (frame - self.frame_humanSteered < 50) and (CS.turnSignalStalkState > 0):  
                 # stalk locked, update frame
