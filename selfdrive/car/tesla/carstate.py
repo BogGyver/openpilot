@@ -226,7 +226,7 @@ class CarState(CarStateBase):
 
     ret.steeringRateDeg = -cp.vl["STW_ANGLHP_STAT"]["StW_AnglHP_Spd"] # This is from a different angle sensor, and at different rate
     self.hands_on_level = cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
-    ret.steeringPressed = (self.hands_on_level > 1)
+    ret.steeringPressed = (self.hands_on_level >= 1)
     self.HSOSteeringPressed = (self.hands_on_level >= self.handsOnLimit)
     ret.steerFaultPermanent = steer_status == "EAC_FAULT"
     ret.steerFaultTemporary = (self.steer_warning not in ("EAC_ERROR_IDLE", "EAC_ERROR_HANDS_ON"))

@@ -558,6 +558,22 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
       Priority.LOW, VisualAlert.none, AudibleAlert.none, .1),
   },
 
+  EventName.expModeEnabled: {
+    ET.WARNING: Alert(
+      "Switching to Experimental Mode",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, .1),
+  },
+
+  EventName.expModeDisabled: {
+    ET.WARNING: Alert(
+      "Switching to Chill Mode",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, .1),
+  },
+
   EventName.steerSaturated: {
     ET.WARNING: Alert(
       "Take Control",

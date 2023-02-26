@@ -320,7 +320,8 @@ class CarInterfaceBase(ABC):
       events.add(EventName.parkBrake)
     if cs_out.accFaulted:
       events.add(EventName.accFaulted)
-    if cs_out.steeringPressed:
+    steeringPressed = (cs_out.steeringPressed and not self.CS.enableHSO) or (self.CS.HSOSteeringPressed and self.CS.enableHSO)
+    if steeringPressed:
       events.add(EventName.steerOverride)
 
     # Handle button presses
@@ -333,8 +334,8 @@ class CarInterfaceBase(ABC):
         events.add(EventName.buttonCancel)
 
     # Handle permanent and temporary steering faults
-    self.steering_unpressed = 0 if cs_out.steeringPressed else self.steering_unpressed + 1
-    if cs_out.steerFaultTemporary or cs_out.steeringPressed:
+    self.steering_unpressed = 0 if steeringPressed else self.steering_unpressed + 1
+    if cs_out.steerFaultTemporary or steeringPressed:
       # if the user overrode recently, show a less harsh alert
       if self.CS.enableHSO or self.silent_steer_warning or cs_out.standstill or self.steering_unpressed < int(1.5 / DT_CTRL):
         self.silent_steer_warning = True

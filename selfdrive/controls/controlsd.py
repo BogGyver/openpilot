@@ -29,7 +29,7 @@ from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.locationd.calibrationd import Calibration
 from system.hardware import HARDWARE
 from selfdrive.manager.process_config import managed_processes
-from selfdrive.car.modules.CFG_module import load_bool_param
+from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
 
 
 SOFT_DISABLE_TIME = 3  # seconds
@@ -59,6 +59,9 @@ ACTUATOR_FIELDS = tuple(car.CarControl.Actuators.schema.fields.keys())
 ACTIVE_STATES = (State.enabled, State.softDisabling, State.overriding)
 ENABLED_STATES = (State.preEnabled, *ACTIVE_STATES)
 
+E2E_COUNT = 150
+E2E_DISTANCE = 50
+
 
 class Controls:
   def __init__(self, sm=None, pm=None, can_sock=None, CI=None):
@@ -84,6 +87,7 @@ class Controls:
 
     self.params = Params()
     self.sm = sm
+    
     if self.sm is None:
       ignore = ['testJoystick']
       if SIMULATION:
@@ -212,6 +216,16 @@ class Controls:
     self.rk = Ratekeeper(100, print_delay_threshold=None)
     self.prof = Profiler(False)  # off by default
     self.hideGpsMsg = load_bool_param("TinklaHideGps",False)
+    self.experimentalModeMaxSpeedMS =  load_float_param("TinklaExpModeMaxSpeedMS",22.3)
+    self.experimentalModeSpeedAutoswitch = load_bool_param("TinklaExpModelAutoswitch",False)
+    self.experimentalModeHasLead = False
+    self.experimentalModeHasLead_last = False
+    self.experimentalModeHasLead_count = 0
+    self.experimentalModeSpeed = True
+    self.experimentalModeSpeed_last = True
+    self.experimentalModeSpeed_count = 0
+    self.experimentalMode_event = None
+    self.experimentalMode_event_counter = 0
 
   def set_initial_state(self):
     if REPLAY:
@@ -844,14 +858,39 @@ class Controls:
     self.prof.checkpoint("Ratekeeper", ignore=True)
 
     self.is_metric = self.params.get_bool("IsMetric")
-    self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
+    
 
     # Sample data from sockets and get a carState
     CS = self.data_sample()
     cloudlog.timestamp("Data sampled")
     self.prof.checkpoint("Sample")
-
     self.update_events(CS)
+
+    self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
+    if self.experimentalModeSpeedAutoswitch:
+      if self.sm['longitudinalPlan'].hasLead == self.experimentalModeHasLead_last:
+        self.experimentalModeHasLead_count += 1
+      else:
+        self.experimentalModeHasLead_count = 0
+      self.experimentalModeHasLead_last = self.sm['longitudinalPlan'].hasLead
+      if self.experimentalModeHasLead_count > E2E_COUNT:
+        self.experimentalModeHasLead = self.sm['longitudinalPlan'].hasLead and self.sm['radarState'].leadOne.dRel <= E2E_DISTANCE
+      if self.experimentalModeSpeed_last != (CS.vEgo < self.experimentalModeMaxSpeedMS):
+        self.experimentalModeSpeed_count += 1
+      else:
+        self.experimentalModeSpeed_count = 0
+      if self.experimentalModeSpeed_count > E2E_COUNT:
+        self.experimentalModeSpeed = (CS.vEgo < self.experimentalModeMaxSpeedMS)
+      expm = self.experimentalModeSpeed and not self.experimentalModeHasLead
+      if self.experimental_mode != expm:
+        self.params.put_bool("ExperimentalMode",expm)
+        self.experimental_mode = expm
+        self.experimentalMode_event_counter = 300 #show for 3sec
+        self.experimentalMode_event = EventName.expModeEnabled if expm else EventName.expModeDisabled
+      if self.experimentalMode_event_counter > 0:
+        self.experimentalMode_event_counter -= 1
+        self.events.add(self.experimentalMode_event)
+
     cloudlog.timestamp("Events updated")
 
     if not self.read_only and self.initialized:

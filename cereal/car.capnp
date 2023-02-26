@@ -128,6 +128,8 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     promptMaxRegen @127;
     pedalCalibrationNeeded @128;
     gasPressed @129;
+    expModeEnabled @130;
+    expModeDisabled @131;
     
 
     radarCanErrorDEPRECATED @15;
