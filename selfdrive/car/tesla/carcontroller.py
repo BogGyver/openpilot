@@ -16,6 +16,7 @@ from common.numpy_fast import clip, interp
 class CarController:
   def __init__(self, dbc_name, CP, VM):
     self.CP = CP
+    self.CCP = CarControllerParams(CP)
     self.frame = 0
     self.apply_angle_last = 0
     self.packer = CANPacker(dbc_name)
@@ -91,21 +92,20 @@ class CarController:
     #now process controls
     if enabled and not CS.human_control:
       # Angular rate limit based on speed
-      apply_angle = apply_std_steer_angle_limits(actuators.steeringAngleDeg, self.apply_angle_last, CS.out.vEgo, CarControllerParams)
+      apply_angle = apply_std_steer_angle_limits(actuators.steeringAngleDeg, self.apply_angle_last, CS.out.vEgo, self.CCP)
 
       # To not fault the EPS
       apply_angle = clip(apply_angle, CS.out.steeringAngleDeg - 20, CS.out.steeringAngleDeg + 20)
     else:
       apply_angle = CS.out.steeringAngleDeg
 
-    self.apply_angle_last = apply_angle
-
-    if enabled or (self.CP.carFingerprint == CAR.PREAP_MODELS):
+    if (self.frame % self.CCP.STEER_STEP == 0) and (enabled or (self.CP.carFingerprint == CAR.PREAP_MODELS)):
       ldw_haptic = 0
       if CC.hudControl.leftLaneDepart or CC.hudControl.rightLaneDepart:
         ldw_haptic = 1
       can_sends.append(self.tesla_can.create_steering_control(apply_angle, enabled and not CS.human_control and not CS.out.cruiseState.standstill, ldw_haptic, CAN_EPAS[self.CP.carFingerprint], 1))
 
+      self.apply_angle_last = apply_angle
 
     #update LONG Control module
     can_messages = self.long_controller.update(enabled, CS, self.frame, actuators, pcm_cancel_cmd,CC.cruiseControl.override, long_plan,radar_state)
@@ -119,7 +119,7 @@ class CarController:
       can_sends.extend(can_messages)
 
     new_actuators = actuators.copy()
-    new_actuators.steeringAngleDeg = apply_angle
+    new_actuators.steeringAngleDeg = self.apply_angle_last
 
     self.frame += 1
     

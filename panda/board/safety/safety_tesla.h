@@ -1,35 +1,27 @@
 void can_send(CANPacket_t *to_push, uint8_t bus_number, bool skip_tx_hook);
 
-const struct lookup_t TESLA_LOOKUP_ANGLE_RATE_UP = {
-    {2., 7., 17.},
-    {8., 4., 2.5}};
-
-const struct lookup_t TESLA_LOOKUP_ANGLE_RATE_DOWN = {
-    {2., 7., 17.},
-    {9., 5., 4.5}};
-
 const int TESLA_DEG_TO_CAN = 10;
 const SteeringLimits TESLA_STEERING_LIMITS = {
-  .angle_deg_to_can = 10,
+  .angle_deg_to_can = 100,
   .angle_rate_up_lookup = {
-    {2., 7., 17.},
-    {5., .8, .25}
+    {0., 5., 15.},
+    {5., .8, .15}
   },
   .angle_rate_down_lookup = {
-    {2., 7., 17.},
-    {5., 3.5, .8}
+    {0., 5., 15.},
+    {5., 3.5, .4}
   },
 };
-
-
-const int TESLA_FLAG_POWERTRAIN = 1;
-const int TESLA_FLAG_LONGITUDINAL_CONTROL = 2;
 
 const LongitudinalLimits TESLA_LONG_LIMITS = {
   .max_accel = 425,       // 2. m/s^2
   .min_accel = 287,       // -3.52 m/s^2  // TODO: limit to -3.48
   .inactive_accel = 375,  // 0. m/s^2
 };
+
+
+const int TESLA_FLAG_POWERTRAIN = 1;
+const int TESLA_FLAG_LONGITUDINAL_CONTROL = 2;
 
 
 static uint8_t len_to_dlc(uint8_t len) {
@@ -792,8 +784,6 @@ static void teslaPreAp_send_IC_messages(void) {
   teslaPreAp_generate_message(0x239);
   //EPB_epasControl 
   do_EPB_epasControl();
-  //DAS_steeringControl
-  teslaPreAp_generate_message(0x488);
   //generate everything at 2Hz
   if ((IC_send_counter == 1) || (IC_send_counter == 6)){
     //DAS_bodyControls
@@ -887,6 +877,10 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
   if(valid) {
     if(bus == 0) {
       if (!tesla_powertrain) {
+        if ((addr == 0x115) && (!has_ap_hardware)) {
+          //DAS_steeringControl
+          teslaPreAp_generate_message(0x488);
+        }
         if ((addr == 0x348) && (!has_ap_hardware)) {
           //use GTW_status at 10Hz to generate the IC messages for nonAP cars
           teslaPreAp_send_IC_messages();
@@ -1117,23 +1111,6 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
     int steer_control_type = GET_BYTE(to_send, 2) >> 6;
     bool steer_control_enabled = (steer_control_type != 0) &&  // NONE
                                  (steer_control_type != 3);    // DISABLED
-    
-    // Rate limit while steering
-    if(controls_allowed && steer_control_enabled) {
-      // Add 1 to not false trigger the violation
-      float delta_angle_float;
-      delta_angle_float = (interpolate(TESLA_LOOKUP_ANGLE_RATE_UP, vehicle_speed) * TESLA_DEG_TO_CAN) + 1.;
-      int delta_angle_up = (int)(delta_angle_float);
-      delta_angle_float =  (interpolate(TESLA_LOOKUP_ANGLE_RATE_DOWN, vehicle_speed) * TESLA_DEG_TO_CAN) + 1.;
-      int delta_angle_down = (int)(delta_angle_float);
-      int highest_desired_angle = desired_angle_last + ((desired_angle_last > 0) ? delta_angle_up : delta_angle_down);
-      int lowest_desired_angle = desired_angle_last - ((desired_angle_last >= 0) ? delta_angle_down : delta_angle_up);
-
-      // Check for violation;
-      if (!human_steering && controls_allowed) {
-        violation |= max_limit_check(desired_angle, highest_desired_angle, lowest_desired_angle);
-      }
-    }
     
     desired_angle_last = desired_angle;
 

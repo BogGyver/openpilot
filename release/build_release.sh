@@ -37,8 +37,7 @@ rm -rf $BUILD_DIR
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 git init
-git remote add origin git@github.com:boggyver/openpilot.git
-git fetch origin $RELEASE_BRANCH
+git remote add origin git@github.com:commaai/openpilot.git
 git checkout --orphan $RELEASE_BRANCH
 
 # do the files copy
@@ -59,7 +58,6 @@ echo "#define COMMA_VERSION \"$VERSION-release\"" > common/version.h
 echo "[-] committing version $TINKLAVERSION T=$SECONDS"
 git add -f .
 git commit -a -m "Tesla Unity v$TINKLAVERSION"
-git branch --set-upstream-to=origin/$RELEASE_BRANCH
 
 # Build panda firmware
 pushd panda/
@@ -143,7 +141,7 @@ git commit --amend -m "Tesla Unity v$TINKLAVERSION"
 #rm -rf $TEST_FILES
 
 echo "[-] pushing T=$SECONDS"
-git push -f origin $RELEASE_BRANCH
+git push -f origin $RELEASE_BRANCH:$RELEASE_BRANCH
 rm -rf $BUILD_DIR
 rm -rf $SOURCE_DIR
 

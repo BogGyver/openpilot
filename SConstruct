@@ -435,6 +435,7 @@ if arch in ['x86_64', 'Darwin'] or GetOption('extras'):
 
   opendbc = abspath([File('opendbc/can/libdbc.so')])
   Export('opendbc')
+  SConscript(['tools/cabana/SConscript'])
 
 external_sconscript = GetOption('external_sconscript')
 if external_sconscript:

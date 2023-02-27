@@ -209,16 +209,18 @@ BUTTONS = [
 ]
 
 class CarControllerParams:
-  ANGLE_RATE_LIMIT_UP = AngleRateLimit(speed_bp=[0., 5., 15.], angle_v=[5., .8, .15])
-  ANGLE_RATE_LIMIT_DOWN = AngleRateLimit(speed_bp=[0., 5., 15.], angle_v=[5., 3.5, 0.4])
+  ANGLE_RATE_LIMIT_UP = AngleRateLimit(speed_bp=[0., 5., 15.], angle_v=[5., 4., .75])
+  ANGLE_RATE_LIMIT_DOWN = AngleRateLimit(speed_bp=[0., 5., 15.], angle_v=[5., 5.5, 2.4])
   JERK_LIMIT_MAX = 8
   JERK_LIMIT_MIN = -8
   ACCEL_TO_SPEED_MULTIPLIER = 3
   ACCEL_TO_SPEED_MULTIPLIER_ACC = 1
   ACCEL_TO_SPEED_MULTIPLIER_PCC = 1
+  STEER_STEP = 2 #in general we send at 50Hz
 
   def __init__(self, CP):
-      pass
+    if CP.carFingerprint in (CAR.PREAP_MODELS):
+      STEER_STEP = 2
 
 
 class CruiseButtons:

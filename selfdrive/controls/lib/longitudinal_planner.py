@@ -75,13 +75,6 @@ class LongitudinalPlanner:
       j = np.zeros(len(T_IDXS_MPC))
     return x, v, a, j
 
-  def get_path_length_idx(self, y, distance):
-    i = 0
-    for val in y:
-        if val < distance:
-            i = i + 1
-    return i
-
   def update(self, sm):
     self.mpc.mode = 'blended' if sm['controlsState'].experimentalMode else 'acc'
 

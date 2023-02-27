@@ -169,6 +169,11 @@ class DriverStatus():
     self.awareness_active = 1.
     self.awareness_passive = 1.
 
+  def _reset_awareness(self):
+    self.awareness = 1.
+    self.awareness_active = 1.
+    self.awareness_passive = 1.
+
   def _set_timers(self, active_monitoring):
     if self.active_monitoring_mode and self.awareness <= self.threshold_prompt:
       if active_monitoring:
