@@ -115,12 +115,22 @@ class CarState(CarStateBase):
     self.enableICIntegration = load_bool_param("TinklaHasIcIntegration", False)
     self.pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
     self.has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
+    self.use_tesla_gps = load_bool_param("TinklaUseTeslaGps",False)
     self.handsOnLimit = load_float_param("TinklaHandsOnLevel",1.0)
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
       self.enableICIntegration = True
     self.brakeUnavailable = True
     self.realBrakePressed = False
     self.userSpeedLimitOffsetMS = 0
+
+    #variables for GPS Fix
+    self.gpsLongitude = 0.0
+    self.gpsLatitude = 0.0
+    self.gpsAccuracy = 100.0
+    self.gpsElevation = 0.
+    self.gpsHDOP = 23.0
+    self.gpsHeading = 0.0
+    self.gpsVehicleSpeed = 0.0
 
     #accelerations
     self.esp_long_acceleration = 0.
@@ -427,6 +437,18 @@ class CarState(CarStateBase):
     if sw_a is not None:
       self.msg_stw_actn_req = sw_a
 
+    #GPS Fix
+    if (self.use_tesla_gps):
+      self.gpsLongitude = cp.vl["MCU_locationStatus"]["MCU_longitude"]
+      self.gpsLatitude = cp.vl["MCU_locationStatus"]["MCU_latitude"]
+      self.gpsAccuracy = cp.vl["MCU_locationStatus"]["MCU_gpsAccuracy"]
+      self.gpsElevation = 0. #cp.vl["MCU_locationStatus2"]["MCU_elevation"]
+      self.gpsHDOP = cp.vl["UI_gpsVehicleSpeed"]["UI_gpsHDOP"]
+      self.gpsHeading = cp.vl["UI_gpsVehicleSpeed"]["UI_gpsVehicleHeading"]
+      self.gpsVehicleSpeed = (
+          cp.vl["UI_gpsVehicleSpeed"]["UI_gpsVehicleSpeed"] * CV.KPH_TO_MS
+      )
+
     # Gas pedal
     #BBTODO: in latest versions of code Tesla does not populate this field
     ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
@@ -509,6 +531,7 @@ class CarState(CarStateBase):
     enablePedal = load_bool_param("TinklaEnablePedal",False)
     pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
     has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
+    use_tesla_gps = load_bool_param("TinklaUseTeslaGps",False)
     signals = [
       # sig_name, sig_address, default
       ("DI_pedalPos", "DI_torque1"),
@@ -612,6 +635,19 @@ class CarState(CarStateBase):
 
       checks += [
         #("SDM1", 10),
+      ]
+
+    if (use_tesla_gps):
+      signals += [
+        ("UI_gpsVehicleHeading", "UI_gpsVehicleSpeed"),
+        ("UI_gpsHDOP", "UI_gpsVehicleSpeed"),
+        ("UI_gpsVehicleSpeed", "UI_gpsVehicleSpeed"),
+        ("MCU_gpsAccuracy", "MCU_locationStatus"),
+        ("MCU_latitude", "MCU_locationStatus"),
+        ("MCU_longitude", "MCU_locationStatus"),
+      ]
+      checks += [
+        #("UI_gpsVehicleSpeed", 0),
       ]
 
     if (CP.carFingerprint in [CAR.AP1_MODELX]):

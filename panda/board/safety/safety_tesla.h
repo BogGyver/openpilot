@@ -821,10 +821,10 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
   bool valid = false;
   if (has_ap_hardware) {
     valid = addr_safety_check(to_push, tesla_powertrain ? (&tesla_pt_rx_checks) : (&tesla_rx_checks),
-                                 NULL, NULL, NULL);
+                                 NULL, NULL, NULL, NULL);
   } else {
     valid = addr_safety_check(to_push, (&tesla_preap_rx_checks),
-                                 NULL, NULL, NULL);
+                                 NULL, NULL, NULL, NULL);
   }
 
   int bus = GET_BUS(to_push);

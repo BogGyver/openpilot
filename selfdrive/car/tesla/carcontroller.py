@@ -10,8 +10,38 @@ from opendbc.can.packer import CANPacker
 from selfdrive.car.tesla.values import DBC, CAR, CarControllerParams, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CruiseButtons
 import cereal.messaging as messaging
 from common.numpy_fast import clip, interp
+from cereal import log
+import datetime
+from common import realtime
+import math
 
 
+def gen_solution(CS):
+  fix = 0
+  if CS.gpsAccuracy < 2:
+    fix = 1
+  timestamp = int(
+    ((datetime.datetime.now() - datetime.datetime(1970, 1, 1)).total_seconds())
+    * 1e03
+  )
+  vN = math.cos(math.radians(CS.gpsHeading)) * CS.gpsVehicleSpeed
+  vE = math.sin(math.radians(CS.gpsHeading)) * CS.gpsVehicleSpeed
+  gps_fix = {
+    "bearingDeg": CS.gpsHeading,  # heading of motion in degrees
+    "altitude": CS.gpsElevation,  # altitude above ellipsoid
+    "latitude": CS.gpsLatitude,  # latitude in degrees
+    "longitude": CS.gpsLongitude,  # longitude in degrees
+    "speed": CS.gpsVehicleSpeed,  # ground speed in meters
+    "accuracy": CS.gpsAccuracy,  # horizontal accuracy (1 sigma?)
+    "unixTimestampMillis": timestamp,  # UTC time in ms since start of UTC stime
+    "vNED": [vN, vE, 0.0],  # velocity in NED frame in m/s
+    "speedAccuracy": 0.5,  # speed accuracy in m/s
+    "verticalAccuracy": 0.5,  # vertical accuracy in meters
+    "bearingAccuracyDeg": 0.5,  # heading accuracy in degrees
+    "source": "ublox",
+    "flags": fix,  # 1 of gpsAccuracy less than 2 meters
+  }
+  return log.Event.new_message(gpsLocationTesla=gps_fix)
 
 class CarController:
   def __init__(self, dbc_name, CP, VM):
@@ -44,6 +74,7 @@ class CarController:
     self.mD = messaging.sub_sock('modelV2')
     self.cS = messaging.sub_sock('controlsState')
     self.long_control_counter = 0 
+    self.gpsLocationTesla = messaging.pub_sock("gpsLocationTesla")
 
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
@@ -75,6 +106,13 @@ class CarController:
     if not enabled:
       self.v_target = CS.out.vEgo
       self.a_target = 1
+
+    if CS.use_tesla_gps and (self.frame % 10 == 0):
+      if self.gpsLocationTesla is None:
+          self.gpsLocationTesla = messaging.pub_sock("gpsLocationTesla")
+      sol = gen_solution(CS)
+      sol.logMonoTime = int(realtime.sec_since_boot() * 1e9)
+      self.gpsLocationTesla.send(sol.to_bytes())
 
     # Cancel when openpilot is not enabled anymore and no autopilot
     # BB: do we need to do this? AP/Tesla does not behave this way

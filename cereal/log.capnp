@@ -998,7 +998,9 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
   }
 }
 struct UiPlan {
+  frameId @2 :UInt32;
   position @0 :XYZTData;
+  accel @1 :List(Float32);
 }
 
 struct LateralPlan @0xe1e9318e2ae8b51e {
@@ -1177,13 +1179,22 @@ struct GnssMeasurements {
   gpsTimeOfWeek @2 :Float64;
 
   correctedMeasurements @3 :List(CorrectedMeasurement);
+  ephemerisStatuses @9 :List(EphemerisStatus);
 
   kalmanPositionECEF @4 :LiveLocationKalman.Measurement;
   kalmanVelocityECEF @5 :LiveLocationKalman.Measurement;
   positionECEF @6 :LiveLocationKalman.Measurement;
   velocityECEF @7 :LiveLocationKalman.Measurement;
+  timeToFirstFix @8 :Float32;
   # Todo sync this with timing pulse of ublox
 
+  struct EphemerisStatus {
+    constellationId @0 :ConstellationId;
+    svId @1 :UInt8;
+    type @2 :EphemerisType;
+    source @3 :EphemerisSource;
+  }
+  
   struct CorrectedMeasurement {
     constellationId @0 :ConstellationId;
     svId @1 :UInt8;
@@ -1196,11 +1207,11 @@ struct GnssMeasurements {
     # Satellite position and velocity [x,y,z]
     satPos @7 :List(Float64);
     satVel @8 :List(Float64);
-    ephemerisSource @9 :EphemerisSource;
+    ephemerisSourceDEPRECATED @9 :EphemerisSourceDEPRECATED;
   }
 
-  struct EphemerisSource {
-    type @0 :EphemerisSourceType;
+  struct EphemerisSourceDEPRECATED {
+    type @0 :EphemerisType;
     # first epoch in file:
     gpsWeek @1 :Int16; # -1 if Nav
     gpsTimeOfWeek @2 :Int32; # -1 if Nav. Integer for seconds is good enough for logs.
@@ -1217,12 +1228,19 @@ struct GnssMeasurements {
     glonass @6;
   }
 
-  enum EphemerisSourceType {
+  enum EphemerisType {
     nav @0;
     # Different ultra-rapid files:
     nasaUltraRapid @1;
     glonassIacUltraRapid @2;
     qcom @3;
+  }
+  
+  enum EphemerisSource {
+    gnssChip @0;
+    internet @1;
+    cache @2;
+    unknown @3;
   }
 }
 
@@ -1234,6 +1252,19 @@ struct UbloxGnss {
     hwStatus @3 :HwStatus;
     hwStatus2 @4 :HwStatus2;
     glonassEphemeris @5 :GlonassEphemeris;
+    satReport @6 :SatReport;
+  }
+  
+  struct SatReport {
+    #received time of week in gps time in seconds and gps week
+    iTow @0 :UInt32;
+    svs @1 :List(SatInfo);
+
+    struct SatInfo {
+      svId @0 :UInt8;
+      gnssId @1 :UInt8;
+      flagsBitfield @2 :UInt32;
+    }
   }
 
   struct MeasurementReport {
@@ -1327,7 +1358,7 @@ struct UbloxGnss {
 
     iDot @26 :Float64;
     codesL2 @27 :Float64;
-    gpsWeek @28 :Float64;
+    gpsWeekDEPRECATED @28 :Float64;
     l2 @29 :Float64;
 
     svAcc @30 :Float64;
@@ -1345,6 +1376,8 @@ struct UbloxGnss {
     ionoBeta @39 :List(Float64);
 
     towCount @40 :UInt32;
+    toeWeek @41 :UInt16;
+    tocWeek @42 :UInt16;
   }
 
   struct IonoData {
@@ -1423,7 +1456,7 @@ struct UbloxGnss {
     age @17 :UInt8;
 
     svHealth @18 :UInt8;
-    tk @19 :UInt16;
+    tkDEPRECATED @19 :UInt16;
     tb @20 :UInt16;
 
     tauN @21 :Float64;
@@ -1435,7 +1468,12 @@ struct UbloxGnss {
     p3 @26 :UInt8;
     p4 @27 :UInt8;
 
-    freqNum @28 :UInt32;
+    freqNumDEPRECATED @28 :UInt32;
+    
+    n4 @29 :UInt8;
+    nt @30 :UInt16;
+    freqNum @31 :Int16;
+    tkSeconds @32 :UInt32;
   }
 }
 
@@ -2090,6 +2128,7 @@ struct Event {
     ubloxGnss @34 :UbloxGnss;
     ubloxRaw @39 :Data;
     qcomGnss @31 :QcomGnss;
+    gpsLocationTesla @107: GpsLocationData;
     gpsLocationExternal @48 :GpsLocationData;
     gpsLocation @21 :GpsLocationData;
     gnssMeasurements @91 :GnssMeasurements;

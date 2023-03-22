@@ -118,9 +118,6 @@ class Controls:
     if not self.disengage_on_accelerator:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS
 
-    if self.CP.dashcamOnly and self.params.get_bool("DashcamOverride"):
-      self.CP.dashcamOnly = False
-
     # read params
     self.is_metric = self.params.get_bool("IsMetric")
     self.is_ldw_enabled = self.params.get_bool("IsLdwEnabled")
@@ -876,10 +873,12 @@ class Controls:
       self.experimentalModeHasLead_last = self.sm['longitudinalPlan'].hasLead
       if self.experimentalModeHasLead_count > E2E_COUNT:
         self.experimentalModeHasLead = self.sm['longitudinalPlan'].hasLead and self.sm['radarState'].leadOne.dRel <= E2E_DISTANCE
-      if self.experimentalModeSpeed_last != (CS.vEgo < self.experimentalModeMaxSpeedMS):
+
+      if (CS.vEgo < self.experimentalModeMaxSpeedMS) == self.experimentalModeSpeed_last:
         self.experimentalModeSpeed_count += 1
       else:
         self.experimentalModeSpeed_count = 0
+      self.experimentalModeSpeed_last = (CS.vEgo < self.experimentalModeMaxSpeedMS)
       if self.experimentalModeSpeed_count > E2E_COUNT:
         self.experimentalModeSpeed = (CS.vEgo < self.experimentalModeMaxSpeedMS)
       expm = self.experimentalModeSpeed and not self.experimentalModeHasLead

@@ -542,7 +542,7 @@ location set</source>
     </message>
     <message>
         <source>openpilot</source>
-        <translation type="vanished">openpilot</translation>
+        <translation>openpilot</translation>
     </message>
     <message numerus="yes">
         <source>%n minute(s) ago</source>
@@ -564,10 +564,6 @@ location set</source>
             <numerusform>vor %n Tag</numerusform>
             <numerusform>vor %n Tagen</numerusform>
         </translation>
-    </message>
-    <message>
-        <source>Tinkla OP</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -635,18 +631,6 @@ This may take up to a minute.</source>
     <message>
         <source>Navigation</source>
         <translation>Navigation</translation>
-    </message>
-    <message>
-        <source>Tinkla</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Tesla preAP</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Tesla</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
