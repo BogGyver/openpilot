@@ -116,6 +116,7 @@ class CarState(CarStateBase):
     self.pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
     self.has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
     self.use_tesla_gps = load_bool_param("TinklaUseTeslaGps",False)
+    self.ignore_stock_aeb = load_bool_param("TinklaIgnoreStockAeb",False)
     self.handsOnLimit = load_float_param("TinklaHandsOnLevel",1.0)
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
       self.enableICIntegration = True
@@ -421,7 +422,7 @@ class CarState(CarStateBase):
       park_left_blindspot = self.can_define.dv["PARK_status2"]["PARK_sdiBlindSpotLeft"].get(int(cp.vl["PARK_status2"]["PARK_sdiBlindSpotLeft"])) == "WARNING"
       das_right_blindspot = self.can_define.dv["DAS_status"]["DAS_blindSpotRearRight"].get(int(cp_cam.vl["DAS_status"]["DAS_blindSpotRearRight"])) in ["WARNING_LEVEL_2","WARNING_LEVEL_1"]
       das_left_blindspot = self.can_define.dv["DAS_status"]["DAS_blindSpotRearLeft"].get(int(cp_cam.vl["DAS_status"]["DAS_blindSpotRearLeft"])) in ["WARNING_LEVEL_2","WARNING_LEVEL_1"]
-      ret.stockAeb = (cp_cam.vl["DAS_control"]["DAS_aebEvent"] == 1)
+      ret.stockAeb = (not self.ignore_stock_aeb) and (cp_cam.vl["DAS_control"]["DAS_aebEvent"] == 1)
       self.acc_state = 0 #cp_cam.vl["DAS_control"]["DAS_accState"]
     else:
       das_right_blindspot = False

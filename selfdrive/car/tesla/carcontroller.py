@@ -18,7 +18,7 @@ import math
 
 def gen_solution(CS):
   fix = 0
-  if CS.gpsAccuracy < 2:
+  if CS.gpsAccuracy < 10.:
     fix = 1
   timestamp = int(
     ((datetime.datetime.now() - datetime.datetime(1970, 1, 1)).total_seconds())

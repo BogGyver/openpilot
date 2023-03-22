@@ -109,6 +109,8 @@ class CarInterface(CarInterfaceBase):
     # enabled HAO from carconfig
     if load_bool_param("TinklaHao",False):
       safetyParam = safetyParam | Panda.FLAG_TESLA_ENABLE_HAO
+    if load_bool_param("TinklaIgnoreStockAeb",False):
+      safetyParam = safetyParam | Panda.FLAG_TESLA_IGNORE_STOCK_AEB
     if load_bool_param("TinklaEnableOPLong",False) or ret.openpilotLongitudinalControl:
       safetyParam = safetyParam | Panda.FLAG_TESLA_LONG_CONTROL
       ret.openpilotLongitudinalControl = True

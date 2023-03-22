@@ -53,9 +53,11 @@ const uint16_t FLAG_TESLA_NEED_RADAR_EMULATION = 32;
 const uint16_t FLAG_TESLA_ENABLE_HAO = 64;
 const uint16_t FLAG_TESLA_HAS_IBOOSTER = 128;
 const uint16_t FLAG_TESLA_RADAR_VIN_LEARN = 256;
+const uint16_t FLAG_TESLA_IGNORE_STOCK_AEB = 512;
 
 
 bool has_ap_hardware = false;
+bool ignore_stock_aeb = false;
 bool has_ap_disabled = false;
 bool has_ibooster = false;
 bool has_ibooster_ecu = false;
@@ -1212,13 +1214,13 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
 
   if (tesla_longitudinal && (addr == das_control_addr)) {
     // "AEB_ACTIVE"
-    tesla_stock_aeb = ((GET_BYTE(to_fwd, 2) & 0x03U) == 1U);
+    tesla_stock_aeb = (!ignore_stock_aeb) && ((GET_BYTE(to_fwd, 2) & 0x03U) == 1U);
   }
 
-  //if (tesla_stock_aeb && (bus_num == 2)) {
-  //  //instantly forward 2->0 messages if AEB is engaged
-  //  return 0;
-  //}
+  if (tesla_stock_aeb && (bus_num == 2)) {
+    //instantly forward 2->0 messages if AEB is engaged
+    return 0;
+  }
 
   if (has_ap_hardware) {
   //we check to see first if these are modded forwards
@@ -1347,6 +1349,7 @@ static const addr_checks* tesla_init(uint16_t param) {
   has_body_controls = true;
   do_radar_emulation = GET_FLAG(param, FLAG_TESLA_NEED_RADAR_EMULATION);
   enable_hao = GET_FLAG(param, FLAG_TESLA_ENABLE_HAO);
+  ignore_stock_aeb = GET_FLAG(param, FLAG_TESLA_IGNORE_STOCK_AEB);
   controls_allowed = false;
   //init gmlan for giraffe control
   if ((hw_type == HW_TYPE_WHITE_PANDA) || (hw_type == HW_TYPE_WHITE_PANDA))
