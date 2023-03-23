@@ -55,7 +55,6 @@ fi
 GIT_HASH=$(git --git-dir=$SOURCE_DIR/.git rev-parse --short HEAD)
 DATETIME=$(date '+%Y-%m-%dT%H:%M:%S')
 VERSION=$(cat common/version.h | awk -F\" '{print $2}')
-TINKLAVERSION=$(cat common/tinkla_version.h | awk -F[\"-]  '{print $2}')
 
 echo "#define COMMA_VERSION \"$VERSION-Beta$TINKLA_BETA_NUMBER\"" > $TARGET_DIR/common/version.h
 echo "#define TINKLA_VERSION \"$VERSION-$TINKLA_BETA_NUMBER\"" > $TARGET_DIR/common/tinkla_version.h
@@ -63,7 +62,6 @@ echo "#define TINKLA_VERSION \"$VERSION-$TINKLA_BETA_NUMBER\"" > $TARGET_DIR/com
 # in the directory
 cd $TARGET_DIR
 rm -f panda/board/obj/panda.bin.signed
-rm -f panda/board/obj/ivs.bin.signed
 #git clean -xdf
 
 #cleanup rednose

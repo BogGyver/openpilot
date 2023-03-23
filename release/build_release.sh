@@ -37,7 +37,7 @@ rm -rf $BUILD_DIR
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 git init
-git remote add origin git@github.com:commaai/openpilot.git
+git remote add origin git@github.com:boggyver/openpilot.git
 git checkout --orphan $RELEASE_BRANCH
 
 # do the files copy
@@ -52,8 +52,8 @@ cd $BUILD_DIR
 rm -f panda/board/obj/panda.bin.signed
 rm -f panda/board/obj/panda_h7.bin.signed
 
-VERSION=$(cat common/version.h | awk -F[\"-]  '{print $2}')
-echo "#define COMMA_VERSION \"$VERSION-release\"" > common/version.h
+TINKLAVERSION=$(cat common/tinkla_version.h | awk -F[\"]  '{print $2}')
+echo "#define COMMA_VERSION \"$TINKLAVERSION\"" > $BUILD_DIR/common/version.h
 
 echo "[-] committing version $TINKLAVERSION T=$SECONDS"
 git add -f .
@@ -72,10 +72,6 @@ mv board/obj/bootstub.panda.bin /tmp/bootstub.panda.bin
 mv board/obj/bootstub.pedal.bin /tmp/bootstub.pedal.bin
 mv board/obj/bootstub.pedal_usb.bin /tmp/bootstub.pedal_usb.bin
 mv board/obj/pedal_usb.bin.signed /tmp/pedal_usb.bin.signed 
-mv board/obj/ivs.bin.signed /tmp/ivs.bin.signed
-mv board/obj/ivs_usb.bin.signed /tmp/ivs_usb.bin.signed 
-mv board/obj/bootstub.ivs.bin /tmp/bootstub.ivs.bin
-mv board/obj/bootstub.ivs_usb.bin /tmp/bootstub.ivs_usb.bin
 mv board/obj/panda_h7.bin.signed /tmp/panda_h7.bin.signed
 
 popd
@@ -114,10 +110,6 @@ mv /tmp/bootstub.panda.bin $BUILD_DIR/panda/board/obj/bootstub.panda.bin
 mv /tmp/bootstub.pedal.bin $BUILD_DIR/panda/board/obj/bootstub.pedal.bin
 mv /tmp/bootstub.pedal_usb.bin $BUILD_DIR/panda/board/obj/bootstub.pedal_usb.bin
 mv /tmp/pedal_usb.bin.signed $BUILD_DIR/panda/board/obj/pedal_usb.bin.signed
-mv /tmp/ivs.bin.signed $BUILD_DIR/panda/board/obj/ivs.bin.signed
-mv /tmp/ivs_usb.bin.signed $BUILD_DIR/panda/board/obj/ivs_usb.bin.signed
-mv /tmp/bootstub.ivs.bin $BUILD_DIR/panda/board/obj/bootstub.ivs.bin
-mv /tmp/bootstub.ivs_usb.bin $BUILD_DIR/panda/board/obj/bootstub.ivs_usb.bin
 mv /tmp/panda_h7.bin.signed $BUILD_DIR/panda/board/obj/panda_h7.bin.signed
 
 # Restore third_party
