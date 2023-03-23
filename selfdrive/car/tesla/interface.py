@@ -53,7 +53,7 @@ class CarInterface(CarInterfaceBase):
     ret.radarTimeStep = (1.0 / 8) # 8Hz
 
     ret.steerLimitTimer = 1.0
-    ret.steerActuatorDelay = 0.00 #no delay on Tesla on top of the 0.2s added in base.... line #172 in drive_helpers.py
+    ret.steerActuatorDelay = 0.10
 
     #safetyParam
     # BIT - MEANING
