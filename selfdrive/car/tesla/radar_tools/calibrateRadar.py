@@ -3,7 +3,6 @@
 import cereal.messaging as messaging
 from selfdrive.car.tesla.radar_interface import RadarInterface
 from selfdrive.car.tesla.values import CAR
-from selfdrive.car import gen_empty_fingerprint
 from selfdrive.car.interfaces import CarInterfaceBase
 
 
@@ -14,7 +13,7 @@ MINY = -1.0
 MAXY = 1.0
 
 if __name__ == "__main__":
-  CP = CarInterfaceBase.get_std_params(CAR.PREAP_MODELS,gen_empty_fingerprint())
+  CP = CarInterfaceBase.get_std_params(CAR.PREAP_MODELS)
   CP.radarTimeStep = (1.0 / 8) # 8Hz
   RI = RadarInterface(CP)
   can_sock = messaging.sub_sock('can')
