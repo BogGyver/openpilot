@@ -113,7 +113,7 @@ class CarState(CarStateBase):
     self.enableICIntegration = load_bool_param("TinklaHasIcIntegration", False)
     self.pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
     self.has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
-    self.handsOnLimit = load_float_param("TinklaHandsOnLevel",1.0)
+    self.handsOnLimit = load_float_param("TinklaHandsOnLevel",2.0)
     self.mapAwareSpeed = load_bool_param("TinklaUseLongControlData", False)
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
       self.enableICIntegration = True
@@ -226,6 +226,7 @@ class CarState(CarStateBase):
     ret.steeringRateDeg = -cp.vl["STW_ANGLHP_STAT"]["StW_AnglHP_Spd"] # This is from a different angle sensor, and at different rate
     self.hands_on_level = cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
     ret.steeringPressed = (self.hands_on_level >= self.handsOnLimit)
+    self.HSOSteeringPressed = (self.hands_on_level >= self.handsOnLimit)
     ret.steerError = steer_status == "EAC_FAULT"
     ret.steerWarning = self.steer_warning != "EAC_ERROR_IDLE"
     self.torqueLevel = cp.vl["DI_torque1"]["DI_torqueMotor"]

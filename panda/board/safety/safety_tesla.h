@@ -749,8 +749,6 @@ static void teslaPreAp_send_IC_messages(void) {
   teslaPreAp_generate_message(0x239);
   //EPB_epasControl 
   do_EPB_epasControl();
-  //DAS_steeringControl
-  teslaPreAp_generate_message(0x488);
   //generate everything at 2Hz
   if ((IC_send_counter == 1) || (IC_send_counter == 6)){
     //DAS_bodyControls
@@ -842,6 +840,10 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
   if(valid) {
     if(bus == 0) {
       if (!tesla_powertrain) {
+        if ((addr == 0x115) && (!has_ap_hardware)) {
+          //DAS_steeringControl
+          teslaPreAp_generate_message(0x488);
+        }
         if ((addr == 0x348) && (!has_ap_hardware)) {
           //use GTW_status at 10Hz to generate the IC messages for nonAP cars
           teslaPreAp_send_IC_messages();

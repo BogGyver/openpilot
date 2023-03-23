@@ -1,7 +1,9 @@
-Unity Version 0.8.13-58 (2023-1-xx)
+Unity Version 0.8.13-58 (2023-3-22)
 ========================
  * Fix pedal calibration for CAN0
  * OP for AP1 cars with AP disabled
+ * Better logic for hands-on level
+ * Fix radar tools
 
 Unity Version 0.8.13-57 (2022-11-17)
 ========================

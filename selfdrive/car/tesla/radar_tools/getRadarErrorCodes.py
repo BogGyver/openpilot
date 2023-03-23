@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import cereal.messaging as messaging
-from selfdrive.car import gen_empty_fingerprint
 from selfdrive.car.interfaces import CarInterfaceBase
 from opendbc.can.parser import CANParser
 from selfdrive.car.tesla.values import DBC, CAR, CAN_RADAR
@@ -41,7 +40,7 @@ def get_radar_error_parser(CP):
   
 
 if __name__ == "__main__":
-  CP = CarInterfaceBase.get_std_params(CAR.PREAP_MODELS,gen_empty_fingerprint())
+  CP = CarInterfaceBase.get_std_params(CAR.PREAP_MODELS)
   rcp = get_radar_error_parser(CP)
   can_sock = messaging.sub_sock('can')
   while 1:
