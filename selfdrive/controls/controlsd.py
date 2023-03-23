@@ -62,7 +62,6 @@ ENABLED_STATES = (State.preEnabled, *ACTIVE_STATES)
 E2E_COUNT = 150
 E2E_DISTANCE = 50
 
-
 class Controls:
   def __init__(self, sm=None, pm=None, can_sock=None, CI=None):
     config_realtime_process(4, Priority.CTRL_HIGH)
@@ -214,6 +213,7 @@ class Controls:
     self.prof = Profiler(False)  # off by default
     self.hideGpsMsg = load_bool_param("TinklaHideGps",False)
     self.experimentalModeMaxSpeedMS =  load_float_param("TinklaExpModeMaxSpeedMS",22.3)
+    self.experimentalModeMinSpeedMS =  load_float_param("TinklaExpModeMinSpeedMS",8.0)
     self.experimentalModeSpeedAutoswitch = load_bool_param("TinklaExpModelAutoswitch",False)
     self.experimentalModeHasLead = False
     self.experimentalModeHasLead_last = False
@@ -865,11 +865,21 @@ class Controls:
     self.update_events(CS)
 
     self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
+    # Logic to switch between experimental and chill modes
+    # if (we have lead and above 18mph) or (speed above a set speed), we should be in chill mode
+    # otherwise we should be in experimental mode
+    # important not to switch between experimental and chill if we are braking (could be for a light or stop sign and lead could be on the other side)
     if self.experimentalModeSpeedAutoswitch:
-      if self.sm['longitudinalPlan'].hasLead == self.experimentalModeHasLead_last:
-        self.experimentalModeHasLead_count += 1
-      else:
-        self.experimentalModeHasLead_count = 0
+      if self.sm['longitudinalPlan'] and len(self.sm['longitudinalPlan'].accels) and len(self.sm['longitudinalPlan'].speeds):
+        if (
+          self.sm['longitudinalPlan'].hasLead == self.experimentalModeHasLead_last and # has lead
+          self.sm['longitudinalPlan'].accels[0] > 0 and  # and accelerating
+          self.sm['longitudinalPlan'].speeds[-1] > 0 and # and final speed is not zero
+          CS.vEgo >= self.experimentalModeMinSpeedMS
+        ):
+          self.experimentalModeHasLead_count += 1
+        else:
+          self.experimentalModeHasLead_count = 0
       self.experimentalModeHasLead_last = self.sm['longitudinalPlan'].hasLead
       if self.experimentalModeHasLead_count > E2E_COUNT:
         self.experimentalModeHasLead = self.sm['longitudinalPlan'].hasLead and self.sm['radarState'].leadOne.dRel <= E2E_DISTANCE

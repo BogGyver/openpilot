@@ -53,7 +53,7 @@ class CarInterface(CarInterfaceBase):
     ret.radarTimeStep = (1.0 / 8) # 8Hz
 
     ret.steerLimitTimer = 1.0
-    ret.steerActuatorDelay = 0.10
+    ret.steerActuatorDelay = 0.00
 
     #safetyParam
     # BIT - MEANING
