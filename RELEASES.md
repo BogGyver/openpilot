@@ -1,13 +1,10 @@
-Unity Version 0.9.2-9
+Unity Version 0.9.2-10
 ========================
- * Use supercombo from 2023-driving instead of master-ci
- * Reduce actuator delay for steering to 0.1
- * Use Tesla GPS data if accuracy better than the Comma GPS
- * Fix radar tools
-
-Unity Version 0.9.2-8
-========================
- * Bring Unity to OP 0.9.2
+* Bring Unity to OP 0.9.2
+* Use supercombo from 2023-driving instead of master-ci
+* Reduce actuator delay for steering to 0.1
+* Use Tesla GPS data if accuracy better than the Comma GPS
+* Fix radar tools
 
 Version 0.9.2 (2023-03-XX)
 ========================

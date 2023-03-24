@@ -1138,7 +1138,7 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
     if (tesla_longitudinal) {
       // No AEB events may be sent by openpilot
       // No AEB events may be sent by openpilot
-      int aeb_event = GET_BYTE(to_send, 2) & 0x03U;
+      int aeb_event = (GET_BYTE(to_send, 2) & 0x03U);
       if (aeb_event == 1) {
         violation = true;
       }
@@ -1214,13 +1214,14 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
       }
   }
 
-  if (tesla_longitudinal && (addr == das_control_addr)) {
+  if (tesla_longitudinal && (addr == das_control_addr) && (bus_num == 2)) {
     // "AEB_ACTIVE"
     tesla_stock_aeb = (!ignore_stock_aeb) && ((GET_BYTE(to_fwd, 2) & 0x03U) == 1U);
   }
 
   if (tesla_stock_aeb && (bus_num == 2)) {
     //instantly forward 2->0 messages if AEB is engaged
+    controls_allowed = false;
     return 0;
   }
 

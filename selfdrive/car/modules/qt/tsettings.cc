@@ -87,6 +87,12 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "m/s",
       22.3,1.0,30.0,0.1,TINKLA_FLOAT
     },
+    {"TinklaIgnoreStockAeb",
+      "Ignore Tesla AEB",
+      "Ignore Tesla AEB events while OP is enabled. On cars with OP engaged, AEB events from Tesla can actually affect negatively the braking.",
+      "../assets/offroad/icon_settings.png",
+      "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+      },
     {"TinklaTurnScreenOff",
       "Turn screen off while engaged",
       "Keeps device screen off even when engaged. It wakes the screen any time a message is shown.",

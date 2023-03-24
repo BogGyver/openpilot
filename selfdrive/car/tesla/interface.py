@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 from cereal import car
-from selfdrive.car.tesla.values import CANBUS, CAR, CruiseButtons, CAN_AP_POWERTRAIN
+from selfdrive.car.tesla.values import CAR, CruiseButtons, CAN_AP_POWERTRAIN
 from selfdrive.car import STD_CARGO_KG, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, get_safety_config
 from selfdrive.car.interfaces import CarInterfaceBase
 from selfdrive.car.modules.CFG_module import load_bool_param, load_float_param, load_str_param
 from panda import Panda
 from selfdrive.car.tesla.tunes import LongTunes, set_long_tune, ACCEL_LOOKUP_BP, ACCEL_MAX_LOOKUP_V, ACCEL_MIN_LOOKUP_V, ACCEL_REG_LOOKUP_V, ACCEL_AP_MAX_LOOKUP_V
 from common.numpy_fast import interp
-from common.conversions import Conversions as CV
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
@@ -53,7 +52,7 @@ class CarInterface(CarInterfaceBase):
     ret.radarTimeStep = (1.0 / 8) # 8Hz
 
     ret.steerLimitTimer = 1.0
-    ret.steerActuatorDelay = 0.00
+    ret.steerActuatorDelay = 0.10
 
     #safetyParam
     # BIT - MEANING
@@ -144,7 +143,6 @@ class CarInterface(CarInterfaceBase):
       ret.stoppingDecelRate = 1. 
       ret.stoppingControl = True
       ret.stopAccel = -2.0 
-      #ret.vEgoStopping = 5 * CV.MPH_TO_MS
     else:
       ret.stoppingDecelRate = 0.6 #since we don't use the PID, this means a jerk in acceleration by x m/s^3
       ret.stoppingControl = True

@@ -229,8 +229,8 @@ class HUDController:
         if self.engageable and (not enabled) and cruise_speed == 0:
             cruise_speed = 10
 
-        # send DAS_status and DAS_status2 at 2Hz
-        if (self.IC_integration_counter %20 == 0) or (self.IC_previous_enabled and not enabled ):
+        # need DAS_status and DAS_status2 at 2Hz, so send at 10Hz
+        if (self.IC_integration_counter % 10 == 0) or (self.IC_previous_enabled and not enabled ):
             should_send = enabled or (self.IC_previous_enabled and not enabled ) or CS.autopilot_disabled_det 
             self.prev_autopilot_enabled = CS.autopilot_enabled
             if CS.enableICIntegration and should_send:
