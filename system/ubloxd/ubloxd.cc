@@ -27,7 +27,7 @@ int main() {
   assert(subscriber != NULL);
   subscriber->setTimeout(100);
 
-  bool use_tesla_gps = Params().tinkla_get_bool_param("TinklaUseTeslaGps");
+  bool use_tesla_gps = true;
   if (use_tesla_gps) {
     LOGE("Using Tesla GPS when Comma GPS not accurate");
   } else {

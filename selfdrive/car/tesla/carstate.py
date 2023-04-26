@@ -115,7 +115,7 @@ class CarState(CarStateBase):
     self.enableICIntegration = load_bool_param("TinklaHasIcIntegration", False)
     self.pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
     self.has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
-    self.use_tesla_gps = load_bool_param("TinklaUseTeslaGps",False)
+    self.use_tesla_gps = True
     self.ignore_stock_aeb = load_bool_param("TinklaIgnoreStockAeb",False)
     self.handsOnLimit = load_float_param("TinklaHandsOnLevel",1.0)
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
@@ -156,7 +156,7 @@ class CarState(CarStateBase):
     elif CP.carFingerprint in [CAR.AP1_MODELS, CAR.PREAP_MODELS, CAR.AP2_MODELS]:
       self.teslaModel = "X"
     self.teslaModelDetected = 0
-    self.realPedalValue = 0.0
+    self.realPedalValue = 0.
 
   def _convert_to_DAS_fusedSpeedLimit(self, speed_limit_uom, speed_limit_type):
     if speed_limit_uom > 0:
@@ -258,6 +258,7 @@ class CarState(CarStateBase):
         self.teslaModelDetected = 1
 
     self.autopilot_disabled_det = (cp.vl["GTW_carConfig"]["GTW_autopilot"] == 0)
+    self.enableHAO = (self.CP.carFingerprint in [CAR.PREAP_MODELS]) or ((self.CP.carFingerprint in [CAR.AP1_MODELS]) and (self.autopilot_disabled_det))
 
     # Cruise state
     #cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
@@ -532,7 +533,7 @@ class CarState(CarStateBase):
     enablePedal = load_bool_param("TinklaEnablePedal",False)
     pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
     has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
-    use_tesla_gps = load_bool_param("TinklaUseTeslaGps",False)
+    use_tesla_gps = True
     signals = [
       # sig_name, sig_address, default
       ("DI_pedalPos", "DI_torque1"),

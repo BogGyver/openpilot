@@ -72,7 +72,7 @@ class CarInterface(CarInterfaceBase):
       ret.centerToFront = ret.wheelbase * 0.5
       ret.steerRatio = 15
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_AP # has AP, ACC
-      ret.openpilotLongitudinalControl = False
+      ret.openpilotLongitudinalControl = True
       set_long_tune(ret.longitudinalTuning, LongTunes.AP)
     elif candidate in (CAR.AP1_MODELX, CAR.AP2_MODELX):
       #TODO: update values
@@ -81,14 +81,14 @@ class CarInterface(CarInterfaceBase):
       ret.centerToFront = ret.wheelbase * 0.5
       ret.steerRatio = 15
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_AP  # has AP, ACC
-      ret.openpilotLongitudinalControl = False
+      ret.openpilotLongitudinalControl = True
       set_long_tune(ret.longitudinalTuning, LongTunes.AP)
     elif candidate == CAR.PREAP_MODELS:
       ret.mass = 2100. + STD_CARGO_KG
       ret.wheelbase = 2.959
       ret.centerToFront = ret.wheelbase * 0.5
       ret.steerRatio = 15
-      ret.openpilotLongitudinalControl = False
+      ret.openpilotLongitudinalControl = True
       if HAS_IBOOSTER_ECU:
         set_long_tune(ret.longitudinalTuning, LongTunes.IBST)
       elif load_bool_param("TinklaEnablePedal",False):
@@ -110,9 +110,8 @@ class CarInterface(CarInterfaceBase):
       safetyParam = safetyParam | Panda.FLAG_TESLA_ENABLE_HAO
     if load_bool_param("TinklaIgnoreStockAeb",False):
       safetyParam = safetyParam | Panda.FLAG_TESLA_IGNORE_STOCK_AEB
-    if load_bool_param("TinklaEnableOPLong",False) or ret.openpilotLongitudinalControl:
+    if ret.openpilotLongitudinalControl:
       safetyParam = safetyParam | Panda.FLAG_TESLA_LONG_CONTROL
-      ret.openpilotLongitudinalControl = True
       ret.experimentalLongitudinalAvailable = experimental_long
     if load_bool_param("TinklaHasIcIntegration",False):
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_IC_INTEGRATION

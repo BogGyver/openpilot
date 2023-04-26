@@ -1,3 +1,9 @@
+Unity Version 0.9.2-11
+========================
+* Reduce max deceleration to -3.5 m/s^2
+* Simplify settings
+* Filter branch list for branch selection
+
 Unity Version 0.9.2-10
 ========================
 * Bring Unity to OP 0.9.2
@@ -8,6 +14,7 @@ Unity Version 0.9.2-10
 
 Version 0.9.2 (2023-03-XX)
 ========================
+* New driving model, trained on a new dataset
 * Draw MPC path instead of model predicted path, this is a more accurate representation of what the car will do.
 * Buick LaCrosse 2017-19 support thanks to koch-cf!
 * Škoda Fabia 2022-23 support thanks to jyoung8607!

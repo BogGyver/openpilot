@@ -8,10 +8,10 @@ from cereal import car, log
 from common.basedir import BASEDIR
 from common.conversions import Conversions as CV
 from common.kalman.simple_kalman import KF1D
-from common.numpy_fast import clip, interp
+from common.numpy_fast import clip
 from common.realtime import DT_CTRL
 from selfdrive.car import apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness
-from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, apply_center_deadzone
+from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, get_friction
 from selfdrive.controls.lib.events import Events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
@@ -69,6 +69,7 @@ class CarInterfaceBase(ABC):
     self.frame = 0
     self.steering_unpressed = 0
     self.low_speed_alert = False
+    self.no_steer_warning = False
     self.silent_steer_warning = True
     self.v_ego_cluster_seen = False
 
@@ -152,15 +153,11 @@ class CarInterfaceBase(ABC):
     return self.get_steer_feedforward_default
 
   @staticmethod
-  def torque_from_lateral_accel_linear(lateral_accel_value, torque_params, lateral_accel_error, lateral_accel_deadzone, friction_compensation):
+  def torque_from_lateral_accel_linear(lateral_accel_value: float, torque_params: car.CarParams.LateralTorqueTuning,
+                                       lateral_accel_error: float, lateral_accel_deadzone: float, friction_compensation: bool) -> float:
     # The default is a linear relationship between torque and lateral acceleration (accounting for road roll and steering friction)
-    friction_interp = interp(
-      apply_center_deadzone(lateral_accel_error, lateral_accel_deadzone),
-      [-FRICTION_THRESHOLD, FRICTION_THRESHOLD],
-      [-torque_params.friction, torque_params.friction]
-    )
-    friction = friction_interp if friction_compensation else 0.0
-    return (lateral_accel_value / torque_params.latAccelFactor) + friction
+    friction = get_friction(lateral_accel_error, lateral_accel_deadzone, FRICTION_THRESHOLD, torque_params, friction_compensation)
+    return (lateral_accel_value / float(torque_params.latAccelFactor)) + friction
 
   def torque_from_lateral_accel(self) -> TorqueFromLateralAccelCallbackType:
     return self.torque_from_lateral_accel_linear
@@ -234,12 +231,6 @@ class CarInterfaceBase(ABC):
         ret.steeringTorque = - 0.1
 
   def pre_apply(self,c):
-    #read params once a second
-    if self.frame % 100 == 0:
-      self.CS.enableHSO = load_bool_param("TinklaHso",True)
-      self.CS.enableHAO = load_bool_param("TinklaHao",False)
-      self.CS.enableALC = load_bool_param("TinklaAlc",False)
-
     self.CS.lat_plan = messaging.recv_one_or_none(self.CS.laP) 
     # Update HSO module
     self.CS.human_control = self.CS.HSO.update_stat(self.CS, c.enabled, c.actuators, self.frame)
@@ -335,17 +326,23 @@ class CarInterfaceBase(ABC):
 
     # Handle permanent and temporary steering faults
     self.steering_unpressed = 0 if steeringPressed else self.steering_unpressed + 1
-    if cs_out.steerFaultTemporary or steeringPressed:
-      # if the user overrode recently, show a less harsh alert
-      if self.CS.enableHSO or self.silent_steer_warning or cs_out.standstill or self.steering_unpressed < int(1.5 / DT_CTRL):
-        self.silent_steer_warning = True
-        events.add(EventName.steerTempUnavailableSilent)
+    if cs_out.steerFaultTemporary:
+      if steeringPressed and (not self.CS.out.steerFaultTemporary or self.no_steer_warning):
+        self.no_steer_warning = True
       else:
-        events.add(EventName.steerTempUnavailable)
+        self.no_steer_warning = False
+
+        # if the user overrode recently, show a less harsh alert
+        if self.silent_steer_warning or cs_out.standstill or self.steering_unpressed < int(1.5 / DT_CTRL):
+          self.silent_steer_warning = True
+          events.add(EventName.steerTempUnavailableSilent)
+        else:
+          events.add(EventName.steerTempUnavailable)
     else:
       #add this to disable the annoying sounds during HSO
       if not self.CS.enableHSO:
         self.silent_steer_warning = False
+        self.no_steer_warning = False
     if cs_out.steerFaultPermanent:
       events.add(EventName.steerUnavailable)
 
@@ -402,9 +399,9 @@ class CarStateBase(ABC):
     self.enableACC = False
     self.enableJustCC = False
     self.autoresumeAcc = load_bool_param("TinklaAutoResumeACC",False)
-    self.enableHSO = load_bool_param("TinklaHso",True)
-    self.enableHAO = load_bool_param("TinklaHao",False)
-    self.enableALC = load_bool_param("TinklaAlc",False)
+    self.enableHSO = True
+    self.enableHAO = True
+    self.enableALC = True
     self.useTeslaRadar = load_bool_param("TinklaUseTeslaRadar",False)
     self.usesApillarHarness = load_bool_param("TinklaUseAPillarHarness",False)
     self.autoStartAlcaDelay = load_float_param("TinklaAlcDelay",2.0)

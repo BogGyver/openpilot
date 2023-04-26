@@ -64,8 +64,6 @@ FINGERPRINTS = {
 
 }
 dbc_file_name = 'tesla_can'
-if not load_bool_param("TinklaPost1916Fix",True):
-  dbc_file_name = 'tesla_can_pre1916'
 
 DBC = {
   CAR.AP2_MODELS: dbc_dict('tesla_powertrain', 'tesla_radar', chassis_dbc=dbc_file_name),
@@ -132,7 +130,7 @@ CAN_AP_POWERTRAIN = {
 }
 
 TESLA_MAX_ACCEL = 2.0  # m/s^2
-TESLA_MIN_ACCEL = -4.5 # m/s^2
+TESLA_MIN_ACCEL = -3.5 # m/s^2
 
 #tesla uses various tires, this is for now for the 245/45R19s or 245/35ZR21s and they are 27.8" diameter = 0.353m
 #TODOBB: sometimes tesla on the rear has 265/35ZR21 and they are 28.3" diameter 0.359m

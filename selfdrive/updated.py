@@ -326,7 +326,7 @@ class Updater:
   def check_for_update(self) -> None:
     cloudlog.info("checking for updates")
 
-    excluded_branches = ('release2', 'release2-staging', 'dashcam', 'dashcam-staging')
+    excluded_branches = ('tesla_0.7.10', 'tesla_0.6.6', 'tesla_0.6.6_new_pid', 'tesla_unity_dev', 'tesla_unity_beta', 'tesla_unity_releaseC2')
 
     try:
       run(["git", "ls-remote", "origin", "HEAD"], OVERLAY_MERGED)

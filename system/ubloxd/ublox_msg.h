@@ -108,7 +108,6 @@ class UbloxMsgParser {
     inline bool valid_cheksum();
     inline bool valid();
     inline bool valid_so_far();
-    inline uint16_t get_glonass_year(uint8_t N4, uint16_t Nt);
 
     kj::Array<capnp::word> parse_gps_ephemeris(ubx_t::rxm_sfrbx_t *msg);
     kj::Array<capnp::word> parse_glonass_ephemeris(ubx_t::rxm_sfrbx_t *msg);

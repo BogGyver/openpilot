@@ -20,12 +20,15 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
 
   std::vector<std::tuple<QString, QString, QString, QString, QString, QString, QString, float,float,float,float,int>> tinkla_toggles{
      // param, title, desc, icon
-    {"TinklaHso",
-      "Enable HSO",
-      "Enables Human Steering Override (HSO) module without disengaging OpenPilot.",
-      "../assets/offroad/icon_warning.png",
-      "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-      },
+     {"TinklaAPForceFingerprint",
+      "Force Tesla Fingerprint",
+      "Forces fingerprint for a specific model of Tesla.",
+      "../assets/offroad/icon_settings.png",
+      "Fingerprint:",
+      "TESLA PREAP MODEL S,TESLA AP1 MODEL S,TESLA AP1 MODEL X,TESLA AP2+ MODEL S,TESLA AP2+ MODEL X,NONE",
+      "NONE",
+      0.0,0.0,0.0,0.0,TINKLA_STRING
+    },
     {"TinklaHsoNumbPeriod",
       "HSO numb period",
       "The time, in seconds, to delay the reengagement of LKAS after HSO has been engaged by user by taking control of steering.",
@@ -35,18 +38,6 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "s",
       1.5,0.5,3.0,0.5,TINKLA_FLOAT
     },
-    {"TinklaHao",
-      "Enable HAO",
-      "Enables Human Accelerator Override (HAO) module without disengaging OpenPilot.",
-      "../assets/offroad/icon_warning.png",
-      "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-      },
-    {"TinklaAlc",
-      "Enable ALC",
-      "Enables automatic lane change with just the tap of the turn signal stalk.  Your attention is required at all times to use this feature.",
-      "../assets/offroad/icon_warning.png",
-      "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-      },
 
     {"TinklaAlcDelay",
       "ALC delay",
@@ -57,12 +48,6 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "s",
       2.0,1.0,3.0,0.5,TINKLA_FLOAT
     },
-    {"TinklaEnableOPLong",
-      "Enable OP Long Control",
-      "AP1/AP2: Enables OP Long Control and disables the AP ACC. Requires 2 pandas for MS AP2/MX AP1",
-      "../assets/offroad/icon_warning.png",
-      "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-      },
     {"TinklaExpModelAutoswitch",
       "Experimental Mode Autoswitch",
       "Automatically switches between Chill Mode and Experiemtnal Mode. Experimental Mode will only be used below set m/s speed and when not following another car.",
@@ -105,12 +90,6 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "../assets/offroad/icon_settings.png",
       "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
       },
-    {"TinklaUseTeslaGps",
-      "Use Tesla GPS Data",
-      "While potentially less accurate than the Comma3 data, it is always available. If enabled, the Comma3 will use the data from the sensor with the better accuracy, checked every time a message is generated.",
-      "../assets/offroad/icon_settings.png",
-      "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-      },
     {"TinklaShutdownAfter",
       "Shutdown after # of hours",
       "Shutdown device after number of hours when car is off",
@@ -127,7 +106,7 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "HandsOn Level:",
       "1-Light 2-Medium 3-HARD:",
       "",
-      1.0,1.0,3.0,1.0,TINKLA_FLOAT
+      2.0,1.0,3.0,1.0,TINKLA_FLOAT
     },
     {"TinklaDevUnit",
       "Tinkla Development Unit",
@@ -160,12 +139,7 @@ TeslaPreApTogglesPanel::TeslaPreApTogglesPanel(SettingsWindow *parent) : ListWid
 
   std::vector<std::tuple<QString, QString, QString, QString, QString, QString, QString, float,float,float,float,int>> tinkla_toggles{
   // param, title, desc, icon
-    {"TinklaPost1916Fix",
-    "Tesla software post 2019.16",
-    "Use the DBC for Tesla software after 2019.16 when some of the messages changed.",
-    "../assets/offroad/icon_settings.png",
-    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-    },
+      
     {"TinklaEnablePedal",
     "Use pedal",
     "Enables the use of the Pedal Interceptor to control the speed of your pre-AutoPilot Tesla. Requires Pedal Interceptor hardware connected to CAN2. Requires reboot.",
@@ -365,15 +339,6 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
     "Ignore Tesla Radar errors about calibration. ",
     "../assets/offroad/icon_settings.png",
     "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
-    },
-    {"TinklaAPForceFingerprint",
-      "Force Tesla Fingerprint",
-      "Forces fingerprint for a specific model of Tesla.",
-      "../assets/offroad/icon_settings.png",
-      "Fingerprint:",
-      "TESLA PREAP MODEL S,TESLA AP1 MODEL S,TESLA AP1 MODEL X,TESLA AP2+ MODEL S,TESLA AP2+ MODEL X,NONE",
-      "NONE",
-      0.0,0.0,0.0,0.0,TINKLA_STRING
     },
     {"TinklaAutopilotDisabled",
     "Autopilot feature disabled",

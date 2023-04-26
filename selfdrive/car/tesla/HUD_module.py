@@ -228,11 +228,15 @@ class HUDController:
             DAS_control_speed = 350.0/3.6
         if self.engageable and (not enabled) and cruise_speed == 0:
             cruise_speed = 10
+        should_send = enabled or (self.IC_previous_enabled and not enabled ) or CS.autopilot_disabled_det or self.CP.carFingerprint == CAR.PREAP_MODELS
+        self.prev_autopilot_enabled = CS.autopilot_enabled
+        if not should_send:
+            self.IC_previous_enabled = enabled
+            return messages
 
         # need DAS_status and DAS_status2 at 2Hz, so send at 10Hz
         if (self.IC_integration_counter % 10 == 0) or (self.IC_previous_enabled and not enabled ):
-            should_send = enabled or (self.IC_previous_enabled and not enabled ) or CS.autopilot_disabled_det 
-            self.prev_autopilot_enabled = CS.autopilot_enabled
+            
             if CS.enableICIntegration and should_send:
                 messages.append(self.tesla_can.create_das_status(DAS_op_status, DAS_collision_warning,
                     DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
