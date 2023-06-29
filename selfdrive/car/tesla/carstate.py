@@ -151,10 +151,10 @@ class CarState(CarStateBase):
     self.pedal_interceptor_value2 = 0.0
     self.ibstBrakeApplied = False
     self.teslaModel = ""
-    if CP.carFingerprint in [CAR.AP1_MODELX]:
-      self.teslaModel = "S"
-    elif CP.carFingerprint in [CAR.AP1_MODELS, CAR.PREAP_MODELS, CAR.AP2_MODELS]:
+    if CP.carFingerprint in [CAR.AP1_MODELX, CAR.AP2_MODELX]:
       self.teslaModel = "X"
+    elif CP.carFingerprint in [CAR.AP1_MODELS, CAR.PREAP_MODELS, CAR.AP2_MODELS]:
+      self.teslaModel = "S"
     self.teslaModelDetected = 0
     self.realPedalValue = 0.
 
@@ -357,7 +357,7 @@ class CarState(CarStateBase):
         self.map_suggested_speed = max(
             self.mapBasedSuggestedSpeed, self.splineBasedSuggestedSpeed
         )
-    if self.CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP1_MODELX, CAR.AP2_MODELS]:
+    if self.CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP1_MODELX, CAR.AP2_MODELS, CAR.AP2_MODELX]:
       self.speed_limit_ms_das = cp_cam.vl["DAS_status"]["DAS_fusedSpeedLimit"] / map_speed_ms_to_uom
       if cp_cam.vl["DAS_status"]["DAS_fusedSpeedLimit"] >= 150:
         #set to zero for no speed limit (0x1E) or SNA ((0x1F)
@@ -412,7 +412,7 @@ class CarState(CarStateBase):
     ret.rightBlinker = (cp.vl["GTW_carState"]["BC_indicatorRStatus"] == 1) and (self.turnSignalStalkState == 0) and (self.tap_direction == 2)
 
     # Seatbelt
-    if (self.CP.carFingerprint in [CAR.AP1_MODELX]):
+    if (self.CP.carFingerprint in [CAR.AP1_MODELX, CAR.AP2_MODELX]):
       ret.seatbeltUnlatched = (cp.vl["RCM_status"]["RCM_buckleDriverStatus"] != 1)
     else:
       ret.seatbeltUnlatched = (cp.vl["SDM1"]["SDM_bcklDrivStatus"] != 1)
@@ -630,7 +630,7 @@ class CarState(CarStateBase):
       ("BrakeMessage", 50),
     ]
     
-    if not (CP.carFingerprint in [CAR.AP1_MODELX]):
+    if not (CP.carFingerprint in [CAR.AP1_MODELX, CAR.AP2_MODELX]):
       signals += [
         ("SDM_bcklDrivStatus", "SDM1"),
       ]
@@ -652,7 +652,7 @@ class CarState(CarStateBase):
         #("UI_gpsVehicleSpeed", 0),
       ]
 
-    if (CP.carFingerprint in [CAR.AP1_MODELX]):
+    if (CP.carFingerprint in [CAR.AP1_MODELX, CAR.AP2_MODELX]):
       signals += [
         ("RCM_buckleDriverStatus","RCM_status"),
       ]
@@ -726,7 +726,7 @@ class CarState(CarStateBase):
     signals = []
     checks = []
     
-    if CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP2_MODELS, CAR.AP1_MODELX]:
+    if CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP2_MODELS, CAR.AP1_MODELX, CAR.AP2_MODELX]:
       signals = [
         # sig_name, sig_address, default
         #we need the steering control counter
