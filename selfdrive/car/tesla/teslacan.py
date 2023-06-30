@@ -156,25 +156,48 @@ class TeslaCAN:
     }
     return self.packer.make_can_msg("DAS_control", bus, values)
 
-  def create_ap2_long_control(self, speed, accel_limits, jerk_limits, bus, counter):
-    locRequest = 0
-    if speed == 0:
-      locRequest = 3
-    else:
-      locRequest = 1
+  def create_ap2_long_control(self, in_drive, static_cruise, cruise_enabled, speed, accel_limits, jerk_limits, bus, counter):
+    accState = 0
+    aeb_event = 0
+    if in_drive:
+      accState = 4
+      if static_cruise and cruise_enabled:
+        accState = 3
+      if cruise_enabled and AUTOPILOT_DISABLED and ENABLE_AEB_EVENTS:
+        aeb_event = 1 #AEB ACTIVE
+        #accState = 0 #ACC DISABLED
     values = {
-      "DAS_locMode" : 1, # 1- NORMAL
-      "DAS_locState" : 0, # 0-HEALTHY
-      "DAS_locRequest" : locRequest, # 0-IDLE,1-FORWARD,2-REVERSE,3-HOLD,4-PARK
-      "DAS_locJerkMin" : clip(jerk_limits[0],-8.67,0), #m/s^3 -8.67,0
-      "DAS_locJerkMax" : clip(jerk_limits[1],0,8.67), #m/s^3 0,8.67
-      "DAS_locSpeed" : clip(speed,0,200), #kph
-      "DAS_locAccelMin" : clip(accel_limits[0],-12,3.44), #m/s^2 -15,5.44
-      "DAS_locAccelMax" : clip(accel_limits[1],-12,3.44), #m/s^2 -15,5.44
-      "DAS_longControlCounter" : counter, #
-      "DAS_longControlChecksum" : 0, #
+      "DAS_setSpeed" :  clip(speed,0,200), #kph
+      "DAS_accState" :  accState, # 4-ACC ON, 3-HOLD, 0-CANCEL
+      "DAS_aebEvent" :  aeb_event, # 1 - AEB ACTIVE, 0 - AEB NOT ACTIVE
+      "DAS_jerkMin" :  clip(jerk_limits[0],-8.,8.), #m/s^3 -8.67,0
+      "DAS_jerkMax" :  clip(jerk_limits[1],-8.,8.), #m/s^3 0,8.67
+      "DAS_accelMin" : clip(accel_limits[0],-12.,3.44), #m/s^2 -15,5.44
+      "DAS_accelMax" : clip(accel_limits[1],-12.,3.44), #m/s^2 -15,5.44
+      "DAS_controlCounter": counter,
+      "DAS_controlChecksum" : 0,
     }
-    return self.packer.make_can_msg("DAS_longControl", bus, values)
+    return self.pt_packer.make_can_msg("DAS_control", bus, values)
+
+  # def create_ap2_long_control(self, speed, accel_limits, jerk_limits, bus, counter):
+  #   locRequest = 0
+  #   if speed == 0:
+  #     locRequest = 3
+  #   else:
+  #     locRequest = 1
+  #   values = {
+  #     "DAS_locMode" : 1, # 1- NORMAL
+  #     "DAS_locState" : 0, # 0-HEALTHY
+  #     "DAS_locRequest" : locRequest, # 0-IDLE,1-FORWARD,2-REVERSE,3-HOLD,4-PARK
+  #     "DAS_locJerkMin" : clip(jerk_limits[0],-8.67,0), #m/s^3 -8.67,0
+  #     "DAS_locJerkMax" : clip(jerk_limits[1],0,8.67), #m/s^3 0,8.67
+  #     "DAS_locSpeed" : clip(speed,0,200), #kph
+  #     "DAS_locAccelMin" : clip(accel_limits[0],-12,3.44), #m/s^2 -15,5.44
+  #     "DAS_locAccelMax" : clip(accel_limits[1],-12,3.44), #m/s^2 -15,5.44
+  #     "DAS_longControlCounter" : counter, #
+  #     "DAS_longControlChecksum" : 0, #
+  #   }
+  #   return self.packer.make_can_msg("DAS_longControl", bus, values)
 
   def create_das_warningMatrix0 (self, DAS_canErrors, DAS_025_steeringOverride, DAS_notInDrive, bus):
     msg_id = 0x329

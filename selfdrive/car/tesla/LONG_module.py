@@ -243,8 +243,8 @@ class LONGController:
                             messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, False, False , 0, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
 
                 
-        #AP ModelS with OP Long and enabled
-        elif enabled and self.CP.openpilotLongitudinalControl and (frame %1 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
+        #AP ModelS/X with OP Long and enabled
+        elif enabled and self.CP.openpilotLongitudinalControl and (frame %1 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS,CAR.AP1_MODELX,CAR.AP2_MODELX]):
             #we use the same logic from planner here to get the speed
             speed_uom_kph = 1.0
             # cruise state: 0 unavailable, 1 available, 2 enabled, 3 hold
@@ -326,13 +326,14 @@ class LONGController:
             target_speed = target_speed * CV.MS_TO_KPH
             
             #we now create the DAS_control for AP1 or DAS_longControl for AP2
-            if self.CP.carFingerprint == CAR.AP2_MODELS:
-                messages.append(self.tesla_can.create_ap2_long_control(target_speed, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
+            if self.CP.carFingerprint in [CAR.AP2_MODELS,CAR.AP1_MODELX,CAR.AP2_MODELX]:
+                messages.append(self.tesla_can.create_ap2_long_control(not CS.carNotInDrive, False, enabled ,target_speed, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
+                messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, False, enabled ,target_speed, tesla_accel_limits, tesla_jerk_limits, CAN_CHASSIS[self.CP.carFingerprint], self.long_control_counter))
             if self.CP.carFingerprint == CAR.AP1_MODELS:
                 messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, False, enabled ,target_speed, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
 
-        #AP ModelS with OP Long and not enabled
-        elif (not enabled) and (not CS.autopilot_enabled) and (not CS.autopilot_was_enabled) and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS]):
+        #AP ModelS/X with OP Long and not enabled
+        elif (not enabled) and (not CS.autopilot_enabled) and (not CS.autopilot_was_enabled) and self.CP.openpilotLongitudinalControl and (frame %2 == 0) and (self.CP.carFingerprint in [CAR.AP1_MODELS,CAR.AP2_MODELS,CAR.AP1_MODELX,CAR.AP2_MODELX]):
             if CS.carNotInDrive:
                 CS.cc_state = 0
             else:
@@ -340,8 +341,9 @@ class LONGController:
             #send this values so we can enable at 0 km/h
             tesla_accel_limits = [-1.4000000000000004,1.8000000000000007]
             tesla_jerk_limits = [-0.46000000000000085,0.47600000000000003]
-            if self.CP.carFingerprint == CAR.AP2_MODELS:
-                messages.append(self.tesla_can.create_ap2_long_control(350.0, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
+            if self.CP.carFingerprint in [CAR.AP2_MODELS,CAR.AP1_MODELX,CAR.AP2_MODELX]:
+                messages.append(self.tesla_can.create_ap2_long_control(not CS.carNotInDrive, False, False , 0, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
+                messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, False, False , 0, tesla_accel_limits, tesla_jerk_limits, CAN_CHASSIS[self.CP.carFingerprint], self.long_control_counter))
             if self.CP.carFingerprint == CAR.AP1_MODELS:
                 messages.append(self.tesla_can.create_ap1_long_control(not CS.carNotInDrive, False, False , 0, tesla_accel_limits, tesla_jerk_limits, CAN_POWERTRAIN[self.CP.carFingerprint], self.long_control_counter))
 

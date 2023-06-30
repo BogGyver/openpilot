@@ -127,15 +127,15 @@ class CarInterface(CarInterfaceBase):
     if candidate in (CAR.AP2_MODELS,CAR.AP2_MODELX):
       # Check if we have messages on an auxiliary panda, and that 0x2bf (DAS_control) is present on the AP powertrain bus
       # If so, we assume that it is connected to the longitudinal harness.
-      if (CAN_AP_POWERTRAIN[candidate] in fingerprint.keys()) and (0x2bf in fingerprint[CAN_AP_POWERTRAIN[candidate]].keys()):
-        ret.openpilotLongitudinalControl = True
-        ret.safetyConfigs = [
-          get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam | Panda.FLAG_TESLA_LONG_CONTROL),
-          get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam | Panda.FLAG_TESLA_LONG_CONTROL | Panda.FLAG_TESLA_POWERTRAIN),
-        ]
-      else:
-        ret.openpilotLongitudinalControl = False
-        ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam)]
+      #if (CAN_AP_POWERTRAIN[candidate] in fingerprint.keys()) and (0x2bf in fingerprint[CAN_AP_POWERTRAIN[candidate]].keys()):
+      ret.openpilotLongitudinalControl = True
+      ret.safetyConfigs = [
+        get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam | Panda.FLAG_TESLA_LONG_CONTROL),
+        get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam | Panda.FLAG_TESLA_LONG_CONTROL | Panda.FLAG_TESLA_POWERTRAIN),
+      ]
+      # else:
+      #   ret.openpilotLongitudinalControl = False
+      #   ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam)]
     else:
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, safetyParam)]
     if candidate == CAR.PREAP_MODELS:
