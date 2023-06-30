@@ -13,9 +13,9 @@ TOYOTA RAV4 HYBRID 2023: [.nan, 3.0, .nan]
 
 # Tesla has high torque
 TESLA AP1 MODEL S: [.nan, 2.5, .nan]
-TESLA AP2 MODEL S: [.nan, 2.5, .nan]
-TESLA AP1 MODEL x: [.nan, 2.5, .nan]
-TESLA AP2 MODEL x: [.nan, 2.5, .nan]
+TESLA AP2+ MODEL S: [.nan, 2.5, .nan]
+TESLA AP1 MODEL X: [.nan, 2.5, .nan]
+TESLA AP2+ MODEL X: [.nan, 2.5, .nan]
 TESLA PREAP MODEL S: [.nan, 2.5, .nan]
 
 # Guess
