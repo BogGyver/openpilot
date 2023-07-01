@@ -247,6 +247,7 @@ CanMsgFwd TESLA_PREAP_FWD_MODDED[] = {
   //used for IC integration
   {.msg = {0x399,0,8},.fwd_to_bus=0,.expected_timestep = 500000U,.counter_mask_H=0x00F00000,.counter_mask_L=0x00000000}, // DAS_status - Status - 2Hz
   {.msg = {0x2B9,0,8},.fwd_to_bus=0,.expected_timestep = 500000U,.counter_mask_H=0x00E00000,.counter_mask_L=0x00000000}, // DAS_control - Long Control 
+  {.msg = {0x2BF,0,8},.fwd_to_bus=0,.expected_timestep = 500000U,.counter_mask_H=0x00E00000,.counter_mask_L=0x00000000}, // DAS_control - Long Control PT CAN
   {.msg = {0x389,0,8},.fwd_to_bus=0,.expected_timestep = 500000U,.counter_mask_H=0x00F00000,.counter_mask_L=0x00000000}, // DAS_status2 - Status - 2Hz
   {.msg = {0x329,0,8},.fwd_to_bus=0,.expected_timestep = 1000000U,.counter_mask_H=0x00000000,.counter_mask_L=0x00000000}, // DAS_warningMatrix0 - Status - 1Hz - nocounter/nochecksum
   {.msg = {0x369,0,8},.fwd_to_bus=0,.expected_timestep = 1000000U,.counter_mask_H=0x00000000,.counter_mask_L=0x00000000}, // DAS_warningMatrix1 - Status - 1Hz - nocounter/nochecksum
@@ -264,6 +265,9 @@ bool epas_inhibited = false;
 
 static uint8_t tesla_compute_checksum(CANPacket_t *to_push) {
   int addr = GET_ADDR(to_push);
+  if (addr == 0x2bf) {
+    addr = 0x2b9;
+  }
   int len = GET_LEN(to_push);
   uint8_t checksum = (uint8_t)(addr) + (uint8_t)((unsigned int)(addr) >> 8U);
   for (int i = 0; i < (len - 1); i++) {
@@ -315,7 +319,7 @@ static bool tesla_compute_fwd_checksum(CANPacket_t *to_fwd) {
       valid = true;
     }
 
-    if ((addr == 0x209) || (addr == 0x2B9)) {
+    if ((addr == 0x209) || (addr == 0x2B9) || (addr == 0x2BF)) {
       WORD_TO_BYTE_ARRAY(&to_fwd->data[4],(GET_BYTES_48(to_fwd)  | (checksum << 24)));
       safety_can_set_checksum(to_fwd);
       valid = true;
@@ -346,6 +350,12 @@ static bool tesla_compute_fwd_should_mod(CANPacket_t *to_fwd) {
     int addr = GET_ADDR(to_fwd);
 
     if (!has_ap_hardware) {
+      return valid;
+    }
+    if (tesla_powertrain) {
+      if (addr == 0x2BF) {
+        valid = !(autopilot_enabled || eac_enabled || autopark_enabled);      
+      }
       return valid;
     }
 
@@ -437,6 +447,9 @@ static void teslaPreAp_fwd_to_radar_as_is(uint8_t bus_num, CANPacket_t *to_fwd, 
   if (!do_radar_emulation) {
     return;
   }
+  if (tesla_powertrain) {
+    return;
+  }
   CANPacket_t to_send;
   to_send.returned = 0U;
   to_send.rejected = 0U;
@@ -457,6 +470,9 @@ static void teslaPreAp_fwd_to_radar_modded(uint8_t bus_num, CANPacket_t *to_fwd)
     return;
   }
   if (!do_radar_emulation) {
+    return;
+  }
+  if (tesla_powertrain) {
     return;
   }
   int32_t addr = GET_ADDR(to_fwd);
@@ -674,6 +690,9 @@ static void teslaPreAp_generate_message(int id) {
   if (index == -1) {
     return;
   }
+  if (tesla_powertrain) {
+    return;
+  }
   
   //is the data valid to process?
   if (!TESLA_PREAP_FWD_MODDED[index].is_valid) {
@@ -727,6 +746,9 @@ static void teslaPreAp_generate_message(int id) {
 }
 
 static void send_fake_message(int msg_len, int msg_addr, uint8_t bus_num, uint32_t data_lo, uint32_t data_hi) {
+  if (tesla_powertrain) {
+    return;
+  }
   CANPacket_t to_send;
   to_send.returned = 0U;
   to_send.rejected = 0U;
@@ -744,6 +766,9 @@ static void do_EPB_epasControl(void) {
   if (has_ibooster) {
     return;
   }
+  if (tesla_powertrain) {
+    return;
+  }
   uint32_t MLB;
   uint32_t MHB; 
   MLB = 0x01 + (EPB_epasControl_idx << 8) + ((0x17 + EPB_epasControl_idx) << 16); 
@@ -757,6 +782,9 @@ static void do_fake_stalk_cancel(void) {
   uint32_t MLB;
   uint32_t MHB; 
   if ((DAS_lastStalkL == 0x00) && (DAS_lastStalkH == 0x00)) {
+    return;
+  }
+  if (tesla_powertrain) {
     return;
   }
   MLB = (DAS_lastStalkL & 0xFFFFFFC0) + 0x01;
@@ -775,6 +803,9 @@ static void do_fake_stalk_cancel(void) {
 }
 
 static void teslaPreAp_send_IC_messages(void) {
+  if (tesla_powertrain) {
+    return;
+  }
   //generate everything at higher rate than 10Hz
   //DAS_telemetry
   teslaPreAp_generate_message(0x3A9);
@@ -1082,7 +1113,7 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
   }
 
   //do not allow long control if not enabled
-  if ((!tesla_longitudinal) && ((addr == 0x2B9) || (addr == 0x209))) {
+  if ((!tesla_longitudinal) && ((addr == 0x2B9) || (addr == 0x2BF))) {
     //{0x2B9, 0, 8},  // DAS_control - Long Control
     //{0x209, 0, 8},  // DAS_longControl - Long Control
     tx = 0;
