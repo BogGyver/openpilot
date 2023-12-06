@@ -474,13 +474,13 @@ class Tici(HardwareBase):
 
     # *** IRQ config ***
 
+    # mask off big cluster from default affinity
+    sudo_write("f", "/proc/irq/default_smp_affinity")
+
     # move these off the default core
     affine_irq(1, "msm_drm")
     affine_irq(1, "msm_vidc")
     affine_irq(1, "i2c_geni")
-
-    # mask off big cluster from default affinity
-    sudo_write("f", "/proc/irq/default_smp_affinity")
 
     # *** GPU config ***
     # https://github.com/commaai/agnos-kernel-sdm845/blob/master/arch/arm64/boot/dts/qcom/sdm845-gpu.dtsi#L216
@@ -489,7 +489,7 @@ class Tici(HardwareBase):
     sudo_write("1", "/sys/class/kgsl/kgsl-3d0/force_bus_on")
     sudo_write("1", "/sys/class/kgsl/kgsl-3d0/force_clk_on")
     sudo_write("1", "/sys/class/kgsl/kgsl-3d0/force_rail_on")
-    sudo_write("1000000", "/sys/class/kgsl/kgsl-3d0/idle_timer")
+    sudo_write("1000", "/sys/class/kgsl/kgsl-3d0/idle_timer")
     sudo_write("performance", "/sys/class/kgsl/kgsl-3d0/devfreq/governor")
     sudo_write("596", "/sys/class/kgsl/kgsl-3d0/max_clock_mhz")
 
@@ -578,8 +578,9 @@ class Tici(HardwareBase):
 
     gpio_set(GPIO.STM_RST_N, 1)
     gpio_set(GPIO.STM_BOOT0, 1)
-    time.sleep(2)
+    time.sleep(1)
     gpio_set(GPIO.STM_RST_N, 0)
+    time.sleep(1)
     gpio_set(GPIO.STM_BOOT0, 0)
 
 
