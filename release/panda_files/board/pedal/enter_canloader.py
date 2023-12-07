@@ -3,7 +3,7 @@ import time
 import argparse
 from panda import Panda
 from panda.board.pedal.canhandle import CanHandle
-from selfdrive.car.modules.CFG_module import load_bool_param
+from openpilot.selfdrive.car.modules.CFG_module import load_bool_param
 
 
 if __name__ == "__main__":

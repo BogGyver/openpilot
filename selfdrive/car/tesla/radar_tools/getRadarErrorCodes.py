@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import cereal.messaging as messaging
-from selfdrive.car.interfaces import CarInterfaceBase
+from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 from opendbc.can.parser import CANParser
-from selfdrive.car.tesla.values import DBC, CAR, CAN_RADAR
+from openpilot.selfdrive.car.tesla.values import DBC, CAR, CAN_RADAR
 
 
 error_signals = ["RADC_a001_ecuInternalPerf","RADC_a002_flashPerformance","RADC_a003_vBatHigh",

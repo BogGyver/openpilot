@@ -1,9 +1,9 @@
-from selfdrive.car.tesla.values import CruiseButtons, CarControllerParams, CAR, CAN_CHASSIS, CAN_POWERTRAIN, CruiseState, TESLA_MAX_ACCEL, TESLA_MIN_ACCEL
-from selfdrive.car.tesla.ACC_module import ACCController
-from selfdrive.car.tesla.PCC_module import PCCController
-from common.conversions import Conversions as CV
-from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
-from common.numpy_fast import interp,clip
+from openpilot.selfdrive.car.tesla.values import CruiseButtons, CarControllerParams, CAR, CAN_CHASSIS, CAN_POWERTRAIN, CruiseState, TESLA_MAX_ACCEL, TESLA_MIN_ACCEL
+from openpilot.selfdrive.car.tesla.ACC_module import ACCController
+from openpilot.selfdrive.car.tesla.PCC_module import PCCController
+from openpilot.common.conversions import Conversions as CV
+from openpilot.selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
+from openpilot.common.numpy_fast import interp,clip
 
 ACCEL_MULTIPLIERS_BP =     [0.0, 5.0, 10.0, 30.0]
 ACCEL_MULT_SPEED_V  =      [1.5, 1.3,  1.2,  1.0]

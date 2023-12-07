@@ -27,15 +27,10 @@ const LongitudinalLimits TOYOTA_LONG_LIMITS = {
 const int TOYOTA_GAS_INTERCEPTOR_THRSLD = 805;
 #define TOYOTA_GET_INTERCEPTOR(msg) (((GET_BYTE((msg), 0) << 8) + GET_BYTE((msg), 1) + (GET_BYTE((msg), 2) << 8) + GET_BYTE((msg), 3)) / 2U) // avg between 2 tracks
 
-const CanMsg TOYOTA_TX_MSGS[] = {{0x344, 0, 8},   // AEB force
-                                 {0x2E4, 0, 5},   // LKA
-                                 {0x411, 0, 8},   // UI 1
-                                 {0x412, 0, 8},   // UI 2
-                                 {0x343, 0, 8},   // ACC_CTRL
-                                 {0x1D2, 0, 8},   // PCM Cruise State
-                                 {0x200, 0, 6},   // interceptor_gas
-                                 {0xF1, 0, 8},   // DSU Gateway Control ACC
-                                 {0xF2, 0, 8}};  // DSU Gateway Control AEB
+const CanMsg TOYOTA_TX_MSGS[] = {{0x283, 0, 7}, {0x2E6, 0, 8}, {0x2E7, 0, 8}, {0x33E, 0, 7}, {0x344, 0, 8}, {0x365, 0, 7}, {0x366, 0, 7}, {0x4CB, 0, 8},  // DSU bus 0
+                                 {0x128, 1, 6}, {0x141, 1, 4}, {0x160, 1, 8}, {0x161, 1, 7}, {0x470, 1, 4},  // DSU bus 1
+                                 {0x2E4, 0, 5}, {0x191, 0, 8}, {0x411, 0, 8}, {0x412, 0, 8}, {0x343, 0, 8}, {0x1D2, 0, 8},  // LKAS + ACC
+                                 {0x200, 0, 6}};  // interceptor
 
 AddrCheckStruct toyota_addr_checks[] = {
   {.msg = {{ 0xaa, 0, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
@@ -75,64 +70,6 @@ static uint32_t toyota_get_checksum(CANPacket_t *to_push) {
   return (uint8_t)(GET_BYTE(to_push, checksum_byte));
 }
 
-// check whether we should recompute checksum
-static bool toyota_compute_fwd_checksum(CANPacket_t *to_fwd) {
-  uint8_t checksum = toyota_compute_checksum(to_fwd); 
-  bool valid = false;
-  int addr = GET_ADDR(to_fwd);
-  
-  if (addr == 0x2E4){
-    // 0x2E4 is only 5 bytes. send 
-    WORD_TO_BYTE_ARRAY(&to_fwd->data[4],((GET_BYTES_48(to_fwd) & 0x00) | (checksum << 0)));
-    valid = true;
-  }
-  // the other ctrl msgs are 8 bytes
-  if (addr == 0x191){ 
-    WORD_TO_BYTE_ARRAY(&to_fwd->data[4],((GET_BYTES_48(to_fwd) & 0x00FFFFFF) | (checksum << 24)));
-    valid = true;
-  }
-  if (addr == 0x343){ 
-    WORD_TO_BYTE_ARRAY(&to_fwd->data[4],((GET_BYTES_48(to_fwd) & 0x00FFFFFF) | (checksum << 24)));
-    valid = true;
-  }
-  if (addr == 0x344){ 
-    WORD_TO_BYTE_ARRAY(&to_fwd->data[4],((GET_BYTES_48(to_fwd) & 0x00FFFFFF) | (checksum << 24)));
-    valid = true;
-  }
-  // no checksums on the HUD messages
-  if ((addr == 0x411) | (addr == 0x412)) {
-    valid = true;
-  }
-  return valid;
-}
-// is the msg to be modded?
-static bool toyota_compute_fwd_should_mod(CANPacket_t *to_fwd) {
-  bool valid = false;
-  int addr = GET_ADDR(to_fwd);
-  if (addr == 0x2E4) {
-    // only mod stock LKA/LTA while using CoPilot or during emergency takeover
-    valid = controls_allowed | emergency_takeover;
-  }
-    if (addr == 0x191) {
-    // only mod stock LKA/LTA while using CoPilot or during emergency takeover
-    valid = controls_allowed | emergency_takeover;
-  }
-  if (addr == 0x343) {
-    // we only want this if using CoPilot
-    valid = controls_allowed;
-  }
-  if (addr == 0x344) {
-    // always passthru stock AEB if requested. only send this when doing emergency takeover! otherwise, use 343 for long control.
-    valid = !stock_aeb & emergency_takeover;
-  }
-  // passthru HUD when not engaged
-  if ((addr == 0x411) || (addr == 0x412)) {
-    valid = controls_allowed | emergency_takeover;
-  }
-
-  return valid;
-}
-
 static int toyota_rx_hook(CANPacket_t *to_push) {
 
   bool valid = addr_safety_check(to_push, &toyota_rx_checks,
@@ -166,20 +103,20 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
 
       // sample gas pedal
       if (!gas_interceptor_detected) {
-        gas_pressed = ((GET_BYTE(to_push, 0) >> 4) & 1U) == 0U;
+        gas_pressed = GET_BIT(to_push, 4U) == 0U;
       }
     }
 
     if (addr == 0xaa) {
       // check that all wheel speeds are at zero value with offset
-      bool standstill = (GET_BYTES_04(to_push) == 0x6F1A6F1AU) && (GET_BYTES_48(to_push) == 0x6F1A6F1AU);
+      bool standstill = (GET_BYTES(to_push, 0, 4) == 0x6F1A6F1AU) && (GET_BYTES(to_push, 4, 4) == 0x6F1A6F1AU);
       vehicle_moving = !standstill;
     }
 
     // most cars have brake_pressed on 0x226, corolla and rav4 on 0x224
     if (((addr == 0x224) && toyota_alt_brake) || ((addr == 0x226) && !toyota_alt_brake)) {
-      int byte = (addr == 0x224) ? 0 : 4;
-      brake_pressed = ((GET_BYTE(to_push, byte) >> 5) & 1U) != 0U;
+      uint8_t bit = (addr == 0x224) ? 5U : 37U;
+      brake_pressed = GET_BIT(to_push, bit) != 0U;
     }
 
     // sample gas interceptor
@@ -194,23 +131,6 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
 
     generic_rx_checks((addr == 0x2E4));
   }
-
-  // checks on bus 2
-  if (GET_BUS(to_push) == 2){
-    int addr = GET_ADDR(to_push);
-
-    if (addr == 0x344){
-      // check for stock AEB
-      int stock_aeb_force = (GET_BYTE(to_push, 1) << 2) | (GET_BYTE(to_push, 2) & 0x3U);
-      stock_aeb_force = to_signed(stock_aeb_force, 10);
-      if (stock_aeb_force != 0){
-        stock_aeb = 1;
-      } else {
-        stock_aeb = 0;
-      }
-    }
-  }
-
   return valid;
 }
 
@@ -219,7 +139,6 @@ static int toyota_tx_hook(CANPacket_t *to_send) {
   int tx = 1;
   int addr = GET_ADDR(to_send);
   int bus = GET_BUS(to_send);
-  bool fwd_violation = 0;
 
   if (!msg_allowed(to_send, TOYOTA_TX_MSGS, sizeof(TOYOTA_TX_MSGS)/sizeof(TOYOTA_TX_MSGS[0]))) {
     tx = 0;
@@ -227,21 +146,6 @@ static int toyota_tx_hook(CANPacket_t *to_send) {
 
   // Check if msg is sent on BUS 0
   if (bus == 0) {
-
-    // AEB takeover. Disables gas pedal when sent, so cannot be disabled until maneuver finished
-    if (((addr == 0x344) & is_tss2) | (addr == 0xF2)){
-      // only check 0x344 if TSS2. TSS1 will use 0xF2 with AEB gateway
-      emergency_takeover = 1;
-      controls_allowed = 1;
-      aeb_tim = microsecond_timer_get();
-    }
-    // disable emergency takeover if AEB has not been sent in 250ms
-    if (emergency_takeover){ 
-      uint32_t timestamp = microsecond_timer_get();
-      if ((timestamp - aeb_tim) > TOYOTA_RT_INTERVAL){
-        emergency_takeover = 0;
-      }
-    }
 
     // GAS PEDAL: safety check
     if (addr == 0x200) {
@@ -251,7 +155,7 @@ static int toyota_tx_hook(CANPacket_t *to_send) {
     }
 
     // ACCEL: safety check on byte 1-2
-    if ((addr == 0x343) | (addr == 0xF1)){
+    if (addr == 0x343) {
       int desired_accel = (GET_BYTE(to_send, 0) << 8) | GET_BYTE(to_send, 1);
       desired_accel = to_signed(desired_accel, 16);
 
@@ -271,14 +175,13 @@ static int toyota_tx_hook(CANPacket_t *to_send) {
 
       if (violation) {
         tx = 0;
-        fwd_violation = 1;
       }
     }
 
     // AEB: block all actuation. only used when DSU is unplugged
     if (addr == 0x283) {
       // only allow the checksum, which is the last byte
-      bool block = (GET_BYTES_04(to_send) != 0U) || (GET_BYTE(to_send, 4) != 0U) || (GET_BYTE(to_send, 5) != 0U);
+      bool block = (GET_BYTES(to_send, 0, 4) != 0U) || (GET_BYTE(to_send, 4) != 0U) || (GET_BYTE(to_send, 5) != 0U);
       if (block) {
         tx = 0;
       }
@@ -288,8 +191,8 @@ static int toyota_tx_hook(CANPacket_t *to_send) {
     // only sent to prevent dash errors, no actuation is accepted
     if (addr == 0x191) {
       // check the STEER_REQUEST, STEER_REQUEST_2, SETME_X64 STEER_ANGLE_CMD signals
-      bool lta_request = (GET_BYTE(to_send, 0) & 1U) != 0U;
-      bool lta_request2 = ((GET_BYTE(to_send, 3) >> 1) & 1U) != 0U;
+      bool lta_request = GET_BIT(to_send, 0U) != 0U;
+      bool lta_request2 = GET_BIT(to_send, 25U) != 0U;
       int setme_x64 = GET_BYTE(to_send, 5);
       int lta_angle = (GET_BYTE(to_send, 1) << 8) | GET_BYTE(to_send, 2);
       lta_angle = to_signed(lta_angle, 16);
@@ -307,28 +210,11 @@ static int toyota_tx_hook(CANPacket_t *to_send) {
       bool steer_req = GET_BIT(to_send, 0U) != 0U;
       if (steer_torque_cmd_checks(desired_torque, steer_req, TOYOTA_STEERING_LIMITS)) {
         tx = 0;
-        fwd_violation = 1;
       }
       // When using LTA (angle control), assert no actuation on LKA message
       if (toyota_lta && ((desired_torque != 0) || steer_req)) {
         tx = 0;
       }
-      // When using LTA (angle control), assert no actuation on LKA message
-      if (toyota_lta && ((desired_torque != 0) || steer_req)) {
-        tx = 0;
-      }
-    }
-  }
-
-  if (is_tss2) {
-    if (fwd_data_message(to_send,TSS2_FWD_MSG,sizeof(TSS2_FWD_MSG)/sizeof(TSS2_FWD_MSG[0]),fwd_violation)) {
-      //do not send if the message is in the forwards
-      tx = 0;
-    }
-  } else {
-    if (fwd_data_message(to_send,TSS1_FWD_MSG,sizeof(TSS2_FWD_MSG)/sizeof(TSS2_FWD_MSG[0]),fwd_violation)) {
-      //do not send if the message is in the forwards
-      tx = 0;
     }
   }
 
@@ -349,17 +235,15 @@ static const addr_checks* toyota_init(uint16_t param) {
   return &toyota_rx_checks;
 }
 
-static int toyota_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
+static int toyota_fwd_hook(int bus_num, int addr) {
+
   int bus_fwd = -1;
-  int addr = GET_ADDR(to_fwd);
-  int fwd_modded = -2;
 
   if (bus_num == 0) {
     bus_fwd = 2;
   }
 
   if (bus_num == 2) {
-    int addr = GET_ADDR(to_fwd);
     // block stock lkas messages and stock acc messages (if OP is doing ACC)
     // in TSS2, 0x191 is LTA which we need to block to avoid controls collision
     int is_lkas_msg = ((addr == 0x2E4) || (addr == 0x412) || (addr == 0x191));
@@ -369,20 +253,6 @@ static int toyota_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
     if (!block_msg) {
       bus_fwd = 0;
     }
-  }
-
-  // Merlin forward logic. has to run after we detect if the car is TSS2
-  if (is_tss2) {
-  // we check to see first if these are modded forwards
-    fwd_modded = fwd_modded_message(to_fwd,TSS2_FWD_MSG,sizeof(TSS2_FWD_MSG)/sizeof(TSS2_FWD_MSG[0]),
-            toyota_compute_fwd_should_mod,toyota_compute_fwd_checksum);
-  } else {
-    fwd_modded = fwd_modded_message(to_fwd,TSS1_FWD_MSG,sizeof(TSS1_FWD_MSG)/sizeof(TSS1_FWD_MSG[0]),
-            toyota_compute_fwd_should_mod,toyota_compute_fwd_checksum);
-  }
-  if (fwd_modded != -2) {
-    //it's a forward modded message, so just forward now
-    return fwd_modded;
   }
 
   return bus_fwd;

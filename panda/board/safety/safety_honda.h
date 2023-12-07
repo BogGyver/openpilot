@@ -23,7 +23,6 @@ const LongitudinalLimits HONDA_BOSCH_LONG_LIMITS = {
   .min_accel = -350,
 
   .max_gas = 2000,
-  .min_gas = -30000,
   .inactive_gas = -30000,
 };
 
@@ -39,7 +38,8 @@ AddrCheckStruct honda_common_addr_checks[] = {
   {.msg = {{0x1A6, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 40000U},                   // SCM_BUTTONS
            {0x296, 0, 4, .check_checksum = true, .max_counter = 3U, .expected_timestep = 40000U}, { 0 }}},
   {.msg = {{0x158, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U}, { 0 }, { 0 }}},   // ENGINE_DATA
-  {.msg = {{0x17C, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U}, { 0 }, { 0 }}},   // POWERTRAIN_DATA
+  {.msg = {{0x17C, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},                   // POWERTRAIN_DATA
+           {0x1BE, 0, 3, .check_checksum = true, .max_counter = 3U, .expected_timestep = 20000U}, { 0 }}},          // BRAKE_MODULE (for bosch radarless)
   {.msg = {{0x326, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 100000U}, { 0 }, { 0 }}},  // SCM_FEEDBACK
 };
 #define HONDA_COMMON_ADDR_CHECKS_LEN (sizeof(honda_common_addr_checks) / sizeof(honda_common_addr_checks[0]))
@@ -142,7 +142,7 @@ static int honda_rx_hook(CANPacket_t *to_push) {
     if ((addr == 0x326) || (addr == 0x1A6)) {
       acc_main_on = GET_BIT(to_push, ((addr == 0x326) ? 28U : 47U));
       if (!acc_main_on) {
-        controls_allowed = 0;
+        controls_allowed = false;
       }
     }
 
@@ -151,13 +151,13 @@ static int honda_rx_hook(CANPacket_t *to_push) {
       const bool cruise_engaged = GET_BIT(to_push, 38U) != 0U;
       // engage on rising edge
       if (cruise_engaged && !cruise_engaged_prev) {
-        controls_allowed = 1;
+        controls_allowed = true;
       }
 
       // Since some Nidec cars can brake down to 0 after the PCM disengages,
       // we don't disengage when the PCM does.
       if (!cruise_engaged && (honda_hw != HONDA_NIDEC)) {
-        controls_allowed = 0;
+        controls_allowed = false;
       }
       cruise_engaged_prev = cruise_engaged;
     }
@@ -167,16 +167,16 @@ static int honda_rx_hook(CANPacket_t *to_push) {
     if (((addr == 0x1A6) || (addr == 0x296)) && (bus == pt_bus)) {
       int button = (GET_BYTE(to_push, 0) & 0xE0U) >> 5;
 
-      // exit controls once main or cancel are pressed
-      if ((button == HONDA_BTN_MAIN) || (button == HONDA_BTN_CANCEL)) {
-        controls_allowed = 0;
+      // enter controls on the falling edge of set or resume
+      bool set = (button != HONDA_BTN_SET) && (cruise_button_prev == HONDA_BTN_SET);
+      bool res = (button != HONDA_BTN_RESUME) && (cruise_button_prev == HONDA_BTN_RESUME);
+      if (acc_main_on && !pcm_cruise && (set || res)) {
+        controls_allowed = true;
       }
 
-      // enter controls on the falling edge of set or resume
-      bool set = (button == HONDA_BTN_NONE) && (cruise_button_prev == HONDA_BTN_SET);
-      bool res = (button == HONDA_BTN_NONE) && (cruise_button_prev == HONDA_BTN_RESUME);
-      if (acc_main_on && !pcm_cruise && (set || res)) {
-        controls_allowed = 1;
+      // exit controls once main or cancel are pressed
+      if ((button == HONDA_BTN_MAIN) || (button == HONDA_BTN_CANCEL)) {
+        controls_allowed = false;
       }
       cruise_button_prev = button;
     }
@@ -235,19 +235,17 @@ static int honda_rx_hook(CANPacket_t *to_push) {
     int bus_rdr_car = (honda_hw == HONDA_BOSCH) ? 0 : 2;  // radar bus, car side
     bool stock_ecu_detected = false;
 
-    if (safety_mode_cnt > RELAY_TRNS_TIMEOUT) {
-      // If steering controls messages are received on the destination bus, it's an indication
-      // that the relay might be malfunctioning
-      if ((addr == 0xE4) || (addr == 0x194)) {
-        if (((honda_hw != HONDA_NIDEC) && (bus == bus_rdr_car)) || ((honda_hw == HONDA_NIDEC) && (bus == 0))) {
-          stock_ecu_detected = true;
-        }
-      }
-      // If Honda Bosch longitudinal mode is selected we need to ensure the radar is turned off
-      // Verify this by ensuring ACC_CONTROL (0x1DF) is not received on the PT bus
-      if (honda_bosch_long && !honda_bosch_radarless && (bus == pt_bus) && (addr == 0x1DF)) {
+    // If steering controls messages are received on the destination bus, it's an indication
+    // that the relay might be malfunctioning
+    if ((addr == 0xE4) || (addr == 0x194)) {
+      if (((honda_hw != HONDA_NIDEC) && (bus == bus_rdr_car)) || ((honda_hw == HONDA_NIDEC) && (bus == 0))) {
         stock_ecu_detected = true;
       }
+    }
+    // If Honda Bosch longitudinal mode is selected we need to ensure the radar is turned off
+    // Verify this by ensuring ACC_CONTROL (0x1DF) is not received on the PT bus
+    if (honda_bosch_long && !honda_bosch_radarless && (bus == pt_bus) && (addr == 0x1DF)) {
+      stock_ecu_detected = true;
     }
 
     generic_rx_checks(stock_ecu_detected);
@@ -346,7 +344,7 @@ static int honda_tx_hook(CANPacket_t *to_send) {
 
   // Bosch supplemental control check
   if (addr == 0xE5) {
-    if ((GET_BYTES_04(to_send) != 0x10800004U) || ((GET_BYTES_48(to_send) & 0x00FFFFFFU) != 0x0U)) {
+    if ((GET_BYTES(to_send, 0, 4) != 0x10800004U) || ((GET_BYTES(to_send, 4, 4) & 0x00FFFFFFU) != 0x0U)) {
       tx = 0;
     }
   }
@@ -369,7 +367,7 @@ static int honda_tx_hook(CANPacket_t *to_send) {
 
   // Only tester present ("\x02\x3E\x80\x00\x00\x00\x00\x00") allowed on diagnostics address
   if (addr == 0x18DAB0F1) {
-    if ((GET_BYTES_04(to_send) != 0x00803E02U) || (GET_BYTES_48(to_send) != 0x0U)) {
+    if ((GET_BYTES(to_send, 0, 4) != 0x00803E02U) || (GET_BYTES(to_send, 4, 4) != 0x0U)) {
       tx = 0;
     }
   }
@@ -397,7 +395,7 @@ static const addr_checks* honda_bosch_init(uint16_t param) {
   honda_hw = HONDA_BOSCH;
   honda_bosch_radarless = GET_FLAG(param, HONDA_PARAM_RADARLESS);
   // Checking for alternate brake override from safety parameter
-  honda_alt_brake_msg = GET_FLAG(param, HONDA_PARAM_ALT_BRAKE) && !honda_bosch_radarless;
+  honda_alt_brake_msg = GET_FLAG(param, HONDA_PARAM_ALT_BRAKE);
 
   // radar disabled so allow gas/brakes
 #ifdef ALLOW_DEBUG
@@ -412,7 +410,7 @@ static const addr_checks* honda_bosch_init(uint16_t param) {
   return &honda_rx_checks;
 }
 
-static int honda_nidec_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
+static int honda_nidec_fwd_hook(int bus_num, int addr) {
   // fwd from car to camera. also fwd certain msgs from camera to car
   // 0xE4 is steering on all cars except CRV and RDX, 0x194 for CRV and RDX,
   // 0x1FA is brake control, 0x30C is acc hud, 0x33D is lkas hud
@@ -424,7 +422,6 @@ static int honda_nidec_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
 
   if (bus_num == 2) {
     // block stock lkas messages and stock acc messages (if OP is doing ACC)
-    int addr = GET_ADDR(to_fwd);
     bool is_lkas_msg = (addr == 0xE4) || (addr == 0x194) || (addr == 0x33D);
     bool is_acc_hud_msg = addr == 0x30C;
     bool is_brake_msg = addr == 0x1FA;
@@ -437,14 +434,13 @@ static int honda_nidec_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
   return bus_fwd;
 }
 
-static int honda_bosch_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
+static int honda_bosch_fwd_hook(int bus_num, int addr) {
   int bus_fwd = -1;
 
   if (bus_num == 0) {
     bus_fwd = 2;
   }
   if (bus_num == 2)  {
-    int addr = GET_ADDR(to_fwd);
     int is_lkas_msg = (addr == 0xE4) || (addr == 0xE5) || (addr == 0x33D) || (addr == 0x33DA) || (addr == 0x33DB);
     int is_acc_msg = ((addr == 0x1C8) || (addr == 0x30C)) && honda_bosch_radarless && honda_bosch_long;
     bool block_msg = is_lkas_msg || is_acc_msg;

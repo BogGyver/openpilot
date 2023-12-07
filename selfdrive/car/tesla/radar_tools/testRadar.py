@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import cereal.messaging as messaging
-from selfdrive.car.tesla.radar_interface import RadarInterface
-from selfdrive.car.tesla.values import CAR
-from selfdrive.car.interfaces import CarInterfaceBase
+from openpilot.selfdrive.car.tesla.radar_interface import RadarInterface
+from openpilot.selfdrive.car.tesla.values import CAR
+from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-from selfdrive.car.tesla.speed_utils.movingaverage import MovingAverage
+from openpilot.selfdrive.car.tesla.speed_utils.movingaverage import MovingAverage
 
 
 class FleetSpeed:

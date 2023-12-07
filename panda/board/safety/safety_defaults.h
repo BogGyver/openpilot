@@ -66,8 +66,8 @@ static int alloutput_tx_lin_hook(int lin_num, uint8_t *data, int len) {
 }
 
 static int alloutput_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
-  UNUSED(to_fwd);
   int bus_fwd = -1;
+  UNUSED(to_fwd);
 
   if (alloutput_passthrough) {
     if (bus_num == 0) {

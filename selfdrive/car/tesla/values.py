@@ -1,20 +1,21 @@
 # flake8: noqa
 
 from collections import namedtuple
+from enum import StrEnum
 from typing import Dict, List, Union
 
 from cereal import car
-from selfdrive.car.modules.CFG_module import load_bool_param
-from selfdrive.car import AngleRateLimit, dbc_dict
-from selfdrive.car.docs_definitions import CarInfo
-from selfdrive.car.fw_query_definitions import FwQueryConfig, Request, StdQueries
+from openpilot.selfdrive.car.modules.CFG_module import load_bool_param
+from openpilot.selfdrive.car import AngleRateLimit, dbc_dict
+from openpilot.selfdrive.car.docs_definitions import CarInfo
+from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig, Request, StdQueries
 
 Ecu = car.CarParams.Ecu
 
 Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])
 
 
-class CAR:
+class CAR(StrEnum):
   AP2_MODELS = 'TESLA AP2+ MODEL S'
   AP1_MODELS = 'TESLA AP1 MODEL S'
   PREAP_MODELS = 'TESLA PREAP MODEL S'

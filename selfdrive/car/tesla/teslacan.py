@@ -1,12 +1,12 @@
 import copy
 import crcmod
-from common.numpy_fast import clip
+from openpilot.common.numpy_fast import clip
 from ctypes import create_string_buffer
 import struct
-from common.conversions import Conversions as CV
-from selfdrive.car import make_can_msg
-from selfdrive.car.tesla.values import CANBUS, CarControllerParams, CAN_CHASSIS, CAN_POWERTRAIN
-from selfdrive.car.modules.CFG_module import load_bool_param
+from openpilot.common.conversions import Conversions as CV
+from openpilot.selfdrive.car import make_can_msg
+from openpilot.selfdrive.car.tesla.values import CarControllerParams, CAN_CHASSIS, CAN_POWERTRAIN
+from openpilot.selfdrive.car.modules.CFG_module import load_bool_param
 
 AUTOPILOT_DISABLED = load_bool_param("TinklaAutopilotDisabled",False)
 ENABLE_AEB_EVENTS = False

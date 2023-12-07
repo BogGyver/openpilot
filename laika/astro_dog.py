@@ -40,7 +40,6 @@ class AstroDog:
     for const in valid_const:
       if not isinstance(const, ConstellationId):
         raise TypeError(f"valid_const must be a list of ConstellationId, got {const}")
-  
     self.auto_update = auto_update
     self.cache_dir = cache_dir
     self.clear_old_ephemeris = clear_old_ephemeris
@@ -346,7 +345,6 @@ class AstroDog:
     el, az = get_el_az(rcv_pos, sat_pos)
     if el < 0.2:
       return None
-
     if self.dgps and not no_dgps:
       return self._get_delay_dgps(prn, rcv_pos, time)
 

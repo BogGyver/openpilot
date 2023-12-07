@@ -8,7 +8,7 @@
 #include <QProcess>
 
 #ifndef QCOM
-#include "selfdrive/ui/qt/offroad/networking.h"
+#include "selfdrive/ui/qt/network/networking.h"
 #endif
 #include "selfdrive/ui/qt/offroad/settings.h"
 #include "selfdrive/ui/qt/widgets/input.h"

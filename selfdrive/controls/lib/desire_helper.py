@@ -1,6 +1,6 @@
 from cereal import log
-from common.conversions import Conversions as CV
-from common.realtime import DT_MDL
+from openpilot.common.conversions import Conversions as CV
+from openpilot.common.realtime import DT_MDL
 
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
@@ -69,6 +69,7 @@ class DesireHelper:
 
         if not one_blinker or below_lane_change_speed:
           self.lane_change_state = LaneChangeState.off
+          self.lane_change_direction = LaneChangeDirection.none
         elif torque_applied and not blindspot_detected:
           self.lane_change_state = LaneChangeState.laneChangeStarting
 
@@ -76,16 +77,6 @@ class DesireHelper:
       elif self.lane_change_state == LaneChangeState.laneChangeStarting:
         # fade out over .5s
         self.lane_change_ll_prob = max(self.lane_change_ll_prob - 2 * DT_MDL, 0.0)
-        #stop if touching wheel or blinker in the other direction
-        if (
-          (carstate.rightBlinker and self.lane_change_direction == LaneChangeDirection.left)
-          or
-          (carstate.leftBlinker and self.lane_change_direction == LaneChangeDirection.right)
-          or
-          carstate.steeringPressed
-        ):
-          self.lane_change_direction = LaneChangeDirection.none
-          self.lane_change_state = LaneChangeState.off
 
         # 98% certainty
         if lane_change_prob < 0.02 and self.lane_change_ll_prob < 0.01:

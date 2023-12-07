@@ -1,20 +1,19 @@
-from common.numpy_fast import clip
 from opendbc.can.packer import CANPacker
-from selfdrive.car import apply_std_steer_angle_limits
-from selfdrive.car.tesla.teslacan import TeslaCAN
+from openpilot.selfdrive.car import apply_std_steer_angle_limits
+from openpilot.selfdrive.car.tesla.teslacan import TeslaCAN
 
-from selfdrive.car.tesla.HUD_module import HUDController
-from selfdrive.car.tesla.LONG_module import LONGController
-from selfdrive.car.modules.CFG_module import load_bool_param
-from opendbc.can.packer import CANPacker
-from selfdrive.car.tesla.values import DBC, CAR, CarControllerParams, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CruiseButtons
+from openpilot.selfdrive.car.tesla.HUD_module import HUDController
+from openpilot.selfdrive.car.tesla.LONG_module import LONGController
+from openpilot.selfdrive.car.modules.CFG_module import load_bool_param
+from openpilot.selfdrive.car.tesla.values import DBC, CAR, CarControllerParams, CAN_CHASSIS, CAN_AUTOPILOT, CAN_EPAS, CruiseButtons
 import cereal.messaging as messaging
-from common.numpy_fast import clip, interp
+from openpilot.common.numpy_fast import clip
 from cereal import log
 import datetime
-from common import realtime
+import time
 import math
 
+sec_since_boot = time.time
 
 def gen_solution(CS):
   fix = 0
@@ -111,7 +110,7 @@ class CarController:
       if self.gpsLocationTesla is None:
           self.gpsLocationTesla = messaging.pub_sock("gpsLocationTesla")
       sol = gen_solution(CS)
-      sol.logMonoTime = int(realtime.sec_since_boot() * 1e9)
+      sol.logMonoTime = int(sec_since_boot() * 1e9)
       self.gpsLocationTesla.send(sol.to_bytes())
 
     # Cancel when openpilot is not enabled anymore and no autopilot

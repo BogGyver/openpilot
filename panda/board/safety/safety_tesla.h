@@ -843,13 +843,6 @@ static void teslaPreAp_send_IC_messages(void) {
 bool tesla_stock_aeb = false;
 
 static int tesla_rx_hook(CANPacket_t *to_push) {
-  //update gmlan for giraffe control
-  if ((hw_type == HW_TYPE_WHITE_PANDA) || (hw_type == HW_TYPE_WHITE_PANDA))
-  {
-    //we're still in tesla safety mode, reset the timeout counter and make sure our output is enabled
-    set_gmlan_digital_output(0); //GMLAN_HIGH
-    reset_gmlan_switch_timeout(); 
-  };
 
   bool valid = false;
   if (has_ap_hardware) {
@@ -990,7 +983,7 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
 
         if(addr == 0x155) {
           // Vehicle speed: (0.01 * val) * KPH_TO_MPS
-          vehicle_speed = ((GET_BYTE(to_push, 5) << 8) | (GET_BYTE(to_push, 6))) * 0.01 / 3.6;
+          float vehicle_speed = ((GET_BYTE(to_push, 5) << 8) | (GET_BYTE(to_push, 6))) * 0.01 / 3.6;
           vehicle_moving = vehicle_speed > 0.;
         }
       }
@@ -1168,7 +1161,6 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
     // DAS_control: longitudinal control message
     if (tesla_longitudinal) {
       // No AEB events may be sent by openpilot
-      // No AEB events may be sent by openpilot
       int aeb_event = (GET_BYTE(to_send, 2) & 0x03U);
       if (aeb_event == 1) {
         violation = true;
@@ -1204,7 +1196,7 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
   return tx;
 }
 
-static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
+static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd ) {
   int bus_fwd = -1;
   int addr = GET_ADDR(to_fwd);
   int fwd_modded = -2;
@@ -1385,11 +1377,6 @@ static const addr_checks* tesla_init(uint16_t param) {
   enable_hao = GET_FLAG(param, FLAG_TESLA_ENABLE_HAO);
   ignore_stock_aeb = GET_FLAG(param, FLAG_TESLA_IGNORE_STOCK_AEB);
   controls_allowed = false;
-  //init gmlan for giraffe control
-  if ((hw_type == HW_TYPE_WHITE_PANDA) || (hw_type == HW_TYPE_WHITE_PANDA))
-  {
-    gmlan_switch_init(1);
-  };  
 
   if (tesla_powertrain) {
       return &tesla_pt_rx_checks;

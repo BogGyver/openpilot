@@ -1,10 +1,10 @@
-from common.numpy_fast import clip, interp
-from selfdrive.car.tesla.values import CruiseButtons,TESLA_MIN_ACCEL
-from common.conversions import Conversions as CV
+from openpilot.common.numpy_fast import clip, interp
+from openpilot.selfdrive.car.tesla.values import CruiseButtons,TESLA_MIN_ACCEL
+from openpilot.common.conversions import Conversions as CV
 import time
-from common.params import Params
-from selfdrive.car.modules.CFG_module import load_float_param
-from selfdrive.car.tesla.tunes import PEDAL_BP, PEDAL_V, PEDAL_DI_PRESSED,PEDAL_DI_MIN, PEDAL_CALIBRATED, transform_di_to_pedal
+from openpilot.common.params import Params
+from openpilot.selfdrive.car.modules.CFG_module import load_float_param
+from openpilot.selfdrive.car.tesla.tunes import PEDAL_BP, PEDAL_V, PEDAL_DI_PRESSED,PEDAL_DI_MIN, PEDAL_CALIBRATED, transform_di_to_pedal
 from cereal import car
 
 ACCEL_MAX = 2.5  #0.6m/s2 * 36 = ~ 0 -> 50mph in 6 seconds

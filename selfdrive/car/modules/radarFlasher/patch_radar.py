@@ -8,7 +8,7 @@ from tqdm import tqdm
 from enum import IntEnum
 import time
 
-from selfdrive.car.modules.CFG_module import load_bool_param,load_str_param
+from openpilot.selfdrive.car.modules.CFG_module import load_bool_param,load_str_param
 from panda import Panda
 from panda.python.uds import UdsClient, MessageTimeoutError, NegativeResponseError, _negative_response_codes
 from panda.python.uds import SESSION_TYPE, ACCESS_TYPE, ROUTINE_CONTROL_TYPE, ROUTINE_IDENTIFIER_TYPE, RESET_TYPE,DATA_IDENTIFIER_TYPE

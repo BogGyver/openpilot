@@ -23,7 +23,6 @@ struct CarEvent @0x9b1657f34caf3ad3 {
   enum EventName @0xbaa8c5d505f727de {
     canError @0;
     steerUnavailable @1;
-    brakeUnavailable @2;
     wrongGear @4;
     doorOpen @5;
     seatbeltNotLatched @6;
@@ -43,6 +42,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     overheat @19;
     calibrationIncomplete @20;
     calibrationInvalid @21;
+    calibrationRecalibrating @117;
     controlsMismatch @22;
     pcmEnable @23;
     pcmDisable @24;
@@ -63,7 +63,6 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     driverUnresponsive @45;
     belowSteerSpeed @46;
     lowBattery @48;
-    vehicleModelInvalid @50;
     accFaulted @51;
     sensorDataInvalid @52;
     commIssue @53;
@@ -106,7 +105,6 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     roadCameraError @100;
     driverCameraError @101;
     wideRoadCameraError @102;
-    localizerMalfunction @103;
     highCpuUsage @105;
     cruiseMismatch @106;
     lkasDisabled @107;
@@ -114,10 +112,10 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     controlsdLagging @112;
     resumeBlocked @113;
     steerTimeLimit @115;
-    pccEnabled @116;
-    pccDisabled @117;
-    pccError @118;
-    accEnabled @119;
+    pccEnabled @132;
+    pccDisabled @133;
+    pccError @135;
+    accEnabled @134;
     accDisabled @120;
     iBoosterBrakeNotOk @121;
     brakeWipeLow @122;
@@ -132,6 +130,11 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     expModeDisabled @131;
     
     
+    vehicleSensorsInvalid @116;
+    locationdTemporaryError @103;
+    locationdPermanentError @118;
+    paramsdTemporaryError @50;
+    paramsdPermanentError @119;
 
     radarCanErrorDEPRECATED @15;
     communityFeatureDisallowedDEPRECATED @62;
@@ -156,6 +159,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     startupOneplusDEPRECATED @82;
     startupFuzzyFingerprintDEPRECATED @97;
     noTargetDEPRECATED @25;
+    brakeUnavailableDEPRECATED @2;
   }
 }
 
@@ -183,6 +187,8 @@ struct CarState {
   gas @3 :Float32;        # this is user pedal only
   gasPressed @4 :Bool;    # this is user pedal only
 
+  engineRpm @46 :Float32;
+
   # brake pedal, 0.0-1.0
   brake @5 :Float32;      # this is user pedal only
   brakePressed @6 :Bool;  # this is user pedal only
@@ -203,6 +209,7 @@ struct CarState {
   stockFcw @31 :Bool;
   espDisabled @32 :Bool;
   accFaulted @42 :Bool;
+  carFaultedNonCritical @47 :Bool;  # some ECU is faulted, but car remains controllable
 
   # cruise state
   cruiseState @10 :CruiseState;
@@ -228,10 +235,10 @@ struct CarState {
   rightBlindspot @34 :Bool; # Is there something blocking the right lane change
 
   # follow distance
-  followDistanceS @46 :UInt8;
+  followDistanceS @48 :UInt8;
 
   #can error
-  canErrorId @47 :UInt32;
+  canErrorId @49 :UInt32;
 
   fuelGauge @41 :Float32; # battery or fuel tank level from 0.0 to 1.0
   charging @43 :Bool;
@@ -469,6 +476,7 @@ struct CarParams {
 
   # things we can derive
   rotationalInertia @22 :Float32;    # [kg*m2] body rotational inertia
+  tireStiffnessFactor @72 :Float32;  # scaling factor used in calculating tireStiffness[Front,Rear]
   tireStiffnessFront @23 :Float32;   # [N/rad] front tire coeff of stiff
   tireStiffnessRear @24 :Float32;    # [N/rad] rear tire coeff of stiff
 
@@ -476,8 +484,8 @@ struct CarParams {
   lateralParams @48 :LateralParams;
   lateralTuning :union {
     pid @26 :LateralPIDTuning;
-    indi @27 :LateralINDITuning;
-    lqr @40 :LateralLQRTuning;
+    indiDEPRECATED @27 :LateralINDITuning;
+    lqrDEPRECATED @40 :LateralLQRTuning;
     torque @67 :LateralTorqueTuning;
   }
 
@@ -603,13 +611,14 @@ struct CarParams {
     noOutput @19;  # like silent but without silent CAN TXs
     hondaBosch @20;
     volkswagenPq @21;
-    subaruLegacy @22;  # pre-Global platform
+    subaruPreglobal @22;  # pre-Global platform
     hyundaiLegacy @23;
     hyundaiCommunity @24;
     volkswagenMlb @25;
     hongqi @26;
     body @27;
     hyundaiCanfd @28;
+    volkswagenMqbEvo @29;
   }
 
   enum SteerControlType {
@@ -647,6 +656,7 @@ struct CarParams {
     engine @4;
     unknown @5;
     transmission @8; # Transmission Control Module
+    hybrid @18; # hybrid control unit, e.g. Chrysler's HCP, Honda's IMA Control Unit, Toyota's hybrid control computer
     srs @9; # airbag
     gateway @10; # can gateway
     hud @11; # heads up display
@@ -657,6 +667,9 @@ struct CarParams {
     cornerRadar @21;
     hvac @20;
     parkingAdas @7;  # parking assist system ECU, e.g. Toyota's IPAS, Hyundai's RSPA, etc.
+    epb @22;  # electronic parking brake
+    telematics @23;
+    body @24;  # body control module
 
     # Toyota only
     dsu @6;
@@ -665,11 +678,7 @@ struct CarParams {
     vsa @13; # Vehicle Stability Assist
     programmedFuelInjection @14;
 
-    # Chrysler only
-    hcp @18;  # Hybrid Control Processor
-
     debug @17;
-    unused @22;
   }
 
   enum FingerprintSource {

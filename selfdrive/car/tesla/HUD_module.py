@@ -1,7 +1,7 @@
-from common.numpy_fast import clip
-from selfdrive.car.tesla.values import CAR, CAN_CHASSIS
+from openpilot.common.numpy_fast import clip
+from openpilot.selfdrive.car.tesla.values import CAR, CAN_CHASSIS
 from cereal import car
-from common.conversions import Conversions as CV
+from openpilot.common.conversions import Conversions as CV
 import numpy as np
 
 IC_LANE_SCALE = 0.5

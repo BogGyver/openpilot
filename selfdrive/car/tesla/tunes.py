@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from enum import Enum
-from selfdrive.car.tesla.values import TESLA_MIN_ACCEL
-from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
+from openpilot.selfdrive.car.tesla.values import TESLA_MIN_ACCEL
+from openpilot.selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
 
 
 class LongTunes(Enum):

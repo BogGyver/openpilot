@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 import sys
-from common.basedir import BASEDIR
+from openpilot.common.basedir import BASEDIR
 
 # messages reserved for CAN based ignition (see can_ignition_hook function in panda/board/drivers/can)
 # (addr, len)

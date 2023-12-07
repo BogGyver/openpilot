@@ -54,7 +54,7 @@ void comms_endpoint2_write(uint8_t *data, uint32_t len) {
   UNUSED(data);
   UNUSED(len);
 }
-void usb_cb_ep3_out_complete(void) {}
+void refresh_can_tx_slots_available(void) {}
 
 int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
   unsigned int resp_len = 0;
@@ -126,8 +126,8 @@ uint32_t current_index = 0;
 #define GAS_NO_VALUE 0U
 
 // two independent values
-uint32_t gas_set_0 = GAS_NO_VALUE;
-uint32_t gas_set_1 = GAS_NO_VALUE;
+uint16_t gas_set_0 = GAS_NO_VALUE;
+uint16_t gas_set_1 = GAS_NO_VALUE;
 
 uint8_t state = FAULT_STARTUP;
 const uint8_t crc_poly = 0xD5U;  // standard crc8
@@ -188,8 +188,8 @@ void CAN1_RX0_IRQ_Handler(void) {
       } else {
         // wrong checksum = fault
         state = FAULT_BAD_CHECKSUM;
-        gas_set_0 = GAS_NO_VALUE;
-        gas_set_1 = GAS_NO_VALUE;
+        //gas_set_0 = GAS_NO_VALUE;
+        //gas_set_1 = GAS_NO_VALUE;
       }
     }
     // next
@@ -199,8 +199,8 @@ void CAN1_RX0_IRQ_Handler(void) {
 
 void CAN1_SCE_IRQ_Handler(void) {
   state = FAULT_SCE;
-  gas_set_0 = GAS_NO_VALUE;
-  gas_set_1 = GAS_NO_VALUE;
+  //gas_set_0 = GAS_NO_VALUE;
+  //gas_set_1 = GAS_NO_VALUE;
   llcan_clear_send(CAN);
 }
 
@@ -238,8 +238,8 @@ void TIM3_IRQ_Handler(void) {
   } else {
     // old can packet hasn't sent!
     state = FAULT_SEND;
-    gas_set_0 = GAS_NO_VALUE;
-    gas_set_1 = GAS_NO_VALUE;
+    // gas_set_0 = GAS_NO_VALUE;
+    // gas_set_1 = GAS_NO_VALUE;
     #ifdef DEBUG
       print("CAN MISS\n");
     #endif
@@ -254,8 +254,8 @@ void TIM3_IRQ_Handler(void) {
   // up timeout for gas set
   if (timeout == MAX_TIMEOUT) {
     state = FAULT_TIMEOUT;
-    gas_set_0 = GAS_NO_VALUE;
-    gas_set_1 = GAS_NO_VALUE;
+    //gas_set_0 = GAS_NO_VALUE;
+    //gas_set_1 = GAS_NO_VALUE;
   } else {
     timeout += 1U;
   }
@@ -265,11 +265,11 @@ void TIM3_IRQ_Handler(void) {
 
 void pedal(void) {
   // read/write
-  pdl0 = adc_get(ADCCHAN_ACCEL0);
-  pdl1 = adc_get(ADCCHAN_ACCEL1);
+  pdl0 = adc_get_raw(ADCCHAN_ACCEL0);
+  pdl1 = adc_get_raw(ADCCHAN_ACCEL1);
 
   // write the pedal to the DAC
-  if ((state == NO_FAULT) && (gas_set_0 != GAS_NO_VALUE) && (gas_set_1 != GAS_NO_VALUE)) {
+  if (state == NO_FAULT) {
     dac_set(0, MAX(gas_set_0, pdl0));
     dac_set(1, MAX(gas_set_1, pdl1));
   } else {
@@ -287,7 +287,6 @@ int main(void) {
   REGISTER_INTERRUPT(CAN1_TX_IRQn, CAN1_TX_IRQ_Handler, CAN_INTERRUPT_RATE, FAULT_INTERRUPT_RATE_CAN_1)
   REGISTER_INTERRUPT(CAN1_RX0_IRQn, CAN1_RX0_IRQ_Handler, CAN_INTERRUPT_RATE, FAULT_INTERRUPT_RATE_CAN_1)
   REGISTER_INTERRUPT(CAN1_SCE_IRQn, CAN1_SCE_IRQ_Handler, CAN_INTERRUPT_RATE, FAULT_INTERRUPT_RATE_CAN_1)
-  
   // Should run at around 732Hz (see init below)
   REGISTER_INTERRUPT(TIM3_IRQn, TIM3_IRQ_Handler, 1000U, FAULT_INTERRUPT_RATE_TIM3)
 
@@ -300,8 +299,8 @@ int main(void) {
 
   // init board
   current_board->init();
-  gas_set_0 = GAS_NO_VALUE;
-  gas_set_1 = GAS_NO_VALUE;
+  //gas_set_0 = GAS_NO_VALUE;
+  //gas_set_1 = GAS_NO_VALUE;
 #ifdef PEDAL_USB
   // enable USB
   usb_init();
@@ -324,7 +323,7 @@ int main(void) {
   timer_init(TIM3, 15);
   NVIC_EnableIRQ(TIM3_IRQn);
 
-  watchdog_init();
+  watchdog_init(WATCHDOG_50_MS);
 
   print("**** INTERRUPTS ON ****\n");
   enable_interrupts();

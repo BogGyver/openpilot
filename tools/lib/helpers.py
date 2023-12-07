@@ -1,3 +1,4 @@
+import bz2
 import datetime
 
 TIME_FMT = "%Y-%m-%d--%H-%M-%S"
@@ -18,3 +19,13 @@ def timestamp_to_datetime(t: str) -> datetime.datetime:
     Convert an openpilot route timestamp to a python datetime
   """
   return datetime.datetime.strptime(t, TIME_FMT)
+
+
+def save_log(dest, log_msgs, compress=True):
+  dat = b"".join(msg.as_builder().to_bytes() for msg in log_msgs)
+
+  if compress:
+    dat = bz2.compress(dat)
+
+  with open(dest, "wb") as f:
+    f.write(dat)

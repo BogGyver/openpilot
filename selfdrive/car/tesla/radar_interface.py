@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 from cereal import car
 from opendbc.can.parser import CANParser
-from selfdrive.car.tesla.values import DBC, CAR, CAN_RADAR
-from selfdrive.car.interfaces import RadarInterfaceBase
-from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
+from openpilot.selfdrive.car.tesla.values import DBC, CAR, CAN_RADAR
+from openpilot.selfdrive.car.interfaces import RadarInterfaceBase
+from openpilot.selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
 
 
 RADAR_MSGS_A = list(range(0x310, 0x36E, 3))
@@ -14,13 +14,7 @@ OBJECT_MIN_PROBABILITY = 50.0
 
 def get_radar_can_parser(CP):
   # Status messages
-  signals = [
-    ('RADC_HWFail', 'TeslaRadarSguInfo'),
-    ('RADC_SGUFail', 'TeslaRadarSguInfo'),
-    ('RADC_SensorDirty', 'TeslaRadarSguInfo'),
-  ]
-
-  checks = [
+  messages = [
     ('TeslaRadarSguInfo', 10),
   ]
 
@@ -29,33 +23,17 @@ def get_radar_can_parser(CP):
   for i in range(NUM_POINTS):
     msg_id_a = RADAR_MSGS_A[i]
     msg_id_b = RADAR_MSGS_B[i]
-
-    # There is a bunch more info in the messages,
-    # but these are the only things actually used in openpilot
-    signals.extend([
-      ('LongDist', msg_id_a),
-      ('LongSpeed', msg_id_a),
-      ('LatDist', msg_id_a),
-      ('LongAccel', msg_id_a),
-      ('Meas', msg_id_a),
-      ('Tracked', msg_id_a),
-      ('Index', msg_id_a),
-      ('ProbExist', msg_id_a),
-      ('LatSpeed', msg_id_b),
-      ('Index2', msg_id_b),
-    ])
-
-    checks.extend([
+    messages.extend([
       (msg_id_a, 8),
       (msg_id_b, 8),
     ])
 
-  return CANParser(DBC[CP.carFingerprint]['radar'], signals, checks, CAN_RADAR[CP.carFingerprint])
+  return CANParser(DBC[CP.carFingerprint]['radar'], messages, CAN_RADAR)
 
 class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
     super().__init__(CP)
-    self.rcp = None
+    self.rcp = get_radar_can_parser(CP)
     self.updated_messages = set()
     self.track_id = 0
     self.trigger_msg = RADAR_MSGS_B[-1]
@@ -68,9 +46,8 @@ class RadarInterface(RadarInterfaceBase):
     self.ignoreRadarSGUError = load_bool_param("TinklaTeslaRadarIgnoreSGUError",False)
     self.radarUpsideDown = load_bool_param("TinklaUseTeslaRadarUpsideDown",False)
 
-
   def update(self, can_strings):
-    if self.rcp is None or self.radar_off_can:
+    if self.rcp is None:
       return super().update(None)
 
     values = self.rcp.update_strings(can_strings)

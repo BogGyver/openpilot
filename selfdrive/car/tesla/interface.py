@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 from cereal import car
-from selfdrive.car.tesla.values import CAR, CruiseButtons, CAN_AP_POWERTRAIN
-from selfdrive.car import STD_CARGO_KG, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, get_safety_config
-from selfdrive.car.interfaces import CarInterfaceBase
-from selfdrive.car.modules.CFG_module import load_bool_param, load_float_param, load_str_param
+from openpilot.selfdrive.car.tesla.values import CAR, CruiseButtons
+from openpilot.selfdrive.car import STD_CARGO_KG, scale_rot_inertia, get_safety_config
+from openpilot.selfdrive.car.interfaces import CarInterfaceBase
+from openpilot.selfdrive.car.modules.CFG_module import load_bool_param, load_float_param, load_str_param
 from panda import Panda
-from selfdrive.car.tesla.tunes import LongTunes, set_long_tune, ACCEL_LOOKUP_BP, ACCEL_MAX_LOOKUP_V, ACCEL_MIN_LOOKUP_V, ACCEL_REG_LOOKUP_V, ACCEL_AP_MAX_LOOKUP_V
-from common.numpy_fast import interp
+from openpilot.selfdrive.car.tesla.tunes import LongTunes, set_long_tune, ACCEL_LOOKUP_BP, ACCEL_MAX_LOOKUP_V, ACCEL_MIN_LOOKUP_V, ACCEL_REG_LOOKUP_V, ACCEL_AP_MAX_LOOKUP_V
+from openpilot.common.numpy_fast import interp
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
@@ -37,7 +37,7 @@ class CarInterface(CarInterfaceBase):
     
 
   @staticmethod
-  def _get_params(ret,candidate, fingerprint=gen_empty_fingerprint(), car_fw=None, experimental_long=True):
+  def _get_params(ret,candidate, fingerprint, car_fw, experimental_long, docs):
     if load_str_param("TinklaAPForceFingerprint", "") == "TESLA PREAP MODEL S":
       candidate = CAR.PREAP_MODELS
     ret.carName = "tesla"      
@@ -119,7 +119,6 @@ class CarInterface(CarInterfaceBase):
     if (candidate == CAR.PREAP_MODELS and load_bool_param("TinklaHasIBooster",False)) or (candidate != CAR.PREAP_MODELS):
       safetyParam = safetyParam | Panda.FLAG_TESLA_HAS_IBOOSTER
     ret.rotationalInertia = scale_rot_inertia(ret.mass, ret.wheelbase)
-    ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront)
     ret.radarUnavailable = False
     if candidate == CAR.PREAP_MODELS:
       ret.radarUnavailable = not load_bool_param("TinklaUseTeslaRadar",False)

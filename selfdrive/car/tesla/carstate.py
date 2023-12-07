@@ -1,13 +1,13 @@
 import copy
 from collections import deque
 from cereal import car
-from selfdrive.car.tesla.values import DBC, CANBUS, GEAR_MAP, DOORS, BUTTONS, CAR, CruiseButtons, CruiseState, WHEEL_RADIUS
-from selfdrive.car.interfaces import CarStateBase
+from openpilot.selfdrive.car.tesla.values import DBC, GEAR_MAP, DOORS, BUTTONS, CAR, CruiseButtons, CruiseState, WHEEL_RADIUS
+from openpilot.selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
-from common.conversions import Conversions as CV
-from selfdrive.car.modules.CFG_module import load_bool_param,load_float_param, load_str_param
-from selfdrive.car.tesla.tunes import transform_pedal_to_di,PEDAL_DI_PRESSED
+from openpilot.common.conversions import Conversions as CV
+from openpilot.selfdrive.car.modules.CFG_module import load_bool_param,load_float_param, load_str_param
+from openpilot.selfdrive.car.tesla.tunes import transform_pedal_to_di,PEDAL_DI_PRESSED
 
 
 

@@ -1,6 +1,6 @@
 import numpy as np
-from common.numpy_fast import clip, interp
-from selfdrive.car.tesla.speed_utils.movingaverage import MovingAverage
+from openpilot.common.numpy_fast import clip, interp
+from openpilot.selfdrive.car.tesla.speed_utils.movingaverage import MovingAverage
 
 
 def apply_deadzone(error, deadzone):

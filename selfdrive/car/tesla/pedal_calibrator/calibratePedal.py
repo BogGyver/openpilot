@@ -3,15 +3,15 @@
 import cereal.messaging as messaging
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
-from selfdrive.car.tesla.values import DBC, CAR, CAN_CHASSIS
+from openpilot.selfdrive.car.tesla.values import DBC, CAR, CAN_CHASSIS
 from ctypes import create_string_buffer
-from common.realtime import Ratekeeper
+from openpilot.common.realtime import Ratekeeper
 import struct
 from cereal import car
 from panda import Panda
 import time
 import sys
-from selfdrive.car.modules.CFG_module import save_bool_param,save_float_param,load_bool_param
+from openpilot.selfdrive.car.modules.CFG_module import save_bool_param,save_float_param,load_bool_param
 
 MAX_PEDAL_ERRORS = 10
 
