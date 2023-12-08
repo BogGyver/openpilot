@@ -19,7 +19,7 @@
 #include "selfdrive/ui/qt/widgets/ssh_keys.h"
 #include "common/params.h"
 #include "common/util.h"
-#include "selfdrive/hardware/hw.h"
+#include "system/hardware/hw.h"
 #include "selfdrive/ui/qt/home.h"
 
 
