@@ -67,7 +67,7 @@ class CarInterface(CarInterfaceBase):
     safetyParam = 0
     ret.wheelSpeedFactor = 1.
     if candidate in (CAR.AP2_MODELS, CAR.AP1_MODELS):
-      ret.mass = 2100. + STD_CARGO_KG
+      ret.mass = 2100.
       ret.wheelbase = 2.959
       ret.centerToFront = ret.wheelbase * 0.5
       ret.steerRatio = 15

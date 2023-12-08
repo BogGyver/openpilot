@@ -128,9 +128,9 @@ void setup_timer(void) {
   REGISTER_INTERRUPT(GMLAN_BITBANG_TIMER_IRQ, GMLAN_BITBANG_IRQ_Handler, 40000U, FAULT_INTERRUPT_RATE_GMLAN)
 
   // setup
-  register_set(&(GMLAN_BITBANG_TIMER->PSC), (APB1_TIMER_FREQ-1U), 0xFFFFU);    // Tick on 1 us
-  register_set(&(GMLAN_BITBANG_TIMER->CR1), TIM_CR1_CEN, 0x3FU); // Enable
-  register_set(&(GMLAN_BITBANG_TIMER->ARR), (30U-1U), 0xFFFFU);   // 33.3 kbps
+  register_set(&(TIM12->PSC), (APB1_TIMER_FREQ-1U), 0xFFFFU);    // Tick on 1 us
+  register_set(&(TIM12->CR1), TIM_CR1_CEN, 0x3FU); // Enable
+  register_set(&(TIM12->ARR), (30U-1U), 0xFFFFU);   // 33.3 kbps
 
   // in case it's disabled
   NVIC_EnableIRQ(GMLAN_BITBANG_TIMER_IRQ);

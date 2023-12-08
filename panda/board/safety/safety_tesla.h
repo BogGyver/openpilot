@@ -137,25 +137,21 @@ const CanMsg TESLA_PT_TX_MSGS[] = {
 };
 #define TESLA_PT_TX_LEN (sizeof(TESLA_PT_TX_MSGS) / sizeof(TESLA_PT_TX_MSGS[0]))
 
-AddrCheckStruct  TESLA_AP_RX_CHECKS[] = {
-    {.msg = {{0x370, 0, 8, .expected_timestep = 40000U}, { 0 }, { 0 }}},   // EPAS_sysStatus (25Hz)
-    {.msg = {{0x108, 0, 8, .expected_timestep = 10000U}, { 0 }, { 0 }}},   // DI_torque1 (100Hz)
-    {.msg = {{0x118, 0, 6, .expected_timestep = 10000U}, { 0 }, { 0 }}},   // DI_torque2 (100Hz)
-    {.msg = {{0x20a, 0, 8, .expected_timestep = 20000U}, { 0 }, { 0 }}},   // BrakeMessage (50Hz)
-    {.msg = {{0x368, 0, 8, .expected_timestep = 100000U}, { 0 }, { 0 }}},  // DI_state (10Hz)
-    {.msg = {{0x318, 0, 8, .expected_timestep = 100000U}, { 0 }, { 0 }}},  // GTW_carState (10Hz)
+RxCheck  TESLA_AP_RX_CHECKS[] = {
+    {.msg = {{0x370, 0, 8, .frequency = 25U}, { 0 }, { 0 }}},   // EPAS_sysStatus (25Hz)
+    {.msg = {{0x108, 0, 8, .frequency = 100U}, { 0 }, { 0 }}},   // DI_torque1 (100Hz)
+    {.msg = {{0x118, 0, 6, .frequency = 100U}, { 0 }, { 0 }}},   // DI_torque2 (100Hz)
+    {.msg = {{0x20a, 0, 8, .frequency = 50U}, { 0 }, { 0 }}},   // BrakeMessage (50Hz)
+    {.msg = {{0x368, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},  // DI_state (10Hz)
+    {.msg = {{0x318, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},  // GTW_carState (10Hz)
   };
-#define TESLA_AP_RX_LEN (sizeof(TESLA_AP_RX_CHECKS) / sizeof(TESLA_AP_RX_CHECKS[0]))
-addr_checks tesla_rx_checks = {TESLA_AP_RX_CHECKS, TESLA_AP_RX_LEN};
 
-AddrCheckStruct TESLA_PT_RX_CHECKS[] = {
-  {.msg = {{0x106, 0, 8, .expected_timestep = 10000U}, { 0 }, { 0 }}},   // DI_torque1 (100Hz)
-  {.msg = {{0x116, 0, 6, .expected_timestep = 10000U}, { 0 }, { 0 }}},   // DI_torque2 (100Hz)
-  {.msg = {{0x1f8, 0, 8, .expected_timestep = 20000U}, { 0 }, { 0 }}},   // BrakeMessage (50Hz)
-  {.msg = {{0x256, 0, 8, .expected_timestep = 100000U}, { 0 }, { 0 }}},  // DI_state (10Hz)
+RxCheck TESLA_PT_RX_CHECKS[] = {
+  {.msg = {{0x106, 0, 8, .frequency = 100U}, { 0 }, { 0 }}},   // DI_torque1 (100Hz)
+  {.msg = {{0x116, 0, 6, .frequency = 100U}, { 0 }, { 0 }}},   // DI_torque2 (100Hz)
+  {.msg = {{0x1f8, 0, 8, .frequency = 50U}, { 0 }, { 0 }}},   // BrakeMessage (50Hz)
+  {.msg = {{0x256, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},  // DI_state (10Hz)
 };
-#define TESLA_PT_RX_LEN (sizeof(TESLA_PT_RX_CHECKS) / sizeof(TESLA_PT_RX_CHECKS[0]))
-addr_checks tesla_pt_rx_checks = {TESLA_PT_RX_CHECKS, TESLA_PT_RX_LEN};
 
 CanMsgFwd  TESLA_AP_FWD_MODDED[] = {
     //used for control
@@ -226,18 +222,17 @@ const CanMsg TESLA_PREAP_TX_MSGS[] = {
   };
 #define TESLA_PREAP_TX_LEN (sizeof(TESLA_PREAP_TX_MSGS) / sizeof(TESLA_PREAP_TX_MSGS[0]))
 
-AddrCheckStruct  TESLA_PREAP_RX_CHECKS[] = {
-    {.msg = {{0x370, 0, 8, .expected_timestep = 40000U}, { 0 }, { 0 }}},   // EPAS_sysStatus (25Hz)
-    {.msg = {{0x108, 0, 8, .expected_timestep = 10000U}, { 0 }, { 0 }}},   // DI_torque1 (100Hz)
-    {.msg = {{0x118, 0, 6, .expected_timestep = 10000U}, { 0 }, { 0 }}},   // DI_torque2 (100Hz)
-    {.msg = {{0x155, 0, 8, .expected_timestep = 20000U}, { 0 }, { 0 }}},   // ESP_B (50Hz)
-    {.msg = {{0x20a, 0, 8, .expected_timestep = 20000U}, { 0 }, { 0 }}},   // BrakeMessage (50Hz)
-    {.msg = {{0x368, 0, 8, .expected_timestep = 100000U}, { 0 }, { 0 }}},  // DI_state (10Hz)
-    {.msg = {{0x318, 0, 8, .expected_timestep = 100000U}, { 0 }, { 0 }}},  // GTW_carState (10Hz)
-    {.msg = {{0x45, 0, 8, .expected_timestep = 100000U}, { 0 }, { 0 }}},  // STW_ACTN_RQ (10Hz)
+RxCheck  TESLA_PREAP_RX_CHECKS[] = {
+    {.msg = {{0x370, 0, 8, .frequency = 25U}, { 0 }, { 0 }}},   // EPAS_sysStatus (25Hz)
+    {.msg = {{0x108, 0, 8, .frequency = 100U}, { 0 }, { 0 }}},   // DI_torque1 (100Hz)
+    {.msg = {{0x118, 0, 6, .frequency = 100U}, { 0 }, { 0 }}},   // DI_torque2 (100Hz)
+    {.msg = {{0x155, 0, 8, .frequency = 50U}, { 0 }, { 0 }}},   // ESP_B (50Hz)
+    {.msg = {{0x20a, 0, 8, .frequency = 50U}, { 0 }, { 0 }}},   // BrakeMessage (50Hz)
+    {.msg = {{0x368, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},  // DI_state (10Hz)
+    {.msg = {{0x318, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},  // GTW_carState (10Hz)
+    {.msg = {{0x45, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},  // STW_ACTN_RQ (10Hz)
   };
-#define TESLA_PREAP_RX_LEN (sizeof(TESLA_PREAP_RX_CHECKS) / sizeof(TESLA_PREAP_RX_CHECKS[0]))
-addr_checks tesla_preap_rx_checks = {TESLA_PREAP_RX_CHECKS, TESLA_PREAP_RX_LEN};
+
 
 CanMsgFwd TESLA_PREAP_FWD_MODDED[] = {
   //steering
@@ -842,16 +837,9 @@ static void teslaPreAp_send_IC_messages(void) {
 
 bool tesla_stock_aeb = false;
 
-static int tesla_rx_hook(CANPacket_t *to_push) {
+static void tesla_rx_hook(CANPacket_t *to_push) {
 
   bool valid = false;
-  if (has_ap_hardware) {
-    valid = addr_safety_check(to_push, tesla_powertrain ? (&tesla_pt_rx_checks) : (&tesla_rx_checks),
-                                 NULL, NULL, NULL, NULL);
-  } else {
-    valid = addr_safety_check(to_push, (&tesla_preap_rx_checks),
-                                 NULL, NULL, NULL, NULL);
-  }
 
   int bus = GET_BUS(to_push);
   int addr = GET_ADDR(to_push);
@@ -987,6 +975,7 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
           vehicle_moving = vehicle_speed > 0.;
         }
       }
+    }
 
       if(addr == (tesla_powertrain ? 0x106 : 0x108)) {
         // Gas pressed - only for ACC for now
@@ -1065,6 +1054,7 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
         pedalCan = bus;
       }
     }
+  
 
 
     if (tesla_powertrain) {
@@ -1076,12 +1066,9 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
     }
   }
 
-  return valid;
-}
 
-static int tesla_tx_hook(CANPacket_t *to_send) {
-
-  int tx = 1;
+static bool tesla_tx_hook(CANPacket_t *to_send) {
+  bool tx = true;
   int addr = GET_ADDR(to_send);
   bool violation = false;
 
@@ -1178,7 +1165,7 @@ static int tesla_tx_hook(CANPacket_t *to_send) {
   }
 
   if (violation) {
-    tx = 0;
+    tx = false;
   }
 
   if (has_ap_hardware) {
@@ -1360,7 +1347,7 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd ) {
   return bus_fwd;
 }
 
-static const addr_checks* tesla_init(uint16_t param) {
+static safety_config tesla_init(uint16_t param) {
   bosch_radar_vin_learn = GET_FLAG(param, FLAG_TESLA_RADAR_VIN_LEARN);
   tesla_powertrain = GET_FLAG(param, FLAG_TESLA_POWERTRAIN);
   tesla_longitudinal = GET_FLAG(param, FLAG_TESLA_LONG_CONTROL);
@@ -1379,12 +1366,12 @@ static const addr_checks* tesla_init(uint16_t param) {
   controls_allowed = false;
 
   if (tesla_powertrain) {
-      return &tesla_pt_rx_checks;
+      return BUILD_SAFETY_CFG(TESLA_PT_RX_CHECKS,TESLA_PT_TX_MSGS);
   } else {
     if (has_ap_hardware) {
-      return &tesla_rx_checks;
+      return BUILD_SAFETY_CFG(TESLA_AP_RX_CHECKS,TESLA_AP_TX_MSGS);
     } else {
-      return &tesla_preap_rx_checks;
+      return BUILD_SAFETY_CFG(TESLA_PREAP_RX_CHECKS,TESLA_PREAP_TX_MSGS);
     }
   }
 }
@@ -1393,6 +1380,5 @@ const safety_hooks tesla_hooks = {
   .init = tesla_init,
   .rx = tesla_rx_hook,
   .tx = tesla_tx_hook,
-  .tx_lin = nooutput_tx_lin_hook,
   .fwd = tesla_fwd_hook,
 };

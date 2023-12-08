@@ -398,7 +398,7 @@ class CarState(CarStateBase):
     ret.buttonEvents = buttonEvents
 
     # Doors
-    ret.doorOpen = any([(self.can_define.dv["GTW_carState"][door].get(int(cp.vl["GTW_carState"][door]), "OPEN") == "OPEN") for door in DOORS])
+    ret.doorOpen = any((self.can_define.dv["GTW_carState"][door].get(int(cp.vl["GTW_carState"][door]), "OPEN") == "OPEN") for door in DOORS)
 
     # Blinkers are used for Comma ALCA
     # we use tap to trigger Comma ALCA so only engage when blinkig but not pressed
@@ -534,262 +534,71 @@ class CarState(CarStateBase):
     pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
     has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
     use_tesla_gps = True
-    signals = [
-      # sig_name, sig_address, default
-      ("DI_pedalPos", "DI_torque1"),
-      ("DI_torqueMotor", "DI_torque1"),
-      ("DI_brakePedal", "DI_torque2"),
-      ("DI_vehicleSpeed","DI_torque2"),
-      ("StW_AnglHP", "STW_ANGLHP_STAT"),
-      ("StW_AnglHP_Spd", "STW_ANGLHP_STAT"),
-      ("DI_cruiseState", "DI_state"),
-      ("DI_digitalSpeed", "DI_state"),
-      ("DI_speedUnits", "DI_state"),
-      ("DI_cruiseSet", "DI_state"),
-      ("DI_gear", "DI_torque2"),
-      ("DOOR_STATE_FL", "GTW_carState"),
-      ("DOOR_STATE_FR", "GTW_carState"),
-      ("DOOR_STATE_RL", "GTW_carState"),
-      ("DOOR_STATE_RR", "GTW_carState"),
-      ("DOOR_STATE_FrontTrunk", "GTW_carState"),
-      ("BOOT_STATE", "GTW_carState"),
-      ("GTW_performanceConfig","GTW_carConfig"),
-      ("GTW_fourWheelDrive", "GTW_carConfig"),
-      ("GTW_autopilot", "GTW_carConfig"),
-      ("BC_indicatorLStatus", "GTW_carState"),
-      ("BC_indicatorRStatus", "GTW_carState"),
-      # info for speed limit
-      ("UI_mapSpeedLimitUnits","UI_gpsVehicleSpeed"),
-      ("UI_userSpeedOffset","UI_gpsVehicleSpeed"),
-      ("UI_mppSpeedLimit","UI_gpsVehicleSpeed"),
-      ("UI_mapSpeedLimit","UI_driverAssistMapData"),
-      ("UI_roadSign","UI_driverAssistRoadSign"),
-      ("UI_baseMapSpeedLimitMPS","UI_driverAssistRoadSign"),
-      ("UI_meanFleetSplineSpeedMPS","UI_driverAssistRoadSign"),
-      ("UI_meanFleetSplineAccelMPS2","UI_driverAssistRoadSign"),
-      ("UI_medianFleetSpeedMPS","UI_driverAssistRoadSign"),
-      ("UI_splineLocConfidence","UI_driverAssistRoadSign"),
-      ("UI_splineID","UI_driverAssistRoadSign"),
-      ("UI_rampType","UI_driverAssistRoadSign"),
-      # We copy this whole message when spamming cancel
-      ("SpdCtrlLvr_Stat", "STW_ACTN_RQ"),
-      ("VSL_Enbl_Rq", "STW_ACTN_RQ"),
-      ("SpdCtrlLvrStat_Inv", "STW_ACTN_RQ"),
-      ("DTR_Dist_Rq", "STW_ACTN_RQ"),
-      ("TurnIndLvr_Stat", "STW_ACTN_RQ"),
-      ("HiBmLvr_Stat", "STW_ACTN_RQ"),
-      ("WprWashSw_Psd", "STW_ACTN_RQ"),
-      ("WprWash_R_Sw_Posn_V2", "STW_ACTN_RQ"),
-      ("StW_Lvr_Stat", "STW_ACTN_RQ"),
-      ("StW_Cond_Flt", "STW_ACTN_RQ"),
-      ("StW_Cond_Psd", "STW_ACTN_RQ"),
-      ("HrnSw_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw00_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw01_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw02_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw03_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw04_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw05_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw06_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw07_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw08_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw09_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw10_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw11_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw12_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw13_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw14_Psd", "STW_ACTN_RQ"),
-      ("StW_Sw15_Psd", "STW_ACTN_RQ"),
-      ("WprSw6Posn", "STW_ACTN_RQ"),
-      ("MC_STW_ACTN_RQ", "STW_ACTN_RQ"),
-      ("CRC_STW_ACTN_RQ", "STW_ACTN_RQ"),
-      ("Long_Acceleration","ESP_ACC"),
-      ("Lat_Acceleration","ESP_ACC"),
-    ]
-
-    checks = [
+    messages = [
       # sig_address, frequency
       ("DI_torque1", 20),
       ("DI_torque2", 20),
       ("STW_ANGLHP_STAT", 20),
       ("DI_state", 10),
       ("STW_ACTN_RQ", 10),
-      ("GTW_carState", 10),     
+      ("GTW_carState", 10),
+      ("GTW_carConfig", ),
+      ("UI_gpsVehicleSpeed", ),    
+      ("UI_driverAssistMapData", ),
+      ("UI_driverAssistRoadSign", ),
+      ("ESP_ACC", ), 
     ]
 
-    signals += [
-      ("ESP_vehicleSpeed", "ESP_B"),
-      ("ESP_wheelPulseCountFrL", "ESP_B"),
-      ("ESP_wheelPulseCountFrR", "ESP_B"),
-      ("ESP_wheelPulseCountReL", "ESP_B"),
-      ("ESP_wheelPulseCountReR", "ESP_B"),
-      ("driverBrakeStatus", "BrakeMessage"),
+    messages += [
+      ("ESP_B", 0),
+      ("BrakeMessage", 0),
     ]
-    checks += [
-      ("ESP_B", 50),
-      ("BrakeMessage", 50),
-    ]
+   
     
     if not (CP.carFingerprint in [CAR.AP1_MODELX, CAR.AP2_MODELX]):
-      signals += [
-        ("SDM_bcklDrivStatus", "SDM1"),
-      ]
-
-      checks += [
-        #("SDM1", 10),
+      messages += [
+        ("SDM1", 0),
       ]
 
     if (use_tesla_gps):
-      signals += [
-        ("UI_gpsVehicleHeading", "UI_gpsVehicleSpeed"),
-        ("UI_gpsHDOP", "UI_gpsVehicleSpeed"),
-        ("UI_gpsVehicleSpeed", "UI_gpsVehicleSpeed"),
-        ("MCU_gpsAccuracy", "MCU_locationStatus"),
-        ("MCU_latitude", "MCU_locationStatus"),
-        ("MCU_longitude", "MCU_locationStatus"),
-      ]
-      checks += [
-        #("UI_gpsVehicleSpeed", 0),
+      messages += [
+        ("UI_gpsVehicleSpeed", 0),
       ]
 
     if (CP.carFingerprint in [CAR.AP1_MODELX, CAR.AP2_MODELX]):
-      signals += [
-        ("RCM_buckleDriverStatus","RCM_status"),
-      ]
-
-      checks += [
-        #("RCM_status",10),
+      messages += [
+        ("RCM_status",0),
       ]
 
     if (CP.carFingerprint in [CAR.PREAP_MODELS]):
-      signals += [
-        ("GTW_ESP1Counter","GTW_ESP1"),
-        ("GTW_hillStartAssistEnabled","GTW_ESP1"),
-        ("GTW_brakeDiscWipeRequest","GTW_ESP1"),
-        ("GTW_brakeFluidLow","GTW_ESP1"),
-        ("GTW_pedalCalRxEnable","GTW_ESP1"),
-        ("GTW_ambientTemperature","GTW_ESP1"),
-        ("GTW_pedalCalTargetCurve","GTW_ESP1"),
-        ("GTW_espModeSwitch","GTW_ESP1"),
-        ("GTW_ESP1Checksum","GTW_ESP1"),
-      ]
-
-      checks += [
+      messages += [
         ("GTW_ESP1",0),
       ]
 
-    signals += [
-      ("EPAS_handsOnLevel", "EPAS_sysStatus"),
-      ("EPAS_torsionBarTorque", "EPAS_sysStatus"),
-      ("EPAS_internalSAS", "EPAS_sysStatus"),
-      ("EPAS_eacStatus", "EPAS_sysStatus"),
-      ("EPAS_eacErrorCode", "EPAS_sysStatus"),
-      ("PARK_sdiBlindSpotRight","PARK_status2"),
-      ("PARK_sdiBlindSpotLeft","PARK_status2"),
-    ]
-
-    checks += [      
+    messages += [      
       ("EPAS_sysStatus", 5),
-      #("PARK_status2",4),
+      ("PARK_status2",0),
     ]
 
     if has_ibooster_ecu:
-      signals += [
-        ("BrakeApplied", "ECU_BrakeStatus"),
-        ("BrakeOK", "ECU_BrakeStatus"),
-        ("DriverBrakeApplied", "ECU_BrakeStatus"),
-        ("BrakePedalPosition", "ECU_BrakeStatus"),
-      ]
-
-      checks += [
+      messages += [
         ("ECU_BrakeStatus", 0) #not safe but removed due to CAN Error messages at Seb's suggestion
       ]
 
     if enablePedal and pedalcanzero:
-      signals += [
-        ("INTERCEPTOR_GAS", "GAS_SENSOR"),
-        ("INTERCEPTOR_GAS2", "GAS_SENSOR"),
-        ("STATE", "GAS_SENSOR"),
-        ("IDX", "GAS_SENSOR"),
-      ]
-
-      checks += [
+      messages += [
         ("GAS_SENSOR", 0)
       ]
 
-    return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 0, enforce_checks=False)
+    return CANParser(DBC[CP.carFingerprint]['chassis'], messages, 0, enforce_checks=False)
 
   @staticmethod
   def get_cam_can_parser(CP):
     enablePedal = load_bool_param("TinklaEnablePedal",False)
     pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
-    signals = []
-    checks = []
     
     if CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP2_MODELS, CAR.AP1_MODELX, CAR.AP2_MODELX]:
-      signals = [
-        # sig_name, sig_address, default
-        #we need the steering control counter
-        ("DAS_steeringControlCounter", "DAS_steeringControl"),
-        # We copy this whole message when we change the status for IC
-        ("DAS_autopilotState", "DAS_status"),
-        ("DAS_blindSpotRearLeft", "DAS_status"),
-        ("DAS_blindSpotRearRight", "DAS_status"),
-        ("DAS_fusedSpeedLimit", "DAS_status"),
-        ("DAS_suppressSpeedWarning", "DAS_status"),
-        ("DAS_summonObstacle", "DAS_status"),
-        ("DAS_summonClearedGate", "DAS_status"),
-        ("DAS_visionOnlySpeedLimit", "DAS_status"),
-        ("DAS_heaterState", "DAS_status"),
-        ("DAS_forwardCollisionWarning", "DAS_status"),
-        ("DAS_autoparkReady", "DAS_status"),
-        ("DAS_autoParked", "DAS_status"),
-        ("DAS_autoparkWaitingForBrake", "DAS_status"),
-        ("DAS_summonFwdLeashReached", "DAS_status"),
-        ("DAS_summonRvsLeashReached", "DAS_status"),
-        ("DAS_sideCollisionAvoid", "DAS_status"),
-        ("DAS_sideCollisionWarning", "DAS_status"),
-        ("DAS_sideCollisionInhibit", "DAS_status"),
-        ("DAS_csaState", "DAS_status2"),
-        ("DAS_laneDepartureWarning", "DAS_status"),
-        ("DAS_fleetSpeedState", "DAS_status"),
-        ("DAS_autopilotHandsOnState", "DAS_status"),
-        ("DAS_autoLaneChangeState", "DAS_status"),
-        ("DAS_summonAvailable", "DAS_status"),
-        ("DAS_statusCounter", "DAS_status"),
-        ("DAS_statusChecksum", "DAS_status"),
-        ("DAS_headlightRequest", "DAS_bodyControls"),
-        ("DAS_hazardLightRequest", "DAS_bodyControls"),
-        ("DAS_wiperSpeed", "DAS_bodyControls"),
-        ("DAS_turnIndicatorRequest", "DAS_bodyControls"),
-        ("DAS_highLowBeamDecision", "DAS_bodyControls"),
-        ("DAS_highLowBeamOffReason", "DAS_bodyControls"),
-        ("DAS_turnIndicatorRequestReason", "DAS_bodyControls"),
-        ("DAS_bodyControlsCounter", "DAS_bodyControls"),
-        ("DAS_bodyControlsChecksum", "DAS_bodyControls"),
-        ("DAS_accSpeedLimit", "DAS_status2"),
-        ("DAS_pmmObstacleSeverity", "DAS_status2"),
-        ("DAS_pmmLoggingRequest", "DAS_status2"),
-        ("DAS_activationFailureStatus", "DAS_status2"),
-        ("DAS_pmmUltrasonicsFaultReason", "DAS_status2"),
-        ("DAS_pmmRadarFaultReason", "DAS_status2"),
-        ("DAS_pmmSysFaultReason", "DAS_status2"),
-        ("DAS_pmmCameraFaultReason", "DAS_status2"),
-        ("DAS_ACC_report", "DAS_status2"),
-        ("DAS_lssState", "DAS_status"),
-        ("DAS_radarTelemetry", "DAS_status2"),
-        ("DAS_robState", "DAS_status2"),
-        ("DAS_driverInteractionLevel", "DAS_status2"),
-        ("DAS_ppOffsetDesiredRamp", "DAS_status2"),
-        ("DAS_longCollisionWarning", "DAS_status2"),
-        ("DAS_status2Counter", "DAS_status2"),
-        ("DAS_status2Checksum", "DAS_status2"),
-        ("DAS_eacState", "DAS_pscControl"),
-        ("DAS_pscParkState", "DAS_pscControl"),
-        ("DAS_aebEvent","DAS_control"),
-      ]
-
-      checks = [
+      messages = [
         # sig_address, frequency
         ("DAS_status", 2),
         ("DAS_status2",2),
@@ -801,15 +610,8 @@ class CarState(CarStateBase):
 
     if CP.carFingerprint in [CAR.PREAP_MODELS]:
       if enablePedal and not pedalcanzero:
-        signals += [
-          ("INTERCEPTOR_GAS", "GAS_SENSOR"),
-          ("INTERCEPTOR_GAS2", "GAS_SENSOR"),
-          ("STATE", "GAS_SENSOR"),
-          ("IDX", "GAS_SENSOR"),
-        ]
-
-        checks += [
+        messages += [
           ("GAS_SENSOR", 0)
         ]
 
-    return CANParser(DBC[CP.carFingerprint]['chassis'], signals, checks, 2,enforce_checks=False)
+    return CANParser(DBC[CP.carFingerprint]['chassis'], messages, 2,enforce_checks=False)

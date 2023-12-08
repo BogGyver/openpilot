@@ -5,4 +5,4 @@ cd ..
 scons -u -j$(nproc)
 cd pedal
 
-./enter_canloader.py ../obj/pedal.bin.signed
+../../tests/pedal/enter_canloader.py obj/pedal.bin.signed

@@ -1,5 +1,4 @@
-# flake8: noqa
-
+# ruff: noqa: E501
 from collections import namedtuple
 from enum import StrEnum
 from typing import Dict, List, Union
@@ -16,10 +15,10 @@ Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])
 
 
 class CAR(StrEnum):
-  AP2_MODELS = 'TESLA AP2+ MODEL S'
-  AP1_MODELS = 'TESLA AP1 MODEL S'
   PREAP_MODELS = 'TESLA PREAP MODEL S'
+  AP1_MODELS = 'TESLA AP1 MODEL S'
   AP1_MODELX = 'TESLA AP1 MODEL X'
+  AP2_MODELS = 'TESLA AP2+ MODEL S'
   AP2_MODELX = 'TESLA AP2+ MODEL X'
 
 

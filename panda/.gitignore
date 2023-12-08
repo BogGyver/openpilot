@@ -12,7 +12,6 @@ a.out
 .#*
 dist/
 pandacan.egg-info/
-board/obj/
 obj/
 examples/output.csv
 .DS_Store

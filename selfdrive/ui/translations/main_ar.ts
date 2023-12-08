@@ -275,33 +275,6 @@
     </message>
 </context>
 <context>
-    <name>DriveStats</name>
-    <message>
-        <source>Drives</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Hours</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>ALL TIME</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>PAST WEEK</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>KM</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Miles</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>DriverViewScene</name>
     <message>
         <source>camera starting</source>
@@ -391,6 +364,9 @@
         <source>Select</source>
         <translation>اختيار</translation>
     </message>
+</context>
+<context>
+    <name>MultiOptionDialog</name>
     <message>
         <source>Cancel</source>
         <translation>إلغاء</translation>
@@ -410,6 +386,9 @@
         <source>for &quot;%1&quot;</source>
         <translation>من أجل &quot;%1&quot;</translation>
     </message>
+</context>
+<context>
+    <name>OffroadAlert</name>
     <message>
         <source>Wrong password</source>
         <translation>كلمة مرور خاطئة</translation>
@@ -626,10 +605,6 @@
         <source>ft</source>
         <translation>قدم</translation>
     </message>
-    <message>
-        <source>Tinkla OP</source>
-        <translation type="unfinished"></translation>
-    </message>
 </context>
 <context>
     <name>Reset</name>
@@ -693,18 +668,6 @@ This may take up to a minute.</source>
     <message>
         <source>Software</source>
         <translation>البرنامج</translation>
-    </message>
-    <message>
-        <source>Tinkla</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Tesla preAP</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Tesla</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

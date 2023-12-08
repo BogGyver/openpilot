@@ -275,33 +275,6 @@
     </message>
 </context>
 <context>
-    <name>DriveStats</name>
-    <message>
-        <source>Drives</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Hours</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>ALL TIME</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>PAST WEEK</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>KM</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Miles</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>DriverViewScene</name>
     <message>
         <source>camera starting</source>
@@ -571,7 +544,7 @@
     </message>
     <message>
         <source>openpilot</source>
-        <translation type="vanished">openpilot</translation>
+        <translation>openpilot</translation>
     </message>
     <message numerus="yes">
         <source>%n minute(s) ago</source>
@@ -609,10 +582,6 @@
     <message>
         <source>ft</source>
         <translation>ft</translation>
-    </message>
-    <message>
-        <source>Tinkla OP</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -677,18 +646,6 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
     <message>
         <source>Software</source>
         <translation>Logiciel</translation>
-    </message>
-    <message>
-        <source>Tinkla</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Tesla preAP</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Tesla</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

@@ -47,9 +47,6 @@ git clean -xdff
 echo "[-] copying files T=$SECONDS"
 cd $SOURCE_DIR
 cp -pR --parents $(cat release/files_*) $TARGET_DIR/
-if [ ! -z "$EXTRA_FILES" ]; then
-  cp -pR --parents $EXTRA_FILES $TARGET_DIR/
-fi
 
 # append source commit hash and build date to version
 GIT_HASH=$(git --git-dir=$SOURCE_DIR/.git rev-parse --short HEAD)

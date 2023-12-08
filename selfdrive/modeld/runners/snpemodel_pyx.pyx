@@ -6,9 +6,9 @@ from libcpp cimport bool
 from libcpp.string cimport string
 
 from .snpemodel cimport SNPEModel as cppSNPEModel
-from openpilot.selfdrive.modeld.models.commonmodel_pyx cimport CLContext
-from openpilot.selfdrive.modeld.runners.runmodel_pyx cimport RunModel
-from openpilot.selfdrive.modeld.runners.runmodel cimport RunModel as cppRunModel
+from selfdrive.modeld.models.commonmodel_pyx cimport CLContext
+from selfdrive.modeld.runners.runmodel_pyx cimport RunModel
+from selfdrive.modeld.runners.runmodel cimport RunModel as cppRunModel
 
 os.environ['ADSP_LIBRARY_PATH'] = "/data/pythonpath/third_party/snpe/dsp/"
 
