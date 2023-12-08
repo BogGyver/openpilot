@@ -403,8 +403,6 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
         background: none;
         font-size: 40px;
         font-weight: 500;
-        padding-top: %1px;
-        padding-bottom: %1px;
       }
       QPushButton:checked {
         color: white;
