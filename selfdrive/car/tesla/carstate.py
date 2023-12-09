@@ -542,11 +542,12 @@ class CarState(CarStateBase):
       ("DI_state", 10),
       ("STW_ACTN_RQ", 10),
       ("GTW_carState", 10),
-      ("GTW_carConfig", ),
-      ("UI_gpsVehicleSpeed", ),    
-      ("UI_driverAssistMapData", ),
-      ("UI_driverAssistRoadSign", ),
-      ("ESP_ACC", ), 
+      ("GTW_carConfig",0 ),
+      ("UI_gpsVehicleSpeed", 0),    
+      ("UI_driverAssistMapData", 0),
+      ("UI_driverAssistRoadSign", 0),
+      ("ESP_ACC", 0), 
+      ("MCU_locationStatus", 0),
     ]
 
     messages += [
@@ -560,10 +561,10 @@ class CarState(CarStateBase):
         ("SDM1", 0),
       ]
 
-    if (use_tesla_gps):
-      messages += [
-        ("UI_gpsVehicleSpeed", 0),
-      ]
+    # if (use_tesla_gps):
+    #   messages += [
+    #     ("UI_gpsVehicleSpeed", 0),
+    #   ]
 
     if (CP.carFingerprint in [CAR.AP1_MODELX, CAR.AP2_MODELX]):
       messages += [
@@ -590,12 +591,13 @@ class CarState(CarStateBase):
         ("GAS_SENSOR", 0)
       ]
 
-    return CANParser(DBC[CP.carFingerprint]['chassis'], messages, 0, enforce_checks=False)
+    return CANParser(DBC[CP.carFingerprint]['chassis'], messages, 0) #, enforce_checks=False)
 
   @staticmethod
   def get_cam_can_parser(CP):
     enablePedal = load_bool_param("TinklaEnablePedal",False)
     pedalcanzero = load_bool_param("TinklaPedalCanZero",False)
+    messages = []
     
     if CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP2_MODELS, CAR.AP1_MODELX, CAR.AP2_MODELX]:
       messages = [
@@ -611,7 +613,7 @@ class CarState(CarStateBase):
     if CP.carFingerprint in [CAR.PREAP_MODELS]:
       if enablePedal and not pedalcanzero:
         messages += [
-          ("GAS_SENSOR", 0)
+          ("GAS_SENSOR", 0),
         ]
 
-    return CANParser(DBC[CP.carFingerprint]['chassis'], messages, 2,enforce_checks=False)
+    return CANParser(DBC[CP.carFingerprint]['chassis'], messages, 2) #,enforce_checks=False)

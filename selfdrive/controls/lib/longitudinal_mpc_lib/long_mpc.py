@@ -342,7 +342,7 @@ class LongitudinalMpc:
     self.cruise_min_a = min_a
     self.max_a = max_a
 
-  def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard):
+  def update(self, carstate, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard):
     if carstate.followDistanceS != 255:
       self.t_follow = 0.7 + float(carstate.followDistanceS) * 0.2
     else:

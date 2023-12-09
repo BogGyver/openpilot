@@ -24,6 +24,7 @@ cdef class CANParser:
   cdef readonly:
     dict vl
     dict vl_all
+    int error_address
     dict ts_nanos
     string dbc_name
 
