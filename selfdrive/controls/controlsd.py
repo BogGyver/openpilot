@@ -28,6 +28,7 @@ from openpilot.selfdrive.controls.lib.events import Events, ET
 from openpilot.selfdrive.controls.lib.alertmanager import AlertManager, set_offroad_alert
 from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
 from openpilot.system.hardware import HARDWARE
+from openpilot.selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
 
 SOFT_DISABLE_TIME = 3  # seconds
 LDW_MIN_SPEED = 31 * CV.MPH_TO_MS
@@ -54,6 +55,8 @@ ACTUATOR_FIELDS = tuple(car.CarControl.Actuators.schema.fields.keys())
 ACTIVE_STATES = (State.enabled, State.softDisabling, State.overriding)
 ENABLED_STATES = (State.preEnabled, *ACTIVE_STATES)
 
+E2E_COUNT = 150
+E2E_DISTANCE = 50
 
 class Controls:
   def __init__(self, CI=None):
@@ -199,6 +202,18 @@ class Controls:
     # controlsd is driven by can recv, expected at 100Hz
     self.rk = Ratekeeper(100, print_delay_threshold=None)
     self.prof = Profiler(False)  # off by default
+    self.hideGpsMsg = load_bool_param("TinklaHideGps",False)
+    self.experimentalModeMaxSpeedMS =  load_float_param("TinklaExpModeMaxSpeedMS",22.3)
+    self.experimentalModeMinSpeedMS =  load_float_param("TinklaExpModeMinSpeedMS",8.0)
+    self.experimentalModeSpeedAutoswitch = load_bool_param("TinklaExpModelAutoswitch",False)
+    self.experimentalModeHasLead = False
+    self.experimentalModeHasLead_last = False
+    self.experimentalModeHasLead_count = 0
+    self.experimentalModeSpeed = True
+    self.experimentalModeSpeed_last = True
+    self.experimentalModeSpeed_count = 0
+    self.experimentalMode_event = None
+    self.experimentalMode_event_counter = 0
 
   def set_initial_state(self):
     if REPLAY:
@@ -416,7 +431,8 @@ class Controls:
     if not SIMULATION or REPLAY:
       if not self.sm['liveLocationKalman'].gpsOK and self.sm['liveLocationKalman'].inputsOK and (self.distance_traveled > 1000):
         # Not show in first 1 km to allow for driving out of garage. This event shows after 5 minutes
-        self.events.add(EventName.noGps)
+        if not self.hideGpsMsg:
+          self.events.add(EventName.noGps)
 
       if self.sm['modelV2'].frameDropPerc > 20:
         self.events.add(EventName.modeldLagging)

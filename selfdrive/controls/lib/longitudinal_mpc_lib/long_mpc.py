@@ -359,7 +359,7 @@ class LongitudinalMpc:
     lead_0_obstacle = lead_xv_0[:,0] + get_stopped_equivalence_factor(lead_xv_0[:,1])
     lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1])
 
-    self.params[:,0] = ACCEL_MIN
+    self.params[:,0] = MIN_ACCEL
     self.params[:,1] = self.max_a
 
     # Update in ACC mode or ACC/e2e blend
