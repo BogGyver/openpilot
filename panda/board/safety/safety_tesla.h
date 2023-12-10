@@ -837,7 +837,7 @@ bool tesla_stock_aeb = false;
 
 static void tesla_rx_hook(CANPacket_t *to_push) {
 
-  bool valid = false;
+  bool valid = true;
 
   int bus = GET_BUS(to_push);
   int addr = GET_ADDR(to_push);
@@ -923,7 +923,7 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
               // activate openpilot
               // TODO: uncomment the if to use double pull to activate
               //if (current_car_time <= time_at_last_stalk_pull + 1 && current_car_time != -1 && time_at_last_stalk_pull != -1) {
-              controls_allowed = true;
+              pcm_cruise_check(true);
               //cruise_engaged_prev = true;
               //}
               time_at_last_stalk_pull = current_car_time;
@@ -931,7 +931,7 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
             else if (ap_lever_position == 1)
             { // push towards the back
               // deactivate openpilot
-              controls_allowed = false;
+              pcm_cruise_check(false);
               //cruise_engaged_prev = false;
             }
             //if using pedal, send a cancel immediately to cancel the CC
@@ -1062,11 +1062,14 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
   if (tesla_powertrain) {
     // 0x2bf: DAS_control should not be received on bus 0
     generic_rx_checks((addr == 0x2bf) && (bus == 0));
-  } else {
+  } else  if (has_ap_hardware) {
     // 0x488: DAS_steeringControl should not be received on bus 0
     generic_rx_checks((addr == 0x488) && (bus == 0));
+  } else {
+    generic_rx_checks(false); //TODOBB: do we need to check anything here? PreAP has no relay
   }
 }
+
 
 
 static bool tesla_tx_hook(CANPacket_t *to_send) {

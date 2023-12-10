@@ -47,7 +47,7 @@ class RadarInterface(RadarInterfaceBase):
     self.radarUpsideDown = load_bool_param("TinklaUseTeslaRadarUpsideDown",False)
 
   def update(self, can_strings):
-    if self.rcp is None:
+    if self.rcp is None or self.radar_off_can:
       return super().update(None)
 
     values = self.rcp.update_strings(can_strings)
