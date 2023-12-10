@@ -1,15 +1,14 @@
 void can_send(CANPacket_t *to_push, uint8_t bus_number, bool skip_tx_hook);
 
-const int TESLA_DEG_TO_CAN = 10;
 const SteeringLimits TESLA_STEERING_LIMITS = {
-  .angle_deg_to_can = 100,
+  .angle_deg_to_can = 10,
   .angle_rate_up_lookup = {
     {0., 5., 15.},
-    {5., .8, .15}
+    {10., 1.6, .3}
   },
   .angle_rate_down_lookup = {
     {0., 5., 15.},
-    {5., 3.5, .4}
+    {10., 7., .8}
   },
 };
 
@@ -220,17 +219,16 @@ const CanMsg TESLA_PREAP_TX_MSGS[] = {
     //ibooster vacuum switch
     {0x555, 0, 6}, //iBooster vacuum switch fake code
   };
-#define TESLA_PREAP_TX_LEN (sizeof(TESLA_PREAP_TX_MSGS) / sizeof(TESLA_PREAP_TX_MSGS[0]))
 
 RxCheck  TESLA_PREAP_RX_CHECKS[] = {
     {.msg = {{0x370, 0, 8, .frequency = 25U}, { 0 }, { 0 }}},   // EPAS_sysStatus (25Hz)
     {.msg = {{0x108, 0, 8, .frequency = 100U}, { 0 }, { 0 }}},   // DI_torque1 (100Hz)
     {.msg = {{0x118, 0, 6, .frequency = 100U}, { 0 }, { 0 }}},   // DI_torque2 (100Hz)
-    {.msg = {{0x155, 0, 8, .frequency = 50U}, { 0 }, { 0 }}},   // ESP_B (50Hz)
+    //{.msg = {{0x155, 0, 8, .frequency = 50U}, { 0 }, { 0 }}},   // ESP_B (50Hz)
     {.msg = {{0x20a, 0, 8, .frequency = 50U}, { 0 }, { 0 }}},   // BrakeMessage (50Hz)
     {.msg = {{0x368, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},  // DI_state (10Hz)
     {.msg = {{0x318, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},  // GTW_carState (10Hz)
-    {.msg = {{0x45, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},  // STW_ACTN_RQ (10Hz)
+    //{.msg = {{0x45, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},  // STW_ACTN_RQ (10Hz)
   };
 
 
@@ -926,13 +924,15 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
               // TODO: uncomment the if to use double pull to activate
               //if (current_car_time <= time_at_last_stalk_pull + 1 && current_car_time != -1 && time_at_last_stalk_pull != -1) {
               controls_allowed = true;
+              cruise_engaged_prev = true;
               //}
               time_at_last_stalk_pull = current_car_time;
             }
             else if (ap_lever_position == 1)
             { // push towards the back
               // deactivate openpilot
-              controls_allowed = false;
+              //controls_allowed = false;
+              cruise_engaged_prev = false;
             }
             //if using pedal, send a cancel immediately to cancel the CC
             if ((pedalEnabled == 1) && (ap_lever_position > 1)) {
@@ -971,100 +971,101 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
 
         if(addr == 0x155) {
           // Vehicle speed: (0.01 * val) * KPH_TO_MPS
-          float vehicle_speed = ((GET_BYTE(to_push, 5) << 8) | (GET_BYTE(to_push, 6))) * 0.01 / 3.6;
-          vehicle_moving = vehicle_speed > 0.;
+          float speed = ((GET_BYTE(to_push, 5) << 8) | (GET_BYTE(to_push, 6))) * 0.01 / 3.6;
+          vehicle_moving = ABS(speed) > 0.1;
+          update_sample(&vehicle_speed, ROUND(speed * VEHICLE_SPEED_FACTOR));
         }
       }
     }
 
-      if(addr == (tesla_powertrain ? 0x106 : 0x108)) {
-        // Gas pressed - only for ACC for now
-        if (has_ap_hardware && !has_ap_disabled) {
-          gas_pressed = ((GET_BYTE(to_push, 6) != 0) && (!enable_hao));
-        }
-      }
-
-      if(addr == (tesla_powertrain ? 0x1f8 : 0x20a)) {
-        // Brake pressed - only for ACC for now
-        if (has_ap_hardware && !has_ap_disabled) {
-          brake_pressed = ((GET_BYTE(to_push, 0) & 0x0C) >> 2 != 1);
-        }
-      }
-
-      if(addr == (tesla_powertrain ? 0x256 : 0x368)) {
-        // Cruise state
-        int cruise_state = (GET_BYTE(to_push, 1) >> 4);
-        bool cruise_engaged = (cruise_state == 2) ||  // ENABLED
-                              (cruise_state == 3) ||  // STANDSTILL
-                              (cruise_state == 4) ||  // OVERRIDE
-                              (cruise_state == 6) ||  // PRE_FAULT
-                              (cruise_state == 7);    // PRE_CANCEL
-        if (has_ap_hardware && !has_ap_disabled) {
-          if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
-            time_cruise_engaged = microsecond_timer_get();
-          }
-          
-          if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
-            if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
-              controls_allowed = true;
-            }
-            time_cruise_engaged = 0;
-          }
-          
-          if(!cruise_engaged || epas_inhibited) {
-            controls_allowed = false;
-          }
-        }
-        cruise_engaged_prev = cruise_engaged;
+    if(addr == (tesla_powertrain ? 0x106 : 0x108)) {
+      // Gas pressed - only for ACC for now
+      if (has_ap_hardware && !has_ap_disabled) {
+        gas_pressed = ((GET_BYTE(to_push, 6) != 0) && (!enable_hao));
       }
     }
 
-    if (bus == 2) {
-      if ((addr == 0x399) && (has_ap_hardware)) {
-        // Autopilot status
-        int autopilot_status = (GET_BYTE(to_push, 0) & 0xF);
-        autopilot_enabled = (autopilot_status == 3) ||  // ACTIVE_1
-                            (autopilot_status == 4);// ||  // ACTIVE_2
-                            //(autopilot_status == 5);    // ACTIVE_NAVIGATE_ON_AUTOPILOT
-        if (autopilot_enabled || eac_enabled || autopark_enabled) {
+    if(addr == (tesla_powertrain ? 0x1f8 : 0x20a)) {
+      // Brake pressed - only for ACC for now
+      if (has_ap_hardware && !has_ap_disabled) {
+        brake_pressed = ((GET_BYTE(to_push, 0) & 0x0C) >> 2 != 1);
+      }
+    }
+
+    if(addr == (tesla_powertrain ? 0x256 : 0x368)) {
+      // Cruise state
+      int cruise_state = (GET_BYTE(to_push, 1) >> 4);
+      bool cruise_engaged = (cruise_state == 2) ||  // ENABLED
+                            (cruise_state == 3) ||  // STANDSTILL
+                            (cruise_state == 4) ||  // OVERRIDE
+                            (cruise_state == 6) ||  // PRE_FAULT
+                            (cruise_state == 7);    // PRE_CANCEL
+      if (has_ap_hardware && !has_ap_disabled) {
+        if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
+          time_cruise_engaged = microsecond_timer_get();
+        }
+        
+        if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
+          if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
+            controls_allowed = true;
+          }
+          time_cruise_engaged = 0;
+        }
+        
+        if(!cruise_engaged || epas_inhibited) {
           controls_allowed = false;
         }
       }
-
-      if ((addr == 0x219) && (has_ap_hardware)) {
-        //autopark and eac status
-        int psc_status = ((GET_BYTE(to_push, 0) & 0xF0) >> 4);
-        int eac_status = (GET_BYTE(to_push, 1) & 0x07);
-        eac_enabled = (eac_status == 2);
-        autopark_enabled = (psc_status == 14) || ((psc_status >= 1) && (psc_status <=8));
-        if (autopilot_enabled || eac_enabled || autopark_enabled) {
-          controls_allowed = false;
-        }
-      }
-
-      if (addr == 0x2B9) {
-        //AP1 DAS_control
-        last_acc_status = ((GET_BYTE(to_push, 1)>> 4) & 0xF);
-      }
-    }
-
-    if ((addr == 0x552) && ((bus == 2) || (bus == 0))) {
-      pedalPressed = (int)((((GET_BYTES_04(to_push) & 0xFF00) >> 8) + ((GET_BYTES_04(to_push) & 0xFF) << 8)) * 0.050796813 -22.85856576);
-      if (pedalCan == -1) {
-        pedalCan = bus;
-      }
-    }
-  
-
-
-    if (tesla_powertrain) {
-      // 0x2bf: DAS_control should not be received on bus 0
-      generic_rx_checks((addr == 0x2bf) && (bus == 0));
-    } else {
-      // 0x488: DAS_steeringControl should not be received on bus 0
-      generic_rx_checks((addr == 0x488) && (bus == 0));
+      cruise_engaged_prev = cruise_engaged;
     }
   }
+
+  if (bus == 2) {
+    if ((addr == 0x399) && (has_ap_hardware)) {
+      // Autopilot status
+      int autopilot_status = (GET_BYTE(to_push, 0) & 0xF);
+      autopilot_enabled = (autopilot_status == 3) ||  // ACTIVE_1
+                          (autopilot_status == 4);// ||  // ACTIVE_2
+                          //(autopilot_status == 5);    // ACTIVE_NAVIGATE_ON_AUTOPILOT
+      if (autopilot_enabled || eac_enabled || autopark_enabled) {
+        controls_allowed = false;
+      }
+    }
+
+    if ((addr == 0x219) && (has_ap_hardware)) {
+      //autopark and eac status
+      int psc_status = ((GET_BYTE(to_push, 0) & 0xF0) >> 4);
+      int eac_status = (GET_BYTE(to_push, 1) & 0x07);
+      eac_enabled = (eac_status == 2);
+      autopark_enabled = (psc_status == 14) || ((psc_status >= 1) && (psc_status <=8));
+      if (autopilot_enabled || eac_enabled || autopark_enabled) {
+        controls_allowed = false;
+      }
+    }
+
+    if (addr == 0x2B9) {
+      //AP1 DAS_control
+      last_acc_status = ((GET_BYTE(to_push, 1)>> 4) & 0xF);
+    }
+  }
+
+  if ((addr == 0x552) && ((bus == 2) || (bus == 0))) {
+    pedalPressed = (int)((((GET_BYTES_04(to_push) & 0xFF00) >> 8) + ((GET_BYTES_04(to_push) & 0xFF) << 8)) * 0.050796813 -22.85856576);
+    if (pedalCan == -1) {
+      pedalCan = bus;
+    }
+  }
+
+
+
+  if (tesla_powertrain) {
+    // 0x2bf: DAS_control should not be received on bus 0
+    generic_rx_checks((addr == 0x2bf) && (bus == 0));
+  } else {
+    // 0x488: DAS_steeringControl should not be received on bus 0
+    generic_rx_checks((addr == 0x488) && (bus == 0));
+  }
+}
 
 
 static bool tesla_tx_hook(CANPacket_t *to_send) {
@@ -1072,23 +1073,11 @@ static bool tesla_tx_hook(CANPacket_t *to_send) {
   int addr = GET_ADDR(to_send);
   bool violation = false;
 
-  if (has_ap_hardware) {
-    if(!msg_allowed(to_send, 
-                  tesla_powertrain ? TESLA_PT_TX_MSGS : TESLA_AP_TX_MSGS,
-                  tesla_powertrain ? TESLA_PT_TX_LEN : TESLA_AP_TX_LEN)) {
-      tx = 0;
-    }
-  } else {
-    if(!msg_allowed(to_send, TESLA_PREAP_TX_MSGS, TESLA_PREAP_TX_LEN)) {
-      tx = 0;
-    }
-  }
-
   if (addr == 0x659) {
     pedalEnabled = ((GET_BYTE(to_send, 5) >> 5) & 0x01);
     has_ap_disabled = ((GET_BYTE(to_send, 5) >> 7) & 0x01);
     if (has_das_hw) {
-      tx = 0;
+      tx = false;
     }
   }
 
@@ -1096,13 +1085,13 @@ static bool tesla_tx_hook(CANPacket_t *to_send) {
   if ((!tesla_longitudinal) && ((addr == 0x2B9) || (addr == 0x2BF))) {
     //{0x2B9, 0, 8},  // DAS_control - Long Control
     //{0x209, 0, 8},  // DAS_longControl - Long Control
-    tx = 0;
+    tx = false;
   }
 
   //do not allow body controls if not enabled
   if ((!has_body_controls) && (addr == 0x3E9)) {
     //{0x3E9, 0, 8},  // DAS_bodyControls
-    tx = 0;
+    tx = false;
   }
 
   //do not allow hud integration messages if not enabled
@@ -1115,13 +1104,13 @@ static bool tesla_tx_hook(CANPacket_t *to_send) {
     //{0x329, 0, 8},  // DAS_warningMatrix0 - HUD
     //{0x369, 0, 8},  // DAS_warningMatrix1 - HUD
     //{0x349, 0, 8},  // DAS_warningMatrix3 - HUD
-    tx = 0;
+    tx = false;
   }
 
   if(!tesla_powertrain && (addr == 0x488)) {
     // Steering control: (0.1 * val) - 1638.35 in deg.
     // We use 1/10 deg as a unit here
-    int raw_angle_can = (((GET_BYTE(to_send, 0) & 0x7F) << 8) | GET_BYTE(to_send, 1));
+    int raw_angle_can = (((GET_BYTE(to_send, 0) & 0x7FU) << 8) | GET_BYTE(to_send, 1));
     int desired_angle = raw_angle_can - 16384;
     int steer_control_type = GET_BYTE(to_send, 2) >> 6;
     bool steer_control_enabled = (steer_control_type != 0) &&  // NONE
@@ -1171,12 +1160,12 @@ static bool tesla_tx_hook(CANPacket_t *to_send) {
   if (has_ap_hardware) {
     if (fwd_data_message(to_send,TESLA_AP_FWD_MODDED,sizeof(TESLA_AP_FWD_MODDED)/sizeof(TESLA_AP_FWD_MODDED[0]),violation)) {
       //do not send if the message is in the forwards
-      tx = 0;
+      tx = false;
     }
   } else {
     if (fwd_data_message(to_send,TESLA_PREAP_FWD_MODDED,sizeof(TESLA_PREAP_FWD_MODDED)/sizeof(TESLA_PREAP_FWD_MODDED[0]),violation)) {
       //do not send if the message is in the forwards
-      tx = 0;
+      tx = false;
     }
   }
 
