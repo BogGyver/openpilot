@@ -924,15 +924,15 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
               // TODO: uncomment the if to use double pull to activate
               //if (current_car_time <= time_at_last_stalk_pull + 1 && current_car_time != -1 && time_at_last_stalk_pull != -1) {
               controls_allowed = true;
-              cruise_engaged_prev = true;
+              //cruise_engaged_prev = true;
               //}
               time_at_last_stalk_pull = current_car_time;
             }
             else if (ap_lever_position == 1)
             { // push towards the back
               // deactivate openpilot
-              //controls_allowed = false;
-              cruise_engaged_prev = false;
+              controls_allowed = false;
+              //cruise_engaged_prev = false;
             }
             //if using pedal, send a cancel immediately to cancel the CC
             if ((pedalEnabled == 1) && (ap_lever_position > 1)) {
@@ -1015,8 +1015,9 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
         if(!cruise_engaged || epas_inhibited) {
           controls_allowed = false;
         }
+        cruise_engaged_prev = cruise_engaged;
       }
-      cruise_engaged_prev = cruise_engaged;
+      
     }
   }
 
