@@ -1000,14 +1000,15 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
       if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
         if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
           controls_allowed = true;
+          cruise_engaged_prev = cruise_engaged;
         }
         time_cruise_engaged = 0;
       }
       
       if(!cruise_engaged || epas_inhibited) {
         controls_allowed = false;
+        cruise_engaged_prev = cruise_engaged;
       }
-      cruise_engaged_prev = cruise_engaged;
     }
     
   }
@@ -1061,7 +1062,6 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
     generic_rx_checks(false); //TODOBB: do we need to check anything here? PreAP has no relay
   }
 }
-
 
 
 static bool tesla_tx_hook(CANPacket_t *to_send) {
