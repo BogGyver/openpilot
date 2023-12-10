@@ -837,15 +837,8 @@ bool tesla_stock_aeb = false;
 
 static void tesla_rx_hook(CANPacket_t *to_push) {
 
-  bool valid = true;
-
   int bus = GET_BUS(to_push);
   int addr = GET_ADDR(to_push);
-
-  if (((bus == 0) && (addr == 0x671)) || ((bus == 0) && (addr == 0x641)) ||
-      ((bus == tesla_radar_can) && (addr = 0x651)) || ((bus == tesla_radar_can) && (addr = 0x681))) {
-      valid = true;
-  }
 
   if ((bus == 0) && (addr == 0x39D) && (!has_ibooster_ecu) && (has_ap_hardware || has_das_hw)) {
     //found IBST_status, it has official ibooster
@@ -886,140 +879,139 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
     }
   }
 
-  if(valid) {
-    if(bus == 0) {
-      if (!tesla_powertrain) {
-        if ((addr == 0x115) && (!has_ap_hardware)) {
-          //DAS_steeringControl
-          teslaPreAp_generate_message(0x488);
-        }
-        if ((addr == 0x348) && (!has_ap_hardware)) {
-          //use GTW_status at 10Hz to generate the IC messages for nonAP cars
-          teslaPreAp_send_IC_messages();
-          //ALSO use this for radar timeout, this message is always on
-          uint32_t ts = microsecond_timer_get();
-          uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_last_radar_signal);
-          if ((ts_elapsed > TESLA_RADAR_TIMEOUT) && (tesla_radar_status > 0)) {
-            tesla_radar_status = 0;
-          } 
-        }
+  if(bus == 0) {
+    if (!tesla_powertrain) {
+      if ((addr == 0x115) && (!has_ap_hardware)) {
+        //DAS_steeringControl
+        teslaPreAp_generate_message(0x488);
+      }
+      if ((addr == 0x348) && (!has_ap_hardware)) {
+        //use GTW_status at 10Hz to generate the IC messages for nonAP cars
+        teslaPreAp_send_IC_messages();
+        //ALSO use this for radar timeout, this message is always on
+        uint32_t ts = microsecond_timer_get();
+        uint32_t ts_elapsed = get_ts_elapsed(ts, tesla_last_radar_signal);
+        if ((ts_elapsed > TESLA_RADAR_TIMEOUT) && (tesla_radar_status > 0)) {
+          tesla_radar_status = 0;
+        } 
+      }
 
-        if (addr == 0x318) {
-          int hour = (GET_BYTES_04(to_push) & 0x1F000000) >> 24;
-          int minute = (GET_BYTES_48(to_push) & 0x3F00) >> 8;
-          int second = (GET_BYTES_04(to_push) & 0x3F0000) >> 16;
-          current_car_time = (hour * 3600) + (minute * 60) + second;
-        }
+      if (addr == 0x318) {
+        int hour = (GET_BYTES_04(to_push) & 0x1F000000) >> 24;
+        int minute = (GET_BYTES_48(to_push) & 0x3F00) >> 8;
+        int second = (GET_BYTES_04(to_push) & 0x3F0000) >> 16;
+        current_car_time = (hour * 3600) + (minute * 60) + second;
+      }
 
-        if (addr == 0x45)  {
-          //first save for future use
-          DAS_lastStalkL = GET_BYTES_04(to_push);
-          DAS_lastStalkH = GET_BYTES_48(to_push);
-          // 6 bits starting at position 0
-          if ((!has_ap_hardware) || (has_ap_hardware && has_ap_disabled)) {
-            int ap_lever_position = GET_BYTE(to_push, 0) & 0x3F;
-            if (ap_lever_position == 2)
-            { // pull forward
-              // activate openpilot
-              // TODO: uncomment the if to use double pull to activate
-              //if (current_car_time <= time_at_last_stalk_pull + 1 && current_car_time != -1 && time_at_last_stalk_pull != -1) {
-              pcm_cruise_check(true);
-              //cruise_engaged_prev = true;
-              //}
-              time_at_last_stalk_pull = current_car_time;
-            }
-            else if (ap_lever_position == 1)
-            { // push towards the back
-              // deactivate openpilot
-              pcm_cruise_check(false);
-              //cruise_engaged_prev = false;
-            }
-            //if using pedal, send a cancel immediately to cancel the CC
-            if ((pedalEnabled == 1) && (ap_lever_position > 1)) {
-              do_fake_stalk_cancel();
-            }
+      if (addr == 0x45)  {
+        //first save for future use
+        DAS_lastStalkL = GET_BYTES_04(to_push);
+        DAS_lastStalkH = GET_BYTES_48(to_push);
+        // 6 bits starting at position 0
+        if ((!has_ap_hardware) || (has_ap_hardware && has_ap_disabled)) {
+          int ap_lever_position = GET_BYTE(to_push, 0) & 0x3F;
+          if (ap_lever_position == 2)
+          { // pull forward
+            // activate openpilot
+            // TODO: uncomment the if to use double pull to activate
+            //if (current_car_time <= time_at_last_stalk_pull + 1 && current_car_time != -1 && time_at_last_stalk_pull != -1) {
+            pcm_cruise_check(true);
+            //cruise_engaged_prev = true;
+            //}
+            time_at_last_stalk_pull = current_car_time;
           }
-        }
-  
-        if (addr == 0x214) {
-          //has ibooser or otherwise we don't get EPB_epasControl
-          if (has_ap_hardware) {
-            //disable and just read status from epas not from EPB
-            //epas_inhibited = (GET_BYTES_04(to_push) & 0x07) == 0;
+          else if (ap_lever_position == 1)
+          { // push towards the back
+            // deactivate openpilot
+            pcm_cruise_check(false);
+            //cruise_engaged_prev = false;
           }
-        }
-
-        if (addr == 0x370) {
-          // Steering angle: (0.1 * val) - 819.2 in deg.
-          // Store it 1/10 deg to match steering request
-          int angle_meas_new = (((GET_BYTE(to_push, 4) & 0x3F) << 8) | GET_BYTE(to_push, 5)) - 8192;
-          hands_on_level = ((GET_BYTE(to_push, 4) >> 6) & 0x03);
-          float torsionBarTorque = ABS((((GET_BYTE(to_push, 2) & 0x0F) << 8) | GET_BYTE(to_push, 3))* 0.01 -20.5);
-          if ((hands_on_level > 0) || (torsionBarTorque > 0.9)) {
-            hands_on_level_last_signal = microsecond_timer_get();
+          //if using pedal, send a cancel immediately to cancel the CC
+          if ((pedalEnabled == 1) && (ap_lever_position > 1)) {
+            do_fake_stalk_cancel();
           }
-          uint32_t ts = microsecond_timer_get();
-          uint32_t ts_elapsed = get_ts_elapsed(ts, hands_on_level_last_signal);
-          if (ts_elapsed <= TIME_FOR_HANDS_ON) {
-            human_steering = true;
-          } else {
-            human_steering = false;
-          }
-          prev_hands_on_level = hands_on_level;
-          update_sample(&angle_meas, angle_meas_new);
-        }
-
-        if(addr == 0x155) {
-          // Vehicle speed: (0.01 * val) * KPH_TO_MPS
-          float speed = ((GET_BYTE(to_push, 5) << 8) | (GET_BYTE(to_push, 6))) * 0.01 / 3.6;
-          vehicle_moving = ABS(speed) > 0.1;
-          update_sample(&vehicle_speed, ROUND(speed * VEHICLE_SPEED_FACTOR));
         }
       }
-    }
 
-    if(addr == (tesla_powertrain ? 0x106 : 0x108)) {
-      // Gas pressed - only for ACC for now
-      if (has_ap_hardware && !has_ap_disabled) {
-        gas_pressed = ((GET_BYTE(to_push, 6) != 0) && (!enable_hao));
+      if (addr == 0x214) {
+        //has ibooser or otherwise we don't get EPB_epasControl
+        if (has_ap_hardware) {
+          //disable and just read status from epas not from EPB
+          //epas_inhibited = (GET_BYTES_04(to_push) & 0x07) == 0;
+        }
       }
-    }
 
-    if(addr == (tesla_powertrain ? 0x1f8 : 0x20a)) {
-      // Brake pressed - only for ACC for now
-      if (has_ap_hardware && !has_ap_disabled) {
-        brake_pressed = ((GET_BYTE(to_push, 0) & 0x0C) >> 2 != 1);
+      if (addr == 0x370) {
+        // Steering angle: (0.1 * val) - 819.2 in deg.
+        // Store it 1/10 deg to match steering request
+        int angle_meas_new = (((GET_BYTE(to_push, 4) & 0x3F) << 8) | GET_BYTE(to_push, 5)) - 8192;
+        hands_on_level = ((GET_BYTE(to_push, 4) >> 6) & 0x03);
+        float torsionBarTorque = ABS((((GET_BYTE(to_push, 2) & 0x0F) << 8) | GET_BYTE(to_push, 3))* 0.01 -20.5);
+        if ((hands_on_level > 0) || (torsionBarTorque > 0.9)) {
+          hands_on_level_last_signal = microsecond_timer_get();
+        }
+        uint32_t ts = microsecond_timer_get();
+        uint32_t ts_elapsed = get_ts_elapsed(ts, hands_on_level_last_signal);
+        if (ts_elapsed <= TIME_FOR_HANDS_ON) {
+          human_steering = true;
+        } else {
+          human_steering = false;
+        }
+        prev_hands_on_level = hands_on_level;
+        update_sample(&angle_meas, angle_meas_new);
       }
-    }
 
-    if(addr == (tesla_powertrain ? 0x256 : 0x368)) {
-      // Cruise state
-      int cruise_state = (GET_BYTE(to_push, 1) >> 4);
-      bool cruise_engaged = (cruise_state == 2) ||  // ENABLED
-                            (cruise_state == 3) ||  // STANDSTILL
-                            (cruise_state == 4) ||  // OVERRIDE
-                            (cruise_state == 6) ||  // PRE_FAULT
-                            (cruise_state == 7);    // PRE_CANCEL
-      if (has_ap_hardware && !has_ap_disabled) {
-        if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
-          time_cruise_engaged = microsecond_timer_get();
-        }
-        
-        if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
-          if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
-            controls_allowed = true;
-          }
-          time_cruise_engaged = 0;
-        }
-        
-        if(!cruise_engaged || epas_inhibited) {
-          controls_allowed = false;
-        }
-        cruise_engaged_prev = cruise_engaged;
+      if(addr == 0x155) {
+        // Vehicle speed: (0.01 * val) * KPH_TO_MPS
+        float speed = ((GET_BYTE(to_push, 5) << 8) | (GET_BYTE(to_push, 6))) * 0.01 / 3.6;
+        vehicle_moving = ABS(speed) > 0.1;
+        update_sample(&vehicle_speed, ROUND(speed * VEHICLE_SPEED_FACTOR));
       }
-      
     }
   }
+
+  if(addr == (tesla_powertrain ? 0x106 : 0x108)) {
+    // Gas pressed - only for ACC for now
+    if (has_ap_hardware && !has_ap_disabled) {
+      gas_pressed = ((GET_BYTE(to_push, 6) != 0) && (!enable_hao));
+    }
+  }
+
+  if(addr == (tesla_powertrain ? 0x1f8 : 0x20a)) {
+    // Brake pressed - only for ACC for now
+    if (has_ap_hardware && !has_ap_disabled) {
+      brake_pressed = ((GET_BYTE(to_push, 0) & 0x0C) >> 2 != 1);
+    }
+  }
+
+  if(addr == (tesla_powertrain ? 0x256 : 0x368)) {
+    // Cruise state
+    int cruise_state = (GET_BYTE(to_push, 1) >> 4);
+    bool cruise_engaged = (cruise_state == 2) ||  // ENABLED
+                          (cruise_state == 3) ||  // STANDSTILL
+                          (cruise_state == 4) ||  // OVERRIDE
+                          (cruise_state == 6) ||  // PRE_FAULT
+                          (cruise_state == 7);    // PRE_CANCEL
+    if (has_ap_hardware && !has_ap_disabled) {
+      if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
+        time_cruise_engaged = microsecond_timer_get();
+      }
+      
+      if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
+        if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
+          controls_allowed = true;
+        }
+        time_cruise_engaged = 0;
+      }
+      
+      if(!cruise_engaged || epas_inhibited) {
+        controls_allowed = false;
+      }
+      cruise_engaged_prev = cruise_engaged;
+    }
+    
+  }
+  
 
   if (bus == 2) {
     if ((addr == 0x399) && (has_ap_hardware)) {
