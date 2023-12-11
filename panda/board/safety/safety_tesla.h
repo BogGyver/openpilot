@@ -129,12 +129,10 @@ const CanMsg TESLA_AP_TX_MSGS[] = {
     {0x398, 0, 8},  // GTW_carConfig
     {0x659, 0, 8},  // FAKE PANDA MESSAGE
   };
-#define TESLA_AP_TX_LEN (sizeof(TESLA_AP_TX_MSGS) / sizeof(TESLA_AP_TX_MSGS[0]))
 
 const CanMsg TESLA_PT_TX_MSGS[] = {
   {0x2bf, 0, 8},  // DAS_control
 };
-#define TESLA_PT_TX_LEN (sizeof(TESLA_PT_TX_MSGS) / sizeof(TESLA_PT_TX_MSGS[0]))
 
 RxCheck  TESLA_AP_RX_CHECKS[] = {
     {.msg = {{0x370, 0, 8, .frequency = 25U}, { 0 }, { 0 }}},   // EPAS_sysStatus (25Hz)
@@ -993,23 +991,20 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
                           (cruise_state == 6) ||  // PRE_FAULT
                           (cruise_state == 7);    // PRE_CANCEL
     if (has_ap_hardware && !has_ap_disabled) {
-      // if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
-      //   time_cruise_engaged = microsecond_timer_get();
-      // }
+      if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
+        time_cruise_engaged = microsecond_timer_get();
+      }
       
-      // if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
-      //   if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
-      //     controls_allowed = true;
-      //     cruise_engaged_prev = cruise_engaged;
-      //   }
-      //   time_cruise_engaged = 0;
-      // }
+      if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
+        if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
+          pcm_cruise_check(true);
+        }
+        time_cruise_engaged = 0;
+      }
       
-      // if(!cruise_engaged || epas_inhibited) {
-      //   controls_allowed = false;
-      //   cruise_engaged_prev = cruise_engaged;
-      // }
-      pcm_cruise_check(cruise_engaged);
+      if(!cruise_engaged || epas_inhibited || (time_cruise_engaged == 0)) {
+        pcm_cruise_check(cruise_engaged);
+      }
     }
     
   }
@@ -1022,21 +1017,21 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
       autopilot_enabled = (autopilot_status == 3) ||  // ACTIVE_1
                           (autopilot_status == 4);// ||  // ACTIVE_2
                           //(autopilot_status == 5);    // ACTIVE_NAVIGATE_ON_AUTOPILOT
-      if (autopilot_enabled || eac_enabled || autopark_enabled) {
-        controls_allowed = false;
-      }
+      // if (autopilot_enabled || eac_enabled || autopark_enabled) {
+      //   controls_allowed = false;
+      // }
     }
 
-    if ((addr == 0x219) && (has_ap_hardware)) {
-      //autopark and eac status
-      int psc_status = ((GET_BYTE(to_push, 0) & 0xF0) >> 4);
-      int eac_status = (GET_BYTE(to_push, 1) & 0x07);
-      eac_enabled = (eac_status == 2);
-      autopark_enabled = (psc_status == 14) || ((psc_status >= 1) && (psc_status <=8));
-      if (autopilot_enabled || eac_enabled || autopark_enabled) {
-        controls_allowed = false;
-      }
-    }
+    // if ((addr == 0x219) && (has_ap_hardware)) {
+    //   //autopark and eac status
+    //   int psc_status = ((GET_BYTE(to_push, 0) & 0xF0) >> 4);
+    //   int eac_status = (GET_BYTE(to_push, 1) & 0x07);
+    //   eac_enabled = (eac_status == 2);
+    //   autopark_enabled = (psc_status == 14) || ((psc_status >= 1) && (psc_status <=8));
+    //   if (autopilot_enabled || eac_enabled || autopark_enabled) {
+    //     controls_allowed = false;
+    //   }
+    // }
 
     if (addr == 0x2B9) {
       //AP1 DAS_control

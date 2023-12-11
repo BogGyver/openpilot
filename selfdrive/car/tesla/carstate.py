@@ -117,7 +117,7 @@ class CarState(CarStateBase):
     self.has_ibooster_ecu = load_bool_param("TinklaHasIBooster",False)
     self.use_tesla_gps = True
     self.ignore_stock_aeb = load_bool_param("TinklaIgnoreStockAeb",False)
-    self.handsOnLimit = load_float_param("TinklaHandsOnLevel",1.0)
+    self.handsOnLimit = load_float_param("TinklaHandsOnLevel",2.0)
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
       self.enableICIntegration = True
     self.brakeUnavailable = True
@@ -237,7 +237,7 @@ class CarState(CarStateBase):
 
     ret.steeringRateDeg = -cp.vl["STW_ANGLHP_STAT"]["StW_AnglHP_Spd"] # This is from a different angle sensor, and at different rate
     self.hands_on_level = cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
-    ret.steeringPressed = (self.hands_on_level >= 1)
+    ret.steeringPressed = (self.hands_on_level >= 2)
     self.HSOSteeringPressed = (self.hands_on_level >= self.handsOnLimit)
     ret.steerFaultPermanent = steer_status == "EAC_FAULT"
     ret.steerFaultTemporary = (self.steer_warning not in ("EAC_ERROR_IDLE", "EAC_ERROR_HANDS_ON","EAC_ERROR_TMP_FAULT"))
@@ -311,7 +311,7 @@ class CarState(CarStateBase):
       if not(self.autopilot_enabled or cruiseEnabled):
         self.autopilot_was_enabled = False
       self.cruiseEnabled = cruiseEnabled and not self.autopilot_was_enabled
-      ret.cruiseState.enabled = self.cruiseEnabled #and self.cruiseDelay
+      ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
       if self.speed_units == "KPH":
         ret.cruiseState.speed = cp.vl["DI_state"]["DI_cruiseSet"] * CV.KPH_TO_MS
       elif self.speed_units == "MPH":

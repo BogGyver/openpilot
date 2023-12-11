@@ -219,8 +219,10 @@ class CarInterfaceBase(ABC):
   def post_update(self,c,ret):
     if self.CS.enableHAO:
       ret.gas = 0
-      #ret.gasPressed = False
+      ret.gasPressed = False
     self.CS.human_control = self.CS.HSO.update_stat(self.CS, c.enabled, c.actuators, self.frame)
+    #TODOBB: shall we use HSO for touching steering?
+    ret.steeringPressed = self.CS.human_control
     #Trick the alca if autoStartAlcaDelay is set
     if (self.CS.enableALC) and (self.CS.alca_need_engagement):
       ret.steeringPressed = True
