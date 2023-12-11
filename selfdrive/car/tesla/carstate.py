@@ -311,7 +311,7 @@ class CarState(CarStateBase):
       if not(self.autopilot_enabled or cruiseEnabled):
         self.autopilot_was_enabled = False
       self.cruiseEnabled = cruiseEnabled and not self.autopilot_was_enabled
-      ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay
+      ret.cruiseState.enabled = self.cruiseEnabled #and self.cruiseDelay
       if self.speed_units == "KPH":
         ret.cruiseState.speed = cp.vl["DI_state"]["DI_cruiseSet"] * CV.KPH_TO_MS
       elif self.speed_units == "MPH":
