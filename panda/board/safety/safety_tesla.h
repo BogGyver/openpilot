@@ -993,22 +993,23 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
                           (cruise_state == 6) ||  // PRE_FAULT
                           (cruise_state == 7);    // PRE_CANCEL
     if (has_ap_hardware && !has_ap_disabled) {
-      if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
-        time_cruise_engaged = microsecond_timer_get();
-      }
+      // if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
+      //   time_cruise_engaged = microsecond_timer_get();
+      // }
       
-      if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
-        if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
-          controls_allowed = true;
-          cruise_engaged_prev = cruise_engaged;
-        }
-        time_cruise_engaged = 0;
-      }
+      // if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
+      //   if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
+      //     controls_allowed = true;
+      //     cruise_engaged_prev = cruise_engaged;
+      //   }
+      //   time_cruise_engaged = 0;
+      // }
       
-      if(!cruise_engaged || epas_inhibited) {
-        controls_allowed = false;
-        cruise_engaged_prev = cruise_engaged;
-      }
+      // if(!cruise_engaged || epas_inhibited) {
+      //   controls_allowed = false;
+      //   cruise_engaged_prev = cruise_engaged;
+      // }
+      pcm_cruise_check(cruise_engaged);
     }
     
   }
