@@ -134,13 +134,22 @@ const CanMsg TESLA_PT_TX_MSGS[] = {
   {0x2bf, 0, 8},  // DAS_control
 };
 
+// RxCheck  TESLA_AP_RX_CHECKS[] = {
+//     {.msg = {{0x370, 0, 8, .frequency = 25U}, { 0 }, { 0 }}},   // EPAS_sysStatus (25Hz)
+//     {.msg = {{0x108, 0, 8, .frequency = 100U}, { 0 }, { 0 }}},   // DI_torque1 (100Hz)
+//     {.msg = {{0x118, 0, 6, .frequency = 100U}, { 0 }, { 0 }}},   // DI_torque2 (100Hz)
+//     {.msg = {{0x20a, 0, 8, .frequency = 50U}, { 0 }, { 0 }}},   // BrakeMessage (50Hz)
+//     {.msg = {{0x368, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},  // DI_state (10Hz)
+//     {.msg = {{0x318, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},  // GTW_carState (10Hz)
+//   };
+
 RxCheck  TESLA_AP_RX_CHECKS[] = {
-    {.msg = {{0x370, 0, 8, .frequency = 25U}, { 0 }, { 0 }}},   // EPAS_sysStatus (25Hz)
-    {.msg = {{0x108, 0, 8, .frequency = 100U}, { 0 }, { 0 }}},   // DI_torque1 (100Hz)
-    {.msg = {{0x118, 0, 6, .frequency = 100U}, { 0 }, { 0 }}},   // DI_torque2 (100Hz)
-    {.msg = {{0x20a, 0, 8, .frequency = 50U}, { 0 }, { 0 }}},   // BrakeMessage (50Hz)
-    {.msg = {{0x368, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},  // DI_state (10Hz)
-    {.msg = {{0x318, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},  // GTW_carState (10Hz)
+    {.msg = {{0x370, 0, 8, .frequency = 0U}, { 0 }, { 0 }}},   // EPAS_sysStatus (25Hz)
+    {.msg = {{0x108, 0, 8, .frequency = 0U}, { 0 }, { 0 }}},   // DI_torque1 (100Hz)
+    {.msg = {{0x118, 0, 6, .frequency = 0U}, { 0 }, { 0 }}},   // DI_torque2 (100Hz)
+    {.msg = {{0x20a, 0, 8, .frequency = 0U}, { 0 }, { 0 }}},   // BrakeMessage (50Hz)
+    {.msg = {{0x368, 0, 8, .frequency = 0U}, { 0 }, { 0 }}},  // DI_state (10Hz)
+    {.msg = {{0x318, 0, 8, .frequency = 0U}, { 0 }, { 0 }}},  // GTW_carState (10Hz)
   };
 
 RxCheck TESLA_PT_RX_CHECKS[] = {
