@@ -207,17 +207,7 @@ class CarState(CarStateBase):
     ret.vEgoRaw = cp.vl["ESP_B"]["ESP_vehicleSpeed"] * CV.KPH_TO_MS
     #ret.vEgoRaw = cp.vl["DI_torque2"]["DI_vehicleSpeed"] * CV.MPH_TO_MS
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
-    ret.standstill = (ret.vEgo < 0.1)
-
-    ret.wheelSpeeds = self.get_wheel_speeds(
-      cp.vl["ESP_B"]["ESP_wheelPulseCountFrL"],
-      cp.vl["ESP_B"]["ESP_wheelPulseCountFrR"],
-      cp.vl["ESP_B"]["ESP_wheelPulseCountReL"],
-      cp.vl["ESP_B"]["ESP_wheelPulseCountReR"],
-      unit=WHEEL_RADIUS,
-    )
-
-    
+    ret.standstill = (abs(ret.vEgo) < 0.1)
       
     # Brake pedal
     ret.brake = 0
@@ -237,7 +227,7 @@ class CarState(CarStateBase):
 
     ret.steeringRateDeg = -cp.vl["STW_ANGLHP_STAT"]["StW_AnglHP_Spd"] # This is from a different angle sensor, and at different rate
     self.hands_on_level = cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
-    ret.steeringPressed = (self.hands_on_level >= 2)
+    ret.steeringPressed = (self.hands_on_level >= 1)
     self.HSOSteeringPressed = (self.hands_on_level >= self.handsOnLimit)
     ret.steerFaultPermanent = steer_status == "EAC_FAULT"
     ret.steerFaultTemporary = (self.steer_warning not in ("EAC_ERROR_IDLE", "EAC_ERROR_HANDS_ON","EAC_ERROR_TMP_FAULT"))
@@ -316,7 +306,7 @@ class CarState(CarStateBase):
         ret.cruiseState.speed = cp.vl["DI_state"]["DI_cruiseSet"] * CV.KPH_TO_MS
       elif self.speed_units == "MPH":
         ret.cruiseState.speed = cp.vl["DI_state"]["DI_cruiseSet"] * CV.MPH_TO_MS
-      ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
+      ret.cruiseState.available = ((cruise_state == "STANDBY") or acc_enabled)
       #if self.CP.openpilotLongitudinalControl:
       #  ret.cruiseState.available = True #(not ret.doorOpen) and (ret.gearShifter == car.CarState.GearShifter.drive) and (not ret.seatbeltUnlatched)
         #ret.cruiseState.available = ret.cruiseState.available and (not cruiseEnabled) and (not self.autopilot_enabled)

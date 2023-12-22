@@ -220,7 +220,7 @@ class CarInterfaceBase(ABC):
     if self.CS.enableHAO:
       ret.gas = 0
       ret.gasPressed = False
-    self.CS.human_control = self.CS.HSO.update_stat(self.CS, c.enabled, c.actuators, self.frame)
+    self.CS.human_control = self.CS.HSO.update_stat(self.CS, c.latActive, c.actuators, self.frame)
     #TODOBB: shall we use HSO for touching steering?
     ret.steeringPressed = self.CS.human_control
     #Trick the alca if autoStartAlcaDelay is set
@@ -234,14 +234,14 @@ class CarInterfaceBase(ABC):
   def pre_apply(self,c):
     self.CS.lat_plan = messaging.recv_one_or_none(self.CS.laP) 
     # Update HSO module
-    self.CS.human_control = self.CS.HSO.update_stat(self.CS, c.enabled, c.actuators, self.frame)
+    self.CS.human_control = self.CS.HSO.update_stat(self.CS, c.latActive, c.actuators, self.frame)
     
     #update blinker tap module
     self.CS.blinker_controller.update_state(self.CS, self.frame)
     self.CS.tap_direction = self.CS.blinker_controller.tap_direction
 
     #update ALC module
-    self.CS.alca_controller.update(c.enabled, self.CS, self.frame, self.CS.lat_plan)
+    self.CS.alca_controller.update(c.latActive, self.CS, self.frame, self.CS.lat_plan)
 
   # return sendcan, pass in a car.CarControl
   def update(self, c: car.CarControl, can_strings: List[bytes]) -> car.CarState:

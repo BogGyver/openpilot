@@ -582,17 +582,17 @@ BO_ 872 DI_state: 8 DI
  SG_ DI_stateChecksum : 56|8@1+ (1,0) [0|0] ""  NEO
 
 BO_ 880 EPAS_sysStatus: 8 EPAS
- SG_ EPAS_currentTuneMode : 7|4@0+ (1,0) [8|15] ""  NEO
- SG_ EPAS_eacErrorCode : 23|4@0+ (1,0) [-1|16] ""  NEO
- SG_ EPAS_eacStatus : 55|3@0+ (1,0) [5|7] ""  NEO
- SG_ EPAS_handsOnLevel : 39|2@0+ (1,0) [-1|4] ""  NEO
- SG_ EPAS_internalSAS : 37|14@0+ (0.1,-819.200012) [0|0] "deg"  NEO
- SG_ EPAS_steeringFault : 2|1@0+ (1,0) [-1|2] ""  NEO
- SG_ EPAS_steeringRackForce : 1|10@0+ (50,-25575) [0|0] "N" NEO
- SG_ EPAS_steeringReduced : 3|1@0+ (1,0) [-1|2] ""  NEO
- SG_ EPAS_sysStatusChecksum : 63|8@0+ (1,0) [0|255] ""  NEO
- SG_ EPAS_sysStatusCounter : 51|4@0+ (1,0) [0|15] ""  NEO
- SG_ EPAS_torsionBarTorque : 19|12@0+ (0.01,-20.5) [0|0] "Nm"  NEO
+ SG_ EPAS_steeringRackForce : 1|10@0+ (50,-25575) [-25575|25575] "N" NEO
+ SG_ EPAS_steeringFault : 2|1@0+ (1,0) [0|1] "" NEO
+ SG_ EPAS_steeringReduced : 3|1@0+ (1,0) [0|1] "" NEO
+ SG_ EPAS_currentTuneMode : 7|4@0+ (1,0) [0|15] "" NEO
+ SG_ EPAS_torsionBarTorque : 19|12@0+ (0.01,-20.5) [-20.5|20.45] "Nm" NEO
+ SG_ EPAS_eacErrorCode : 23|4@0+ (1,0) [0|15] "" NEO
+ SG_ EPAS_internalSAS : 37|14@0+ (0.1,-819.2) [-819.2|819] "deg" NEO
+ SG_ EPAS_handsOnLevel : 39|2@0+ (1,0) [0|3] "" NEO
+ SG_ EPAS_sysStatusCounter : 51|4@0+ (1,0) [0|15] "" NEO
+ SG_ EPAS_eacStatus : 55|3@0+ (1,0) [0|7] "" NEO
+ SG_ EPAS_sysStatusChecksum : 63|8@0+ (1,0) [0|255] "" NEO
 
 BO_ 904 MCU_clusterBacklightRequest: 3 XXX
  SG_ MCU_clusterBacklightOn : 7|1@1+ (1,0) [0|1] "" XXX
