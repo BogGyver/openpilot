@@ -1000,20 +1000,21 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
                           (cruise_state == 6) ||  // PRE_FAULT
                           (cruise_state == 7);    // PRE_CANCEL
     if (has_ap_hardware && !has_ap_disabled) {
-      if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
-        time_cruise_engaged = microsecond_timer_get();
-      }
+      // if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
+      //   time_cruise_engaged = microsecond_timer_get();
+      // }
       
-      if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
-        if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
-          pcm_cruise_check(true);
-        }
-        time_cruise_engaged = 0;
-      }
+      // if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
+      //   if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
+      //     pcm_cruise_check(cruise_engaged);
+      //   }
+      //   time_cruise_engaged = 0;
+      // }
       
-      if(!cruise_engaged || epas_inhibited || (time_cruise_engaged == 0)) {
-        pcm_cruise_check(cruise_engaged);
-      }
+      // if(!cruise_engaged || epas_inhibited || (time_cruise_engaged == 0)) {
+      //   pcm_cruise_check(cruise_engaged);
+      // }
+      pcm_cruise_check(cruise_engaged);
     }
     
   }
@@ -1221,7 +1222,7 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd ) {
 
   if (tesla_stock_aeb && (bus_num == 2)) {
     //instantly forward 2->0 messages if AEB is engaged
-    controls_allowed = false;
+    //controls_allowed = false;
     return 0;
   }
 
@@ -1353,17 +1354,17 @@ static safety_config tesla_init(uint16_t param) {
   do_radar_emulation = GET_FLAG(param, FLAG_TESLA_NEED_RADAR_EMULATION);
   enable_hao = GET_FLAG(param, FLAG_TESLA_ENABLE_HAO);
   ignore_stock_aeb = GET_FLAG(param, FLAG_TESLA_IGNORE_STOCK_AEB);
-  controls_allowed = false;
-
+  safety_config ret;
   if (tesla_powertrain) {
-      return BUILD_SAFETY_CFG(TESLA_PT_RX_CHECKS,TESLA_PT_TX_MSGS);
+      ret = BUILD_SAFETY_CFG(TESLA_PT_RX_CHECKS,TESLA_PT_TX_MSGS);
   } else {
     if (has_ap_hardware) {
-      return BUILD_SAFETY_CFG(TESLA_AP_RX_CHECKS,TESLA_AP_TX_MSGS);
+      ret =  BUILD_SAFETY_CFG(TESLA_AP_RX_CHECKS,TESLA_AP_TX_MSGS);
     } else {
-      return BUILD_SAFETY_CFG(TESLA_PREAP_RX_CHECKS,TESLA_PREAP_TX_MSGS);
+      ret =  BUILD_SAFETY_CFG(TESLA_PREAP_RX_CHECKS,TESLA_PREAP_TX_MSGS);
     }
   }
+  return ret;
 }
 
 const safety_hooks tesla_hooks = {
