@@ -526,9 +526,9 @@ class CarState(CarStateBase):
     use_tesla_gps = True
     messages = [
       # sig_address, frequency
-      ("DI_torque1", 20),
-      ("DI_torque2", 20),
-      ("STW_ANGLHP_STAT", 20),
+      ("DI_torque1", 100),
+      ("DI_torque2", 100),
+      ("STW_ANGLHP_STAT", 100),
       ("DI_state", 10),
       ("STW_ACTN_RQ", 10),
       ("GTW_carState", 10),
@@ -541,14 +541,14 @@ class CarState(CarStateBase):
     ]
 
     messages += [
-      ("ESP_B", 0),
-      ("BrakeMessage", 0),
+      ("ESP_B", 50),
+      ("BrakeMessage", 50),
     ]
    
     
     if not (CP.carFingerprint in [CAR.AP1_MODELX, CAR.AP2_MODELX]):
       messages += [
-        ("SDM1", 0),
+        ("SDM1", 10),
       ]
 
     # if (use_tesla_gps):
@@ -567,7 +567,7 @@ class CarState(CarStateBase):
       ]
 
     messages += [      
-      ("EPAS_sysStatus", 5),
+      ("EPAS_sysStatus", 0),
       ("PARK_status2",0),
     ]
 
@@ -597,7 +597,7 @@ class CarState(CarStateBase):
         ("DAS_pscControl",25),
         ("DAS_bodyControls",2),
         ("DAS_steeringControl",50),
-
+        ("DAS_control",40),
       ]
 
     if CP.carFingerprint in [CAR.PREAP_MODELS]:
