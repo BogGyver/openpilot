@@ -975,48 +975,49 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
         update_sample(&vehicle_speed, ROUND(speed * VEHICLE_SPEED_FACTOR));
       }
     }
-  }
+  
 
-  if(addr == (tesla_powertrain ? 0x106 : 0x108)) {
-    // Gas pressed - only for ACC for now
-    if (has_ap_hardware && !has_ap_disabled) {
-      gas_pressed = ((GET_BYTE(to_push, 6) != 0) && (!enable_hao));
+    if(addr == (tesla_powertrain ? 0x106 : 0x108)) {
+      // Gas pressed - only for ACC for now
+      if (has_ap_hardware && !has_ap_disabled) {
+        gas_pressed = ((GET_BYTE(to_push, 6) != 0) && (!enable_hao));
+      }
     }
-  }
 
-  if(addr == (tesla_powertrain ? 0x1f8 : 0x20a)) {
-    // Brake pressed - only for ACC for now
-    if (has_ap_hardware && !has_ap_disabled) {
-      brake_pressed = ((GET_BYTE(to_push, 0) & 0x0C) >> 2 != 1);
+    if(addr == (tesla_powertrain ? 0x1f8 : 0x20a)) {
+      // Brake pressed - only for ACC for now
+      if (has_ap_hardware && !has_ap_disabled) {
+        brake_pressed = ((GET_BYTE(to_push, 0) & 0x0C) >> 2 != 1);
+      }
     }
-  }
 
-  if(addr == (tesla_powertrain ? 0x256 : 0x368)) {
-    // Cruise state
-    int cruise_state = (GET_BYTE(to_push, 1) >> 4);
-    bool cruise_engaged = (cruise_state == 2) ||  // ENABLED
-                          (cruise_state == 3) ||  // STANDSTILL
-                          (cruise_state == 4) ||  // OVERRIDE
-                          (cruise_state == 6) ||  // PRE_FAULT
-                          (cruise_state == 7);    // PRE_CANCEL
-    if (has_ap_hardware && !has_ap_disabled) {
-      // if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
-      //   time_cruise_engaged = microsecond_timer_get();
-      // }
+    if(addr == (tesla_powertrain ? 0x256 : 0x368)) {
+      // Cruise state
+      int cruise_state = (GET_BYTE(to_push, 1) >> 4);
+      bool cruise_engaged = (cruise_state == 2) ||  // ENABLED
+                            (cruise_state == 3) ||  // STANDSTILL
+                            (cruise_state == 4) ||  // OVERRIDE
+                            (cruise_state == 6) ||  // PRE_FAULT
+                            (cruise_state == 7);    // PRE_CANCEL
+      if (has_ap_hardware && !has_ap_disabled) {
+        // if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
+        //   time_cruise_engaged = microsecond_timer_get();
+        // }
+        
+        // if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
+        //   if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
+        //     pcm_cruise_check(cruise_engaged);
+        //   }
+        //   time_cruise_engaged = 0;
+        // }
+        
+        // if(!cruise_engaged || epas_inhibited || (time_cruise_engaged == 0)) {
+        //   pcm_cruise_check(cruise_engaged);
+        // }
+        pcm_cruise_check(cruise_engaged);
+      }
       
-      // if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
-      //   if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
-      //     pcm_cruise_check(cruise_engaged);
-      //   }
-      //   time_cruise_engaged = 0;
-      // }
-      
-      // if(!cruise_engaged || epas_inhibited || (time_cruise_engaged == 0)) {
-      //   pcm_cruise_check(cruise_engaged);
-      // }
-      pcm_cruise_check(cruise_engaged);
     }
-    
   }
   
 
