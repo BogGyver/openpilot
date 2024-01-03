@@ -1,7 +1,7 @@
 void can_send(CANPacket_t *to_push, uint8_t bus_number, bool skip_tx_hook);
 
 const SteeringLimits TESLA_STEERING_LIMITS = {
-  .angle_deg_to_can = 10,
+  .angle_deg_to_can = 100,
   .angle_rate_up_lookup = {
     {0., 5., 15.},
     {10., 1.6, .3}

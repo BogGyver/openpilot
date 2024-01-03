@@ -20,7 +20,7 @@ class HSOController:
                 # Find steering difference between visiond model and human (no need to do every frame if we run out of CPU):
                 apply_steer = int(actuators.steeringAngleDeg)
                 angle_diff = abs(apply_steer - CS.out.steeringAngleDeg)
-                if angle_diff > 15.0:
+                if angle_diff > 30.0:
                     self.frame_humanSteered = frame
             if frame - self.frame_humanSteered < (CS.hsoNumbPeriod * 100):
                 human_control = True

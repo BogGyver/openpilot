@@ -126,7 +126,7 @@ class CarController:
         can_sends.insert(1,self.tesla_can.create_action_request(CS.msg_stw_actn_req, CruiseButtons.CANCEL, CAN_AUTOPILOT[self.CP.carFingerprint],stlk_counter))
 
     #now process controls
-    if CC.latActive and not CS.human_control:
+    if CC.latActive and (not CS.human_control):
       # Angular rate limit based on speed
       apply_angle = apply_std_steer_angle_limits(actuators.steeringAngleDeg, self.apply_angle_last, CS.out.vEgo, self.CCP)
 
@@ -139,9 +139,9 @@ class CarController:
       ldw_haptic = 0
       if CC.hudControl.leftLaneDepart or CC.hudControl.rightLaneDepart:
         ldw_haptic = 1
-      can_sends.append(self.tesla_can.create_steering_control(apply_angle, CC.latActive and not CS.human_control and not CS.out.cruiseState.standstill, ldw_haptic, CAN_EPAS[self.CP.carFingerprint], 1))
+      can_sends.append(self.tesla_can.create_steering_control(apply_angle, CC.latActive and (not CS.human_control) and (not CS.out.cruiseState.standstill), ldw_haptic, CAN_EPAS[self.CP.carFingerprint], 1))
 
-      self.apply_angle_last = apply_angle
+    self.apply_angle_last = apply_angle
 
     #update LONG Control module
     can_messages = self.long_controller.update(CC.enabled, CS, self.frame, actuators, pcm_cancel_cmd,CC.cruiseControl.override, long_plan,radar_state)
