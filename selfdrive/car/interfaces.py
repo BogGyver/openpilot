@@ -274,6 +274,7 @@ class CarInterfaceBase(ABC):
     reader = ret.as_reader()
     if self.CS is not None:
       self.CS.out = reader
+    self.frame +=1
     return reader
 
   @abstractmethod
