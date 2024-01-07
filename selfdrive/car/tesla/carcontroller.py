@@ -126,7 +126,7 @@ class CarController:
         can_sends.insert(1,self.tesla_can.create_action_request(CS.msg_stw_actn_req, CruiseButtons.CANCEL, CAN_AUTOPILOT[self.CP.carFingerprint],stlk_counter))
 
     #now process controls
-    if CC.latActive and (not CS.human_control):
+    if CC.latActive and (not CS.human_control) and (not CS.out.cruiseState.standstill):
       # Angular rate limit based on speed
       apply_angle = apply_std_steer_angle_limits(actuators.steeringAngleDeg, self.apply_angle_last, CS.out.vEgo, self.CCP)
 
