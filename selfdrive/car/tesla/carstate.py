@@ -229,7 +229,8 @@ class CarState(CarStateBase):
     self.hands_on_level = cp.vl["EPAS_sysStatus"]["EPAS_handsOnLevel"]
     
     self.HSOSteeringPressed = (self.hands_on_level >= self.handsOnLimit)
-    ret.steeringPressed = ((self.hands_on_level >= 1) and not self.enableHSO) or (self.HSOSteeringPressed and self.enableHSO)
+    #ret.steeringPressed = ((self.hands_on_level >= 1) and not self.enableHSO) or (self.HSOSteeringPressed and self.enableHSO)
+    ret.steeringPressed = (self.hands_on_level >= 1)
     ret.steerFaultPermanent = steer_status == "EAC_FAULT"
     ret.steerFaultTemporary = (self.steer_warning not in ("EAC_ERROR_IDLE", "EAC_ERROR_HANDS_ON","EAC_ERROR_TMP_FAULT"))
     self.torqueLevel = cp.vl["DI_torque1"]["DI_torqueMotor"]

@@ -1,1 +1,1 @@
-#define TINKLA_VERSION "0.9.6-29"
+#define TINKLA_VERSION "0.9.6-30"
