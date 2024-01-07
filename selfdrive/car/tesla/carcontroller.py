@@ -152,7 +152,7 @@ class CarController:
 
     #update HUD Integration module
     can_messages = self.hud_controller.update(controls_state, CC.latActive, CS, self.frame, actuators, pcm_cancel_cmd, CC.hudControl.visualAlert, CC.hudControl.audibleAlert,
-            CC.hudControl.leftLaneVisible, CC.hudControl.rightLaneVisible, CC.hudControl.leadVisible, CC.hudControl.leftLaneDepart, CC.hudControl.rightLaneDepart,CS.human_control,radar_state,CS.lat_plan,apply_angle,model_data)
+            CC.hudControl.leftLaneVisible, CC.hudControl.rightLaneVisible, CC.hudControl.leadVisible, CC.hudControl.leftLaneDepart, CC.hudControl.rightLaneDepart,CS.human_control,radar_state,CS.lat_plan,self.apply_angle_last,model_data)
     if len(can_messages) > 0:
       can_sends.extend(can_messages)
 
