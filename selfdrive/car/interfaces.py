@@ -327,7 +327,7 @@ class CarInterfaceBase(ABC):
 
     # Handle permanent and temporary steering faults
     self.steering_unpressed = 0 if steeringPressed else self.steering_unpressed + 1
-    if cs_out.steerFaultTemporary:
+    if cs_out.steerFaultTemporary or self.CS.human_control:
       if steeringPressed and (not self.CS.out.steerFaultTemporary or self.no_steer_warning):
         self.no_steer_warning = True
       else:
