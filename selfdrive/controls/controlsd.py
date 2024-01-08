@@ -83,7 +83,7 @@ class Controls:
                                    'driverMonitoringState', 'longitudinalPlan', 'lateralPlan', 'liveLocationKalman',
                                    'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters',
                                    'testJoystick', 'navModel'] + self.camera_packets + self.sensor_packets,
-                                  ignore_alive=ignore, ignore_avg_freq=['radarState', 'testJoystick'], ignore_valid=['testJoystick'])
+                                  ignore_alive=ignore, ignore_avg_freq=['radarState', 'testJoystick'], ignore_valid=['testJoystick','navModel'])
 
     if CI is None:
       # wait for one pandaState and one CAN packet
@@ -887,8 +887,6 @@ class Controls:
 
     if self.experimentalModeSpeedAutoswitch:
       nav_valid = self.sm.valid["navModel"]
-      if nav_valid:
-        nav_valid = self.sm["navModel"].valid
       if self.sm['longitudinalPlan'] and len(self.sm['longitudinalPlan'].accels) and len(self.sm['longitudinalPlan'].speeds):
         if (
           self.sm['longitudinalPlan'].hasLead == self.experimentalModeHasLead_last and # has lead
