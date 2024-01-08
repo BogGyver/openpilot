@@ -369,20 +369,21 @@ def main() -> NoReturn:
       gps.bearingAccuracyDeg = report["q_FltHeadingUncRad"] * 180/math.pi if (report["q_FltHeadingUncRad"] != 0) else 180
       gps.speedAccuracy = math.sqrt(sum([x**2 for x in vNEDsigma]))
       
-      #check if tesla accuracy is better
-      teslaAccuracy = sm['gpsLocationTesla'].accuracy
-      commaAccuracy = report["q_FltHdop"]
-      if (commaAccuracy > teslaAccuracy):
-        gps.latitude = sm['gpsLocationTesla'].latitude
-        gps.longitude = sm['gpsLocationTesla'].longitude
-        gps.altitude = sm['gpsLocationTesla'].altitude
-        gps.speed = sm['gpsLocationTesla'].speed
-        gps.bearingDeg = sm['gpsLocationTesla'].bearingDeg
-        gps.unixTimestampMillis = sm['gpsLocationTesla'].timestamp
-        gps.vNED = sm['gpsLocationTesla'].vNED
-        gps.verticalAccuracy = 0.5
-        gps.bearingAccuracyDeg = 0.5
-        gps.speedAccuracy = 0.5
+      #check if tesla accuracy is better if we received a tesla message
+      if sm['gpsLocationTesla']:
+        teslaAccuracy = sm['gpsLocationTesla'].accuracy
+        commaAccuracy = report["q_FltHdop"]
+        if (commaAccuracy > teslaAccuracy):
+          gps.latitude = sm['gpsLocationTesla'].latitude
+          gps.longitude = sm['gpsLocationTesla'].longitude
+          gps.altitude = sm['gpsLocationTesla'].altitude
+          gps.speed = sm['gpsLocationTesla'].speed
+          gps.bearingDeg = sm['gpsLocationTesla'].bearingDeg
+          gps.unixTimestampMillis = sm['gpsLocationTesla'].unixTimestampMillis
+          gps.vNED = sm['gpsLocationTesla'].vNED
+          gps.verticalAccuracy = 0.5
+          gps.bearingAccuracyDeg = 0.5
+          gps.speedAccuracy = 0.5
       # quectel gps verticalAccuracy is clipped to 500, set invalid if so
       gps.flags = 1 if gps.verticalAccuracy != 500 else 0
       if gps.flags:
