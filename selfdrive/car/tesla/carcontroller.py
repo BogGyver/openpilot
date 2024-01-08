@@ -105,7 +105,7 @@ class CarController:
       self.v_target = CS.out.vEgo
       self.a_target = 1
 
-    if CS.use_tesla_gps and (self.frame % 10 == 0):
+    if CS.use_tesla_gps and (self.frame % 5 == 0):
       if self.gpsLocationTesla is None:
           self.gpsLocationTesla = messaging.pub_sock("gpsLocationTesla")
       sol = gen_solution(CS)

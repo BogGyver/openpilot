@@ -370,7 +370,7 @@ def main() -> NoReturn:
       gps.speedAccuracy = math.sqrt(sum([x**2 for x in vNEDsigma]))
       
       #check if tesla accuracy is better if we received a tesla message
-      if sm.updated['gpsLocationTesla']:
+      if sm['gpsLocationTesla']: #if sm.updated['gpsLocationTesla']:
         teslaAccuracy = sm['gpsLocationTesla'].accuracy
         commaAccuracy = report["q_FltHdop"]
         if (commaAccuracy > teslaAccuracy):
