@@ -1,1 +1,1 @@
-#define COMMA_VERSION "0.9.6-Beta30"
+#define COMMA_VERSION "0.9.6-Beta31"
