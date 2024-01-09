@@ -74,16 +74,16 @@ class RadarInterface(RadarInterfaceBase):
             and 
             not (self.ignoreRadarSGUError)
           ) 
-          or 
-          (
-            sgu_info['RADC_SensorDirty']
-            and 
-            (
-              self.fingerprint != CAR.PREAP_MODELS
-              or
-              not self.behindNoseCone
-            )
-          )
+          # or 
+          # (
+          #   sgu_info['RADC_SensorDirty']
+          #   and 
+          #   (
+          #     self.fingerprint != CAR.PREAP_MODELS
+          #     or
+          #     not self.behindNoseCone
+          #   )
+          # )
     ):
       errors.append('fault')
     ret.errors = errors

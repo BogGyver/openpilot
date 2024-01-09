@@ -88,7 +88,7 @@ class CarController:
       if CS.cruiseEnabled:
         if not self.prevCruiseEnabled:
           self.cruiseDelayFrame = self.frame
-        if self.frame - self.cruiseDelayFrame > 100:
+        if self.frame - self.cruiseDelayFrame >= 100:
           CS.cruiseDelay = True
       else:
         self.cruiseDelayFrame = 0
@@ -146,9 +146,10 @@ class CarController:
       self.apply_angle_last = apply_angle
 
     #update LONG Control module
+    #if CC.enabled or (self.CP.carFingerprint == CAR.PREAP_MODELS) or CS.autopilot_disabled:
     can_messages = self.long_controller.update(CC.enabled, CS, self.frame, actuators, pcm_cancel_cmd,CC.cruiseControl.override, long_plan,radar_state)
-    if len(can_messages) > 0:
-      can_sends[0:0] = can_messages
+      if len(can_messages) > 0:
+        can_sends[0:0] = can_messages
 
     #update HUD Integration module
     if CC.enabled or (self.CP.carFingerprint == CAR.PREAP_MODELS) or CS.autopilot_disabled:
