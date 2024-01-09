@@ -34,7 +34,7 @@ static uint8_t len_to_dlc(uint8_t len) {
   }
 }
 
-const uint32_t TIME_TO_ENGAGE = 500000; //0.5s 1swait for AP status @ 2Hz
+const uint32_t TIME_TO_ENGAGE = 1000000; //1s wait for AP status @ 2Hz
 const uint32_t TIME_TO_HIDE_ERRORS = 4000000; //4s to hide potential fake DAS errors after disengage
 
 uint32_t time_cruise_engaged = 0;
@@ -1000,21 +1000,20 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
                             (cruise_state == 6) ||  // PRE_FAULT
                             (cruise_state == 7);    // PRE_CANCEL
       if (has_ap_hardware && !has_ap_disabled) {
-        // if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
-        //   time_cruise_engaged = microsecond_timer_get();
-        // }
+        if(cruise_engaged && !cruise_engaged_prev && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
+          time_cruise_engaged = microsecond_timer_get();
+        }
         
-        // if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
-        //   if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
-        //     pcm_cruise_check(cruise_engaged);
-        //   }
-        //   time_cruise_engaged = 0;
-        // }
+        if((time_cruise_engaged !=0) && (get_ts_elapsed(microsecond_timer_get(),time_cruise_engaged) >= TIME_TO_ENGAGE)) {
+          if (cruise_engaged && !(autopilot_enabled || eac_enabled || autopark_enabled) && !epas_inhibited) {
+            pcm_cruise_check(cruise_engaged);
+          }
+          time_cruise_engaged = 0;
+        }
         
-        // if(!cruise_engaged || epas_inhibited || (time_cruise_engaged == 0)) {
-        //   pcm_cruise_check(cruise_engaged);
-        // }
-        pcm_cruise_check(cruise_engaged);
+        if(!cruise_engaged || epas_inhibited || (time_cruise_engaged == 0)) {
+          pcm_cruise_check(cruise_engaged);
+        }
       }
       
     }
@@ -1028,21 +1027,21 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
       autopilot_enabled = (autopilot_status == 3) ||  // ACTIVE_1
                           (autopilot_status == 4);// ||  // ACTIVE_2
                           //(autopilot_status == 5);    // ACTIVE_NAVIGATE_ON_AUTOPILOT
-      // if (autopilot_enabled || eac_enabled || autopark_enabled) {
-      //   controls_allowed = false;
-      // }
+      if (autopilot_enabled || eac_enabled || autopark_enabled) {
+        controls_allowed = false;
+      }
     }
 
-    // if ((addr == 0x219) && (has_ap_hardware)) {
-    //   //autopark and eac status
-    //   int psc_status = ((GET_BYTE(to_push, 0) & 0xF0) >> 4);
-    //   int eac_status = (GET_BYTE(to_push, 1) & 0x07);
-    //   eac_enabled = (eac_status == 2);
-    //   autopark_enabled = (psc_status == 14) || ((psc_status >= 1) && (psc_status <=8));
-    //   if (autopilot_enabled || eac_enabled || autopark_enabled) {
-    //     controls_allowed = false;
-    //   }
-    // }
+    if ((addr == 0x219) && (has_ap_hardware)) {
+      //autopark and eac status
+      int psc_status = ((GET_BYTE(to_push, 0) & 0xF0) >> 4);
+      int eac_status = (GET_BYTE(to_push, 1) & 0x07);
+      eac_enabled = (eac_status == 2);
+      autopark_enabled = (psc_status == 14) || ((psc_status >= 1) && (psc_status <=8));
+      if (autopilot_enabled || eac_enabled || autopark_enabled) {
+        controls_allowed = false;
+      }
+    }
 
     if (addr == 0x2B9) {
       //AP1 DAS_control
@@ -1223,7 +1222,7 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd ) {
 
   if (tesla_stock_aeb && (bus_num == 2)) {
     //instantly forward 2->0 messages if AEB is engaged
-    //controls_allowed = false;
+    controls_allowed = false;
     return 0;
   }
 
@@ -1281,12 +1280,12 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd ) {
       }
 
       //enable autopilot=1 if autopilot=0
-      if ((addr == 0x398) && (((GET_BYTE(to_fwd, 7) & 0x38)>>3) == 0)) {
-        //we have autopilot but it's disabled, so enable it for just "highway" to get ACC going
-        WORD_TO_BYTE_ARRAY(&to_fwd->data[4],(GET_BYTES_48(to_fwd) & 0xC7FFFFFF) | 0x08000000);
-        safety_can_set_checksum(to_fwd);
-        has_ap_disabled = true;
-      }
+      // if ((addr == 0x398) && (((GET_BYTE(to_fwd, 7) & 0x38)>>3) == 0)) {
+      //   //we have autopilot but it's disabled, so enable it for just "highway" to get ACC going
+      //   WORD_TO_BYTE_ARRAY(&to_fwd->data[4],(GET_BYTES_48(to_fwd) & 0xC7FFFFFF) | 0x08000000);
+      //   safety_can_set_checksum(to_fwd);
+      //   has_ap_disabled = true;
+      // }
 
       //do not forward IC integration stuff from 0 -> 2 because they should not even be there
       if ((addr == 0x399) || (addr == 0x389) || (addr == 0x239) ||(addr == 0x309) || (addr == 0x3A9) || (addr == 0x329) || (addr == 0x369) || (addr == 0x349)) {

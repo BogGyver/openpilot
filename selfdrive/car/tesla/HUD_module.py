@@ -228,7 +228,7 @@ class HUDController:
             DAS_control_speed = 350.0/3.6
         if self.engageable and (not enabled) and cruise_speed == 0:
             cruise_speed = 10
-        should_send = enabled or (self.IC_previous_enabled and not enabled ) or CS.autopilot_disabled_det or self.CP.carFingerprint == CAR.PREAP_MODELS
+        should_send = enabled or (self.IC_previous_enabled and not enabled ) or CS.autopilot_disabled or self.CP.carFingerprint == CAR.PREAP_MODELS
         self.prev_autopilot_enabled = CS.autopilot_enabled
         if not should_send:
             self.IC_previous_enabled = enabled
@@ -251,7 +251,7 @@ class HUDController:
                 #print("Sending DAS_status2 (DAS_csaState, cruise_speed, DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1) with values (",DAS_csaState, cruise_speed, 
                 #    DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1,")")
 
-        if (enabled or CS.autopilot_disabled_det or self.IC_previous_enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
+        if (enabled or CS.autopilot_disabled or self.IC_previous_enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
 
             # send DAS_bodyControls
             if (self.IC_integration_counter in [20,70]) or (self.IC_previous_enabled and not enabled):

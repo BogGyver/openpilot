@@ -28,7 +28,6 @@ class CarState(CarStateBase):
     self.acc_state = 0
 
     self.autopilot_disabled = load_bool_param("TinklaAutopilotDisabled",False)
-    self.autopilot_disabled_det = False
 
     self.das_steeringControl_counter = -1
     self.das_status_counter = -1
@@ -249,8 +248,7 @@ class CarState(CarStateBase):
       if (self.teslaModelDetected == 0) or (prev_teslaModel != self.teslaModel):
         self.teslaModelDetected = 1
 
-    self.autopilot_disabled_det = (cp.vl["GTW_carConfig"]["GTW_autopilot"] == 0)
-    self.enableHAO = (self.CP.carFingerprint in [CAR.PREAP_MODELS]) or ((self.CP.carFingerprint in [CAR.AP1_MODELS]) and (self.autopilot_disabled_det))
+    self.enableHAO = (self.CP.carFingerprint in [CAR.PREAP_MODELS]) or ((self.CP.carFingerprint in [CAR.AP1_MODELS]) and (self.autopilot_disabled))
 
     # Cruise state
     #cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)

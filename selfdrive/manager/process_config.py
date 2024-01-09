@@ -4,6 +4,7 @@ from cereal import car
 from openpilot.common.params import Params
 from openpilot.system.hardware import PC, TICI
 from openpilot.selfdrive.manager.process import PythonProcess, NativeProcess, DaemonProcess
+from openpilot.selfdrive.car.modules.CFG_module import load_str_param
 
 WEBCAM = os.getenv("USE_WEBCAM") is not None
 
@@ -40,6 +41,9 @@ def only_onroad(started: bool, params, CP: car.CarParams) -> bool:
 
 def only_offroad(started, params, CP: car.CarParams) -> bool:
   return not started
+
+def use_mapbox(started, params, CP: car.CarParams) -> bool:
+  return (load_str_param("TinklaYourMapboxToken","") != "")
 
 procs = [
   DaemonProcess("manage_athenad", "selfdrive.athena.manage_athenad", "AthenadPid"),
@@ -86,6 +90,7 @@ procs = [
   NativeProcess("bridge", "cereal/messaging", ["./bridge"], notcar),
   PythonProcess("webrtcd", "system.webrtc.webrtcd", notcar),
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
+  PythonProcess("otisserv","selfdrive.navd.otisserv", use_mapbox),
 ]
 
 managed_processes = {p.name: p for p in procs}

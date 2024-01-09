@@ -88,7 +88,7 @@ class CarController:
       if CS.cruiseEnabled:
         if not self.prevCruiseEnabled:
           self.cruiseDelayFrame = self.frame
-        if self.frame - self.cruiseDelayFrame > 30:
+        if self.frame - self.cruiseDelayFrame > 100:
           CS.cruiseDelay = True
       else:
         self.cruiseDelayFrame = 0

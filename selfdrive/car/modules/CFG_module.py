@@ -53,13 +53,14 @@ def save_str_param(param_name,param_value):
 
 def load_str_param(param_name,param_def_value):
     try:
+        value_saved = ""
         with open(OP_PARAMS_PATH+"/"+param_name, 'r') as f:
             for line in f:
-                value_saved = line
+                value_saved = line.rstrip()
         return value_saved
     except IOError:
         print("Initializing "+param_name+" with value ",param_def_value)
-        save_float_param(param_name,param_def_value)
+        save_str_param(param_name,param_def_value)
         return param_def_value
 
 
