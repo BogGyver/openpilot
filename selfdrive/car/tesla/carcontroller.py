@@ -148,8 +148,8 @@ class CarController:
     #update LONG Control module
     #if CC.enabled or (self.CP.carFingerprint == CAR.PREAP_MODELS) or CS.autopilot_disabled:
     can_messages = self.long_controller.update(CC.enabled, CS, self.frame, actuators, pcm_cancel_cmd,CC.cruiseControl.override, long_plan,radar_state)
-      if len(can_messages) > 0:
-        can_sends[0:0] = can_messages
+    if len(can_messages) > 0:
+      can_sends[0:0] = can_messages
 
     #update HUD Integration module
     if CC.enabled or (self.CP.carFingerprint == CAR.PREAP_MODELS) or CS.autopilot_disabled:

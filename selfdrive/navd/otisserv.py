@@ -146,6 +146,8 @@ class OtisServ(BaseHTTPRequestHandler):
 
   def get_public_token(self):
     token = load_str_param("TinklaYourMapboxToken","") #params.get("CustomMapboxTokenPk", encoding='utf8')
+    if token is not None and token == "?":
+      return None
     if token is not None and token != "":
       return token.rstrip('\x00')
     return None
