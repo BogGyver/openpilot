@@ -42,7 +42,7 @@ qt_src = ["main.cc", "qt/sidebar.cc", "qt/onroad.cc", "qt/body.cc",
           "qt/offroad/software_settings.cc", "qt/offroad/onboarding.cc",
           "qt/offroad/driverview.cc", "qt/offroad/experimental_mode.cc",
           "../car/modules/qt/tsettings.cc", "../car/modules/qt/num_param.cc",
-          "../car/modules/qt/str_param.cc", "../car/modules/qt/tinklaparams.cc",]
+          "../car/modules/qt/str_param.cc", "../car/modules/qt/txt_param.cc", "../car/modules/qt/tinklaparams.cc",]
 
 # build translation files
 with open(File("translations/languages.json").abspath) as f:

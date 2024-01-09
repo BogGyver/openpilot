@@ -11,10 +11,12 @@
 
 #include "num_param.h"
 #include "str_param.h"
+#include "txt_param.h"
 
 #define TINKLA_TOGGLE 1
 #define TINKLA_FLOAT 2
 #define TINKLA_STRING 3
+#define TINKLA_TEXT 4
 
 TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
 
@@ -28,6 +30,15 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
       "TESLA PREAP MODEL S,TESLA AP1 MODEL S,TESLA AP1 MODEL X,TESLA AP2+ MODEL S,TESLA AP2+ MODEL X,NONE",
       "NONE",
       0.0,0.0,0.0,0.0,TINKLA_STRING
+    },
+    {"TinklaYourMapboxToken",
+      "Mapbox Token",
+      "Use your own Mapbox token for Nav on OP.",
+      "../assets/offroad/icon_settings.png",
+      "Token:",
+      "",
+      "",
+      0.0,0.0,0.0,0.0,TINKLA_TEXT
     },
     {"TinklaHsoNumbPeriod",
       "HSO numb period",
@@ -131,6 +142,9 @@ TinklaTogglesPanel::TinklaTogglesPanel(SettingsWindow *parent) : ListWidget(pare
     }
     if (field_type == TINKLA_STRING) {
       addItem(new StrParamControl(title, desc, edit_title,edit_desc, param, edit_uom, QString::fromStdString(""), icon));
+    }
+    if (field_type == TINKLA_TEXT) {
+      addItem(new TextParamControl(title, desc, edit_title,edit_desc, param, edit_uom, QString::fromStdString(""), icon));
     }
   };
 }

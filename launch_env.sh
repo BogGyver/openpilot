@@ -15,3 +15,11 @@ if [ -z "$PASSIVE" ]; then
 fi
 
 export STAGING_ROOT="/data/safe_staging"
+
+# use your own MAPBOX_TOKEN
+touch /data/params/TinklaYourMapboxToken
+tymt=`cat /data/params/TinklaYourMapboxToken`
+tymt=${tymt//[$'\n\r']/}
+if [ ! -z "$tymt" ]; then
+  export MAPBOX_TOKEN="$tymt"
+fi
