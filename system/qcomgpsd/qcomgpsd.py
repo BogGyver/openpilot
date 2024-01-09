@@ -272,6 +272,7 @@ def main() -> NoReturn:
 
   pm = messaging.PubMaster(['qcomGnss', 'gpsLocation'])
   sm = messaging.SubMaster(['gpsLocationTesla'])
+  teslaAccuracy = 1000.0
 
   while 1:
     if os.path.exists(ASSIST_DATA_FILE) and want_assistance:
@@ -290,9 +291,6 @@ def main() -> NoReturn:
 
     (log_inner_length, log_type, log_time), log_payload = unpack_from('<HHQ', inner_log_packet), inner_log_packet[calcsize('<HHQ'):]
     assert log_inner_length == len(inner_log_packet)
-
-    #Receive Tesla GPS info
-    sm.update(0)
 
     if log_type not in LOG_TYPES:
       continue
@@ -368,22 +366,23 @@ def main() -> NoReturn:
       gps.verticalAccuracy = report["q_FltVdop"]
       gps.bearingAccuracyDeg = report["q_FltHeadingUncRad"] * 180/math.pi if (report["q_FltHeadingUncRad"] != 0) else 180
       gps.speedAccuracy = math.sqrt(sum([x**2 for x in vNEDsigma]))
-      
-      #check if tesla accuracy is better if we received a tesla message
-      if sm['gpsLocationTesla']: #if sm.updated['gpsLocationTesla']:
+      #Receive Tesla GPS info
+      sm.update(0)
+      commaAccuracy = report["q_FltHdop"]
+      if sm.updated['gpsLocationTesla']:
         teslaAccuracy = sm['gpsLocationTesla'].accuracy
-        commaAccuracy = report["q_FltHdop"]
-        if (commaAccuracy > teslaAccuracy):
-          gps.latitude = sm['gpsLocationTesla'].latitude
-          gps.longitude = sm['gpsLocationTesla'].longitude
-          gps.altitude = sm['gpsLocationTesla'].altitude
-          gps.speed = sm['gpsLocationTesla'].speed
-          gps.bearingDeg = sm['gpsLocationTesla'].bearingDeg
-          gps.unixTimestampMillis = sm['gpsLocationTesla'].unixTimestampMillis
-          gps.vNED = sm['gpsLocationTesla'].vNED
-          gps.verticalAccuracy = 0.5
-          gps.bearingAccuracyDeg = 0.5
-          gps.speedAccuracy = 0.5
+      #check if tesla accuracy is better 
+      if (commaAccuracy > teslaAccuracy):
+        gps.latitude = sm['gpsLocationTesla'].latitude
+        gps.longitude = sm['gpsLocationTesla'].longitude
+        gps.altitude = sm['gpsLocationTesla'].altitude
+        gps.speed = sm['gpsLocationTesla'].speed
+        gps.bearingDeg = sm['gpsLocationTesla'].bearingDeg
+        #gps.unixTimestampMillis = sm['gpsLocationTesla'].unixTimestampMillis
+        gps.vNED = sm['gpsLocationTesla'].vNED
+        gps.verticalAccuracy = 0.5
+        gps.bearingAccuracyDeg = 0.5
+        gps.speedAccuracy = 0.5
       # quectel gps verticalAccuracy is clipped to 500, set invalid if so
       gps.flags = 1 if gps.verticalAccuracy != 500 else 0
       if gps.flags:
