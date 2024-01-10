@@ -74,6 +74,7 @@ class RadarInterface(RadarInterfaceBase):
             and 
             not (self.ignoreRadarSGUError)
           ) 
+          # SensorDirty alwasy generates SGUFail... we can ignore this
           # or 
           # (
           #   sgu_info['RADC_SensorDirty']

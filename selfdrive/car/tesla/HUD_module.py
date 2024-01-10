@@ -229,9 +229,9 @@ class HUDController:
         if self.engageable and (not enabled) and cruise_speed == 0:
             cruise_speed = 10
         should_send = enabled or (self.IC_previous_enabled and not enabled ) or CS.autopilot_disabled or self.CP.carFingerprint == CAR.PREAP_MODELS
+        self.IC_previous_enabled = enabled
         self.prev_autopilot_enabled = CS.autopilot_enabled
         if not should_send:
-            self.IC_previous_enabled = enabled
             return messages
 
         # need DAS_status and DAS_status2 at 2Hz, so send at 10Hz

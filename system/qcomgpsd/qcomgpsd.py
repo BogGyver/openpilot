@@ -271,10 +271,14 @@ def main() -> NoReturn:
   gpio_set(GPIO.GNSS_PWR_EN, True)
 
   pm = messaging.PubMaster(['qcomGnss', 'gpsLocation'])
-  sm = messaging.SubMaster(['gpsLocationTesla'])
+  sm = messaging.pub_sock("gpsLocationTesla")
+  gpsLocationTesla = None
   teslaAccuracy = 1000.0
 
   while 1:
+    #Receive Tesla GPS info
+    teslaGPS = messaging.recv_one_or_none(sm)
+
     if os.path.exists(ASSIST_DATA_FILE) and want_assistance:
       setup_quectel(diag)
       want_assistance = False
@@ -366,20 +370,20 @@ def main() -> NoReturn:
       gps.verticalAccuracy = report["q_FltVdop"]
       gps.bearingAccuracyDeg = report["q_FltHeadingUncRad"] * 180/math.pi if (report["q_FltHeadingUncRad"] != 0) else 180
       gps.speedAccuracy = math.sqrt(sum([x**2 for x in vNEDsigma]))
-      #Receive Tesla GPS info
-      sm.update(0)
+      
       commaAccuracy = report["q_FltHdop"]
-      if sm.updated['gpsLocationTesla']:
-        teslaAccuracy = sm['gpsLocationTesla'].accuracy
+      if teslaGPS and teslaGPS.gpsLocationTesla:
+        gpsLocationTesla = teslaGPS.gpsLocationTesla
+        teslaAccuracy = gpsLocationTesla.accuracy
       #check if tesla accuracy is better 
       if (commaAccuracy > teslaAccuracy):
-        gps.latitude = sm['gpsLocationTesla'].latitude
-        gps.longitude = sm['gpsLocationTesla'].longitude
-        gps.altitude = sm['gpsLocationTesla'].altitude
-        gps.speed = sm['gpsLocationTesla'].speed
-        gps.bearingDeg = sm['gpsLocationTesla'].bearingDeg
-        #gps.unixTimestampMillis = sm['gpsLocationTesla'].unixTimestampMillis
-        gps.vNED = sm['gpsLocationTesla'].vNED
+        gps.latitude = gpsLocationTesla.latitude
+        gps.longitude = gpsLocationTesla.longitude
+        gps.altitude = gpsLocationTesla.altitude
+        gps.speed = gpsLocationTesla.speed
+        gps.bearingDeg = gpsLocationTesla.bearingDeg
+        gps.unixTimestampMillis = gpsLocationTesla.unixTimestampMillis
+        gps.vNED = gpsLocationTesla.vNED
         gps.verticalAccuracy = 0.5
         gps.bearingAccuracyDeg = 0.5
         gps.speedAccuracy = 0.5

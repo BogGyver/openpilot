@@ -153,11 +153,10 @@ class CarController:
       can_sends[0:0] = can_messages
 
     #update HUD Integration module
-    if CC.enabled or (self.CP.carFingerprint == CAR.PREAP_MODELS) or CS.autopilot_disabled:
-      can_messages = self.hud_controller.update(controls_state, CC.enabled, CS, self.frame, actuators, pcm_cancel_cmd, CC.hudControl.visualAlert, CC.hudControl.audibleAlert,
-            CC.hudControl.leftLaneVisible, CC.hudControl.rightLaneVisible, CC.hudControl.leadVisible, CC.hudControl.leftLaneDepart, CC.hudControl.rightLaneDepart,CS.human_control,radar_state,CS.lat_plan,self.apply_angle_last,model_data)
-      if len(can_messages) > 0:
-        can_sends.extend(can_messages)
+    can_messages = self.hud_controller.update(controls_state, CC.enabled, CS, self.frame, actuators, pcm_cancel_cmd, CC.hudControl.visualAlert, CC.hudControl.audibleAlert,
+          CC.hudControl.leftLaneVisible, CC.hudControl.rightLaneVisible, CC.hudControl.leadVisible, CC.hudControl.leftLaneDepart, CC.hudControl.rightLaneDepart,CS.human_control,radar_state,CS.lat_plan,self.apply_angle_last,model_data)
+    if len(can_messages) > 0:
+      can_sends.extend(can_messages)
 
     new_actuators = actuators.copy()
     new_actuators.steeringAngleDeg = self.apply_angle_last
