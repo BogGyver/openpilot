@@ -214,6 +214,8 @@ class HUDController:
         if not self.engageable:
             DAS_op_status = 1
             DAS_csaState = 0
+        if (self.CP.carFingerprint != CAR.PREAP_MODELS) and not enabled:
+            DAS_op_status = CS.real_autopilot_status
 
         #preAP stuff
         speed_uom_kph = 1.0
@@ -229,9 +231,11 @@ class HUDController:
         if self.engageable and (not enabled) and cruise_speed == 0:
             cruise_speed = 10
         should_send = enabled or (self.IC_previous_enabled and not enabled ) or CS.autopilot_disabled or self.CP.carFingerprint == CAR.PREAP_MODELS
-        self.IC_previous_enabled = enabled
+        
         self.prev_autopilot_enabled = CS.autopilot_enabled
+
         if CS.autopilot_enabled:
+            self.IC_previous_enabled = enabled
             return messages
         
 
@@ -253,6 +257,7 @@ class HUDController:
                 #    DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1,")")
                 
         if not should_send:
+            self.IC_previous_enabled = enabled
             return messages
 
         if (enabled or CS.autopilot_disabled or self.IC_previous_enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):

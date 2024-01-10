@@ -122,6 +122,7 @@ class CarState(CarStateBase):
     self.brakeUnavailable = True
     self.realBrakePressed = False
     self.userSpeedLimitOffsetMS = 0
+    self.real_autopilot_status = 0
 
     #variables for GPS Fix
     self.gpsLongitude = 0.0
@@ -266,6 +267,7 @@ class CarState(CarStateBase):
     autopilot_status = None
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
       autopilot_status = self.can_define.dv["DAS_status"]["DAS_autopilotState"].get(int(cp_cam.vl["DAS_status"]["DAS_autopilotState"]), None)
+      self.real_autopilot_status = int(cp_cam.vl["DAS_status"]["DAS_autopilotState"])
     autopark_status = None
     eac_status = None
     if (not self.CP.carFingerprint == CAR.PREAP_MODELS):
