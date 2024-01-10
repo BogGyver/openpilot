@@ -102,23 +102,37 @@ class PedalCalibrator:
     ret += sum(dat)
     return ret & 0xFF
 
+  
+
   def get_parser_can0(self):
     # Status messages
     new_signals = [
-      ("DI_torque1", 100),
-      ("DI_torque2", 100),
-      ("BrakeMessage", 50),
-      ("GTW_status", 0),
+          ("DI_pedalPos","DI_torque1",0),
+          ("DI_gear","DI_torque2",0),
+          ("driverBrakeStatus","BrakeMessage",0),
+          ("GTW_driveRailReq","GTW_status",0),
     ]
-    return CANParser(DBC[CAR.PREAP_MODELS]['chassis'], new_signals, bus=CAN_CHASSIS[CAR.PREAP_MODELS])
-    
+    checks = [
+          ('BrakeMessage',1),
+          ('DI_torque1',1),
+          ('DI_torque2',1),
+          ('GTW_status',1),
+    ]
+    return CANParser(DBC[CAR.PREAP_MODELS]['chassis'], new_signals, checks, CAN_CHASSIS[CAR.PREAP_MODELS])
+
   def get_parser_can2(self):
     # Pedal messages
     new_signals = [
-      ("GAS_SENSOR", 0),
+          ("INTERCEPTOR_GAS", "GAS_SENSOR", 0),
+          ("INTERCEPTOR_GAS2", "GAS_SENSOR", 0),
+          ("STATE", "GAS_SENSOR", 0),
+          ("IDX", "GAS_SENSOR", 0),
     ]
-    return CANParser(DBC[CAR.PREAP_MODELS]['chassis'], new_signals, bus=2)
-
+    checks = [
+          ("GAS_SENSOR", 0),
+    ]
+    return CANParser(DBC[CAR.PREAP_MODELS]['chassis'], new_signals, checks, 2, enforce_checks=False)
+    
   def create_pedal_command_msg(self,accelCommand, enable, pedalcan):
     """Create GAS_COMMAND (0x551) message to comma pedal"""
     msg_id = 0x551

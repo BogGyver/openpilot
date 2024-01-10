@@ -271,7 +271,7 @@ def main() -> NoReturn:
   gpio_set(GPIO.GNSS_PWR_EN, True)
 
   pm = messaging.PubMaster(['qcomGnss', 'gpsLocation'])
-  sm = messaging.pub_sock("gpsLocationTesla")
+  sm = messaging.sub_sock("gpsLocationTesla")
   gpsLocationTesla = None
   teslaAccuracy = 1000.0
 
