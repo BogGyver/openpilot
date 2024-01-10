@@ -445,9 +445,9 @@ class CarState(CarStateBase):
     #BBTODO: in latest versions of code Tesla does not populate this field
     ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
     self.realPedalValue = ret.gas
+    self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
     ret.gasPressed = (ret.gas > 0.1 )
     if self.enableHAO:
-      self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
       ret.gas = 0
       ret.gasPressed = False
     #PREAP overrides at the last moment
@@ -476,7 +476,6 @@ class CarState(CarStateBase):
         ret.gasPressed = (self.pedal_interceptor_value > PEDAL_DI_PRESSED)
       if self.enablePedal:
         if self.enableHAO and self.pcc_enabled:
-          self.DAS_216_driverOverriding = 1 if ret.gasPressed else 0
           ret.gas = 0
       if not self.pcc_enabled:
         self.pccEvent = None
@@ -513,7 +512,7 @@ class CarState(CarStateBase):
           ret.cruiseState.standstill = ret.standstill
         ret.brakePressed = False
         if not self.pcc_enabled:
-          self.DAS_216_driverOverriding = False
+          self.DAS_216_driverOverriding = 0
         ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
     
     return ret

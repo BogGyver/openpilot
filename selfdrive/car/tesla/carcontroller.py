@@ -12,6 +12,7 @@ from cereal import log
 import datetime
 import time
 import math
+from openpilot.common.params import Params
 
 sec_since_boot = time.time
 
@@ -55,6 +56,7 @@ class CarController:
     self.tesla_can = TeslaCAN(self.packer, self.pt_packer)
     self.prev_das_steeringControl_counter = -1
     self.long_control_counter = 0
+    self.params = Params()
 
     #initialize modules
     
@@ -146,7 +148,6 @@ class CarController:
       self.apply_angle_last = apply_angle
 
     #update LONG Control module
-    #if CC.enabled or (self.CP.carFingerprint == CAR.PREAP_MODELS) or CS.autopilot_disabled:
     can_messages = self.long_controller.update(CC.enabled, CS, self.frame, actuators, pcm_cancel_cmd,CC.cruiseControl.override, long_plan,radar_state)
     if len(can_messages) > 0:
       can_sends[0:0] = can_messages
@@ -160,6 +161,15 @@ class CarController:
 
     new_actuators = actuators.copy()
     new_actuators.steeringAngleDeg = self.apply_angle_last
+
+    #once a second save the follow distane to personality
+    if (self.frame % 100 == 0) and CS.out.followDistanceS != 255:
+      personality = log.LongitudinalPersonality.standard
+      if CS.out.followDistanceS < 3:
+        personality = log.LongitudinalPersonality.aggressive
+      if CS.out.followDistanceS > 5:
+        personality = log.LongitudinalPersonality.relaxed
+      self.params.put('LongitudinalPersonality',str(personality))
 
     self.frame += 1
     
