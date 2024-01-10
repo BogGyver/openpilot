@@ -34,7 +34,7 @@ static uint8_t len_to_dlc(uint8_t len) {
   }
 }
 
-const uint32_t TIME_TO_ENGAGE = 600000; //1s wait for AP status @ 2Hz
+const uint32_t TIME_TO_ENGAGE = 1000000; //1s wait for AP status @ 2Hz
 const uint32_t TIME_TO_HIDE_ERRORS = 4000000; //4s to hide potential fake DAS errors after disengage
 
 uint32_t time_cruise_engaged = 0;

@@ -208,8 +208,6 @@ class HUDController:
         #          4-active_restricted 5-active_nav 8-aborting 9-aborted
         #          14-fault  15-SNA
         DAS_op_status = 5 if enabled else 2
-        if CS.autopilot_enabled:
-            DAS_op_status = 3
         DAS_csaState = 2 if enabled else 1
         if not self.engageable:
             DAS_op_status = 1
@@ -238,9 +236,8 @@ class HUDController:
             self.IC_previous_enabled = enabled
             return messages
         
-
         # need DAS_status and DAS_status2 at 2Hz, so send at 10Hz
-        if (self.IC_integration_counter % 10 == 0) or (self.IC_previous_enabled and not enabled ):
+        if (self.IC_integration_counter % 10 == 0) or (self.IC_previous_enabled and not enabled ) or (self.prev_autopilot_enabled and not CS.autopilot_enabled):
             
             if CS.enableICIntegration:
                 messages.append(self.tesla_can.create_das_status(DAS_op_status, DAS_collision_warning,
