@@ -231,13 +231,14 @@ class HUDController:
         should_send = enabled or (self.IC_previous_enabled and not enabled ) or CS.autopilot_disabled or self.CP.carFingerprint == CAR.PREAP_MODELS
         self.IC_previous_enabled = enabled
         self.prev_autopilot_enabled = CS.autopilot_enabled
-        if not should_send:
+        if CS.autopilot_enabled:
             return messages
+        
 
         # need DAS_status and DAS_status2 at 2Hz, so send at 10Hz
         if (self.IC_integration_counter % 10 == 0) or (self.IC_previous_enabled and not enabled ):
             
-            if CS.enableICIntegration and should_send:
+            if CS.enableICIntegration:
                 messages.append(self.tesla_can.create_das_status(DAS_op_status, DAS_collision_warning,
                     DAS_ldwStatus, DAS_hands_on_state, DAS_alca_state, 
                     CS.out.leftBlindspot, CS.out.rightBlindspot,
@@ -250,6 +251,9 @@ class HUDController:
                     DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1))
                 #print("Sending DAS_status2 (DAS_csaState, cruise_speed, DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1) with values (",DAS_csaState, cruise_speed, 
                 #    DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1,")")
+                
+        if not should_send:
+            return messages
 
         if (enabled or CS.autopilot_disabled or self.IC_previous_enabled or self.CP.carFingerprint == CAR.PREAP_MODELS) and (self.IC_integration_counter % 10 == 0):
 
