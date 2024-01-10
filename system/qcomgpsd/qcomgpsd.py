@@ -357,7 +357,6 @@ def main() -> NoReturn:
                       datetime.timedelta(seconds=(1e-3*report['q_GpsFixTimeMs'] - 18)))
       gps.unixTimestampMillis = dt_timestamp.timestamp()*1e3
       gps.source = log.GpsLocationData.SensorSource.qcomdiag
-      gps.vNED = vNED
       gps.verticalAccuracy = report["q_FltVdop"]
       gps.bearingAccuracyDeg = report["q_FltHeadingUncRad"] * 180/math.pi if (report["q_FltHeadingUncRad"] != 0) else 180
       gps.speedAccuracy = math.sqrt(sum([x**2 for x in vNEDsigma]))
@@ -378,6 +377,8 @@ def main() -> NoReturn:
         gps.verticalAccuracy = 0.5
         gps.bearingAccuracyDeg = 0.5
         gps.speedAccuracy = 0.5
+      else:
+        gps.vNED = vNED
       # quectel gps verticalAccuracy is clipped to 500, set invalid if so
       gps.flags = 1 if gps.verticalAccuracy != 500 else 0
       if gps.flags:
