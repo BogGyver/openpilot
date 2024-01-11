@@ -238,6 +238,7 @@ def main() -> NoReturn:
   stop_download_event = Event()
   assist_fetch_proc = Process(target=downloader_loop, args=(stop_download_event,))
   assist_fetch_proc.start()
+  usingTeslaGPS = True
   def cleanup(sig, frame):
     cloudlog.warning("caught sig disabling quectel gps")
 
@@ -342,6 +343,7 @@ def main() -> NoReturn:
         if teslaGPS and teslaGPS.gpsLocationTesla:
           msg = messaging.new_message('gpsLocation', valid=True)
           gps = msg.gpsLocation
+          gpsLocationTesla = teslaGPS.gpsLocationTesla
           gps.latitude = gpsLocationTesla.latitude
           gps.longitude = gpsLocationTesla.longitude
           gps.altitude = gpsLocationTesla.altitude
@@ -354,6 +356,7 @@ def main() -> NoReturn:
           gps.speedAccuracy = 0.5
           gps.flags = 1 if gps.verticalAccuracy != 500 else 0
           pm.send('gpsLocation', msg)
+          usingTeslaGPS = True
         continue
       vNED = [report["q_FltVelEnuMps[1]"], report["q_FltVelEnuMps[0]"], -report["q_FltVelEnuMps[2]"]]
       vNEDsigma = [report["q_FltVelSigmaMps[1]"], report["q_FltVelSigmaMps[0]"], -report["q_FltVelSigmaMps[2]"]]
@@ -393,13 +396,17 @@ def main() -> NoReturn:
         gps.verticalAccuracy = 0.5
         gps.bearingAccuracyDeg = 0.5
         gps.speedAccuracy = 0.5
+        usingTeslaGPS = True
+      else:
+        usingTeslaGPS = False
                 
       # quectel gps verticalAccuracy is clipped to 500, set invalid if so
       gps.flags = 1 if gps.verticalAccuracy != 500 else 0
       if gps.flags:
         want_assistance = False
         stop_download_event.set()
-      pm.send('gpsLocation', msg)
+      if not usingTeslaGPS:
+        pm.send('gpsLocation', msg)
 
     elif log_type == LOG_GNSS_OEMDRE_SVPOLY_REPORT:
       msg = messaging.new_message('qcomGnss', valid=True)
@@ -494,8 +501,8 @@ def main() -> NoReturn:
               pass
             else:
               setattr(sv, k, v)
-
-      pm.send('qcomGnss', msg)
+      if not usingTeslaGPS:
+        pm.send('qcomGnss', msg)
 
 if __name__ == "__main__":
   main()
