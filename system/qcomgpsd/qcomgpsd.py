@@ -339,6 +339,21 @@ def main() -> NoReturn:
     elif log_type == LOG_GNSS_POSITION_REPORT:
       report = unpack_position(log_payload)
       if report["u_PosSource"] != 2:
+        if teslaGPS and teslaGPS.gpsLocationTesla:
+          msg = messaging.new_message('gpsLocation', valid=True)
+          gps = msg.gpsLocation
+          gps.latitude = gpsLocationTesla.latitude
+          gps.longitude = gpsLocationTesla.longitude
+          gps.altitude = gpsLocationTesla.altitude
+          gps.speed = gpsLocationTesla.speed
+          gps.bearingDeg = gpsLocationTesla.bearingDeg
+          gps.unixTimestampMillis = gpsLocationTesla.unixTimestampMillis
+          gps.vNED = [gpsLocationTesla.vNED[0],gpsLocationTesla.vNED[1],gpsLocationTesla.vNED[2]]
+          gps.verticalAccuracy = 0.5
+          gps.bearingAccuracyDeg = 0.5
+          gps.speedAccuracy = 0.5
+          gps.flags = 1 if gps.verticalAccuracy != 500 else 0
+          pm.send('gpsLocation', msg)
         continue
       vNED = [report["q_FltVelEnuMps[1]"], report["q_FltVelEnuMps[0]"], -report["q_FltVelEnuMps[2]"]]
       vNEDsigma = [report["q_FltVelSigmaMps[1]"], report["q_FltVelSigmaMps[0]"], -report["q_FltVelSigmaMps[2]"]]

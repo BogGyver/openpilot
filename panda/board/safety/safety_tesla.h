@@ -41,6 +41,7 @@ uint32_t time_cruise_engaged = 0;
 uint32_t time_op_disengaged = 0;
 const float TESLA_MAX_ACCEL = 2.01;  // m/s^2
 const float TESLA_MIN_ACCEL = -4.51; // m/s^2
+bool cruise_engaged = false;
 
 //for safetyParam parsing
 const uint16_t FLAG_TESLA_POWERTRAIN = 1;
@@ -72,7 +73,6 @@ bool bosch_radar_vin_learn = false;
 bool has_das_hw = false;
 
 int last_acc_status = -1;
-bool prev_controls_allowed = false;
 
 //pedal pressed (with Pedal)
 int pedalPressed = 0;
@@ -994,7 +994,7 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
     if(addr == (tesla_powertrain ? 0x256 : 0x368)) {
       // Cruise state
       int cruise_state = (GET_BYTE(to_push, 1) >> 4);
-      bool cruise_engaged = (cruise_state == 2) ||  // ENABLED
+      cruise_engaged = (cruise_state == 2) ||  // ENABLED
                             (cruise_state == 3) ||  // STANDSTILL
                             (cruise_state == 4) ||  // OVERRIDE
                             (cruise_state == 6) ||  // PRE_FAULT
@@ -1011,6 +1011,10 @@ static void tesla_rx_hook(CANPacket_t *to_push) {
 
         if (time_cruise_engaged == 0) {
           controls_allowed = cruise_engaged;
+        }
+        if ((cruise_engaged_prev) && (!cruise_engaged)) {
+          //set timer since we have AP and we need to mask some messages for few seconds
+          time_op_disengaged = microsecond_timer_get();
         }
         cruise_engaged_prev = cruise_engaged;
       }
@@ -1181,11 +1185,6 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd ) {
   //check for disengagement
   int das_control_addr = (tesla_powertrain ? 0x2bf : 0x2b9);
 
-  if ((prev_controls_allowed) && (!controls_allowed)) {
-    time_op_disengaged = microsecond_timer_get();
-  }
-  prev_controls_allowed = controls_allowed;
-
   //do not forward pedal messages 0x551 and 0x552
   if (((addr == 0x551) || (addr == 0x552)) && ((pedalCan == bus_num) || (pedalCan == -1))) {
       return -1;
@@ -1304,7 +1303,7 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd ) {
       //so make sure anything else is sent from 2 to 0
 
       //if disengage less than 3 seconds ago, 
-      if ((!controls_allowed) && (get_ts_elapsed(microsecond_timer_get(),time_op_disengaged) <= TIME_TO_HIDE_ERRORS)) {
+      if ((!cruise_engaged) && (get_ts_elapsed(microsecond_timer_get(),time_op_disengaged) <= TIME_TO_HIDE_ERRORS)) {
         //make DAS_status2->DAS_activationFailureStatus 0
         if (addr ==0x389) {
           WORD_TO_BYTE_ARRAY(&to_fwd->data[0],(GET_BYTES_04(to_fwd) & 0xFFFF3FFF)); 

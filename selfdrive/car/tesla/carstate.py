@@ -447,7 +447,6 @@ class CarState(CarStateBase):
     #BBTODO: in latest versions of code Tesla does not populate this field
     ret.gas = cp.vl["DI_torque1"]["DI_pedalPos"] / 100.0
     self.realPedalValue = ret.gas
-    self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
     ret.gasPressed = (ret.gas > 0.1 )
     if self.enableHAO:
       ret.gas = 0
@@ -482,6 +481,7 @@ class CarState(CarStateBase):
       if not self.pcc_enabled:
         self.pccEvent = None
       #preAP stuff
+      self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
       if self.enableHumanLongControl:
         self.enablePedal = (
             self.enablePedalHardware and 
