@@ -360,7 +360,8 @@ def main() -> NoReturn:
       gps.verticalAccuracy = report["q_FltVdop"]
       gps.bearingAccuracyDeg = report["q_FltHeadingUncRad"] * 180/math.pi if (report["q_FltHeadingUncRad"] != 0) else 180
       gps.speedAccuracy = math.sqrt(sum([x**2 for x in vNEDsigma]))
-      
+      gps.vNED = vNED
+
       commaAccuracy = report["q_FltHdop"]
       if teslaGPS and teslaGPS.gpsLocationTesla:
         gpsLocationTesla = teslaGPS.gpsLocationTesla
@@ -373,12 +374,11 @@ def main() -> NoReturn:
         gps.speed = gpsLocationTesla.speed
         gps.bearingDeg = gpsLocationTesla.bearingDeg
         gps.unixTimestampMillis = gpsLocationTesla.unixTimestampMillis
-        gps.vNED = gpsLocationTesla.vNED
+        gps.vNED = [gpsLocationTesla.vNED[0],gpsLocationTesla.vNED[1],gpsLocationTesla.vNED[2]]
         gps.verticalAccuracy = 0.5
         gps.bearingAccuracyDeg = 0.5
         gps.speedAccuracy = 0.5
-      else:
-        gps.vNED = vNED
+                
       # quectel gps verticalAccuracy is clipped to 500, set invalid if so
       gps.flags = 1 if gps.verticalAccuracy != 500 else 0
       if gps.flags:

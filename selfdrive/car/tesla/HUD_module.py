@@ -230,8 +230,6 @@ class HUDController:
             cruise_speed = 10
         should_send = enabled or (self.IC_previous_enabled and not enabled ) or CS.autopilot_disabled or self.CP.carFingerprint == CAR.PREAP_MODELS
         
-        self.prev_autopilot_enabled = CS.autopilot_enabled
-
         if CS.autopilot_enabled:
             self.IC_previous_enabled = enabled
             return messages
@@ -253,6 +251,7 @@ class HUDController:
                 #print("Sending DAS_status2 (DAS_csaState, cruise_speed, DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1) with values (",DAS_csaState, cruise_speed, 
                 #    DAS_collision_warning, CAN_CHASSIS[self.CP.carFingerprint], 1,")")
                 
+        self.prev_autopilot_enabled = CS.autopilot_enabled
         if not should_send:
             self.IC_previous_enabled = enabled
             return messages
