@@ -379,12 +379,12 @@ static bool tesla_compute_fwd_should_mod(CANPacket_t *to_fwd) {
 
     //DAS_status - send as long as the timestamp is correct
     if (addr == 0x399) {
-      valid = true; //!(autopilot_enabled || eac_enabled || autopark_enabled);
+      valid = !(autopilot_enabled || eac_enabled || autopark_enabled);
     }
 
     //DAS_status2 - send as long as the timestamp is correct
     if (addr == 0x389) {
-      valid = true; //!(autopilot_enabled || eac_enabled || autopark_enabled);
+      valid = !(autopilot_enabled || eac_enabled || autopark_enabled);
     }
 
     //DAS_lanes
@@ -1304,7 +1304,7 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd ) {
       //so make sure anything else is sent from 2 to 0
 
       //if disengage less than 3 seconds ago, 
-      if ((controls_allowed) && (get_ts_elapsed(microsecond_timer_get(),time_op_disengaged) <= TIME_TO_HIDE_ERRORS)) {
+      if ((!controls_allowed) && (get_ts_elapsed(microsecond_timer_get(),time_op_disengaged) <= TIME_TO_HIDE_ERRORS)) {
         //make DAS_status2->DAS_activationFailureStatus 0
         if (addr ==0x389) {
           WORD_TO_BYTE_ARRAY(&to_fwd->data[0],(GET_BYTES_04(to_fwd) & 0xFFFF3FFF)); 
