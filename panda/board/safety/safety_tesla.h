@@ -1225,9 +1225,13 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd ) {
   }
 
   if (has_ap_hardware) {
-  //we check to see first if these are modded forwards
-    fwd_modded = fwd_modded_message(to_fwd,TESLA_AP_FWD_MODDED,sizeof(TESLA_AP_FWD_MODDED)/sizeof(TESLA_AP_FWD_MODDED[0]),
-            tesla_compute_fwd_should_mod,tesla_compute_fwd_checksum);
+    //we check to see first if these are modded forwards
+    if (!autopilot_enabled) {
+      fwd_modded = fwd_modded_message(to_fwd,TESLA_AP_FWD_MODDED,sizeof(TESLA_AP_FWD_MODDED)/sizeof(TESLA_AP_FWD_MODDED[0]),
+              tesla_compute_fwd_should_mod,tesla_compute_fwd_checksum);
+    } else {
+      fwd_modded = -2;
+    }
   } else {
     fwd_modded = fwd_modded_message(to_fwd,TESLA_PREAP_FWD_MODDED,sizeof(TESLA_PREAP_FWD_MODDED)/sizeof(TESLA_PREAP_FWD_MODDED[0]),
             tesla_compute_fwd_should_mod,tesla_compute_fwd_checksum);
@@ -1303,7 +1307,7 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd ) {
       //so make sure anything else is sent from 2 to 0
 
       //if disengage less than 3 seconds ago, 
-      if ((!cruise_engaged) && (get_ts_elapsed(microsecond_timer_get(),time_op_disengaged) <= TIME_TO_HIDE_ERRORS)) {
+      if ((!cruise_engaged) && (!autopilot_enabled) && (get_ts_elapsed(microsecond_timer_get(),time_op_disengaged) <= TIME_TO_HIDE_ERRORS)) {
         //make DAS_status2->DAS_activationFailureStatus 0
         if (addr ==0x389) {
           WORD_TO_BYTE_ARRAY(&to_fwd->data[0],(GET_BYTES_04(to_fwd) & 0xFFFF3FFF)); 
@@ -1322,7 +1326,7 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd ) {
 
         //if disengage less than 3 seconds ago, hide warningMatrix values
         if ((addr == 0x329) || (addr == 0x349) || (addr == 0x369))  {
-          WORD_TO_BYTE_ARRAY(&to_fwd->data[4],0x00);
+          WORD_TO_BYTE_ARRAY(&to_fwd->data[0],0x00);
           WORD_TO_BYTE_ARRAY(&to_fwd->data[4],0x00);
           safety_can_set_checksum(to_fwd);
         } 

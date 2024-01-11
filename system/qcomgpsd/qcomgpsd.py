@@ -238,7 +238,6 @@ def main() -> NoReturn:
   stop_download_event = Event()
   assist_fetch_proc = Process(target=downloader_loop, args=(stop_download_event,))
   assist_fetch_proc.start()
-  usingTeslaGPS = True
   def cleanup(sig, frame):
     cloudlog.warning("caught sig disabling quectel gps")
 
@@ -263,14 +262,8 @@ def main() -> NoReturn:
   gpio_set(GPIO.GNSS_PWR_EN, True)
 
   pm = messaging.PubMaster(['qcomGnss', 'gpsLocation'])
-  sm = messaging.sub_sock("gpsLocationTesla")
-  gpsLocationTesla = None
-  teslaAccuracy = 1000.0
 
   while 1:
-    #Receive Tesla GPS info
-    teslaGPS = messaging.recv_one_or_none(sm)
-
     if os.path.exists(ASSIST_DATA_FILE) and want_assistance:
       setup_quectel(diag)
       want_assistance = False
@@ -340,23 +333,6 @@ def main() -> NoReturn:
     elif log_type == LOG_GNSS_POSITION_REPORT:
       report = unpack_position(log_payload)
       if report["u_PosSource"] != 2:
-        if teslaGPS and teslaGPS.gpsLocationTesla:
-          msg = messaging.new_message('gpsLocation', valid=True)
-          gps = msg.gpsLocation
-          gpsLocationTesla = teslaGPS.gpsLocationTesla
-          gps.latitude = gpsLocationTesla.latitude
-          gps.longitude = gpsLocationTesla.longitude
-          gps.altitude = gpsLocationTesla.altitude
-          gps.speed = gpsLocationTesla.speed
-          gps.bearingDeg = gpsLocationTesla.bearingDeg
-          gps.unixTimestampMillis = gpsLocationTesla.unixTimestampMillis
-          gps.vNED = [gpsLocationTesla.vNED[0],gpsLocationTesla.vNED[1],gpsLocationTesla.vNED[2]]
-          gps.verticalAccuracy = 0.5
-          gps.bearingAccuracyDeg = 0.5
-          gps.speedAccuracy = 0.5
-          gps.flags = 1 if gps.verticalAccuracy != 500 else 0
-          pm.send('gpsLocation', msg)
-          usingTeslaGPS = True
         continue
       vNED = [report["q_FltVelEnuMps[1]"], report["q_FltVelEnuMps[0]"], -report["q_FltVelEnuMps[2]"]]
       vNEDsigma = [report["q_FltVelSigmaMps[1]"], report["q_FltVelSigmaMps[0]"], -report["q_FltVelSigmaMps[2]"]]
@@ -375,38 +351,16 @@ def main() -> NoReturn:
                       datetime.timedelta(seconds=(1e-3*report['q_GpsFixTimeMs'] - 18)))
       gps.unixTimestampMillis = dt_timestamp.timestamp()*1e3
       gps.source = log.GpsLocationData.SensorSource.qcomdiag
+      gps.vNED = vNED
       gps.verticalAccuracy = report["q_FltVdop"]
       gps.bearingAccuracyDeg = report["q_FltHeadingUncRad"] * 180/math.pi if (report["q_FltHeadingUncRad"] != 0) else 180
       gps.speedAccuracy = math.sqrt(sum([x**2 for x in vNEDsigma]))
-      gps.vNED = vNED
-
-      commaAccuracy = report["q_FltHdop"]
-      if teslaGPS and teslaGPS.gpsLocationTesla:
-        gpsLocationTesla = teslaGPS.gpsLocationTesla
-        teslaAccuracy = gpsLocationTesla.accuracy
-      #check if tesla accuracy is better 
-      if (commaAccuracy > teslaAccuracy):
-        gps.latitude = gpsLocationTesla.latitude
-        gps.longitude = gpsLocationTesla.longitude
-        gps.altitude = gpsLocationTesla.altitude
-        gps.speed = gpsLocationTesla.speed
-        gps.bearingDeg = gpsLocationTesla.bearingDeg
-        gps.unixTimestampMillis = gpsLocationTesla.unixTimestampMillis
-        gps.vNED = [gpsLocationTesla.vNED[0],gpsLocationTesla.vNED[1],gpsLocationTesla.vNED[2]]
-        gps.verticalAccuracy = 0.5
-        gps.bearingAccuracyDeg = 0.5
-        gps.speedAccuracy = 0.5
-        usingTeslaGPS = True
-      else:
-        usingTeslaGPS = False
-                
       # quectel gps verticalAccuracy is clipped to 500, set invalid if so
       gps.flags = 1 if gps.verticalAccuracy != 500 else 0
       if gps.flags:
         want_assistance = False
         stop_download_event.set()
-      if not usingTeslaGPS:
-        pm.send('gpsLocation', msg)
+      pm.send('gpsLocation', msg)
 
     elif log_type == LOG_GNSS_OEMDRE_SVPOLY_REPORT:
       msg = messaging.new_message('qcomGnss', valid=True)
@@ -501,8 +455,8 @@ def main() -> NoReturn:
               pass
             else:
               setattr(sv, k, v)
-      if not usingTeslaGPS:
-        pm.send('qcomGnss', msg)
+
+      pm.send('qcomGnss', msg)
 
 if __name__ == "__main__":
   main()
