@@ -161,8 +161,8 @@ class CarController:
     new_actuators = actuators.copy()
     new_actuators.steeringAngleDeg = self.apply_angle_last
 
-    #once a second save the follow distane to personality
-    if (self.frame % 100 == 0) and CS.out.followDistanceS != 255:
+    #once every 5 seconds save the follow distance to personality
+    if (self.frame % 500 == 0) and CS.out.followDistanceS != 255:
       personality = log.LongitudinalPersonality.standard
       if CS.out.followDistanceS < 3:
         personality = log.LongitudinalPersonality.aggressive
