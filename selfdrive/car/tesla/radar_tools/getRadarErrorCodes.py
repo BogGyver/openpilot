@@ -31,12 +31,8 @@ error_message = "TeslaRadarAlertMatrix"
 
 def get_radar_error_parser(CP):
   # Status messages
-  signals = []
-  checks = [('TeslaRadarAlertMatrix', 1),]
-  for signal in error_signals:
-    tpl = (signal, error_message)
-    signals.append(tpl)
-  return CANParser(DBC[CP.carFingerprint]['radar'], signals, checks, CAN_RADAR[CP.carFingerprint])
+  messages = [('TeslaRadarAlertMatrix', 0),]
+  return CANParser(DBC[CP.carFingerprint]['radar'], messages, CAN_RADAR[CP.carFingerprint])
   
 
 if __name__ == "__main__":
