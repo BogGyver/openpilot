@@ -451,6 +451,7 @@ class CarState(CarStateBase):
     if self.enableHAO:
       ret.gas = 0
       ret.gasPressed = False
+    self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
     #PREAP overrides at the last moment
     if self.CP.carFingerprint in [CAR.PREAP_MODELS]:
       #Message needed for GTW_ESP1
@@ -481,7 +482,6 @@ class CarState(CarStateBase):
       if not self.pcc_enabled:
         self.pccEvent = None
       #preAP stuff
-      self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
       if self.enableHumanLongControl:
         self.enablePedal = (
             self.enablePedalHardware and 
@@ -516,6 +516,7 @@ class CarState(CarStateBase):
         if not self.pcc_enabled:
           self.DAS_216_driverOverriding = 0
         ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
+        self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
     
     return ret
 
