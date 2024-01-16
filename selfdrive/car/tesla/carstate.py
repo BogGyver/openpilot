@@ -515,10 +515,11 @@ class CarState(CarStateBase):
         else:
           ret.cruiseState.standstill = ret.standstill
         ret.brakePressed = False
+        self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
         if not self.pcc_enabled:
           self.DAS_216_driverOverriding = 0
         ret.cruiseState.speed = self.acc_speed_kph * CV.KPH_TO_MS
-        self.DAS_216_driverOverriding = 1 if (ret.gas > 0) else 0
+        
     
     return ret
 
