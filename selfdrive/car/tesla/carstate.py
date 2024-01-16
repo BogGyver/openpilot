@@ -352,8 +352,8 @@ class CarState(CarStateBase):
     if self.CP.carFingerprint in [CAR.AP1_MODELS, CAR.AP1_MODELX, CAR.AP2_MODELS, CAR.AP2_MODELX]:
       self.speed_limit_ms_das = cp_cam.vl["DAS_status"]["DAS_fusedSpeedLimit"] / map_speed_ms_to_uom
       if cp_cam.vl["DAS_status"]["DAS_fusedSpeedLimit"] >= 150:
-        #set to zero for no speed limit (0x1E) or SNA ((0x1F)
-        self.speed_limit_ms_das = 0.
+        #set to 150 when unlimitted
+        self.speed_limit_ms_das = 150. / map_speed_ms_to_uom
     if self.CP.carFingerprint != CAR.PREAP_MODELS and self.baseMapSpeedLimitMPS > 0 and (speed_limit_type != 0x1F or self.baseMapSpeedLimitMPS >= 5.56):
       self.speed_limit_ms = self.baseMapSpeedLimitMPS # this one is earlier than the actual sign but can also be unreliable, so we ignore it on SNA at higher speeds
     else:
