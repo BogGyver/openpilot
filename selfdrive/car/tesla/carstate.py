@@ -287,6 +287,8 @@ class CarState(CarStateBase):
         self.v_cruise_actual = self.v_cruise_actual * CV.MPH_TO_KPH
     self.prev_cruise_buttons = self.cruise_buttons
     self.cruise_buttons = cp.vl["STW_ACTN_RQ"]["SpdCtrlLvr_Stat"]
+    if self.cruise_buttons != CruiseButtons.IDLE:
+      self.last_cruise_button = self.cruise_buttons
     self.cruise_distance = cp.vl["STW_ACTN_RQ"]["DTR_Dist_Rq"]
     if self.cruise_distance != 255:
       # pos1=0, pos2=33, pos3=66, pos4=100, pos5=133, pos6=166, pos7=200, SNA=255
@@ -303,7 +305,7 @@ class CarState(CarStateBase):
       if not(self.autopilot_enabled or cruiseEnabled):
         self.autopilot_was_enabled = False
       self.cruiseEnabled = cruiseEnabled and not self.autopilot_was_enabled
-      ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay and not (self.enableACC)
+      ret.cruiseState.enabled = self.cruiseEnabled and self.cruiseDelay and not self.enableACC
       if self.speed_units == "KPH":
         ret.cruiseState.speed = cp.vl["DI_state"]["DI_cruiseSet"] * CV.KPH_TO_MS
       elif self.speed_units == "MPH":

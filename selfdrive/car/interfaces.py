@@ -385,6 +385,7 @@ class CarStateBase(ABC):
     self.out = car.CarState.new_message()
 
     self.cruise_buttons = 0
+    self.last_cruise_button = 0
     self.left_blinker_cnt = 0
     self.right_blinker_cnt = 0
     self.steering_pressed_cnt = 0

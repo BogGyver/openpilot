@@ -90,11 +90,10 @@ class CarController:
       if CS.cruiseEnabled:
         if not self.prevCruiseEnabled:
           self.cruiseDelayFrame = self.frame
-          if CS.cruise_buttons == CruiseButtons.MAIN:
+          if CS.last_cruise_button == CruiseButtons.MAIN:
             CS.enableACC = False
-          elif CS.cruise_buttons > 0:
+          elif CS.last_cruise_button != CruiseButtons.IDLE:
             CS.enableACC = True
-            self.cruiseDelayFrame = 0
         if self.frame - self.cruiseDelayFrame >= 100:
           CS.cruiseDelay = True
       else:
