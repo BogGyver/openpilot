@@ -120,18 +120,19 @@ class HUDController:
                     lead_d = self.leadsData.leadOne.dRel * 2.0
                     max_distance = max(0,min(lead_d, max_distance))
             max_idx = self.get_path_length_idx(y, max_distance)
-            order = 3
-            coefs = np.polyfit(x[:max_idx], y[:max_idx], order)
-            # IC shows the path 2x scaled
-            f = 1/IC_LANE_SCALE
-            suppress_x_coord = True
-            f2 = f * f
-            f3 = f2 * f
-            CS.curvC0 = clip(coefs[3], -3.5, 3.5)
-            #CS.curvC0 = 0.0 #always center
-            CS.curvC1 = clip(coefs[2] * f * (0 if suppress_x_coord else 1), -0.2, 0.2)  
-            CS.curvC2 = clip(coefs[1] * f2, -0.0025, 0.0025)
-            CS.curvC3 = clip(coefs[0] * f3, -0.00003, 0.00003)  
+            if (max_idx > 0) and (len(x) >= max_idx):
+                order = 3
+                coefs = np.polyfit(x[:max_idx], y[:max_idx], order)
+                # IC shows the path 2x scaled
+                f = 1/IC_LANE_SCALE
+                suppress_x_coord = True
+                f2 = f * f
+                f3 = f2 * f
+                CS.curvC0 = clip(coefs[3], -3.5, 3.5)
+                #CS.curvC0 = 0.0 #always center
+                CS.curvC1 = clip(coefs[2] * f * (0 if suppress_x_coord else 1), -0.2, 0.2)  
+                CS.curvC2 = clip(coefs[1] * f2, -0.0025, 0.0025)
+                CS.curvC3 = clip(coefs[0] * f3, -0.00003, 0.00003)  
 
         #send messages for IC intergration
         #CS.DAS_206_apUnavailable = 1 if enabled and human_control else 0
