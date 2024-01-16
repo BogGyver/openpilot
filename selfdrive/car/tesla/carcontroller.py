@@ -89,12 +89,17 @@ class CarController:
     if self.CP.carFingerprint != CAR.PREAP_MODELS and not CS.autopilot_disabled:
       if CS.cruiseEnabled:
         if not self.prevCruiseEnabled:
+          if CS.cruise_buttons == CruiseButtons.MAIN:
+            CS.enableACC = False
+          elif CS.cruise_buttons > 0:
+            CS.enableACC = True
           self.cruiseDelayFrame = self.frame
         if self.frame - self.cruiseDelayFrame >= 100:
           CS.cruiseDelay = True
       else:
         self.cruiseDelayFrame = 0
         CS.cruiseDelay = False
+        CS.enableACC = False
     self.prevCruiseEnabled = CS.cruiseEnabled
 
     #receive socks
