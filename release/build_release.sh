@@ -67,7 +67,7 @@ CERT=$BUILD_DIR/panda/certs/release PEDAL=1 PEDAL_USB=1 scons -u
 CERT=$BUILD_DIR/panda/certs/release IVS=1 scons -u
 CERT=$BUILD_DIR/panda/certs/release IVS=1 IVS_USB=1 scons -u
 mv board/obj/panda.bin.signed /tmp/panda.bin.signed
-mv board/obj/pedal.bin.signed /tmp/pedal.bin.signed
+mv board/pedal/obj/pedal.bin.signed /tmp/pedal.bin.signed
 mv board/obj/bootstub.panda.bin /tmp/bootstub.panda.bin 
 mv board/obj/bootstub.pedal.bin /tmp/bootstub.pedal.bin
 mv board/obj/bootstub.pedal_usb.bin /tmp/bootstub.pedal_usb.bin
@@ -107,7 +107,7 @@ mkdir -p panda/board/obj
 cp -r $SOURCE_DIR/release/panda_files/board $BUILD_DIR/panda/
 mkdir -p $BUILD_DIR/panda/board/obj
 mv /tmp/panda.bin.signed $BUILD_DIR/panda/board/obj/panda.bin.signed
-mv /tmp/pedal.bin.signed $BUILD_DIR/panda/board/obj/pedal.bin.signed
+mv /tmp/pedal.bin.signed $BUILD_DIR/panda/board/pedal/obj/pedal.bin.signed
 mv /tmp/bootstub.panda.bin $BUILD_DIR/panda/board/obj/bootstub.panda.bin
 mv /tmp/bootstub.pedal.bin $BUILD_DIR/panda/board/obj/bootstub.pedal.bin
 mv /tmp/bootstub.pedal_usb.bin $BUILD_DIR/panda/board/obj/bootstub.pedal_usb.bin
