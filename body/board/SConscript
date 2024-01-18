@@ -25,10 +25,14 @@ build_projects["body"] = {
 }
 
 if os.getenv("RELEASE"):
-  BUILD_TYPE = "RELEASE"
-  cert_fn = os.getenv("CERT")
+  #BUILD_TYPE = "RELEASE"
+  #cert_fn = os.getenv("CERT")
+  BUILD_TYPE = "DEBUG"
+  cert_fn = File("../certs/debug").srcnode().abspath
   assert cert_fn is not None, 'No certificate file specified. Please set CERT env variable'
   assert os.path.exists(cert_fn), 'Certificate file not found. Please specify absolute path'
+  common_flags += ["-DALLOW_DEBUG"]
+  common_flags += ["-DDEBUG"]
 else:
   BUILD_TYPE = "DEBUG"
   cert_fn = File("../certs/debug").srcnode().abspath
