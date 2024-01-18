@@ -69,9 +69,9 @@ CERT=$BUILD_DIR/panda/certs/release IVS=1 IVS_USB=1 scons -u
 mv board/obj/panda.bin.signed /tmp/panda.bin.signed
 mv board/pedal/obj/pedal.bin.signed /tmp/pedal.bin.signed
 mv board/obj/bootstub.panda.bin /tmp/bootstub.panda.bin 
-mv board/obj/bootstub.pedal.bin /tmp/bootstub.pedal.bin
-mv board/obj/bootstub.pedal_usb.bin /tmp/bootstub.pedal_usb.bin
-mv board/obj/pedal_usb.bin.signed /tmp/pedal_usb.bin.signed 
+mv board/pedal/obj/bootstub.pedal.bin /tmp/bootstub.pedal.bin
+mv board/pedal/obj/bootstub.pedal_usb.bin /tmp/bootstub.pedal_usb.bin
+mv board/pedal/obj/pedal_usb.bin.signed /tmp/pedal_usb.bin.signed 
 mv board/obj/panda_h7.bin.signed /tmp/panda_h7.bin.signed
 
 popd
@@ -109,9 +109,9 @@ mkdir -p $BUILD_DIR/panda/board/obj
 mv /tmp/panda.bin.signed $BUILD_DIR/panda/board/obj/panda.bin.signed
 mv /tmp/pedal.bin.signed $BUILD_DIR/panda/board/pedal/obj/pedal.bin.signed
 mv /tmp/bootstub.panda.bin $BUILD_DIR/panda/board/obj/bootstub.panda.bin
-mv /tmp/bootstub.pedal.bin $BUILD_DIR/panda/board/obj/bootstub.pedal.bin
-mv /tmp/bootstub.pedal_usb.bin $BUILD_DIR/panda/board/obj/bootstub.pedal_usb.bin
-mv /tmp/pedal_usb.bin.signed $BUILD_DIR/panda/board/obj/pedal_usb.bin.signed
+mv /tmp/bootstub.pedal.bin $BUILD_DIR/panda/board/pedal/obj/bootstub.pedal.bin
+mv /tmp/bootstub.pedal_usb.bin $BUILD_DIR/panda/board/pedal/obj/bootstub.pedal_usb.bin
+mv /tmp/pedal_usb.bin.signed $BUILD_DIR/panda/board/pedal/obj/pedal_usb.bin.signed
 mv /tmp/panda_h7.bin.signed $BUILD_DIR/panda/board/obj/panda_h7.bin.signed
 
 # Restore third_party
