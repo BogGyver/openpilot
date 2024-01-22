@@ -1334,7 +1334,7 @@ static int tesla_fwd_hook(int bus_num, CANPacket_t *to_fwd ) {
     } else {
       return -1;
     }
-      bus_fwd = 0;
+    bus_fwd = 0;
   }
 
   return bus_fwd;

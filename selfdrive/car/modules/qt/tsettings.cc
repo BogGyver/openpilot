@@ -348,6 +348,21 @@ TeslaTogglesPanel::TeslaTogglesPanel(SettingsWindow *parent) : ListWidget(parent
       "",
       2.0,1.0,3.0,1.0,TINKLA_FLOAT
     },
+    {"TinklaTurnSlowdown",
+    "Slowdown in Turns",
+    "Reduces the car' speed in turns based on road curvature.",
+    "../assets/offroad/icon_speed_limit.png",
+    "","","",0.0,0.0,0.0,0.0, TINKLA_TOGGLE
+    },
+    {"TinklaTurnSlowdownFactor",
+      "Slowdown Factor in Turns",
+      "The multiplier used to compute the safe speed to take a turn. 0.5 is slower, 1.5 is faster.",
+      "../assets/offroad/icon_speed_limit.png",
+      "Slowdown Factor in Turns:",
+      "Enter the slowdown multiplier:",
+      "",
+      1.0,0.5,1.5,0.01,TINKLA_FLOAT
+    },
     {"TinklaTeslaRadarIgnoreSGUError",
     "Ignore Radar Errors",
     "Ignore Tesla Radar errors about calibration. ",

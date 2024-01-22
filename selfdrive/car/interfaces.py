@@ -18,7 +18,7 @@ from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
 from openpilot.selfdrive.car.modules.CFG_module import load_bool_param,load_float_param
 from openpilot.selfdrive.car.modules.HSO_module import HSOController
 from openpilot.selfdrive.car.modules.BLNK_module import BLNKController
-from openpilot.selfdrive.car.modules.ALC_module import ALCController
+#from openpilot.selfdrive.car.modules.ALC_module import ALCController
 import cereal.messaging as messaging
 
 ButtonType = car.CarState.ButtonEvent.Type
@@ -88,18 +88,20 @@ class CarInterfaceBase(ABC):
       #initialize modules
       self.CS.HSO = HSOController()
       self.CS.blinker_controller = BLNKController()
-      self.CS.alca_controller = ALCController()
+      #self.CS.alca_controller = ALCController()
 
       #initialize listeners
       self.CS.laP = messaging.sub_sock('lateralPlan')
 
       #alca info
-      self.CS.prev_alca_pre_engage = False
-      self.CS.alca_pre_engage = False
-      self.CS.alca_engaged = False
+      #TODOBB: remove all this commented ALCA stuff
+      #self.CS.prev_alca_pre_engage = False
+      #self.CS.alca_pre_engage = False
+      #self.CS.alca_engaged = False
       self.CS.alca_direction = 0
-      self.CS.alca_need_engagement = False
-      self.CS.alca_done = False
+      #self.CS.alca_need_engagement = False
+      #self.CS.alca_done = False
+
       self.can_parsers = [self.cp, self.cp_cam, self.cp_adas, self.cp_body, self.cp_loopback]
 
     self.CC = None
@@ -224,12 +226,13 @@ class CarInterfaceBase(ABC):
     #TODOBB: shall we use HSO for touching steering?
     #ret.steeringPressed = self.CS.human_control
     #Trick the alca if autoStartAlcaDelay is set
-    if (self.CS.enableALC) and (self.CS.alca_need_engagement):
-      ret.steeringPressed = True
-      if self.CS.alca_direction == log.LateralPlan.LaneChangeDirection.left:
-        ret.steeringTorque = 0.1
-      if self.CS.alca_direction == log.LateralPlan.LaneChangeDirection.right:
-        ret.steeringTorque = - 0.1
+    #TODOBB: remove this torque trick since we don't use it with nav on OP
+    # if (self.CS.enableALC) and (self.CS.alca_need_engagement):
+    #   ret.steeringPressed = True
+    #   if self.CS.alca_direction == log.LateralPlan.LaneChangeDirection.left:
+    #     ret.steeringTorque = 0.1
+    #   if self.CS.alca_direction == log.LateralPlan.LaneChangeDirection.right:
+    #     ret.steeringTorque = - 0.1
 
   def pre_apply(self,c):
     self.CS.lat_plan = messaging.recv_one_or_none(self.CS.laP) 
@@ -241,7 +244,8 @@ class CarInterfaceBase(ABC):
     self.CS.tap_direction = self.CS.blinker_controller.tap_direction
 
     #update ALC module
-    self.CS.alca_controller.update(c.latActive, self.CS, self.frame, self.CS.lat_plan)
+    #TODOBB: completely remove ALC now
+    #self.CS.alca_controller.update(c.latActive, self.CS, self.frame, self.CS.lat_plan)
 
   # return sendcan, pass in a car.CarControl
   def update(self, c: car.CarControl, can_strings: List[bytes]) -> car.CarState:

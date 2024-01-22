@@ -206,7 +206,7 @@ class LONGController:
                     self.speed_limit_ms,
                     self.set_speed_limit_active,
                     self.speed_limit_offset_ms,
-                    CS.alca_engaged,
+                    CS.alca_direction > 0,
                     radar_state
                 )
                 #send pedal commands at 50Hz

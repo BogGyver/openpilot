@@ -90,7 +90,7 @@ class HUDController:
         return i
 
 
-    def update(self, controls_state, enabled, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
+    def update(self, controls_state, enabled, CC, CS, frame, actuators, cruise_cancel, hud_alert, audible_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart,human_control,radar_state,lat_plan,apply_angle,model_data):
         # TODO: additional lanes to show on IC
         self.IC_integration_counter = ((self.IC_integration_counter + 1) % 100)
@@ -175,11 +175,10 @@ class HUDController:
             CS.DAS_notInDrive = 0
         
         #all logic
-        alcaState = CS.alca_direction if (CS.alca_pre_engage or CS.alca_engaged) and CS.alca_direction > 0 else 0
         DAS_ldwStatus = 1 if left_lane_depart or right_lane_depart else 0
         DAS_hands_on_state = 2
         #steering required is also used by ALCA
-        if (hud_alert == VisualAlert.steerRequired) and not (CS.alca_engaged or CS.alca_pre_engage):
+        if (hud_alert == VisualAlert.steerRequired) and not (CS.alca_direction > 0):
             if audible_alert == AudibleAlert.none:
                 DAS_hands_on_state = 3
             else:
@@ -196,7 +195,7 @@ class HUDController:
         #6 "ALC_AVAILABLE_ONLY_L"
         #1 "ALC_UNAVAILABLE_NO_LANES"
         DAS_alca_state = 1
-        if (CS.alca_pre_engage or CS.alca_engaged) and CS.alca_direction > 0:
+        if CS.alca_direction > 0:
             DAS_alca_state = 8 + CS.alca_direction 
         else:
             if self.leftLaneQuality == 1 and self.rightLaneQuality == 1:
@@ -265,12 +264,12 @@ class HUDController:
                 CS.alca_direction, 1 if CS.needs_hazard else 0 , CAN_CHASSIS[self.CP.carFingerprint], 1))
 
             if CS.enableICIntegration:
-                messages.append(self.tesla_can.create_lane_message(CS.laneWidth, 1 if CS.alca_engaged else CS.rLine, 1 if CS.alca_engaged else CS.lLine, 
+                messages.append(self.tesla_can.create_lane_message(CS.laneWidth, 1 if CS.alca_direction > 0 else CS.rLine, 1 if CS.alca_direction > 0 else CS.lLine, 
                     50, CS.curvC0, CS.curvC1, CS.curvC2, CS.curvC3, self.leftLaneQuality, self.rightLaneQuality,
                     CAN_CHASSIS[self.CP.carFingerprint], 1))
 
             if CS.enableICIntegration:
-                messages.append(self.tesla_can.create_telemetry_road_info(CS.lLine,CS.rLine,self.leftLaneQuality, self.rightLaneQuality, alcaState,
+                messages.append(self.tesla_can.create_telemetry_road_info(CS.lLine,CS.rLine,self.leftLaneQuality, self.rightLaneQuality, CS.alca_direction,
                     CAN_CHASSIS[self.CP.carFingerprint]))
 
             if radar_state is not None:

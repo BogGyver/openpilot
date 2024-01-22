@@ -80,6 +80,7 @@ class CarController:
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
     pcm_cancel_cmd = CC.cruiseControl.cancel
+    CS.alca_direction = CC.rightBlinker * 2 + CC.leftBlinker
     
     if self.frame % 100 == 0:
       CS.autoresumeAcc = load_bool_param("TinklaAutoResumeACC",False)
@@ -158,7 +159,7 @@ class CarController:
       can_sends[0:0] = can_messages
 
     #update HUD Integration module
-    can_messages = self.hud_controller.update(controls_state, CC.enabled, CS, self.frame, actuators, pcm_cancel_cmd, CC.hudControl.visualAlert, CC.hudControl.audibleAlert,
+    can_messages = self.hud_controller.update(controls_state, CC.enabled, CC, CS, self.frame, actuators, pcm_cancel_cmd, CC.hudControl.visualAlert, CC.hudControl.audibleAlert,
           CC.hudControl.leftLaneVisible, CC.hudControl.rightLaneVisible, CC.hudControl.leadVisible, CC.hudControl.leftLaneDepart, CC.hudControl.rightLaneDepart,CS.human_control,radar_state,CS.lat_plan,self.apply_angle_last,model_data)
     if len(can_messages) > 0:
       can_sends.extend(can_messages)
