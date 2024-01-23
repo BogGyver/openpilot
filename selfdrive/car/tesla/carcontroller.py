@@ -156,7 +156,8 @@ class CarController:
     #update LONG Control module
     can_messages = self.long_controller.update(CC.enabled, CS, self.frame, actuators, pcm_cancel_cmd,CC.cruiseControl.override, long_plan,radar_state)
     if len(can_messages) > 0:
-      can_sends[0:0] = can_messages
+      if not (CS.enableACC and self.CP.carFingerprint != CAR.PREAP_MODELS):
+        can_sends[0:0] = can_messages
 
     #update HUD Integration module
     can_messages = self.hud_controller.update(controls_state, CC.enabled, CC, CS, self.frame, actuators, pcm_cancel_cmd, CC.hudControl.visualAlert, CC.hudControl.audibleAlert,
